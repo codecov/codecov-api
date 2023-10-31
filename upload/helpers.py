@@ -641,53 +641,14 @@ def dispatch_upload_task(task_arguments, repository, redis):
 
     commitid = task_arguments.get("commit")
 
-    upload_sig = TaskService().upload_signature(
+    TaskService().upload(
         repoid=repository.repoid,
         commitid=commitid,
         report_code=task_arguments.get("report_code"),
-        # this prevents the results of the notify task (below) from being
-        # passed as args to this upload task
-        immutable=True,
+        countdown=max(
+            countdown, int(get_config("setup", "upload_processing_delay") or 0)
+        ),
     )
-
-    # we have a CommitNotifications model for recording if a notification
-    # has been sent for a particular commit but we'd like this early notification
-    # (below) to only happen once for a PR.  Checking the `commentid` isn't strictly
-    # correct but works for now since the early notify is only for PR comments.
-
-    notified = False
-    commit = Commit.objects.filter(commitid=commitid).first()
-    if commit and commit.pullid is not None:
-        pull = Pull.objects.filter(
-            repository_id=commit.repository_id, pullid=commit.pullid
-        ).first()
-        if pull and pull.commentid:
-            notified = True
-
-    if notified:
-        # we've already notified on this commit - just process
-        # the upload
-        upload_sig.apply_async(
-            countdown=max(
-                countdown, int(get_config("setup", "upload_processing_delay") or 0)
-            ),
-        )
-    else:
-        # we have not notified yet
-        #
-        # notify early with a "processing" indicator and then
-        # start processing the upload
-        TaskService().notify_signature(
-            repoid=repository.repoid,
-            commitid=task_arguments.get("commit"),
-            empty_upload="processing",
-        ).apply_async(
-            link=upload_sig.set(
-                countdown=max(
-                    countdown, int(get_config("setup", "upload_processing_delay") or 0)
-                ),
-            )
-        )
 
 
 def validate_activated_repo(repository):
