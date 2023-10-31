@@ -134,9 +134,7 @@ class ImpactedFileSegmentSerializer(serializers.Serializer):
 class ImpactedFileSegmentsSerializer(serializers.Serializer):
     segments = serializers.SerializerMethodField()
 
-    def get_segments(
-        self, file_path: str
-    ) -> ImpactedFileSegmentSerializer:
+    def get_segments(self, file_path: str) -> ImpactedFileSegmentSerializer:
         file_comparison = self.context["comparison"].get_file_comparison(
             file_path, with_src=True, bypass_max_diff=True
         )
@@ -211,7 +209,11 @@ class ImpactedFilesComparisonSerializer(ComparisonSerializer):
     def get_files(self, comparison: Comparison) -> List[dict]:
         commit_comparison = self.context["commit_comparison"]
 
-        if not commit_comparison or commit_comparison.state == CommitComparison.CommitComparisonStates.PENDING:
+        if (
+            not commit_comparison
+            or commit_comparison.state
+            == CommitComparison.CommitComparisonStates.PENDING
+        ):
             return super().get_files(comparison)
 
         return [
