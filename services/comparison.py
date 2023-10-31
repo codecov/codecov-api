@@ -957,9 +957,10 @@ class ImpactedFile:
             return float(self.head_coverage.coverage - self.base_coverage.coverage)
 
     @cached_property
-    def file_name(self):
-        parts = self.head_name.split("/")
-        return parts[-1]
+    def file_name(self) -> Optional[str]:
+        if self.head_name:
+            parts = self.head_name.split("/")
+            return parts[-1]
 
 
 @dataclass
