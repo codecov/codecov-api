@@ -136,7 +136,12 @@ class CompareViewSet(
     @action(detail=False, methods=["get"])
     def impacted_files(self, request, *args, **kwargs):
         """
-        Returns pre-computed impacted files comparisons if available
+        Returns a comparison for either a pair of commits or a pull
+        And will only return pre-computed impacted files comparisons if available
+        If unavailable it will return comparison of all files
+        (identical to the response of the default Comparison endpoint)
+        however once the computation is made available then it will return only
+        the impacted files
         """
         return super().impacted_files(request, *args, **kwargs)
 
@@ -161,6 +166,7 @@ class CompareViewSet(
     )
     def segments(self, request, *args, **kwargs):
         """
-        Returns pre-computed impacted file's segments for a specific file path
+        Returns a comparison for a specific file path only showing the segments
+        of the file that are impacted instead of all lines in file
         """
         return super().segments(request, *args, **kwargs)
