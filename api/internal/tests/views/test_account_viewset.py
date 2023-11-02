@@ -857,6 +857,27 @@ class AccountViewSetTests(APITestCase):
             == "Quantity or plan for paid plan must be different from the existing one"
         )
 
+    def test_update_must_fail_if_team_plan_and_too_many_users(self):
+        desired_plans = [
+            {"value": PlanName.TEAM_MONTHLY.value, "quantity": 11},
+            {"value": PlanName.TEAM_YEARLY.value, "quantity": 11},
+        ]
+
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert (
+                response.data["plan"]["non_field_errors"][0]
+                == "Quantity for Team plan cannot exceed 10"
+            )
+
     def test_update_quantity_must_be_at_least_2_if_paid_plan(self):
         desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 1}
         response = self._update(
