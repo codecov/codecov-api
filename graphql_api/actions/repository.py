@@ -8,6 +8,7 @@ def apply_filters_to_queryset(queryset, filters):
     active = filters.get("active")
     activated = filters.get("activated")
     repo_names = filters.get("repo_names")
+    is_public = filters.get("is_public")
 
     if repo_names:
         queryset = queryset.filter(name__in=repo_names)
@@ -17,6 +18,9 @@ def apply_filters_to_queryset(queryset, filters):
         queryset = queryset.filter(activated=activated)
     if active is not None:
         queryset = queryset.filter(active=active)
+    if is_public is not None:
+        queryset = queryset.filter(private=not is_public)
+
     return queryset
 
 
