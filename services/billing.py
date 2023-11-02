@@ -8,7 +8,7 @@ from billing.constants import REMOVED_INVOICE_STATUSES
 from codecov_auth.models import Owner
 from plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
-    PRO_PLANS,
+    PAID_PLANS,
     USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
 )
@@ -514,7 +514,7 @@ class BillingService:
             else:
                 plan_service = PlanService(current_org=owner)
                 plan_service.set_default_plan_data()
-        elif desired_plan["value"] in PRO_PLANS:
+        elif desired_plan["value"] in PAID_PLANS:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:

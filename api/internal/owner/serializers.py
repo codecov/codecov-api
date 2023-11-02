@@ -8,7 +8,12 @@ from rest_framework.exceptions import PermissionDenied
 
 from billing.helpers import available_plans
 from codecov_auth.models import Owner
-from plan.constants import PRO_PLANS, SENTRY_PAID_USER_PLAN_REPRESENTATIONS
+from plan.constants import (
+    PAID_PLANS,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    TEAM_PLAN_MAX_USERS,
+    TEAM_PLAN_REPRESENTATIONS,
+)
 from plan.service import PlanService
 from services.billing import BillingService
 from services.sentry import send_user_webhook as send_sentry_webhook
@@ -134,7 +139,7 @@ class PlanSerializer(serializers.Serializer):
         owner = self.context["view"].owner
 
         # Validate quantity here because we need access to whole plan object
-        if plan["value"] in PRO_PLANS:
+        if plan["value"] in PAID_PLANS:
             if "quantity" not in plan:
                 raise serializers.ValidationError(
                     f"Field 'quantity' required for updating to paid plans"
@@ -158,6 +163,13 @@ class PlanSerializer(serializers.Serializer):
             ):
                 raise serializers.ValidationError(
                     f"Quantity or plan for paid plan must be different from the existing one"
+                )
+            if (
+                plan["value"] in TEAM_PLAN_REPRESENTATIONS
+                and plan["quantity"] > TEAM_PLAN_MAX_USERS
+            ):
+                raise serializers.ValidationError(
+                    f"Quantity for Team plan cannot exceed {TEAM_PLAN_MAX_USERS}"
                 )
         return plan
 
@@ -185,7 +197,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         plan_name = list(stripe_plan_dict.keys())[
             list(stripe_plan_dict.values()).index(plan_id)
         ]
-        marketing_plan_name = PRO_PLANS[plan_name].billing_rate
+        marketing_plan_name = PAID_PLANS[plan_name].billing_rate
         return marketing_plan_name
 
     def get_quantity(self, phase):

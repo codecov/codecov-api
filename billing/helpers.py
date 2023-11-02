@@ -32,6 +32,7 @@ def available_plans(owner: Optional[Owner]) -> List[dict]:
     plans: List[PlanData] = []
     plans += list(FREE_PLAN_REPRESENTATIONS.values())
     plans += list(PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values())
+    plans += list(TEAM_PLAN_REPRESENTATIONS.values())
 
     if owner and sentry.is_sentry_user(owner):
         # these are only available to Sentry users

@@ -1109,7 +1109,7 @@ class AccountViewSetTests(APITestCase):
         assert res.json() == {
             "plan": {
                 "value": [
-                    "Invalid value for plan: users-sentrym; must be one of ['users-free', 'users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                    "Invalid value for plan: users-sentrym; must be one of ['users-free', 'users-basic', 'users-pr-inappm', 'users-pr-inappy', 'users-teamm', 'users-teamy']"
                 ]
             }
         }
