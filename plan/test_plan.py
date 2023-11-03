@@ -602,6 +602,7 @@ class AvailablePlansOngoingTrial(TestCase):
             trial_end_date=datetime.utcnow() + timedelta(days=14),
             trial_status=TrialStatus.ONGOING.value,
             plan_user_count=1000,
+            plan_activated_users=None,
         )
         self.owner = OwnerFactory()
         self.plan_service = PlanService(current_org=self.current_org)
