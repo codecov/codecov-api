@@ -5,6 +5,7 @@ from json import dumps
 
 import jwt
 from asgiref.sync import async_to_sync
+from celery import chain, signature
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -16,7 +17,7 @@ from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
 from codecov_auth.models import Owner
-from core.models import Commit, Repository
+from core.models import Commit, CommitNotification, Pull, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import ReportSession
 from services.analytics import AnalyticsService
@@ -185,6 +186,7 @@ def parse_params(data):
         "project": {"type": "string"},
         "server_uri": {"type": "string"},
         "root": {"type": "string"},  # deprecated
+        "storage_path": {"type": "string"},
     }
 
     v = Validator(params_schema, allow_unknown=True)
@@ -637,10 +639,11 @@ def dispatch_upload_task(task_arguments, repository, redis):
         timezone.now().timestamp(),
     )
 
-    # Send task to worker
+    commitid = task_arguments.get("commit")
+
     TaskService().upload(
         repoid=repository.repoid,
-        commitid=task_arguments.get("commit"),
+        commitid=commitid,
         report_code=task_arguments.get("report_code"),
         countdown=max(
             countdown, int(get_config("setup", "upload_processing_delay") or 0)

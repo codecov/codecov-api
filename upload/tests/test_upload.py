@@ -1,15 +1,17 @@
 import time
 from datetime import datetime, timedelta
 from json import dumps, loads
-from unittest.mock import ANY, PropertyMock, call, patch
+from unittest.mock import ANY, Mock, PropertyMock, call, patch
 from urllib.parse import urlencode
 
 import pytest
 import requests
+from celery.canvas import Signature
 from ddf import G
 from django.core.exceptions import MultipleObjectsReturned
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.reverse import reverse
@@ -24,6 +26,7 @@ from simplejson import JSONDecodeError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
+from core.tests.factories import CommitFactory, PullFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     determine_repo_for_upload,
@@ -870,8 +873,9 @@ class UploadHandlerHelpersTest(TestCase):
         assert repo.active == True
         assert repo.deleted == False
 
+    @freeze_time("2023-01-01T00:00:00")
     @patch("services.task.TaskService.upload")
-    def test_dispatch_upload_task(self, mock_task_service_upload):
+    def test_dispatch_upload_task(self, upload):
         repo = G(Repository)
         task_arguments = {
             "commit": "commit123",
@@ -888,8 +892,7 @@ class UploadHandlerHelpersTest(TestCase):
         )
 
         dispatch_upload_task(task_arguments, repo, redis)
-        assert mock_task_service_upload.called
-        mock_task_service_upload.assert_called_with(
+        upload.assert_called_once_with(
             repoid=repo.repoid,
             commitid=task_arguments.get("commit"),
             report_code="local_report",
