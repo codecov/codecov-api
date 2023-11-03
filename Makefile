@@ -196,6 +196,9 @@ test_env.container_check_db:
 test_env.run_unit:
 	docker-compose exec api make test.unit
 
+test_env.run_integration:
+	docker-compose exec api make test.integration
+
 test_env.check-for-migration-conflicts:
 	docker-compose exec api python manage.py check_for_migration_conflicts
 
