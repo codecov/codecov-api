@@ -220,10 +220,10 @@ test_env.container_static_analysis:
 	codecovcli -u ${CODECOV_URL} static-analysis --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_label_analysis:
-	codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN}
+	codecovcli -u ${CODECOV_URL} label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_ats:
-	codecovcli --codecov-yml-path=codecov_cli.yml upload-process --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
+	codecovcli -u ${CODECOV_URL} --codecov-yml-path=codecov_cli.yml upload-process --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
 
 test_env:
 	make test_env.up
