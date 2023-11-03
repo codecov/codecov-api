@@ -12,6 +12,8 @@ from api.shared.compare.mixins import CompareViewSetMixin
 from api.shared.compare.serializers import (
     FileComparisonSerializer,
     FlagComparisonSerializer,
+    ImpactedFilesComparisonSerializer,
+    ImpactedFileSegmentsSerializer,
 )
 from core.models import Commit
 from services.components import ComponentComparison, commit_components
@@ -125,3 +127,46 @@ class CompareViewSet(
 
         serializer = ComponentComparisonSerializer(component_comparisons, many=True)
         return Response(serializer.data)
+
+    @extend_schema(
+        summary="Impacted files comparison",
+        parameters=comparison_parameters,
+        responses={200: ImpactedFilesComparisonSerializer},
+    )
+    @action(detail=False, methods=["get"])
+    def impacted_files(self, request, *args, **kwargs):
+        """
+        Returns a comparison for either a pair of commits or a pull
+        Will only return pre-computed impacted files comparisons if available
+        If unavailable `files` will be empty, however once the computation is ready
+        the files will appear on subsequent calls
+        `state: "processed"` means `files` are finished computing and returned
+        `state: "pending"` means `files` are still computing, poll again later
+        """
+        return super().impacted_files(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Segmented file comparison",
+        parameters=comparison_parameters
+        + [
+            OpenApiParameter(
+                "file_path",
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
+                description="file path",
+            ),
+        ],
+        responses={200: ImpactedFileSegmentsSerializer},
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="segments/(?P<file_path>.+)",
+        url_name="segments",
+    )
+    def segments(self, request, *args, **kwargs):
+        """
+        Returns a comparison for a specific file path only showing the segments
+        of the file that are impacted instead of all lines in file
+        """
+        return super().segments(request, *args, **kwargs)
