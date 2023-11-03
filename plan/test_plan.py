@@ -660,6 +660,7 @@ class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
         # Can not do Team plan when at 11 activated users
         assert plan_service.available_plans(owner=self.owner) == expected_result[:3]
 
+
 @freeze_time("2023-06-19")
 class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
     """

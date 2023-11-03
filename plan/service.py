@@ -128,13 +128,15 @@ class PlanService:
 
         # If you have trialed and <= 10 users, or belong to the team plan
         if (
-            self.trial_status == TrialStatus.EXPIRED.value or self.plan_name in TEAM_PLAN_REPRESENTATIONS
+            self.trial_status == TrialStatus.EXPIRED.value
+            or self.plan_name in TEAM_PLAN_REPRESENTATIONS
         ) and self.plan_user_count <= TEAM_PLAN_MAX_USERS:
-             available_plans += TEAM_PLAN_REPRESENTATIONS.values()
+            available_plans += TEAM_PLAN_REPRESENTATIONS.values()
         # If you are currently trialing and <= 10 activated users
         # (since during trial user count is set to 1000, we need to check against activated users)
         elif self.trial_status == TrialStatus.ONGOING.value and (
-            self.plan_activated_users is None or len(self.plan_activated_users) <= TEAM_PLAN_MAX_USERS
+            self.plan_activated_users is None
+            or len(self.plan_activated_users) <= TEAM_PLAN_MAX_USERS
         ):
             available_plans += TEAM_PLAN_REPRESENTATIONS.values()
 
