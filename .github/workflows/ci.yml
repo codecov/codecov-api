@@ -20,11 +20,11 @@ jobs:
 
   lint:
     name: Run Lint
-    uses: codecov/gha-workflows/.github/workflows/lint.yml@v1.2.0
+    uses: codecov/gha-workflows/.github/workflows/lint.yml@v1.2.5
 
   build:
     name: Build API
-    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.2.0
+    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.2.5
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
@@ -32,14 +32,14 @@ jobs:
   codecovstartup:
     name: Codecov Startup
     needs: build
-    uses: codecov/gha-workflows/.github/workflows/codecov-startup.yml@v1.2.0
+    uses: codecov/gha-workflows/.github/workflows/codecov-startup.yml@v1.2.5
     secrets: inherit
 
   ats:
     name: ATS
     needs: [build]
     if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@1.2.5
+    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@v1.2.5
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
@@ -48,7 +48,7 @@ jobs:
   test:
     name: Test
     needs: [build]
-    uses: codecov/gha-workflows/.github/workflows/run-tests.yml@v1.2.0
+    uses: codecov/gha-workflows/.github/workflows/run-tests.yml@v1.2.5
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
@@ -65,7 +65,7 @@ jobs:
     name: Push Staging Image
     needs: [build, test]
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.0
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.5
     secrets: inherit
     with:
       environment: staging
@@ -75,7 +75,7 @@ jobs:
     name: Push Production Image
     needs: [ build, test ]
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.0
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.5
     secrets: inherit
     with:
       environment: production
