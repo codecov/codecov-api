@@ -600,7 +600,7 @@ class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
         )
         self.owner = OwnerFactory()
 
-    def test_available_plans_for_users_trial_plan_ongoing_trial_more_than_10_users(
+    def test_available_plans_for_users_trial_plan_ongoing_trial_more_than_10_seats(
         self,
     ):
         self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
@@ -611,11 +611,12 @@ class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
     @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_users_trial_plan_ongoing_trial_more_than_10_users(
+    def test_available_plans_for_sentry_customer_users_trial_plan_ongoing_trial_more_than_10_seats(
         self, is_sentry_user
     ):
         is_sentry_user.return_value = True
@@ -628,9 +629,36 @@ class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
+    def test_available_plans_for_more_than_10_activated_users(self):
+        self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
+        self.current_org.save()
+
+        plan_service = PlanService(current_org=self.current_org)
+
+        # [Basic, Pro Monthly, Pro Yearly, Team Monthly, Team Yearly]
+        expected_result = []
+        expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
+
+        # Can do Team plan when plan_activated_users is null
+        assert plan_service.available_plans(owner=self.owner) == expected_result
+
+        self.current_org.plan_activated_users = [i for i in range(10)]
+        self.current_org.save()
+
+        # Can do Team plan when at 10 activated users
+        assert plan_service.available_plans(owner=self.owner) == expected_result
+
+        self.current_org.plan_activated_users = [i for i in range(11)]
+        self.current_org.save()
+
+        # Can not do Team plan when at 11 activated users
+        assert plan_service.available_plans(owner=self.owner) == expected_result[:3]
 
 @freeze_time("2023-06-19")
 class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
