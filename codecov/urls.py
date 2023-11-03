@@ -25,5 +25,7 @@ urlpatterns = [
     path("staticanalysis/", include("staticanalysis.urls")),
     path("labels/", include("labelanalysis.urls")),
     re_path(r"^redirect_app", views.redirect_app),
+    # /monitoring/metrics will be a public route unless you take steps at a
+    # higher level to null-route or redirect it.
     path("monitoring/", include("django_prometheus.urls")),
 ]
