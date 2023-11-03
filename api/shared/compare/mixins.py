@@ -58,7 +58,7 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
 
     def get_or_create_commit_comparison(
         self, comparison: Comparison
-    ) -> Optional[CommitComparison]:
+    ) -> CommitComparison:
         """
         Retrieves the pre-computed CommitComparison
         if not found will create one and return None
@@ -70,18 +70,18 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
 
         # Can't use pre-computed impacted files from CommitComparison
         # first trigger a Celery task to create a comparison for this commit pair for the future
-        # then will fall back to retrieving and generating all files on the fly
         if not commit_comparison:
             new_comparison = CommitComparison(
                 base_commit=comparison.base_commit,
                 compare_commit=comparison.head_commit,
+                state=CommitComparison.CommitComparisonStates.PENDING,
             )
             new_comparison.save()
             TaskService().compute_comparison(new_comparison.pk)
             log.info(
                 "CommitComparison not found, creating and request to compute new entry"
             )
-            return None
+            return new_comparison
         return commit_comparison[0]
 
     @torngit_safe

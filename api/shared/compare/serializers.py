@@ -205,16 +205,16 @@ class ImpactedFileSerializer(serializers.Serializer):
 class ImpactedFilesComparisonSerializer(ComparisonSerializer):
 
     files = serializers.SerializerMethodField()
+    state = serializers.SerializerMethodField()
+
+    def get_state(self, comparison: Comparison) -> str:
+        return self.context["commit_comparison"].state
 
     def get_files(self, comparison: Comparison) -> List[dict]:
         commit_comparison = self.context["commit_comparison"]
 
-        if (
-            not commit_comparison
-            or commit_comparison.state
-            == CommitComparison.CommitComparisonStates.PENDING
-        ):
-            return super().get_files(comparison)
+        if not commit_comparison.is_processed:
+            return []
 
         return [
             ImpactedFileSerializer(

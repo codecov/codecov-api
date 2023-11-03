@@ -137,11 +137,11 @@ class CompareViewSet(
     def impacted_files(self, request, *args, **kwargs):
         """
         Returns a comparison for either a pair of commits or a pull
-        And will only return pre-computed impacted files comparisons if available
-        If unavailable it will return comparison of all files
-        (identical to the response of the default Comparison endpoint)
-        however once the computation is made available then it will return only
-        the impacted files
+        Will only return pre-computed impacted files comparisons if available
+        If unavailable `files` will be empty, however once the computation is ready
+        the files will appear on subsequent calls
+        `state: "processed"` means `files` are finished computing and returned
+        `state: "pending"` means `files` are still computing, poll again later
         """
         return super().impacted_files(request, *args, **kwargs)
 

@@ -962,6 +962,7 @@ class TestImpactedFilesComparison(APITestCase):
         assert data["totals"]["base"]["hits"] == 7
         assert data["totals"]["patch"]["hits"] == 0
         assert len(data["files"]) == 2
+        assert data["state"] == "processed"
 
     @patch("services.report.build_report_from_commit")
     @patch("services.archive.ArchiveService.read_file")
@@ -1000,8 +1001,10 @@ class TestImpactedFilesComparison(APITestCase):
             content_type="application/json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert mock_parent_get_files.called
+        assert not mock_parent_get_files.called
         assert mock_task_service.called
+        assert response.data["files"] == []
+        assert response.data["state"] == "pending"
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
