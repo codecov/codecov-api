@@ -33,7 +33,7 @@ jobs:
     name: ATS
     needs: [build]
     if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@v1.2.0
+    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@feature/optional-ats-action
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}

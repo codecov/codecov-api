@@ -220,10 +220,7 @@ test_env.container_static_analysis:
 	codecovcli -u ${CODECOV_URL} static-analysis --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_label_analysis:
-	$(shell codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN} --dry-run --dry-run-output-path=tests_to_run > /dev/null)
-	jq -r '.ats_tests_to_run []' tests_to_run.json | sed s/\"//g > test_list
-	jq -r '.runner_options | join(" ")' tests_to_run.json | sed s/\"//g > args
-	python -m pytest --cov=./ `cat args` `cat test_list`
+	codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_ats:
 	codecovcli --codecov-yml-path=codecov_cli.yml upload-process --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
