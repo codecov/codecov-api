@@ -506,3 +506,6 @@ if SENTRY_DSN is not None:
             ),
         },
     )
+
+SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
+SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
