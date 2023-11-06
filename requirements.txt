@@ -136,6 +136,7 @@ freezegun==1.1.0
     # via -r requirements.in
 google-api-core[grpc]==2.11.1
     # via
+    #   google-api-core
     #   google-cloud-core
     #   google-cloud-pubsub
     #   google-cloud-storage
@@ -148,7 +149,9 @@ google-auth==2.21.0
 google-cloud-core==2.3.3
     # via google-cloud-storage
 google-cloud-pubsub==2.18.4
-    # via shared
+    # via
+    #   -r requirements.in
+    #   shared
 google-cloud-storage==2.10.0
     # via shared
 google-crc32c==1.0.0
@@ -345,7 +348,9 @@ requests==2.31.0
     #   google-cloud-storage
     #   stripe
 rfc3986[idna2008]==1.4.0
-    # via httpx
+    # via
+    #   httpx
+    #   rfc3986
 rsa==4.7.2
     # via google-auth
 s3transfer==0.5.0
