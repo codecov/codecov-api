@@ -6,11 +6,10 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, UserAdmin
-from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
+from codecov_auth.models import OrganizationLevelToken, Owner, User
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
-    SentryUserFactory,
     UserFactory,
 )
 from plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
@@ -286,32 +285,3 @@ class UserAdminTest(TestCase):
         assert user.name in res.content.decode("utf-8")
         assert user.email in res.content.decode("utf-8")
         assert str(user.external_id) in res.content.decode("utf-8")
-
-
-class SentryUserAdminTest(TestCase):
-    def setUp(self) -> None:
-        self.staff_user = UserFactory(is_staff=True)
-        self.client.force_login(user=self.staff_user)
-        admin_site = AdminSite()
-        admin_site.register(User)
-        admin_site.register(SentryUser)
-        self.owner_admin = UserAdmin(User, admin_site)
-
-    def test_user_admin_list_page(self):
-        sentry_user = SentryUserFactory()
-        res = self.client.get(reverse(f"admin:codecov_auth_sentryuser_changelist"))
-        assert res.status_code == 200
-        content = res.content.decode("utf-8")
-        assert sentry_user.name in res.content.decode("utf-8")
-        assert sentry_user.email in res.content.decode("utf-8")
-
-    def test_user_admin_detail_page(self):
-        sentry_user = SentryUserFactory()
-        res = self.client.get(
-            reverse(f"admin:codecov_auth_sentryuser_change", args=[sentry_user.pk])
-        )
-        assert res.status_code == 200
-        assert sentry_user.name in res.content.decode("utf-8")
-        assert sentry_user.email in res.content.decode("utf-8")
-        assert sentry_user.access_token not in res.content.decode("utf-8")
-        assert sentry_user.refresh_token not in res.content.decode("utf-8")
