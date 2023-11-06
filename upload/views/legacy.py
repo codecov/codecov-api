@@ -40,6 +40,7 @@ from upload.helpers import (
     store_report_in_redis,
     validate_upload,
 )
+from upload.views.base import ShelterMixin
 from utils.config import get_config
 from utils.services import get_long_service_name
 
@@ -54,7 +55,7 @@ class PlainTextRenderer(renderers.BaseRenderer):
         return smart_str(data, encoding=self.charset)
 
 
-class UploadHandler(APIView):
+class UploadHandler(APIView, ShelterMixin):
     permission_classes = [AllowAny]
     renderer_classes = [PlainTextRenderer, renderers.JSONRenderer]
 
@@ -243,17 +244,20 @@ class UploadHandler(APIView):
             )
 
             headers = parse_headers(request.META, upload_params)
-
             archive_service = ArchiveService(repository)
-            path = "/".join(
-                (
-                    "v4/raw",
-                    timezone.now().strftime("%Y-%m-%d"),
-                    archive_service.get_archive_hash(repository),
-                    commitid,
-                    f"{reportid}.txt",
+
+            # only Shelter requests are allowed to set their own `storage_path`
+            path = upload_params.get("storage_path")
+            if path is None or not self.is_shelter_request():
+                path = "/".join(
+                    (
+                        "v4/raw",
+                        timezone.now().strftime("%Y-%m-%d"),
+                        archive_service.get_archive_hash(repository),
+                        commitid,
+                        f"{reportid}.txt",
+                    )
                 )
-            )
 
             try:
                 upload_url = archive_service.create_raw_upload_presigned_put(

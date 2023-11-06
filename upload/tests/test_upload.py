@@ -873,44 +873,9 @@ class UploadHandlerHelpersTest(TestCase):
         assert repo.active == True
         assert repo.deleted == False
 
-    @patch("services.task.TaskService.notify_signature")
-    @patch("services.task.TaskService.upload_signature")
-    def test_dispatch_upload_task_signatures(
-        self, mock_task_service_upload, mock_task_service_notify
-    ):
-        repo = G(Repository)
-        task_arguments = {
-            "commit": "commit123",
-            "version": "v4",
-            "report_code": "local_report",
-        }
-
-        expected_key = f"uploads/{repo.repoid}/commit123"
-
-        redis = MockRedis(
-            expected_task_key=expected_key,
-            expected_task_arguments=task_arguments,
-            expected_expire_time=86400,
-        )
-
-        dispatch_upload_task(task_arguments, repo, redis)
-        assert mock_task_service_notify.called
-        mock_task_service_notify.assert_called_with(
-            repoid=repo.repoid,
-            commitid=task_arguments.get("commit"),
-            empty_upload="processing",
-        )
-        assert mock_task_service_upload.called
-        mock_task_service_upload.assert_called_with(
-            repoid=repo.repoid,
-            commitid=task_arguments.get("commit"),
-            report_code="local_report",
-            immutable=True,
-        )
-
     @freeze_time("2023-01-01T00:00:00")
-    @patch("celery.canvas.Signature.apply_async")
-    def test_dispatch_upload_task_apply_async(self, apply_async):
+    @patch("services.task.TaskService.upload")
+    def test_dispatch_upload_task(self, upload):
         repo = G(Repository)
         task_arguments = {
             "commit": "commit123",
@@ -927,62 +892,11 @@ class UploadHandlerHelpersTest(TestCase):
         )
 
         dispatch_upload_task(task_arguments, repo, redis)
-        apply_async.assert_called_once_with(
-            link={
-                "task": "app.tasks.upload.Upload",
-                "args": (),
-                "kwargs": {
-                    "repoid": repo.repoid,
-                    "commitid": "commit123",
-                    "report_code": "local_report",
-                    "debug": False,
-                    "rebuild": False,
-                },
-                "options": {
-                    "queue": "uploads",
-                    "headers": {"created_timestamp": "2023-01-01T00:00:00"},
-                    "time_limit": None,
-                    "soft_time_limit": None,
-                    "countdown": 4,
-                },
-                "subtask_type": None,
-                "immutable": True,
-            }
-        )
-
-    @patch("services.task.TaskService.notify_signature")
-    @patch("services.task.TaskService.upload_signature")
-    def test_dispatch_upload_task_already_notified(
-        self,
-        mock_task_service_upload,
-        mock_task_service_notify,
-    ):
-        repo = G(Repository)
-        pull = PullFactory(repository=repo, commentid="something")
-        commit = CommitFactory(repository=repo, author=repo.author, pullid=pull.pullid)
-        task_arguments = {
-            "commit": commit.commitid,
-            "version": "v4",
-            "report_code": "local_report",
-        }
-
-        expected_key = f"uploads/{repo.repoid}/{commit.commitid}"
-
-        redis = MockRedis(
-            expected_task_key=expected_key,
-            expected_task_arguments=task_arguments,
-            expected_expire_time=86400,
-        )
-
-        dispatch_upload_task(task_arguments, repo, redis)
-
-        assert not mock_task_service_notify.called
-        mock_task_service_upload.assert_called_once()
-        mock_task_service_upload.assert_called_with(
+        upload.assert_called_once_with(
             repoid=repo.repoid,
             commitid=task_arguments.get("commit"),
             report_code="local_report",
-            immutable=True,
+            countdown=4,
         )
 
 

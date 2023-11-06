@@ -19,6 +19,7 @@ class UploadSerializer(serializers.ModelSerializer):
     ci_url = serializers.CharField(source="build_url", required=False, allow_null=True)
     version = serializers.CharField(write_only=True, required=False)
     url = serializers.SerializerMethodField()
+    storage_path = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         read_only_fields = (
@@ -37,6 +38,7 @@ class UploadSerializer(serializers.ModelSerializer):
             "name",
             "job_code",
             "version",
+            "storage_path",
         )
         model = ReportSession
 

@@ -16,7 +16,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         self.owner = OwnerFactory(username="codecov-user")
         random_owner = OwnerFactory(username="random-user")
         RepositoryFactory(author=self.owner, active=True, private=True, name="a")
-        RepositoryFactory(author=self.owner, active=True, private=True, name="b")
+        RepositoryFactory(author=self.owner, active=True, private=False, name="b")
         RepositoryFactory(author=random_owner, active=True, private=True, name="not")
         self.owner.organizations = [
             OwnerFactory(username="codecov").ownerid,
@@ -409,6 +409,32 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         }
         """
         data = self.gql_request(query, owner=self.owner)
+        repos = paginate_connection(data["me"]["viewableRepositories"])
+        assert repos == [{"name": "a"}, {"name": "b"}]
+
+    def test_fetching_viewable_repositories_with_is_public(self):
+        query = """{{
+            me {{
+                viewableRepositories (filters: {{ {0} }}) {{
+                    edges {{
+                        node {{
+                            name
+                        }}
+                    }}
+                }}
+            }}
+        }}
+        """
+        # isPublic=True (only public) -> b
+        data = self.gql_request(query.format("isPublic: true"), owner=self.owner)
+        repos = paginate_connection(data["me"]["viewableRepositories"])
+        assert repos == [{"name": "b"}]
+        # isPublic=False (only private) -> a
+        data = self.gql_request(query.format("isPublic: false"), owner=self.owner)
+        repos = paginate_connection(data["me"]["viewableRepositories"])
+        assert repos == [{"name": "a"}]
+        # isPublic is not specified (both public and private) -> a,b
+        data = self.gql_request(query.format(""), owner=self.owner)
         repos = paginate_connection(data["me"]["viewableRepositories"])
         assert repos == [{"name": "a"}, {"name": "b"}]
 

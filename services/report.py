@@ -249,14 +249,17 @@ def sessions_with_specific_flags(
 
 
 def files_in_sessions(commit_report: Report, session_ids: List[int]) -> List[str]:
-    return [
-        file.name
-        for file in commit_report
-        if any(
-            [
-                any([session.id in session_ids for session in line.sessions])
-                for line in file
-                if line
-            ]
-        )
-    ]
+    files, session_ids = [], set(session_ids)
+    for file in commit_report:
+        found = False
+        for line in file:
+            if line:
+                for session in line.sessions:
+                    if session.id in session_ids:
+                        found = True
+                        break
+            if found:
+                break
+        if found:
+            files.append(file.name)
+    return files

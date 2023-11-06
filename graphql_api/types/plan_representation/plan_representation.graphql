@@ -1,6 +1,10 @@
 type PlanRepresentation {
   marketingName: String!
   planName: String!
+    @deprecated(
+      reason: "Plan representations have used `value` for a while, making the frontend code hard to change"
+    )
+  value: String!
   billingRate: String
   baseUnitPrice: Int!
   benefits: [String!]!
