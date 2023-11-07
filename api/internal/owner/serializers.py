@@ -1,4 +1,5 @@
 import logging
+from dataclasses import asdict
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
@@ -6,7 +7,6 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
-from billing.helpers import available_plans
 from codecov_auth.models import Owner
 from plan.constants import (
     PAID_PLANS,
@@ -122,8 +122,14 @@ class PlanSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(required=False)
 
     def validate_value(self, value):
+        current_org = self.context["view"].owner
         current_owner = self.context["request"].current_owner
-        plan_values = [plan["value"] for plan in available_plans(current_owner)]
+
+        plan_service = PlanService(current_org=current_org)
+        available_plans = [
+            asdict(plan) for plan in plan_service.available_plans(current_owner)
+        ]
+        plan_values = [plan["value"] for plan in available_plans]
         if value not in plan_values:
             if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
                 log.warning(
