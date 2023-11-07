@@ -201,7 +201,7 @@ class GithubWebhookHandler(APIView):
                 f"Unsupported ref type: {ref_type}, exiting",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
-            return Response(f"Unsupported ref type: {ref_type}")
+            return Response(f"Unsupported ref type")
         branch_name = self.request.data.get("ref")[11:]
         Branch.objects.filter(
             repository=self._get_repo(request), name=branch_name
@@ -232,7 +232,7 @@ class GithubWebhookHandler(APIView):
                 "Ref is tag, not branch, ignoring push event",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
-            return Response(f"Unsupported ref type: {ref_type}")
+            return Response(f"Unsupported ref type")
 
         if not repo.active:
             log.debug(
