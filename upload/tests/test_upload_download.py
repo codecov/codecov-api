@@ -134,3 +134,14 @@ class UploadDownloadHelperTest(APITransactionTestCase):
             data={"path": "v4/raw"},
         )
         assert response.status_code == 404
+
+    def test_invalid_shelter_path(self):
+        response = self._get(
+            kwargs={
+                "service": "gh",
+                "owner_username": "codecovtest",
+                "repo_name": "upload-test-repo",
+            },
+            data={"path": "shelter/github/codecovtest::::some-other-repo"},
+        )
+        assert response.status_code == 404
