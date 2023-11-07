@@ -1,7 +1,7 @@
 type User {
   username: String!
   name: String
-  avatarUrl: String
+  avatarUrl: String!
   student: Boolean!
   studentCreatedAt: DateTime
   studentUpdatedAt: DateTime
