@@ -397,10 +397,6 @@ class UploadDownloadHandler(View):
     def get_presigned_url(self, repo):
         archive_service = ArchiveService(repo)
 
-        # Verify that the repo hash in the path matches the repo in the URL by generating the repo hash
-        if archive_service.storage_hash not in self.path:
-            raise Http404("Requested report could not be found")
-
         try:
             return archive_service.storage.create_presigned_get(
                 archive_service.root, self.path, expires=30
