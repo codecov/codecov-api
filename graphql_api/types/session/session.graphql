@@ -1,9 +1,9 @@
 type Session {
-  sessionid: Int
+  sessionid: Int!
   ip: String
   lastseen: DateTime
   useragent: String
   type: String!
   name: String
-  lastFour: String
+  lastFour: String!
 }

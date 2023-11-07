@@ -1,4 +1,5 @@
 from django.db import models
+from django_prometheus.models import ExportModelOperationsMixin
 
 # Create your models here.
 from codecov.models import BaseCodecovModel
@@ -9,7 +10,7 @@ class PlanProviders(models.TextChoices):
     GITHUB = "github"
 
 
-class Account(BaseCodecovModel):
+class Account(ExportModelOperationsMixin("billing.account"), BaseCodecovModel):
     stripe_customer_id = models.TextField(null=True)
     stripe_subscription_id = models.TextField(null=True)
     plan = models.TextField(default=PlanName.FREE_PLAN_NAME.value)

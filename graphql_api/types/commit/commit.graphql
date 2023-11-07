@@ -1,8 +1,8 @@
 type Commit {
   state: String
   message: String
-  createdAt: DateTime
-  commitid: String
+  createdAt: DateTime!
+  commitid: String!
   author: Owner
   totals: CoverageTotals
   parent: Commit
