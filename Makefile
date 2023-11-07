@@ -19,7 +19,7 @@ export API_DOCKER_VERSION=${VERSION}
 export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 # Codecov CLI version to use
-CODECOV_CLI_VERSION := 0.3.8
+CODECOV_CLI_VERSION := 0.4.1
 
 build:
 	make build.requirements
@@ -196,6 +196,10 @@ test_env.container_check_db:
 test_env.run_unit:
 	docker-compose exec api make test.unit
 
+test_env.run_integration:
+	#docker-compose exec api make test.integration
+	echo "Skipping. No Tests"
+
 test_env.check-for-migration-conflicts:
 	docker-compose exec api python manage.py check_for_migration_conflicts
 
@@ -220,13 +224,10 @@ test_env.container_static_analysis:
 	codecovcli -u ${CODECOV_URL} static-analysis --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_label_analysis:
-	$(shell codecovcli label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN} --dry-run --dry-run-output-path=tests_to_run > /dev/null)
-	jq -r '.ats_tests_to_run []' tests_to_run.json | sed s/\"//g > test_list
-	jq -r '.runner_options | join(" ")' tests_to_run.json | sed s/\"//g > args
-	python -m pytest --cov=./ `cat args` `cat test_list`
+	codecovcli -u ${CODECOV_URL} label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN}
 
 test_env.container_ats:
-	codecovcli --codecov-yml-path=codecov_cli.yml upload-process --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
+	codecovcli -u ${CODECOV_URL} --codecov-yml-path=codecov_cli.yml upload-process --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
 
 test_env:
 	make test_env.up

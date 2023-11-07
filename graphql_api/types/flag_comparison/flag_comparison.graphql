@@ -1,5 +1,5 @@
 type FlagComparison {
-    name: String
+    name: String!
     headTotals: CoverageTotals
     baseTotals: CoverageTotals
     patchTotals: CoverageTotals
