@@ -365,9 +365,27 @@ class UploadDownloadHandler(View):
             raise Http404("Requested report could not be found")
         return repo
 
-    def validate_path(self):
-        if not self.path or "v4/raw" not in self.path:
-            raise Http404("Requested report could not be found")
+    def validate_path(self, repo):
+        msg = "Requested report could not be found"
+        if not self.path:
+            raise Http404(msg)
+
+        if self.path.startswith("v4/raw"):
+            # direct API upload
+
+            # Verify that the repo hash in the path matches the repo in the URL by generating the repo hash
+            archive_service = ArchiveService(repo)
+            if archive_service.storage_hash not in self.path:
+                raise Http404(msg)
+        elif self.path.startswith("shelter/"):
+            # Shelter upload
+            if not self.path.startswith(
+                f"shelter/{self.service}/{self.owner_username}::::{self.repo_name}"
+            ):
+                raise Http404(msg)
+        else:
+            # unexpected path structure
+            raise Http404(msg)
 
     def read_params(self):
         self.path = self.request.GET.get("path")
@@ -397,8 +415,8 @@ class UploadDownloadHandler(View):
         await self._get_user(request)
 
         self.read_params()
-        self.validate_path()
         repo = await self.get_repo()
+        self.validate_path(repo)
 
         response = HttpResponse(status=302)
         response["Location"] = await self.get_presigned_url(repo)

@@ -27,11 +27,24 @@ class UploadDownloadHelperTest(APITransactionTestCase):
         )
 
     def test_no_path_param(self):
-        response = self._get()
+        response = self._get(
+            kwargs={
+                "service": "gh",
+                "owner_username": "codecovtest",
+                "repo_name": "invalid",
+            },
+        )
         assert response.status_code == 404
 
     def test_invalid_path_param(self):
-        response = self._get(data={"path": "v2"})
+        response = self._get(
+            kwargs={
+                "service": "gh",
+                "owner_username": "codecovtest",
+                "repo_name": "invalid",
+            },
+            data={"path": "v2"},
+        )
         assert response.status_code == 404
 
     def test_invalid_owner(self):
