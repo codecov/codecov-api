@@ -3,6 +3,7 @@ import logging
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.urls import reverse
+from django_prometheus.models import ExportModelOperationsMixin
 from shared.config import get_config
 from shared.reports.enums import UploadState, UploadType
 
@@ -15,7 +16,9 @@ from utils.services import get_short_service_name
 log = logging.getLogger(__name__)
 
 
-class AbstractTotals(BaseCodecovModel):
+class AbstractTotals(
+    ExportModelOperationsMixin("reports.abstract_totals"), BaseCodecovModel
+):
     branches = models.IntegerField()
     coverage = models.DecimalField(max_digits=7, decimal_places=2)
     hits = models.IntegerField()
@@ -29,14 +32,18 @@ class AbstractTotals(BaseCodecovModel):
         abstract = True
 
 
-class CommitReport(BaseCodecovModel):
+class CommitReport(
+    ExportModelOperationsMixin("reports.commit_report"), BaseCodecovModel
+):
     commit = models.ForeignKey(
         "core.Commit", related_name="reports", on_delete=models.CASCADE
     )
     code = models.CharField(null=True, max_length=100)
 
 
-class ReportResults(BaseCodecovModel):
+class ReportResults(
+    ExportModelOperationsMixin("reports.report_results"), BaseCodecovModel
+):
     class ReportResultsStates(models.TextChoices):
         PENDING = "pending"
         COMPLETED = "completed"
@@ -48,7 +55,9 @@ class ReportResults(BaseCodecovModel):
     result = models.JSONField(default=dict)
 
 
-class ReportDetails(BaseCodecovModel):
+class ReportDetails(
+    ExportModelOperationsMixin("reports.report_details"), BaseCodecovModel
+):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
     _files_array = ArrayField(models.JSONField(), db_column="files_array", null=True)
     _files_array_storage_path = models.URLField(
@@ -86,7 +95,7 @@ class ReportLevelTotals(AbstractTotals):
     report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
 
 
-class UploadError(BaseCodecovModel):
+class UploadError(ExportModelOperationsMixin("reports.upload_error"), BaseCodecovModel):
     report_session = models.ForeignKey(
         "ReportSession",
         db_column="upload_id",
@@ -100,7 +109,9 @@ class UploadError(BaseCodecovModel):
         db_table = "reports_uploaderror"
 
 
-class UploadFlagMembership(models.Model):
+class UploadFlagMembership(
+    ExportModelOperationsMixin("reports.upload_flag_membership"), models.Model
+):
     report_session = models.ForeignKey(
         "ReportSession", db_column="upload_id", on_delete=models.CASCADE
     )
@@ -111,7 +122,9 @@ class UploadFlagMembership(models.Model):
         db_table = "reports_uploadflagmembership"
 
 
-class RepositoryFlag(BaseCodecovModel):
+class RepositoryFlag(
+    ExportModelOperationsMixin("reports.repository_flag"), BaseCodecovModel
+):
     repository = models.ForeignKey(
         "core.Repository", related_name="flags", on_delete=models.CASCADE
     )
@@ -119,7 +132,9 @@ class RepositoryFlag(BaseCodecovModel):
     deleted = models.BooleanField(null=True)
 
 
-class ReportSession(BaseCodecovModel):
+class ReportSession(
+    ExportModelOperationsMixin("reports.report_session"), BaseCodecovModel
+):
     # should be called Upload, but to do it we have to make the
     # constraints be manually named, which take a bit
     build_code = models.TextField(null=True)

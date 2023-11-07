@@ -1,10 +1,13 @@
 from django.db import models
+from django_prometheus.models import ExportModelOperationsMixin
 from shared.staticanalysis import StaticAnalysisSingleFileSnapshotState
 
 from codecov.models import BaseCodecovModel
 
 
-class StaticAnalysisSuite(BaseCodecovModel):
+class StaticAnalysisSuite(
+    ExportModelOperationsMixin("staticanalysis.static_analysis_suite"), BaseCodecovModel
+):
     commit = models.ForeignKey("core.Commit", on_delete=models.CASCADE)
 
     class Meta:
@@ -15,7 +18,10 @@ class StaticAnalysisSuite(BaseCodecovModel):
         ]
 
 
-class StaticAnalysisSingleFileSnapshot(BaseCodecovModel):
+class StaticAnalysisSingleFileSnapshot(
+    ExportModelOperationsMixin("staticanalysis.static_analysis_single_file_snapshot"),
+    BaseCodecovModel,
+):
     repository = models.ForeignKey("core.Repository", on_delete=models.CASCADE)
     file_hash = models.UUIDField(null=False)
     content_location = models.TextField()
@@ -31,7 +37,10 @@ class StaticAnalysisSingleFileSnapshot(BaseCodecovModel):
         ]
 
 
-class StaticAnalysisSuiteFilepath(BaseCodecovModel):
+class StaticAnalysisSuiteFilepath(
+    ExportModelOperationsMixin("staticanalysis.static_analysis_suite_filepath"),
+    BaseCodecovModel,
+):
     analysis_suite = models.ForeignKey(
         StaticAnalysisSuite, on_delete=models.CASCADE, related_name="filepaths"
     )
