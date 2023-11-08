@@ -20,7 +20,6 @@ log = logging.getLogger(__name__)
 class GithubLoginView(LoginMixin, StateMixin, View):
     service = "github"
     error_redirection_page = "/"
-    domain_to_use = settings.COOKIES_DOMAIN
 
     @property
     def repo_service_instance(self):
@@ -142,12 +141,13 @@ class GithubLoginView(LoginMixin, StateMixin, View):
                 url_to_redirect_to = self.get_url_to_redirect_to(scope)
                 response = redirect(url_to_redirect_to)
                 seconds_in_one_year = 365 * 24 * 60 * 60
+                domain_to_use = settings.COOKIES_DOMAIN
                 response.set_cookie(
                     "ghpr",
                     "true",
                     max_age=seconds_in_one_year,
                     httponly=True,
-                    domain=self.domain_to_use,
+                    domain=domain_to_use,
                 )
                 self.store_to_cookie_utm_tags(response)
                 return response
@@ -159,8 +159,9 @@ class GithubLoginView(LoginMixin, StateMixin, View):
     # Set a session expiry of 8 hours for github logins. GH access tokens expire after 8 hours by default
     # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/token-expiration-and-revocation#user-token-revoked-due-to-github-app-configuration
     def store_access_token_expiry_to_cookie(self, response):
+        domain_to_use = settings.COOKIES_DOMAIN
         eight_hours_later = datetime.utcnow() + timedelta(hours=8)
         eight_hours_later_iso = eight_hours_later.isoformat() + "Z"
         response.set_cookie(
-            "session_expiry", eight_hours_later_iso, domain=self.domain_to_use
+            "session_expiry", eight_hours_later_iso, domain=domain_to_use
         )
