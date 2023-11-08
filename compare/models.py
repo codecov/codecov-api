@@ -1,11 +1,14 @@
 from django.db import models
+from django_prometheus.models import ExportModelOperationsMixin
 
 from codecov.models import BaseCodecovModel
 from core.models import Commit
 from reports.models import RepositoryFlag
 
 
-class CommitComparison(BaseCodecovModel):
+class CommitComparison(
+    ExportModelOperationsMixin("compare.commit_comparison"), BaseCodecovModel
+):
     class CommitComparisonStates(models.TextChoices):
         PENDING = "pending"
         ERROR = "error"
@@ -41,7 +44,9 @@ class CommitComparison(BaseCodecovModel):
         return self.state == CommitComparison.CommitComparisonStates.PROCESSED
 
 
-class FlagComparison(BaseCodecovModel):
+class FlagComparison(
+    ExportModelOperationsMixin("compare.flag_comparison"), BaseCodecovModel
+):
     commit_comparison = models.ForeignKey(
         CommitComparison, on_delete=models.CASCADE, related_name="flag_comparisons"
     )
@@ -53,7 +58,9 @@ class FlagComparison(BaseCodecovModel):
     patch_totals = models.JSONField(null=True)
 
 
-class ComponentComparison(BaseCodecovModel):
+class ComponentComparison(
+    ExportModelOperationsMixin("compare.component_comparison"), BaseCodecovModel
+):
     commit_comparison = models.ForeignKey(
         CommitComparison, on_delete=models.CASCADE, related_name="component_comparisons"
     )

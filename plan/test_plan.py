@@ -585,98 +585,83 @@ class AvailablePlansExpiredTrialMoreThanTenUsers(TestCase):
 
 
 @freeze_time("2023-06-19")
-class AvailablePlansOngoingTrialMoreThanTenUsers(TestCase):
+class AvailablePlansOngoingTrial(TestCase):
     """
-    - users-trial, is trialing, more than 10 users -> users-pr-inappm/y, users-basic
-    - sentry-customer, users-trial, is trialing, more than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic
-    """
-
-    def setUp(self):
-        self.current_org = OwnerFactory(
-            trial_start_date=datetime.utcnow(),
-            trial_end_date=datetime.utcnow() + timedelta(days=14),
-            trial_status=TrialStatus.ONGOING.value,
-            plan_user_count=13,
-        )
-        self.owner = OwnerFactory()
-
-    def test_available_plans_for_users_trial_plan_ongoing_trial_more_than_10_users(
-        self,
-    ):
-        self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
-        self.current_org.save()
-
-        plan_service = PlanService(current_org=self.current_org)
-
-        expected_result = []
-        expected_result.append(BASIC_PLAN)
-        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
-
-        assert plan_service.available_plans(owner=self.owner) == expected_result
-
-    @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_users_trial_plan_ongoing_trial_more_than_10_users(
-        self, is_sentry_user
-    ):
-        is_sentry_user.return_value = True
-        self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
-        self.current_org.save()
-
-        plan_service = PlanService(current_org=self.current_org)
-
-        expected_result = []
-        expected_result.append(BASIC_PLAN)
-        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
-        expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
-
-        assert plan_service.available_plans(owner=self.owner) == expected_result
-
-
-@freeze_time("2023-06-19")
-class AvailablePlansOngoingTrialLessThanTenUsers(TestCase):
-    """
-    - users-trial, is trialing, less than 10 users -> users-pr-inappm/y, users-basic, users-litem/y
-    - sentry-customer, users-trial, is trialing, less than 10 users -> users-pr-inappm/y, users-sentrym/y, users-basic, users-litem/y
+    Non Sentry User is trialing
+        when <=10 activated seats -> users-pr-inappm/y, users-basic, users-litem/y
+        when > 10 activated seats -> users-pr-inappm/y, users-basic
+    Sentry User is trialing
+        when <=10 activated seats -> users-pr-inappm/y, users-sentrym/y, users-basic, users-litem/y
+        when > 10 activated seats -> users-pr-inappm/y, users-sentrym/y, users-basic
     """
 
     def setUp(self):
         self.current_org = OwnerFactory(
+            plan=PlanName.TRIAL_PLAN_NAME.value,
             trial_start_date=datetime.utcnow(),
             trial_end_date=datetime.utcnow() + timedelta(days=14),
             trial_status=TrialStatus.ONGOING.value,
-            plan_user_count=3,
+            plan_user_count=1000,
+            plan_activated_users=None,
         )
         self.owner = OwnerFactory()
+        self.plan_service = PlanService(current_org=self.current_org)
 
-    def test_available_plans_for_users_trial_plan_ongoing_trial_less_than_10_users(
-        self,
-    ):
-        self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
-        self.current_org.save()
-
-        plan_service = PlanService(current_org=self.current_org)
-
+    def test_non_sentry_user(self):
+        # [Basic, Pro Monthly, Pro Yearly, Team Monthly, Team Yearly]
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans(owner=self.owner) == expected_result
+        # Can do Team plan when plan_activated_users is null
+        assert self.plan_service.available_plans(owner=self.owner) == expected_result
 
-    @patch("services.sentry.is_sentry_user")
-    def test_available_plans_for_sentry_customer_users_trial_plan_ongoing_trial_less_than_10_users(
-        self, is_sentry_user
-    ):
-        is_sentry_user.return_value = True
-        self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
+        self.current_org.plan_activated_users = [i for i in range(10)]
         self.current_org.save()
 
-        plan_service = PlanService(current_org=self.current_org)
+        # Can do Team plan when at 10 activated users
+        assert self.plan_service.available_plans(owner=self.owner) == expected_result
 
+        self.current_org.plan_activated_users = [i for i in range(11)]
+        self.current_org.save()
+
+        # [Basic, Pro Monthly, Pro Yearly, Team Monthly, Team Yearly]
+        expected_result = []
+        expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+
+        # Can not do Team plan when at 11 activated users
+        assert self.plan_service.available_plans(owner=self.owner) == expected_result
+
+    @patch("services.sentry.is_sentry_user")
+    def test_sentry_user(self, is_sentry_user):
+        is_sentry_user.return_value = True
+
+        # [Basic, Pro Monthly, Pro Yearly, Sentry Monthly, Sentry Yearly, Team Monthly, Team Yearly]
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
-        assert plan_service.available_plans(owner=self.owner) == expected_result
+        # Can do Team plan when plan_activated_users is null
+        assert self.plan_service.available_plans(owner=self.owner) == expected_result
+
+        self.current_org.plan_activated_users = [i for i in range(10)]
+        self.current_org.save()
+
+        # Can do Team plan when at 10 activated users
+        assert self.plan_service.available_plans(owner=self.owner) == expected_result
+
+        self.current_org.plan_activated_users = [i for i in range(11)]
+        self.current_org.save()
+
+        # [Basic, Pro Monthly, Pro Yearly, Sentry Monthly, Sentry Yearly]
+        expected_result = []
+        expected_result.append(BASIC_PLAN)
+        expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
+
+        # Can not do Team plan when at 11 activated users
+        assert self.plan_service.available_plans(owner=self.owner) == expected_result

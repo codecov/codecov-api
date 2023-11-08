@@ -10,6 +10,7 @@ from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
 from django.forms import ValidationError
 from django.utils import timezone
+from django_prometheus.models import ExportModelOperationsMixin
 
 from codecov.models import BaseCodecovModel
 from codecov_auth.constants import (
@@ -65,7 +66,7 @@ class TrialStatus(models.TextChoices):
     CANNOT_TRIAL = "cannot_trial"
 
 
-class User(BaseCodecovModel):
+class User(ExportModelOperationsMixin("codecov_auth.user"), BaseCodecovModel):
     email = CITextField(null=True)
     name = models.TextField(null=True)
     is_staff = models.BooleanField(null=True, default=False)
@@ -112,7 +113,7 @@ class User(BaseCodecovModel):
         return self.external_id
 
 
-class Owner(models.Model):
+class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
     class Meta:
         db_table = "owners"
         ordering = ["ownerid"]
@@ -466,7 +467,9 @@ class Owner(models.Model):
         self.save()
 
 
-class SentryUser(BaseCodecovModel):
+class SentryUser(
+    ExportModelOperationsMixin("codecov_auth.sentry_user"), BaseCodecovModel
+):
     user = models.ForeignKey(
         User,
         null=False,
@@ -480,7 +483,7 @@ class SentryUser(BaseCodecovModel):
     name = models.TextField(null=True)
 
 
-class OktaUser(BaseCodecovModel):
+class OktaUser(ExportModelOperationsMixin("codecov_auth.okta_user"), BaseCodecovModel):
     user = models.ForeignKey(
         User,
         null=False,
@@ -497,7 +500,10 @@ class TokenTypeChoices(models.TextChoices):
     UPLOAD = "upload"
 
 
-class OrganizationLevelToken(BaseCodecovModel):
+class OrganizationLevelToken(
+    ExportModelOperationsMixin("codecov_auth.organization_level_token"),
+    BaseCodecovModel,
+):
     owner = models.ForeignKey(
         "Owner",
         db_column="ownerid",
@@ -514,7 +520,9 @@ class OrganizationLevelToken(BaseCodecovModel):
         super().save(*args, **kwargs)
 
 
-class OwnerProfile(BaseCodecovModel):
+class OwnerProfile(
+    ExportModelOperationsMixin("codecov_auth.owner_profile"), BaseCodecovModel
+):
     class ProjectType(models.TextChoices):
         PERSONAL = "PERSONAL"
         YOUR_ORG = "YOUR_ORG"
@@ -541,7 +549,7 @@ class OwnerProfile(BaseCodecovModel):
     )
 
 
-class Session(models.Model):
+class Session(ExportModelOperationsMixin("codecov_auth.session"), models.Model):
     class Meta:
         db_table = "sessions"
         ordering = ["-lastseen"]
@@ -565,7 +573,9 @@ def _generate_key():
     return binascii.hexlify(os.urandom(20)).decode()
 
 
-class RepositoryToken(BaseCodecovModel):
+class RepositoryToken(
+    ExportModelOperationsMixin("codecov_auth.repository_token"), BaseCodecovModel
+):
     class TokenType(models.TextChoices):
         UPLOAD = "upload"
         PROFILING = "profiling"
@@ -588,7 +598,9 @@ class RepositoryToken(BaseCodecovModel):
         return _generate_key()
 
 
-class UserToken(BaseCodecovModel):
+class UserToken(
+    ExportModelOperationsMixin("codecov_auth.user_token"), BaseCodecovModel
+):
     class TokenType(models.TextChoices):
         API = "api"
 

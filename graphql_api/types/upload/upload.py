@@ -34,7 +34,7 @@ def resolve_id(upload: ReportSession, info) -> Optional[int]:
 
 
 @upload_bindable.field("uploadType")
-def resolve_upload_type(upload, info):
+def resolve_upload_type(upload, info) -> UploadType:
     return UploadType(upload.upload_type)
 
 
@@ -64,7 +64,7 @@ def resolve_ci_url(upload, info):
 
 @upload_bindable.field("downloadUrl")
 @sync_to_async
-def resolve_download_url(upload, info):
+def resolve_download_url(upload, info) -> str:
     request = info.context["request"]
     download_absolute_uri = request.build_absolute_uri(upload.download_url)
     return download_absolute_uri.replace("http", "https", 1)

@@ -8,6 +8,7 @@ Django
 django-cors-headers
 django-dynamic-fixture
 django-filter
+django-prometheus
 djangorestframework
 drf-spectacular
 drf-spectacular-sidecar

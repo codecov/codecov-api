@@ -22,7 +22,7 @@ def resolve_name(user: Owner, info) -> Optional[str]:
 
 
 @user_bindable.field("avatarUrl")
-def resolve_avatar_url(user: Owner, info) -> Optional[str]:
+def resolve_avatar_url(user: Owner, info) -> str:
     return user.avatar_url
 
 

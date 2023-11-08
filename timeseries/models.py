@@ -3,6 +3,7 @@ from enum import Enum
 
 import django.db.models as models
 from django.utils import timezone
+from django_prometheus.models import ExportModelOperationsMixin
 
 from core.models import DateTimeWithoutTZField
 
@@ -19,7 +20,7 @@ class MeasurementName(Enum):
     COMPONENT_COVERAGE = "component_coverage"
 
 
-class Measurement(models.Model):
+class Measurement(ExportModelOperationsMixin("timeseries.measurement"), models.Model):
     # TimescaleDB requires that `timestamp` be part of every index (since data is
     # partitioned by `timestamp`).  Since an auto-incrementing primary key would
     # not satisfy this requirement we can make `timestamp` the primary key.
@@ -69,7 +70,9 @@ class Measurement(models.Model):
         ]
 
 
-class MeasurementSummary(models.Model):
+class MeasurementSummary(
+    ExportModelOperationsMixin("timeseries.measurement_summary"), models.Model
+):
     timestamp_bin = models.DateTimeField(primary_key=True)
     owner_id = models.BigIntegerField()
     repo_id = models.BigIntegerField()
@@ -121,7 +124,7 @@ class MeasurementSummary30Day(MeasurementSummary):
         db_table = "timeseries_measurement_summary_30day"
 
 
-class Dataset(models.Model):
+class Dataset(ExportModelOperationsMixin("timeseries.dataset"), models.Model):
     id = models.AutoField(primary_key=True)
 
     # this will likely correspond to a measurement name above

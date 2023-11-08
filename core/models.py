@@ -11,6 +11,7 @@ from django.db.models.functions import Lower, Substr, Upper
 from django.forms import ValidationError
 from django.utils import timezone
 from django.utils.functional import cached_property
+from django_prometheus.models import ExportModelOperationsMixin
 from shared.config import get_config
 from shared.reports.resources import Report
 
@@ -27,14 +28,14 @@ class DateTimeWithoutTZField(models.DateTimeField):
         return "timestamp"
 
 
-class Version(models.Model):
+class Version(ExportModelOperationsMixin("core.version"), models.Model):
     version = models.TextField(primary_key=True)
 
     class Meta:
         db_table = "version"
 
 
-class Constants(models.Model):
+class Constants(ExportModelOperationsMixin("core.constants"), models.Model):
     key = models.CharField(primary_key=True)
     value = models.CharField()
 
@@ -48,7 +49,7 @@ def _gen_image_token():
     )
 
 
-class Repository(models.Model):
+class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
     class Languages(models.TextChoices):
         JAVASCRIPT = "javascript"
         SHELL = "shell"
@@ -157,7 +158,7 @@ class Repository(models.Model):
             raise ValidationError("using_integration cannot be null")
 
 
-class Branch(models.Model):
+class Branch(ExportModelOperationsMixin("core.branch"), models.Model):
     name = models.TextField(primary_key=True, db_column="branch")
     repository = models.ForeignKey(
         "core.Repository",
@@ -190,7 +191,7 @@ class Branch(models.Model):
         ]
 
 
-class Commit(models.Model):
+class Commit(ExportModelOperationsMixin("core.commit"), models.Model):
     class CommitStates(models.TextChoices):
         COMPLETE = "complete"
         PENDING = "pending"
@@ -322,7 +323,7 @@ class PullStates(models.TextChoices):
     CLOSED = "closed"
 
 
-class Pull(models.Model):
+class Pull(ExportModelOperationsMixin("core.pull"), models.Model):
     repository = models.ForeignKey(
         "core.Repository",
         db_column="repoid",
@@ -371,6 +372,10 @@ class Pull(models.Model):
                 fields=["repository", "pullid", "updatestamp"],
                 name="pulls_repoid_pullid_ts",
             ),
+            models.Index(
+                fields=["repository", "id"],
+                name="pulls_repoid_id",
+            ),
         ]
 
     def get_repository(self):
@@ -404,7 +409,9 @@ class Pull(models.Model):
         super().save(*args, **kwargs)
 
 
-class CommitNotification(models.Model):
+class CommitNotification(
+    ExportModelOperationsMixin("core.commit_notification"), models.Model
+):
     class NotificationTypes(models.TextChoices):
         COMMENT = "comment"
         GITTER = "gitter"
@@ -452,7 +459,7 @@ class CommitNotification(models.Model):
         db_table = "commit_notifications"
 
 
-class CommitError(BaseCodecovModel):
+class CommitError(ExportModelOperationsMixin("core.commit_error"), BaseCodecovModel):
     commit = models.ForeignKey(
         "Commit",
         related_name="errors",
