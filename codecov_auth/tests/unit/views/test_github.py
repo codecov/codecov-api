@@ -357,9 +357,6 @@ def test_get_github_already_owner_already_exist(
     async def is_student(*args, **kwargs):
         return True
 
-    async def mock_custom_time(*args, **kwargs):
-        return ""
-
     mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
     mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
     mocker.patch.object(Github, "is_student", side_effect=is_student)
