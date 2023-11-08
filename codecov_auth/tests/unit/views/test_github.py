@@ -215,6 +215,7 @@ def test_state_not_known(client, mocker, db, mock_redis, settings):
     assert res.status_code == 400
     assert "current_owner_id" not in client.session
 
+
 @freeze_time("2023-02-01T00:00:00")
 def test_get_github_already_with_code_with_email(
     client, mocker, db, mock_redis, settings
@@ -269,6 +270,7 @@ def test_get_github_already_with_code_with_email(
     assert session_expiry_cookie.value == "2023-02-01T08:00:00Z"
     assert session_expiry_cookie.get("domain") == ".simple.site"
 
+
 @freeze_time("2023-01-01T00:00:00")
 def test_get_github_already_with_code_is_student(
     client, mocker, db, mock_redis, settings
@@ -322,6 +324,7 @@ def test_get_github_already_with_code_is_student(
     session_expiry_cookie = res.cookies["session_expiry"]
     assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
     assert session_expiry_cookie.get("domain") == ".simple.site"
+
 
 @freeze_time("2023-01-01T00:00:00")
 def test_get_github_already_owner_already_exist(
@@ -382,6 +385,7 @@ def test_get_github_already_owner_already_exist(
     session_expiry_cookie = res.cookies["session_expiry"]
     assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
     assert session_expiry_cookie.get("domain") == ".simple.site"
+
 
 @pytest.mark.asyncio
 @override_settings(IS_ENTERPRISE=True)
