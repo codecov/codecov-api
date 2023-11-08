@@ -860,6 +860,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_team_plan_must_fail_if_not_trialing(self):
         self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_owner.plan_user_count = 1
+        self.current_owner.trial_status = TrialStatus.NOT_STARTED
         self.current_owner.save()
         desired_plans = [
             {"value": PlanName.TEAM_MONTHLY.value, "quantity": 1},
