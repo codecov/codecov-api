@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Optional
 from urllib.parse import urlencode, urljoin
 
 from asgiref.sync import async_to_sync
@@ -69,11 +70,19 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         return teams
 
     @async_to_sync
-    async def fetch_user_data(self, code):
+    async def fetch_user_data(self, code) -> Optional[dict]:
         # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
         # This is specific to GitHub
         repo_service = self.repo_service_instance
         authenticated_user = await repo_service.get_authenticated_user(code)
+        if "access_token" not in authenticated_user:
+            log.warning(
+                "Missing access_token during GitHub OAuth",
+                extra=dict(
+                    user_info=authenticated_user,
+                ),
+            )
+            return None
         # Comply to torngit's token encoding
         authenticated_user["key"] = authenticated_user["access_token"]
         user_orgs = await repo_service.list_teams()
@@ -100,6 +109,8 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         redirection_url = self.get_redirection_url_from_state(state)
         try:
             user_dict = self.fetch_user_data(code)
+            if user_dict is None:
+                return redirect(self.error_redirection_page)
         except TorngitError:
             log.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)

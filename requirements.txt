@@ -110,6 +110,8 @@ django-dynamic-fixture==3.1.1
     # via -r requirements.in
 django-filter==2.4.0
     # via -r requirements.in
+django-prometheus==2.3.1
+    # via -r requirements.in
 djangorestframework==3.14.0
     # via
     #   -r requirements.in
@@ -262,7 +264,9 @@ pluggy==0.13.1
 pre-commit==2.11.1
     # via -r requirements.in
 prometheus-client==0.17.1
-    # via shared
+    # via
+    #   django-prometheus
+    #   shared
 prompt-toolkit==3.0.28
     # via click-repl
 proto-plus==1.22.3

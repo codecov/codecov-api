@@ -427,3 +427,20 @@ async def test__get_teams_info_fails(client, mocker):
 
     result = await github._get_teams_data(repo_service)
     assert result == []
+
+
+def test_get_github_missing_access_token(client, mocker, db, mock_redis, settings):
+    settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
+
+    async def helper_func(*args, **kwargs):
+        return {
+            "id": 44376991,
+        }
+
+    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
+    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
+    url = reverse("github-login")
+    res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
+    assert res.status_code == 302
+    assert res.headers["Location"] == "/"
