@@ -1,14 +1,14 @@
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 from django.http.cookie import SimpleCookie
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
+from freezegun import freeze_time
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
-from freezegun import freeze_time
 
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
