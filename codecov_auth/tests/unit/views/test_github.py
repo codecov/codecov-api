@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from django.http.cookie import SimpleCookie
@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
+from freezegun import freeze_time
 
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
@@ -214,7 +215,7 @@ def test_state_not_known(client, mocker, db, mock_redis, settings):
     assert res.status_code == 400
     assert "current_owner_id" not in client.session
 
-
+@freeze_time("2023-02-01T00:00:00")
 def test_get_github_already_with_code_with_email(
     client, mocker, db, mock_redis, settings
 ):
@@ -263,8 +264,12 @@ def test_get_github_already_with_code_with_email(
     assert owner.email == "thiago@codecov.io"
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
+    assert "session_expiry" in res.cookies
+    session_expiry_cookie = res.cookies["session_expiry"]
+    assert session_expiry_cookie.value == "2023-02-01T08:00:00Z"
+    assert session_expiry_cookie.get("domain") == ".simple.site"
 
-
+@freeze_time("2023-01-01T00:00:00")
 def test_get_github_already_with_code_is_student(
     client, mocker, db, mock_redis, settings
 ):
@@ -313,8 +318,12 @@ def test_get_github_already_with_code_is_student(
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
     assert owner.student is True
+    assert "session_expiry" in res.cookies
+    session_expiry_cookie = res.cookies["session_expiry"]
+    assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
+    assert session_expiry_cookie.get("domain") == ".simple.site"
 
-
+@freeze_time("2023-01-01T00:00:00")
 def test_get_github_already_owner_already_exist(
     client, mocker, db, mock_redis, settings
 ):
@@ -348,6 +357,9 @@ def test_get_github_already_owner_already_exist(
     async def is_student(*args, **kwargs):
         return True
 
+    async def mock_custom_time(*args, **kwargs):
+        return ""
+
     mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
     mocker.patch.object(Github, "list_teams", side_effect=helper_list_teams_func)
     mocker.patch.object(Github, "is_student", side_effect=is_student)
@@ -369,7 +381,10 @@ def test_get_github_already_owner_already_exist(
     assert owner.service_id == "44376991"
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
-
+    assert "session_expiry" in res.cookies
+    session_expiry_cookie = res.cookies["session_expiry"]
+    assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
+    assert session_expiry_cookie.get("domain") == ".simple.site"
 
 @pytest.mark.asyncio
 @override_settings(IS_ENTERPRISE=True)
