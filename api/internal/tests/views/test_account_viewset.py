@@ -490,7 +490,7 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
-            "marketing_name": "Pro Team",
+            "marketing_name": "Pro",
             "value": "users-inappm",
             "billing_rate": "monthly",
             "base_unit_price": 12,
@@ -509,7 +509,7 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
-            "marketing_name": "Pro Team",
+            "marketing_name": "Pro",
             "value": PlanName.CODECOV_PRO_YEARLY_LEGACY.value,
             "billing_rate": "annually",
             "base_unit_price": 10,

@@ -13,8 +13,8 @@ class TrialDaysAmount(enum.Enum):
 
 
 class PlanMarketingName(enum.Enum):
-    CODECOV_PRO = "Pro Team"
-    SENTRY_PRO = "Pro Team for Sentry"
+    CODECOV_PRO = "Pro"
+    SENTRY_PRO = "Pro for Sentry"
     ENTERPRISE_CLOUD = "Enterprise Cloud"
     GITHUB_MARKETPLACE = "Github Marketplace"
     FREE = "Developer"
