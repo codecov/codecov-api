@@ -16,7 +16,7 @@ segment_comparison_bindable = ObjectType("SegmentComparison")
 
 
 @segment_comparison_bindable.field("header")
-def resolve_header(segment: Segment, info) -> Optional[str]:
+def resolve_header(segment: Segment, info) -> str:
     (
         base_starting,
         base_extracted,

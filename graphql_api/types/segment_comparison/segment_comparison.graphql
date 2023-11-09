@@ -1,5 +1,5 @@
 type SegmentComparison {
-  header: String
+  header: String!
   hasUnintendedChanges: Boolean!
   lines: [LineComparison!]!
 }

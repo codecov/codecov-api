@@ -69,7 +69,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
     def get_coverage(self):
         """
-        Note: This endpoint has the behaviour of returning a gray badge with the word 'unknwon' instead of returning a 404
+        Note: This endpoint has the behavior of returning a gray badge with the word 'unknown' instead of returning a 404
               when the user enters an invalid service, owner, repo or when coverage is not found for a branch.
 
               We also need to support service abbreviations for users already using them
