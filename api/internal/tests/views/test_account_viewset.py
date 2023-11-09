@@ -885,6 +885,34 @@ class AccountViewSetTests(APITestCase):
                 }
             }
 
+    def test_update_team_plan_must_fail_if_cannot_trial(self):
+        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.current_owner.plan_user_count = 1
+        self.current_owner.trial_status = TrialStatus.CANNOT_TRIAL
+        self.current_owner.save()
+        desired_plans = [
+            {"value": PlanName.TEAM_MONTHLY.value, "quantity": 1},
+            {"value": PlanName.TEAM_YEARLY.value, "quantity": 1},
+        ]
+
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert response.json() == {
+                "plan": {
+                    "value": [
+                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                    ]
+                }
+            }
+
     def test_update_team_plan_must_fail_if_too_many_activated_users_during_trial(self):
         self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_owner.plan_user_count = 1

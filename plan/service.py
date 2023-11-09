@@ -126,8 +126,6 @@ class PlanService:
         if owner and sentry.is_sentry_user(owner=owner):
             available_plans += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        # raise Exception(f"bruh: {self.plan_name} / {TEAM_PLAN_REPRESENTATIONS}")
-
         # If user is already in team plan or is/have trialed
         if (
             self.plan_name in TEAM_PLAN_REPRESENTATIONS
