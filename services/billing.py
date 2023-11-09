@@ -9,6 +9,7 @@ from codecov_auth.models import Owner
 from plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PAID_PLANS,
+    TEAM_PLANS,
     USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
 )
@@ -329,6 +330,13 @@ class StripeService(AbstractPaymentService):
         is_same_seats = (
             owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
         )
+
+        # If from PRO to TEAM, then not a similar plan
+        if owner.plan not in TEAM_PLANS and desired_plan["value"] in TEAM_PLANS:
+            return False
+        # If from TEAM to PRO, then considered a similar plan but really is an upgrade
+        elif owner.plan in TEAM_PLANS and desired_plan["value"] not in TEAM_PLANS:
+            return True
 
         return is_same_term and is_same_seats
 
