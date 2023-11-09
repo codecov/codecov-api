@@ -69,8 +69,8 @@ class TestGraphsHelpers(object):
                 <rect width="112" height="20" rx="3" fill="#fff" />
             </mask>
             <g mask="url(#a)">
-                <path fill="#555" d="M0 0h76v20H0z" />
-                <path fill="#efa41b" d="M76 0h36v20H76z" />
+                <path fill="#555" d="M0 0h73v20H0z" />
+                <path fill="#efa41b" d="M73 0h39v20H73z" />
                 <path fill="url(#b)" d="M0 0h112v20H0z" />
             </g>
             <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
