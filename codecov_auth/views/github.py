@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime, timedelta
 from typing import Optional
 from urllib.parse import urlencode, urljoin
 
@@ -119,6 +120,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         response = redirect(redirection_url)
         self.login_owner(owner, request, response)
         self.remove_state(state)
+        self.store_access_token_expiry_to_cookie(response)
         return response
 
     def get(self, request):
@@ -153,3 +155,13 @@ class GithubLoginView(LoginMixin, StateMixin, View):
             response = redirect(url_to_redirect_to)
             self.store_to_cookie_utm_tags(response)
             return response
+
+    # Set a session expiry of 8 hours for github logins. GH access tokens expire after 8 hours by default
+    # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/token-expiration-and-revocation#user-token-revoked-due-to-github-app-configuration
+    def store_access_token_expiry_to_cookie(self, response):
+        domain_to_use = settings.COOKIES_DOMAIN
+        eight_hours_later = datetime.utcnow() + timedelta(hours=8)
+        eight_hours_later_iso = eight_hours_later.isoformat() + "Z"
+        response.set_cookie(
+            "session_expiry", eight_hours_later_iso, domain=domain_to_use
+        )
