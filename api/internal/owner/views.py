@@ -1,4 +1,5 @@
 import logging
+from dataclasses import asdict
 
 from django.db.models import F
 from django_filters import rest_framework as django_filters
@@ -10,7 +11,7 @@ from rest_framework.response import Response
 from api.shared.mixins import OwnerPropertyMixin
 from api.shared.owner.mixins import OwnerViewSetMixin, UserViewSetMixin
 from api.shared.permissions import MemberOfOrgPermissions
-from billing.helpers import available_plans, on_enterprise_plan
+from billing.helpers import on_enterprise_plan
 from services.billing import BillingService
 from services.decorators import stripe_safe
 from services.task import TaskService
@@ -151,11 +152,3 @@ class UserViewSet(
             # pull ordering only available for enterprise
             qs = qs.annotate_last_pull_timestamp()
         return qs
-
-
-class PlanViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
-    def get_queryset(self):
-        return None
-
-    def list(self, request, *args, **kwargs):
-        return Response(available_plans(request.current_owner))

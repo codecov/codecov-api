@@ -28,6 +28,8 @@ STRIPE_PLAN_IDS = {
     "users-sentryy": "price_1MlYAYGlVGuVgOrke9SdbBUn",
     "users-enterprisey": "price_1LmjzwGlVGuVgOrkIwlM46EU",
     "users-enterprisem": "price_1LmjypGlVGuVgOrkzKtNqhwW",
+    "users-teamm": "price_1NqPKdGlVGuVgOrkm9OFvtz8",
+    "users-teamy": "price_1NrlXiGlVGuVgOrkgMTw5yno",
 }
 
 CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]
