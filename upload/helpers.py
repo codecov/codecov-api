@@ -27,6 +27,7 @@ from upload.tokenless.tokenless import TokenlessUploadHandler
 from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
+from utils.github import get_github_integration_token
 
 from .constants import ci, global_upload_token_providers
 
@@ -314,6 +315,11 @@ def determine_upload_pr_to_use(upload_params):
 
 
 def try_to_get_best_possible_bot_token(repository):
+    if repository.using_integration and repository.author.integration_id:
+        github_token = get_github_integration_token(
+            repository.author.service, integration_id=repository.author.integration_id
+        )
+        return dict(key=github_token)
     service = repository.author.service
     if repository.bot is not None and repository.bot.oauth_token is not None:
         log.info(

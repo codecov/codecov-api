@@ -292,7 +292,9 @@ pyasn1-modules==0.2.8
 pycparser==2.20
     # via cffi
 pyjwt==2.8.0
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   shared
 pyparsing==2.4.7
     # via
     #   httplib2
@@ -363,7 +365,7 @@ sentry-sdk==1.19.1
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/ccc8b12dcad6ddc49f35763eb446e5eb2d8e7556.tar.gz
+shared @ https://github.com/codecov/shared/archive/3182e6f345fa13ff3dad9612811541168c147dd9.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
@@ -423,6 +425,7 @@ urllib3==1.26.13
     #   minio
     #   requests
     #   sentry-sdk
+    #   shared
 vcrpy==2.0.1
     # via -r requirements.in
 vine==5.0.0
