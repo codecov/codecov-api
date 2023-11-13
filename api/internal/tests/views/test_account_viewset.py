@@ -13,7 +13,7 @@ from stripe.error import StripeError
 from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory, UserFactory
-from plan.constants import PlanName
+from plan.constants import PlanName, TrialStatus
 from utils.test_utils import APIClient
 
 curr_path = os.path.dirname(__file__)
@@ -490,7 +490,7 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
-            "marketing_name": "Pro Team",
+            "marketing_name": "Pro",
             "value": "users-inappm",
             "billing_rate": "monthly",
             "base_unit_price": 12,
@@ -509,7 +509,7 @@ class AccountViewSetTests(APITestCase):
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
-            "marketing_name": "Pro Team",
+            "marketing_name": "Pro",
             "value": PlanName.CODECOV_PRO_YEARLY_LEGACY.value,
             "billing_rate": "annually",
             "base_unit_price": 10,
@@ -857,6 +857,140 @@ class AccountViewSetTests(APITestCase):
             == "Quantity or plan for paid plan must be different from the existing one"
         )
 
+    def test_update_team_plan_must_fail_if_not_trialing(self):
+        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.current_owner.plan_user_count = 1
+        self.current_owner.trial_status = TrialStatus.NOT_STARTED
+        self.current_owner.save()
+        desired_plans = [
+            {"value": PlanName.TEAM_MONTHLY.value, "quantity": 1},
+            {"value": PlanName.TEAM_YEARLY.value, "quantity": 1},
+        ]
+
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert response.json() == {
+                "plan": {
+                    "value": [
+                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                    ]
+                }
+            }
+
+    def test_update_team_plan_must_fail_if_cannot_trial(self):
+        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.current_owner.plan_user_count = 1
+        self.current_owner.trial_status = TrialStatus.CANNOT_TRIAL
+        self.current_owner.save()
+        desired_plans = [
+            {"value": PlanName.TEAM_MONTHLY.value, "quantity": 1},
+            {"value": PlanName.TEAM_YEARLY.value, "quantity": 1},
+        ]
+
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert response.json() == {
+                "plan": {
+                    "value": [
+                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                    ]
+                }
+            }
+
+    def test_update_team_plan_must_fail_if_too_many_activated_users_during_trial(self):
+        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.current_owner.plan_user_count = 1
+        self.current_owner.trial_status = TrialStatus.ONGOING.value
+        self.current_owner.plan_activated_users = [i for i in range(11)]
+        self.current_owner.save()
+
+        desired_plans = [
+            {"value": PlanName.TEAM_MONTHLY.value, "quantity": 10},
+            {"value": PlanName.TEAM_YEARLY.value, "quantity": 10},
+        ]
+
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert response.json() == {
+                "plan": {
+                    "value": [
+                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                    ]
+                }
+            }
+
+    def test_update_team_plan_must_fail_if_currently_team_plan_add_too_many_users(self):
+        self.current_owner.plan = PlanName.TEAM_MONTHLY.value
+        self.current_owner.plan_user_count = 1
+        self.current_owner.save()
+
+        desired_plans = [
+            {"value": PlanName.TEAM_MONTHLY.value, "quantity": 11},
+            {"value": PlanName.TEAM_YEARLY.value, "quantity": 11},
+        ]
+
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert (
+                response.data["plan"]["non_field_errors"][0]
+                == "Quantity for Team plan cannot exceed 10"
+            )
+
+    def test_update_must_fail_if_team_plan_and_too_many_users(self):
+        desired_plans = [
+            {"value": PlanName.TEAM_MONTHLY.value, "quantity": 11},
+            {"value": PlanName.TEAM_YEARLY.value, "quantity": 11},
+        ]
+
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert response.json() == {
+                "plan": {
+                    "value": [
+                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                    ]
+                }
+            }
+
     def test_update_quantity_must_be_at_least_2_if_paid_plan(self):
         desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 1}
         response = self._update(
@@ -1109,7 +1243,7 @@ class AccountViewSetTests(APITestCase):
         assert res.json() == {
             "plan": {
                 "value": [
-                    "Invalid value for plan: users-sentrym; must be one of ['users-free', 'users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                    "Invalid value for plan: users-sentrym; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
                 ]
             }
         }

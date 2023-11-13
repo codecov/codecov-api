@@ -859,7 +859,7 @@ class StripeServiceTests(TestCase):
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
-        # Test same plan, drecrease users
+        # Test same plan, decrease users
         owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
         desired_plan = {"value": "users-pr-inappy", "quantity": 14}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
@@ -933,6 +933,30 @@ class StripeServiceTests(TestCase):
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
+
+        # Team to Sentry
+        owner = OwnerFactory(plan="users-teamm", plan_user_count=10)
+        desired_plan = {"value": "users-sentrym", "quantity": 10}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+
+        # Team to Pro
+        owner = OwnerFactory(plan="users-teamm", plan_user_count=10)
+        desired_plan = {"value": "users-pr-inappm", "quantity": 10}
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
+
+        # Sentry to Team
+        owner = OwnerFactory(plan="users-sentrym", plan_user_count=10)
+        desired_plan = {"value": "users-teamm", "quantity": 10}
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+
+        # Sentry to Pro
+        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=10)
+        desired_plan = {"value": "users-teamm", "quantity": 10}
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_create_checkout_session_with_email_and_no_stripe_customer_id(

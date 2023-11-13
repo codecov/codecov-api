@@ -6,6 +6,7 @@ from django.http.cookie import SimpleCookie
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
+from freezegun import freeze_time
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
 
@@ -215,6 +216,7 @@ def test_state_not_known(client, mocker, db, mock_redis, settings):
     assert "current_owner_id" not in client.session
 
 
+@freeze_time("2023-02-01T00:00:00")
 def test_get_github_already_with_code_with_email(
     client, mocker, db, mock_redis, settings
 ):
@@ -263,8 +265,13 @@ def test_get_github_already_with_code_with_email(
     assert owner.email == "thiago@codecov.io"
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
+    assert "session_expiry" in res.cookies
+    session_expiry_cookie = res.cookies["session_expiry"]
+    assert session_expiry_cookie.value == "2023-02-01T08:00:00Z"
+    assert session_expiry_cookie.get("domain") == ".simple.site"
 
 
+@freeze_time("2023-01-01T00:00:00")
 def test_get_github_already_with_code_is_student(
     client, mocker, db, mock_redis, settings
 ):
@@ -313,8 +320,13 @@ def test_get_github_already_with_code_is_student(
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
     assert owner.student is True
+    assert "session_expiry" in res.cookies
+    session_expiry_cookie = res.cookies["session_expiry"]
+    assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
+    assert session_expiry_cookie.get("domain") == ".simple.site"
 
 
+@freeze_time("2023-01-01T00:00:00")
 def test_get_github_already_owner_already_exist(
     client, mocker, db, mock_redis, settings
 ):
@@ -369,6 +381,10 @@ def test_get_github_already_owner_already_exist(
     assert owner.service_id == "44376991"
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
+    assert "session_expiry" in res.cookies
+    session_expiry_cookie = res.cookies["session_expiry"]
+    assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
+    assert session_expiry_cookie.get("domain") == ".simple.site"
 
 
 @pytest.mark.asyncio
@@ -411,3 +427,20 @@ async def test__get_teams_info_fails(client, mocker):
 
     result = await github._get_teams_data(repo_service)
     assert result == []
+
+
+def test_get_github_missing_access_token(client, mocker, db, mock_redis, settings):
+    settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "secret"
+
+    async def helper_func(*args, **kwargs):
+        return {
+            "id": 44376991,
+        }
+
+    mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
+    mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
+    url = reverse("github-login")
+    res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
+    assert res.status_code == 302
+    assert res.headers["Location"] == "/"

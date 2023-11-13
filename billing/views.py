@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from codecov_auth.models import Owner
-from plan.constants import PRO_PLANS
+from plan.constants import PAID_PLANS
 from plan.service import PlanService
 from services.billing import BillingService
 
@@ -147,7 +147,7 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        if subscription.plan.name not in PRO_PLANS:
+        if subscription.plan.name not in PAID_PLANS:
             log.warning(
                 f"Subscription creation requested for invalid plan "
                 f"'{subscription.plan.name}' -- doing nothing",
@@ -210,8 +210,8 @@ class StripeWebhookHandler(APIView):
                 # from the owner
                 owner.repository_set.update(active=False, activated=False)
                 return
-            # TODO: we can delete this if statement if we confirm there aren't any PRO_PLANS out there
-            if subscription.plan.name not in PRO_PLANS:
+            # TODO: we can delete this if statement if we confirm there aren't any PAID_PLANS out there
+            if subscription.plan.name not in PAID_PLANS:
                 log.warning(
                     f"Subscription update requested with invalid plan "
                     f"{subscription.plan.name} -- doing nothing",
