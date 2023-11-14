@@ -1,5 +1,5 @@
 type Owner {
-  avatarUrl: String
+  avatarUrl: String!
   username: String
   isCurrentUserPartOfOrg: Boolean!
   yaml: String
@@ -29,5 +29,6 @@ type Owner {
     after: DateTime
     before: DateTime
     repos: [String!]
+    isPublic: Boolean
   ): [Measurement!]!
 }

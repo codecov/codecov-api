@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from unittest.mock import PropertyMock, patch
 
 from rest_framework import status
@@ -11,7 +12,15 @@ from shared.utils.sessions import Session
 import services.comparison as comparison
 from api.shared.commit.serializers import ReportTotalsSerializer
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from compare.models import CommitComparison
+from compare.tests.factories import CommitComparisonFactory
+from core.tests.factories import (
+    CommitFactory,
+    CommitWithReportFactory,
+    PullFactory,
+    RepositoryFactory,
+)
+from services.comparison import ComparisonReport
 from services.components import Component
 from services.report import SerializableReport
 from utils.test_utils import APIClient
@@ -101,6 +110,117 @@ class MockedComparisonAdapter:
 
     async def get_authenticated(self):
         return False, False
+
+
+def sample_report_impacted():
+    report = Report(flags={"flag1": True})
+    first_file = ReportFile("foo/file1.py")
+    first_file.append(
+        1, ReportLine.create(coverage=1, sessions=[[0, 1]], complexity=(10, 2))
+    )
+    first_file.append(2, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    first_file.append(3, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(5, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(6, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    first_file.append(8, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(9, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    first_file.append(10, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    second_file = ReportFile("bar/file2.py")
+    second_file.append(12, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    second_file.append(
+        51, ReportLine.create(coverage="1/2", type="b", sessions=[[0, 1]])
+    )
+    third_file = ReportFile("file3.py")
+    third_file.append(1, ReportLine.create(coverage=1, sessions=[[0, 1]]))
+    report.append(first_file)
+    report.append(second_file)
+    report.append(third_file)
+    report.add_session(Session(flags=["flag1"]))
+    return report
+
+
+mock_data_from_archive = """
+{
+    "files": [{
+        "head_name": "fileA",
+        "base_name": "fileA",
+        "head_coverage": {
+            "hits": 12,
+            "misses": 1,
+            "partials": 1,
+            "branches": 3,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 5
+        },
+        "base_coverage": {
+            "hits": 5,
+            "misses": 6,
+            "partials": 1,
+            "branches": 2,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 4
+        },
+        "added_diff_coverage": [
+            [9,"h"],
+            [10,"m"]
+        ],
+        "unexpected_line_changes": []
+      },
+      {
+        "head_name": "fileB",
+        "base_name": "fileB",
+        "head_coverage": {
+            "hits": 12,
+            "misses": 1,
+            "partials": 1,
+            "branches": 3,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 5
+        },
+        "base_coverage": {
+            "hits": 5,
+            "misses": 6,
+            "partials": 1,
+            "branches": 2,
+            "sessions": 0,
+            "complexity": 0,
+            "complexity_total": 0,
+            "methods": 4
+        },
+        "added_diff_coverage": [
+            [9,"h"],
+            [10,"h"],
+            [13,"h"],
+            [14,"h"],
+            [15,"h"],
+            [16,"m"],
+            [17,"h"]
+        ],
+        "unexpected_line_changes": [[[1, "h"], [1, "m"]]]
+    }]
+}
+"""
+
+
+@dataclass
+class MockSegment:
+    has_diff_changes: bool = False
+    has_unintended_changes: bool = False
+
+
+class MockFileComparison(object):
+    def __init__(self):
+        self.segments = [
+            MockSegment(has_unintended_changes=True, has_diff_changes=False),
+            MockSegment(has_unintended_changes=False, has_diff_changes=True),
+            MockSegment(has_unintended_changes=True, has_diff_changes=True),
+        ]
 
 
 @patch("services.comparison.Comparison.has_unmerged_base_commits", lambda self: True)
@@ -747,3 +867,220 @@ class TestCompareViewSetRetrieve(APITestCase):
                 },
             },
         ]
+
+
+class TestImpactedFilesComparison(APITestCase):
+    def setUp(self):
+        self.org = OwnerFactory()
+        self.repo = RepositoryFactory(author=self.org)
+
+        self.current_owner = OwnerFactory(
+            service=self.org.service,
+            permission=[self.repo.repoid],
+            organizations=[self.org.ownerid],
+        )
+
+        self.parent_commit = CommitWithReportFactory.create(
+            message="this is a commit message for parent",
+            commitid="39a24eeb9a00f78e0fd91a091960eee86d415497",
+            repository=self.repo,
+        )
+        self.commit = CommitWithReportFactory.create(
+            message="this is a commit message for current",
+            commitid="fc02b87aac39d16a1626722004e3ec36d046e718",
+            parent_commit_id=self.parent_commit.commitid,
+            repository=self.repo,
+        )
+
+        self.comparison = CommitComparisonFactory(
+            base_commit=self.parent_commit,
+            compare_commit=self.commit,
+            state=CommitComparison.CommitComparisonStates.PROCESSED,
+            report_storage_path="v4/test.json",
+        )
+        self.comparison_report = ComparisonReport(self.comparison)
+
+        self.mock_git_compare_data = {
+            "commits": [],
+            "diff": {
+                "files": {
+                    "fileA": {
+                        "type": "modified",
+                        "segments": [
+                            {
+                                "header": ["4", "43", "4", "3"],
+                                "lines": ["", "", ""] + ["-this line is removed"] * 40,
+                            }
+                        ],
+                        "stats": {"removed": 40, "added": 0},
+                        "totals": ReportTotals.default_totals(),
+                    }
+                }
+            },
+        }
+
+        self.src = b"first\nfirst\nfirst\nfirst\nfirst\nfirst"
+
+        self.mocked_compare_adapter = MockedComparisonAdapter(
+            self.mock_git_compare_data, self.src
+        )
+
+        self.client = APIClient()
+        self.client.force_login_owner(self.current_owner)
+
+    @patch("services.report.build_report_from_commit")
+    @patch("services.archive.ArchiveService.read_file")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_impacted_files_200_found(
+        self, adapter_mock, read_file, build_report_from_commit
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        build_report_from_commit.return_value = sample_report_impacted()
+        read_file.return_value = mock_data_from_archive
+
+        kwargs = {
+            "service": self.org.service,
+            "owner_username": self.org.username,
+            "repo_name": self.repo.name,
+        }
+        query_params = {
+            "base": self.parent_commit.commitid,
+            "head": self.commit.commitid,
+        }
+
+        response = self.client.get(
+            reverse("api-v2-compare-impacted-files", kwargs=kwargs),
+            data=query_params,
+            content_type="application/json",
+        )
+        data = response.data
+
+        assert response.status_code == status.HTTP_200_OK
+        assert data.get("base_commit") == "39a24eeb9a00f78e0fd91a091960eee86d415497"
+        assert data.get("head_commit") == "fc02b87aac39d16a1626722004e3ec36d046e718"
+        assert data["totals"]["head"]["hits"] == 7
+        assert data["totals"]["base"]["hits"] == 7
+        assert data["totals"]["patch"]["hits"] == 0
+        assert len(data["files"]) == 2
+        assert data["state"] == "processed"
+
+    @patch("services.report.build_report_from_commit")
+    @patch("services.archive.ArchiveService.read_file")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    @patch("services.task.TaskService.compute_comparison")
+    @patch("api.shared.compare.serializers.ComparisonSerializer.get_files")
+    def test_impacted_files_200_not_found(
+        self,
+        mock_parent_get_files,
+        mock_task_service,
+        adapter_mock,
+        read_file,
+        build_report_from_commit,
+    ):
+        mock_parent_get_files.return_value = []
+        mock_task_service.return_value = None
+        adapter_mock.return_value = self.mocked_compare_adapter
+        build_report_from_commit.return_value = sample_report_impacted()
+        read_file.return_value = mock_data_from_archive
+
+        self.comparison.delete()
+
+        kwargs = {
+            "service": self.org.service,
+            "owner_username": self.org.username,
+            "repo_name": self.repo.name,
+        }
+        query_params = {
+            "base": self.parent_commit.commitid,
+            "head": self.commit.commitid,
+        }
+
+        response = self.client.get(
+            reverse("api-v2-compare-impacted-files", kwargs=kwargs),
+            data=query_params,
+            content_type="application/json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert not mock_parent_get_files.called
+        assert mock_task_service.called
+        assert response.data["files"] == []
+        assert response.data["state"] == "pending"
+
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_impacted_file_segment_found(
+        self, adapter_mock, read_file, mock_get_file_comparison, mock_compare_validate
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        read_file.return_value = mock_data_from_archive
+
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+
+        kwargs = {
+            "service": self.org.service,
+            "owner_username": self.org.username,
+            "repo_name": self.repo.name,
+            "file_path": "fileA",
+        }
+        query_params = {
+            "base": self.parent_commit.commitid,
+            "head": self.commit.commitid,
+        }
+
+        response = self.client.get(
+            reverse("api-v2-compare-segments", kwargs=kwargs),
+            data=query_params,
+            content_type="application/json",
+        )
+        data = response.data
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(data["segments"]) == 1
+        assert data["segments"][0]["header"] == "-4,43 +4,3"
+        assert data["segments"][0]["has_unintended_changes"] == False
+        assert len(data["segments"][0]["lines"]) > 0
+
+    @patch("services.task.TaskService.compute_comparison")
+    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.PullRequestComparison.get_file_comparison")
+    @patch("services.archive.ArchiveService.read_file")
+    @patch("services.repo_providers.RepoProviderService.get_adapter")
+    def test_impacted_file_segment_not_found(
+        self,
+        adapter_mock,
+        read_file,
+        mock_get_file_comparison,
+        mock_compare_validate,
+        mock_task_service,
+    ):
+        adapter_mock.return_value = self.mocked_compare_adapter
+        read_file.return_value = mock_data_from_archive
+        mock_get_file_comparison.return_value = MockFileComparison()
+        mock_compare_validate.return_value = True
+        mock_task_service.return_value = None
+
+        self.comparison.delete()
+
+        kwargs = {
+            "service": self.org.service,
+            "owner_username": self.org.username,
+            "repo_name": self.repo.name,
+            "file_path": "notarealfile",
+        }
+        query_params = {
+            "base": self.parent_commit.commitid,
+            "head": self.commit.commitid,
+        }
+
+        response = self.client.get(
+            reverse("api-v2-compare-segments", kwargs=kwargs),
+            data=query_params,
+            content_type="application/json",
+        )
+        data = response.data
+
+        assert response.status_code == status.HTTP_200_OK
+        assert data["segments"] == []

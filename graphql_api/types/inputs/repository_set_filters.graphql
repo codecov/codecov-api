@@ -3,4 +3,5 @@ input RepositorySetFilters {
   repoNames: [String]
   active: Boolean
   activated: Boolean
+  isPublic: Boolean
 }

@@ -13,7 +13,7 @@ type Repository {
   updatedAt: DateTime
   author: Owner!
   uploadToken: String
-  branch(name: String): Branch
+  branch(name: String!): Branch
   commit(id: String!): Commit
   pull(id: Int!): Pull
   pulls(

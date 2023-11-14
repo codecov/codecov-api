@@ -1,11 +1,14 @@
 from django.db import models
+from django_prometheus.models import ExportModelOperationsMixin
 
 from codecov.models import BaseCodecovModel
 
 # Create your models here.
 
 
-class ProfilingCommit(BaseCodecovModel):
+class ProfilingCommit(
+    ExportModelOperationsMixin("profiling.profiling_commit"), BaseCodecovModel
+):
     last_joined_uploads_at = models.DateTimeField(null=True)
     environment = models.CharField(max_length=100, null=True)
     last_summarized_at = models.DateTimeField(null=True)
@@ -32,7 +35,9 @@ class ProfilingCommit(BaseCodecovModel):
         return f"ProfilingCommit<{self.version_identifier} at {self.repository}>"
 
 
-class ProfilingUpload(BaseCodecovModel):
+class ProfilingUpload(
+    ExportModelOperationsMixin("profiling.profiling_upload"), BaseCodecovModel
+):
     raw_upload_location = models.TextField()
     profiling_commit = models.ForeignKey(
         ProfilingCommit, on_delete=models.CASCADE, related_name="uploads"

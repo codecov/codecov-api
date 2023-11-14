@@ -23,7 +23,7 @@ pull_bindable.set_alias("pullId", "pullid")
 
 
 @pull_bindable.field("state")
-def resolve_state(pull, info):
+def resolve_state(pull, info) -> PullRequestState:
     return PullRequestState(pull.state)
 
 

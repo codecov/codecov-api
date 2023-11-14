@@ -18,6 +18,8 @@ STRIPE_PLAN_IDS = {
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
     "users-sentrym": "price_1Mj1kYGlVGuVgOrk7jucaZAa",
     "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
+    "users-teamm": "price_1NqPK0GlVGuVgOrkFxGp93yr",
+    "users-teamy": "price_1O9agHGlVGuVgOrkZSTfXoXr",
 }
 
 CORS_ALLOW_CREDENTIALS = True

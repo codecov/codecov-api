@@ -158,6 +158,7 @@ def resolve_org_default_org_username(owner: Owner, info, **kwargs) -> int:
 
 @owner_bindable.field("measurements")
 @sync_to_async
+@convert_kwargs_to_snake_case
 def resolve_measurements(
     owner: Owner,
     info,
@@ -165,10 +166,15 @@ def resolve_measurements(
     after: Optional[datetime] = None,
     before: Optional[datetime] = None,
     repos: Optional[List[str]] = None,
+    is_public: Optional[bool] = None,
 ) -> Iterable[MeasurementSummary]:
     current_owner = info.context["request"].current_owner
 
     queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
+
+    if is_public is not None:
+        queryset = queryset.filter(private=not is_public)
+
     if repos is None:
         repo_ids = queryset.values_list("pk", flat=True)
     else:
