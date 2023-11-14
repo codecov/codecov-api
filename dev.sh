@@ -5,8 +5,8 @@
 echo "Starting gunicorn in dev mode"
 
 if [ -n "$PROMETHEUS_MULTIPROC_DIR" ]; then
-    rm -r "$PROMETHEUS_MULTIPROC_DIR" 2> /dev/null
-    mkdir "$PROMETHEUS_MULTIPROC_DIR"
+    rm -r ${PROMETHEUS_MULTIPROC_DIR?}/* 2> /dev/null
+    mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
 fi
 
 export PYTHONWARNINGS=always
