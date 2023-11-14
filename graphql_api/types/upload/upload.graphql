@@ -4,9 +4,9 @@ type Upload {
   createdAt: DateTime!
   updatedAt: DateTime!
   flags: [String]
-  downloadUrl: String
+  downloadUrl: String!
   ciUrl: String
-  uploadType: UploadType
+  uploadType: UploadType!
   jobCode: String
   buildCode: String
   errors: UploadErrorsConnection

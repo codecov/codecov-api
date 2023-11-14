@@ -8,7 +8,7 @@ from django.forms.utils import from_current_timezone
 
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
-from core.models import Repository
+from core.models import Branch, Repository
 from graphql_api.actions.commits import repo_commits
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
@@ -69,7 +69,7 @@ def resolve_lines(repository: Repository, info) -> Optional[int]:
 
 
 @repository_bindable.field("branch")
-def resolve_branch(repository, info, name):
+def resolve_branch(repository, info, name: str) -> Branch:
     command = info.context["executor"].get_command("branch")
     return command.fetch_branch(repository, name)
 

@@ -13,8 +13,8 @@ class TrialDaysAmount(enum.Enum):
 
 
 class PlanMarketingName(enum.Enum):
-    CODECOV_PRO = "Pro Team"
-    SENTRY_PRO = "Pro Team for Sentry"
+    CODECOV_PRO = "Pro"
+    SENTRY_PRO = "Sentry Pro"
     ENTERPRISE_CLOUD = "Enterprise Cloud"
     GITHUB_MARKETPLACE = "Github Marketplace"
     FREE = "Developer"
@@ -283,12 +283,12 @@ TEAM_PLAN_REPRESENTATIONS = {
         benefits=[
             "Up to 10 users",
             "Unlimited repositories",
-            "2500 repositories",
+            "2500 uploads",
             "Patch coverage analysis",
         ],
         tier_name=TierName.TEAM.value,
         trial_days=None,
-        monthly_uploads_limit=1000,
+        monthly_uploads_limit=MonthlyUploadLimits.CODECOV_TEAM_PLAN.value,
     ),
     PlanName.TEAM_YEARLY.value: PlanData(
         marketing_name=PlanMarketingName.TEAM.value,
@@ -298,12 +298,12 @@ TEAM_PLAN_REPRESENTATIONS = {
         benefits=[
             "Up to 10 users",
             "Unlimited repositories",
-            "2500 repositories",
+            "2500 uploads",
             "Patch coverage analysis",
         ],
         tier_name=TierName.TEAM.value,
         trial_days=None,
-        monthly_uploads_limit=1000,
+        monthly_uploads_limit=MonthlyUploadLimits.CODECOV_TEAM_PLAN.value,
     ),
 }
 
@@ -325,10 +325,11 @@ TRIAL_PLAN_REPRESENTATION = {
     ),
 }
 
-PRO_PLANS = {
+PAID_PLANS = {
     **PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     **ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    **TEAM_PLAN_REPRESENTATIONS,
 }
 
 TRIAL_PLANS = {**TRIAL_PLAN_REPRESENTATION}
@@ -340,7 +341,7 @@ USER_PLAN_REPRESENTATIONS = {
     **FREE_PLAN_REPRESENTATIONS,
     **NON_PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
     **GHM_PLAN_REPRESENTATION,
-    **PRO_PLANS,
+    **PAID_PLANS,
     **TRIAL_PLANS,
     **TEAM_PLANS,
 }

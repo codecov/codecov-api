@@ -1,5 +1,7 @@
 import asyncio
 import logging
+from datetime import datetime, timedelta
+from typing import Optional
 from urllib.parse import urlencode, urljoin
 
 from asgiref.sync import async_to_sync
@@ -67,11 +69,19 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         return teams
 
     @async_to_sync
-    async def fetch_user_data(self, code):
+    async def fetch_user_data(self, code) -> Optional[dict]:
         # https://docs.github.com/en/rest/reference/teams#list-teams-for-the-authenticated-user
         # This is specific to GitHub
         repo_service = self.repo_service_instance
         authenticated_user = await repo_service.get_authenticated_user(code)
+        if "access_token" not in authenticated_user:
+            log.warning(
+                "Missing access_token during GitHub OAuth",
+                extra=dict(
+                    user_info=authenticated_user,
+                ),
+            )
+            return None
         # Comply to torngit's token encoding
         authenticated_user["key"] = authenticated_user["access_token"]
         user_orgs = await repo_service.list_teams()
@@ -98,6 +108,8 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         redirection_url = self.get_redirection_url_from_state(state)
         try:
             user_dict = self.fetch_user_data(code)
+            if user_dict is None:
+                return redirect(self.error_redirection_page)
         except TorngitError:
             log.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)
@@ -108,6 +120,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         response = redirect(redirection_url)
         self.login_owner(owner, request, response)
         self.remove_state(state)
+        self.store_access_token_expiry_to_cookie(response)
         return response
 
     def get(self, request):
@@ -142,3 +155,13 @@ class GithubLoginView(LoginMixin, StateMixin, View):
             response = redirect(url_to_redirect_to)
             self.store_to_cookie_utm_tags(response)
             return response
+
+    # Set a session expiry of 8 hours for github logins. GH access tokens expire after 8 hours by default
+    # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/token-expiration-and-revocation#user-token-revoked-due-to-github-app-configuration
+    def store_access_token_expiry_to_cookie(self, response):
+        domain_to_use = settings.COOKIES_DOMAIN
+        eight_hours_later = datetime.utcnow() + timedelta(hours=8)
+        eight_hours_later_iso = eight_hours_later.isoformat() + "Z"
+        response.set_cookie(
+            "session_expiry", eight_hours_later_iso, domain=domain_to_use
+        )

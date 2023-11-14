@@ -68,6 +68,10 @@ class PlanService:
         return self.current_org.plan_user_count
 
     @property
+    def plan_activated_users(self) -> Optional[List[int]]:
+        return self.current_org.plan_activated_users
+
+    @property
     def pretrial_users_count(self) -> int:
         return self.current_org.pretrial_users_count or 1
 
@@ -122,15 +126,18 @@ class PlanService:
         if owner and sentry.is_sentry_user(owner=owner):
             available_plans += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        # If you're trialing or have trialed and <= 10 users, or belong to the team plan
-        has_ongoing_or_expired_trial = (
-            self.trial_status == TrialStatus.ONGOING.value
-            or self.trial_status == TrialStatus.EXPIRED.value
-        )
+        # If user is already in team plan or is/have trialed
         if (
-            has_ongoing_or_expired_trial or self.plan_name in TEAM_PLAN_REPRESENTATIONS
-        ) and self.plan_user_count <= TEAM_PLAN_MAX_USERS:
-            available_plans += TEAM_PLAN_REPRESENTATIONS.values()
+            self.plan_name in TEAM_PLAN_REPRESENTATIONS
+            or self.trial_status == TrialStatus.EXPIRED.value
+            or self.trial_status == TrialStatus.ONGOING.value
+        ):
+            # If number of activated users is less than or equal to TEAM_PLAN_MAX_USERS
+            if (
+                self.plan_activated_users is None
+                or len(self.plan_activated_users) <= TEAM_PLAN_MAX_USERS
+            ):
+                available_plans += TEAM_PLAN_REPRESENTATIONS.values()
 
         return available_plans
 

@@ -46,9 +46,11 @@ INSTALLED_APPS = [
     "reports",
     "staticanalysis",
     "timeseries",
+    "django_prometheus",
 ]
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -61,6 +63,7 @@ MIDDLEWARE = [
     "core.middleware.ServiceMiddleware",
     "codecov_auth.middleware.CurrentOwnerMiddleware",
     "codecov_auth.middleware.ImpersonationMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = "codecov.urls"
@@ -208,7 +211,7 @@ CONN_MAX_AGE = int(get_config("services", "database", "conn_max_age", default=0)
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": DATABASE_NAME,
         "USER": DATABASE_USER,
         "PASSWORD": DATABASE_PASSWORD,
@@ -221,7 +224,7 @@ DATABASES = {
 
 if DATABASE_READ_REPLICA_ENABLED:
     DATABASES["default_read"] = {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": DATABASE_READ_NAME,
         "USER": DATABASE_READ_USER,
         "PASSWORD": DATABASE_READ_PASSWORD,
@@ -233,7 +236,7 @@ if DATABASE_READ_REPLICA_ENABLED:
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
@@ -245,7 +248,7 @@ if TIMESERIES_ENABLED:
 
     if TIMESERIES_DATABASE_READ_REPLICA_ENABLED:
         DATABASES["timeseries_read"] = {
-            "ENGINE": "django.db.backends.postgresql",
+            "ENGINE": "django_prometheus.db.backends.postgresql",
             "NAME": TIMESERIES_DATABASE_READ_NAME,
             "USER": TIMESERIES_DATABASE_READ_USER,
             "PASSWORD": TIMESERIES_DATABASE_READ_PASSWORD,
@@ -269,6 +272,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+PROMETHEUS_EXPORT_MIGRATIONS = False
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
@@ -519,3 +523,6 @@ if SENTRY_DSN is not None:
             ),
         },
     )
+
+SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
+SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
