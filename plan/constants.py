@@ -51,8 +51,8 @@ class PlanPrice(enum.Enum):
     CODECOV_FREE = 0
     CODECOV_BASIC = 0
     CODECOV_TRIAL = 0
-    TEAM_MONTHLY = 6
-    TEAM_YEARLY = 5
+    TEAM_MONTHLY = 5
+    TEAM_YEARLY = 4
     GHM_PRICE = 12
 
 
