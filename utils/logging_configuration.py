@@ -69,6 +69,6 @@ class HealthCheckFilter(Filter):
         # Ignore /health/ requests, unless it's not a 200.
         return (
             ("GET /health/" not in record.getMessage())
-            if record.args.get("s") != "200"
+            if record.args.get("s") == "200"
             else True
         )
