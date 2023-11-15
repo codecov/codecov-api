@@ -336,9 +336,7 @@ LOGGING = {
         },
     },
     "filters": {
-        "health_check_filter": {
-            "()": "utils.logging_configuration.HealthCheckFilter"
-        }
+        "health_check_filter": {"()": "utils.logging_configuration.HealthCheckFilter"}
     },
     "root": {"handlers": ["default"], "level": "INFO", "propagate": True},
     "handlers": {
@@ -362,7 +360,7 @@ LOGGING = {
         "gunicorn.access": {
             "level": "INFO",
             "handlers": ["json-gunicorn-console"],
-            }
+        }
     },
 }
 
