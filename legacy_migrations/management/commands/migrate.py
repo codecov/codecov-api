@@ -100,6 +100,10 @@ class Command(MigrateCommand):
                 self._fake_initial_migrations(cursor, args, options)
 
             super().handle(*args, **options)
+        except:
+            log.info("Codecov migrations failed.")
+            raise
+        else:
+            log.info("Codecov migrations succeeded.")
         finally:
             lock.release()
-            log.info("Codecov migrations are complete.")
