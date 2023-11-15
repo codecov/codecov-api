@@ -335,6 +335,11 @@ LOGGING = {
             "format": '%(h)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"',
         },
     },
+    "filters": {
+        "health_check_filter": {
+            "()": "utils.logging_configuration.HealthCheckFilter"
+        }
+    },
     "root": {"handlers": ["default"], "level": "INFO", "propagate": True},
     "handlers": {
         "default": {
@@ -350,10 +355,14 @@ LOGGING = {
             "formatter": "gunicorn_json",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
+            "filters": ["health_check_filter"],
         },
     },
     "loggers": {
-        "gunicorn.access": {"level": "INFO", "handlers": ["json-gunicorn-console"]}
+        "gunicorn.access": {
+            "level": "INFO",
+            "handlers": ["json-gunicorn-console"],
+            }
     },
 }
 

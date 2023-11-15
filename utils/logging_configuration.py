@@ -1,5 +1,6 @@
 from pythonjsonlogger.jsonlogger import JsonFormatter, merge_record_extra
 from sentry_sdk import Hub
+from logging import Filter
 
 
 class BaseLogger(JsonFormatter):
@@ -60,3 +61,8 @@ class CustomGunicornLogFormatter(JsonFormatter):
                 del log_record[field]
             else:
                 log_record[field] = record.args.get(field)
+
+class HealthCheckFilter(Filter):
+    def filter(self, record):
+        # Ignore /health/ requests, unless it's not a 200.
+        return ('GET /health/' not in record.getMessage()) if record.args.get('s') != '200' else True
