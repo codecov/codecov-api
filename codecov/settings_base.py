@@ -331,9 +331,9 @@ LOGGING = {
         },
         "gunicorn_json": {
             "class": "utils.logging_configuration.CustomGunicornLogFormatter",
-            "datefmt": '%Y-%m-%dT%H:%M:%S%z',
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
             "format": '%(h)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"',
-        }
+        },
     },
     "root": {"handlers": ["default"], "level": "INFO", "propagate": True},
     "handlers": {
@@ -350,15 +350,10 @@ LOGGING = {
             "formatter": "gunicorn_json",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
-        }
+        },
     },
     "loggers": {
-        "gunicorn.access": {
-            "level": "INFO",
-            "handlers": [
-                "json-gunicorn-console"
-            ]
-        }
+        "gunicorn.access": {"level": "INFO", "handlers": ["json-gunicorn-console"]}
     },
 }
 
