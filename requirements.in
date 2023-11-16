@@ -17,7 +17,7 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/73a0aa871fd3169673d1deb0509408b7d1b908ee.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/3d97484fcb707027743501a7ec5e1be24445d0f9.tar.gz#egg=shared
 google-cloud-pubsub
 gunicorn
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
