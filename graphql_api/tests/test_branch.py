@@ -102,6 +102,9 @@ class MockReport(object):
     def flags(self):
         return ["flag-a"]
 
+    def get_file_totals(self, path):
+        return MockTotals().totals
+
 
 class TestBranch(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
