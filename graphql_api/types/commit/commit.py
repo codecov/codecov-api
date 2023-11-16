@@ -1,5 +1,6 @@
 from typing import List
 
+import sentry_sdk
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
@@ -148,6 +149,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
     return profiling_summary.critical_files
 
 
+@sentry_sdk.trace
 @commit_bindable.field("pathContents")
 @convert_kwargs_to_snake_case
 @sync_to_async

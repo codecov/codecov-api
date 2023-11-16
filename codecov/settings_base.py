@@ -329,6 +329,14 @@ LOGGING = {
             "format": "%(message)s %(asctime)s %(name)s %(levelname)s %(lineno)s %(pathname)s %(funcName)s %(threadName)s",
             "class": "utils.logging_configuration.CustomDatadogJsonFormatter",
         },
+        "gunicorn_json": {
+            "class": "utils.logging_configuration.CustomGunicornLogFormatter",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+            "format": '%(h)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"',
+        },
+    },
+    "filters": {
+        "health_check_filter": {"()": "utils.logging_configuration.HealthCheckFilter"}
     },
     "root": {"handlers": ["default"], "level": "INFO", "propagate": True},
     "handlers": {
@@ -339,9 +347,21 @@ LOGGING = {
             else "json",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
+        },
+        "json-gunicorn-console": {
+            "level": "INFO",
+            "formatter": "gunicorn_json",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",  # Default is stderr
+            "filters": ["health_check_filter"],
+        },
+    },
+    "loggers": {
+        "gunicorn.access": {
+            "level": "INFO",
+            "handlers": ["json-gunicorn-console"],
         }
     },
-    "loggers": {},
 }
 
 MINIO_ACCESS_KEY = get_config("services", "minio", "access_key_id")
