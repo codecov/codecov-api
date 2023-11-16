@@ -11,7 +11,7 @@ from django.utils.html import format_html
 
 from codecov.admin import AdminMixin
 from codecov_auth.helpers import History
-from codecov_auth.models import OrganizationLevelToken, Owner, OwnerProfile, User
+from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from services.task import TaskService
@@ -81,6 +81,34 @@ class UserAdmin(AdminMixin, admin.ModelAdmin):
             form.base_fields["is_staff"].disabled = True
 
         return form
+
+    def has_add_permission(self, _, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SentryUser)
+class SentryUserAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = (
+        "name",
+        "email",
+    )
+    search_fields = (
+        "name__iexact",
+        "email__iexact",
+    )
+    readonly_fields = (
+        "id",
+        "external_id",
+        "sentry_id",
+        "user",
+    )
+    fields = readonly_fields + (
+        "name",
+        "email",
+    )
 
     def has_add_permission(self, _, obj=None):
         return False

@@ -1,5 +1,7 @@
 from typing import Iterable, Union
 
+import sentry_sdk
+
 from graphql_api.types.enums import PathContentDisplayType
 from services.path import Dir, File
 
@@ -27,6 +29,7 @@ def sort_list_by_directory(
     return directories + files
 
 
+@sentry_sdk.trace
 def sort_path_contents(
     items: Iterable[Union[File, Dir]], filters={}
 ) -> Iterable[Union[File, Dir]]:
