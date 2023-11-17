@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional
 
+import sentry_sdk
 from django.conf import settings
 from django.db.models import Prefetch, Q
 from django.utils.functional import cached_property
@@ -50,6 +51,7 @@ class ReadOnlyReport(ReportMixin, SharedReadOnlyReport):
     pass
 
 
+@sentry_sdk.trace
 def build_report(chunks, files, sessions, totals, report_class=None):
     if report_class is None:
         report_class = SerializableReport
@@ -58,6 +60,7 @@ def build_report(chunks, files, sessions, totals, report_class=None):
     )
 
 
+@sentry_sdk.trace
 def build_report_from_commit(commit: Commit, report_class=None):
     """
     Builds a `shared.reports.resources.Report` from a given commit.
@@ -74,24 +77,26 @@ def build_report_from_commit(commit: Commit, report_class=None):
         or commit.repository_id in settings.REPORT_BUILDER_REPO_IDS
     )
 
-    commit_report = fetch_commit_report(commit)
-    if commit_report and new_report_builder_enabled:
-        files = build_files(commit_report)
-        sessions = build_sessions(commit_report)
-        try:
-            totals = build_totals(commit_report.reportleveltotals)
-        except CommitReport.reportleveltotals.RelatedObjectDoesNotExist:
-            totals = None
-    else:
-        if not commit.report:
-            return None
+    with sentry_sdk.start_span(description="Fetch files/sessions/totals"):
+        commit_report = fetch_commit_report(commit)
+        if commit_report and new_report_builder_enabled:
+            files = build_files(commit_report)
+            sessions = build_sessions(commit_report)
+            try:
+                totals = build_totals(commit_report.reportleveltotals)
+            except CommitReport.reportleveltotals.RelatedObjectDoesNotExist:
+                totals = None
+        else:
+            if not commit.report:
+                return None
 
-        files = commit.report["files"]
-        sessions = commit.report["sessions"]
-        totals = commit.totals
+            files = commit.report["files"]
+            sessions = commit.report["sessions"]
+            totals = commit.totals
 
     try:
-        chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
+        with sentry_sdk.start_span(description="Fetch chunks"):
+            chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
         return build_report(chunks, files, sessions, totals, report_class=report_class)
     except FileNotInStorageError:
         log.warning(
