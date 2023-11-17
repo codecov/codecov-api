@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+from unittest.mock import patch
 
 import jwt
 import pytest
@@ -55,6 +56,22 @@ def test_try_to_get_best_possible_bot_token_yes_repobot(db):
         "key": "anotha_one",
         "secret": None,
     }
+
+
+@patch("upload.helpers.get_github_integration_token")
+@pytest.mark.django_db
+def test_try_to_get_best_possible_bot_token_using_integration(
+    get_github_integration_token,
+):
+    get_github_integration_token.return_value = "test-token"
+    owner = OwnerFactory.create(integration_id=12345)
+    owner.save()
+    repository = RepositoryFactory.create(author=owner, using_integration=True)
+    repository.save()
+    assert try_to_get_best_possible_bot_token(repository) == {
+        "key": "test-token",
+    }
+    get_github_integration_token.assert_called_once_with("github", integration_id=12345)
 
 
 def test_try_to_get_best_possible_nothing_and_is_private(db):
