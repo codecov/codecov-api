@@ -77,7 +77,7 @@ def test_try_to_get_best_possible_bot_token_using_integration(
 
 @patch("upload.helpers.get_github_integration_token")
 @pytest.mark.django_db
-def test_try_to_get_best_possible_bot_token_using_integration(
+def test_try_to_get_best_possible_bot_token_using_invalid_integration(
     get_github_integration_token,
 ):
     get_github_integration_token.side_effect = InvalidInstallationError()
