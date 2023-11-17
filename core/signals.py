@@ -18,12 +18,19 @@ def _get_pubsub_publisher():
 
 
 @receiver(post_save, sender=Repository, dispatch_uid="shelter_sync_repo")
-def update_repository(sender, instance, **kwargs):
+def update_repository(sender, instance: Repository, **kwargs):
     pubsub_project_id = settings.SHELTER_PUBSUB_PROJECT_ID
     topic_id = settings.SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID
     if pubsub_project_id and topic_id:
         publisher = _get_pubsub_publisher()
         topic_path = publisher.topic_path(pubsub_project_id, topic_id)
         publisher.publish(
-            topic_path, json.dumps({"sync": instance.repoid}).encode("utf-8")
+            topic_path,
+            json.dumps(
+                {
+                    "type": "repo",
+                    "sync": "one",
+                    "id": instance.repoid,
+                }
+            ).encode("utf-8"),
         )
