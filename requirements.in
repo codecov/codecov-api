@@ -17,13 +17,13 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/3182e6f345fa13ff3dad9612811541168c147dd9.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/e3f09405be85f6e1e0290cb51aed19576a6cc53e.tar.gz#egg=shared
 google-cloud-pubsub
 gunicorn
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 minio
-opentelemetry-instrumentation-django
-opentelemetry-sdk
+opentelemetry-instrumentation-django>=0.41b0
+opentelemetry-sdk>=1.20.0
 opentracing
 pre-commit
 psycopg2
@@ -43,5 +43,6 @@ sentry-sdk
 setproctitle
 simplejson
 stripe
+urllib3>=1.26.17
 vcrpy
 whitenoise

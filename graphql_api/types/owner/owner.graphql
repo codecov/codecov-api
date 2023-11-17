@@ -29,5 +29,6 @@ type Owner {
     after: DateTime
     before: DateTime
     repos: [String!]
+    isPublic: Boolean
   ): [Measurement!]!
 }

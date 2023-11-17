@@ -7,8 +7,8 @@ GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
 if [ "$GUNICORN_WORKERS" -gt 1 ];
 then
     export PROMETHEUS_MULTIPROC_DIR="${PROMETHEUS_MULTIPROC_DIR:-$HOME/.prometheus}"
-    rm -r "$PROMETHEUS_MULTIPROC_DIR" 2> /dev/null
-    mkdir "$PROMETHEUS_MULTIPROC_DIR"
+    rm -r ${PROMETHEUS_MULTIPROC_DIR?}/* 2> /dev/null
+    mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
 fi
 
 if [[ "$CODECOV_WRAPPER" ]]; then

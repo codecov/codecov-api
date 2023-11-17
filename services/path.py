@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Iterable, List, Optional, Union
 
+import sentry_sdk
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from shared.reports.resources import Report
@@ -141,6 +142,7 @@ class ReportPaths:
     Contains methods for getting path information out of a single report.
     """
 
+    @sentry_sdk.trace
     def __init__(
         self,
         report: Report,
@@ -186,6 +188,7 @@ class ReportPaths:
     def paths(self):
         return self._paths
 
+    @sentry_sdk.trace
     def full_filelist(self) -> Iterable[File]:
         """
         Return a flat file list of all files under the specified `path` prefix/directory.
@@ -195,6 +198,7 @@ class ReportPaths:
             for path in self.paths
         ]
 
+    @sentry_sdk.trace
     def single_directory(self) -> Iterable[Union[File, Dir]]:
         """
         Return a single directory (specified by `path`) of mixed file/directory results.
@@ -205,7 +209,7 @@ class ReportPaths:
         """
         Returns the report totals for a given prefixed path.
         """
-        return self.report.get(path.full_path).totals
+        return self.report.get_file_totals(path.full_path)
 
     def _single_directory_recursive(
         self, paths: Iterable[PrefixedPath]

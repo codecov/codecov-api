@@ -11,7 +11,6 @@ from api.internal.owner.views import (
     AccountDetailsViewSet,
     InvoiceViewSet,
     OwnerViewSet,
-    PlanViewSet,
     UserViewSet,
 )
 from api.internal.pull.views import PullViewSet
@@ -23,8 +22,6 @@ from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRout
 urls.handler404 = not_found
 urls.handler500 = server_error
 
-plans_router = OptionalTrailingSlashRouter()
-plans_router.register(r"plans", PlanViewSet, basename="plans")
 
 owners_router = OptionalTrailingSlashRouter()
 owners_router.register(r"owners", OwnerViewSet, basename="owners")
@@ -59,7 +56,6 @@ urlpatterns += [
     path("user", CurrentUserView.as_view(), name="current-user"),
     path("slack/", include("api.internal.slack.urls")),
     path("charts/", include("api.internal.chart.urls")),
-    path("", include(plans_router.urls)),
     path("<str:service>/", include(owners_router.urls)),
     path("<str:service>/<str:owner_username>/", include(owner_artifacts_router.urls)),
     path("<str:service>/<str:owner_username>/", include(account_details_router.urls)),
