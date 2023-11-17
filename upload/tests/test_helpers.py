@@ -6,6 +6,7 @@ import pytest
 from django.conf import settings
 from rest_framework.exceptions import Throttled, ValidationError
 from shared.config import get_config
+from shared.github import InvalidInstallationError
 
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from plan.constants import PlanName
@@ -70,6 +71,26 @@ def test_try_to_get_best_possible_bot_token_using_integration(
     repository.save()
     assert try_to_get_best_possible_bot_token(repository) == {
         "key": "test-token",
+    }
+    get_github_integration_token.assert_called_once_with("github", integration_id=12345)
+
+
+@patch("upload.helpers.get_github_integration_token")
+@pytest.mark.django_db
+def test_try_to_get_best_possible_bot_token_using_integration(
+    get_github_integration_token,
+):
+    get_github_integration_token.side_effect = InvalidInstallationError()
+    bot = OwnerFactory.create(unencrypted_oauth_token="bornana")
+    bot.save()
+    owner = OwnerFactory.create(integration_id=12345, bot=bot)
+    owner.save()
+    repository = RepositoryFactory.create(author=owner, using_integration=True)
+    repository.save()
+    # falls back to bot token
+    assert try_to_get_best_possible_bot_token(repository) == {
+        "key": "bornana",
+        "secret": None,
     }
     get_github_integration_token.assert_called_once_with("github", integration_id=12345)
 
