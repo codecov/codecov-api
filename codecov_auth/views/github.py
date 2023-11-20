@@ -163,5 +163,5 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         eight_hours_later = datetime.utcnow() + timedelta(hours=8)
         eight_hours_later_iso = eight_hours_later.isoformat() + "Z"
         response.set_cookie(
-            "session_expiry", eight_hours_later_iso, domain=domain_to_use
+            "session_expiry", eight_hours_later_iso, domain=domain_to_use, secure=True
         )
