@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
-    "django_extensions",
     "django_filters",
     "drf_spectacular",
     "drf_spectacular_sidecar",
