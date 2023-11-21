@@ -1,7 +1,11 @@
 from rest_framework import serializers
 
 from api.public.v2.owner.serializers import OwnerSerializer
-from api.shared.commit.serializers import CommitTotalsSerializer, ReportSerializer, UploadTotalsSerializer
+from api.shared.commit.serializers import (
+    CommitTotalsSerializer,
+    ReportSerializer,
+    UploadTotalsSerializer,
+)
 from api.shared.serializers import StringListField
 from core.models import Commit
 from reports.models import ReportSession
@@ -59,7 +63,7 @@ class CommitUploadsSerializer(serializers.ModelSerializer):
     provider = serializers.CharField()
     build_code = serializers.CharField()
     name = serializers.CharField()
-    job_code =serializers.CharField()
+    job_code = serializers.CharField()
     build_url = serializers.CharField()
     state = serializers.CharField()
     env = serializers.JSONField()

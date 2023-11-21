@@ -4,12 +4,15 @@ from rest_framework import mixins, viewsets
 
 from api.public.v2.schema import repo_parameters
 from api.shared.commit.mixins import CommitsViewSetMixin
-from core.models import Commit
-
 from api.shared.mixins import RepoPropertyMixin
-from .serializers import CommitDetailSerializer, CommitSerializer, CommitUploadsSerializer
+from core.models import Commit
 from reports.models import ReportSession
 
+from .serializers import (
+    CommitDetailSerializer,
+    CommitSerializer,
+    CommitUploadsSerializer,
+)
 
 commits_parameters = [
     OpenApiParameter(
@@ -19,6 +22,7 @@ commits_parameters = [
         description="commit SHA",
     ),
 ]
+
 
 @extend_schema(parameters=repo_parameters, tags=["Commits"])
 class CommitsViewSet(
@@ -50,8 +54,7 @@ class CommitsViewSet(
         return super().list(request, *args, **kwargs)
 
     @extend_schema(summary="Commit detail", parameters=commits_parameters)
-    def retrieve(self,
-                  request, *args, **kwargs):
+    def retrieve(self, request, *args, **kwargs):
         """
         Returns a single commit by commitid (SHA)
         """
@@ -68,9 +71,9 @@ class CommitsUploadsViewSet(
 
     def get_queryset(self):
         commit = self.get_commit(self.kwargs["commitid"])
-        return ReportSession.objects.filter(
-            report__commit=commit.id
-        ).select_related("uploadleveltotals")
+        return ReportSession.objects.filter(report__commit=commit.id).select_related(
+            "uploadleveltotals"
+        )
 
     @extend_schema(summary="Commit uploads", parameters=commits_parameters)
     def list(self, request, *args, **kwargs):

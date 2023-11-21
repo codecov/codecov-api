@@ -7,7 +7,7 @@ from api.shared.error_views import not_found
 from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRouter
 
 from .branch.views import BranchViewSet
-from .commit.views import CommitsViewSet, CommitsUploadsViewSet
+from .commit.views import CommitsUploadsViewSet, CommitsViewSet
 from .compare.views import CompareViewSet
 from .component.views import ComponentViewSet
 from .coverage.views import CoverageViewSet, FlagCoverageViewSet
