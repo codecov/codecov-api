@@ -5,6 +5,7 @@ from rest_framework import mixins, viewsets
 from api.public.v2.schema import repo_parameters
 from api.shared.commit.mixins import CommitsViewSetMixin
 from api.shared.mixins import RepoPropertyMixin
+from api.shared.permissions import RepositoryArtifactPermissions
 from core.models import Commit
 from reports.models import ReportSession
 
@@ -67,6 +68,7 @@ class CommitsUploadsViewSet(
     RepoPropertyMixin,
     mixins.ListModelMixin,
 ):
+    permission_classes = [RepositoryArtifactPermissions]
     serializer_class = CommitUploadsSerializer
 
     def get_queryset(self):
