@@ -367,7 +367,9 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
     @patch("services.report.build_report_from_commit")
-    def test_commit_uploads_not_authenticated(self, build_report_from_commit, get_repo_permissions):
+    def test_commit_uploads_not_authenticated(
+        self, build_report_from_commit, get_repo_permissions
+    ):
         build_report_from_commit.return_value = MockReport()
         get_repo_permissions.return_value = (True, True)
 
@@ -409,7 +411,9 @@ class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
         assert response.status_code == 404
 
     @patch("services.report.build_report_from_commit")
-    def test_commit_uploads_authenticated(self, build_report_from_commit, get_repo_permissions):
+    def test_commit_uploads_authenticated(
+        self, build_report_from_commit, get_repo_permissions
+    ):
         build_report_from_commit.return_value = MockReport()
         get_repo_permissions.return_value = (True, True)
         commit = CommitWithReportFactory(author=self.org, repository=self.repo)
@@ -455,7 +459,9 @@ class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
         }
 
     @patch("services.report.build_report_from_commit")
-    def test_commit_uploads_pagination(self, build_report_from_commit, get_repo_permissions):
+    def test_commit_uploads_pagination(
+        self, build_report_from_commit, get_repo_permissions
+    ):
         build_report_from_commit.return_value = MockReport()
         get_repo_permissions.return_value = (True, True)
         commit = CommitWithReportFactory(author=self.org, repository=self.repo)
