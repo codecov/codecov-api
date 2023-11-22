@@ -366,47 +366,51 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
-    # def test_commit_uploads_not_authenticated(self, get_repo_permissions):
-    #     get_repo_permissions.return_value = (True, True)
+    @patch("services.report.build_report_from_commit")
+    def test_commit_uploads_not_authenticated(self, build_report_from_commit, get_repo_permissions):
+        build_report_from_commit.return_value = MockReport()
+        get_repo_permissions.return_value = (True, True)
 
-    #     author = OwnerFactory()
-    #     repo_public = RepositoryFactory(author=author, private=False)
-    #     repo_private = RepositoryFactory(author=author, private=True)
-    #     commit_public = CommitWithReportFactory(author=author, repository=repo_public)
-    #     commit_private = CommitWithReportFactory(author=author, repository=repo_private)
+        author = OwnerFactory()
+        repo_public = RepositoryFactory(author=author, private=False)
+        repo_private = RepositoryFactory(author=author, private=True)
+        commit_public = CommitWithReportFactory(author=author, repository=repo_public)
+        commit_private = CommitWithReportFactory(author=author, repository=repo_private)
 
-    #     self.client.logout()
-    #     response = self.client.get(
-    #         reverse(
-    #             "api-v2-commits-detail",
-    #             kwargs={
-    #                 "service": author.service,
-    #                 "owner_username": author.username,
-    #                 "repo_name": repo_public.name,
-    #                 "commitid": commit_public.commitid,
-    #             },
-    #         )
-    #     )
+        self.client.logout()
+        response = self.client.get(
+            reverse(
+                "api-v2-commits-detail",
+                kwargs={
+                    "service": author.service,
+                    "owner_username": author.username,
+                    "repo_name": repo_public.name,
+                    "commitid": commit_public.commitid,
+                },
+            )
+        )
 
-    #     # allows access to public repos
-    #     assert response.status_code == 200
+        # allows access to public repos
+        assert response.status_code == 200
 
-    #     response = self.client.get(
-    #         reverse(
-    #             "api-v2-commits-detail",
-    #             kwargs={
-    #                 "service": author.service,
-    #                 "owner_username": author.username,
-    #                 "repo_name": repo_private.name,
-    #                 "commitid": commit_private.commitid,
-    #             },
-    #         )
-    #     )
+        response = self.client.get(
+            reverse(
+                "api-v2-commits-detail",
+                kwargs={
+                    "service": author.service,
+                    "owner_username": author.username,
+                    "repo_name": repo_private.name,
+                    "commitid": commit_private.commitid,
+                },
+            )
+        )
 
-    #     # does not allow access to private repos
-    #     assert response.status_code == 404
+        # does not allow access to private repos
+        assert response.status_code == 404
 
-    def test_commit_uploads_authenticated(self, get_repo_permissions):
+    @patch("services.report.build_report_from_commit")
+    def test_commit_uploads_authenticated(self, build_report_from_commit, get_repo_permissions):
+        build_report_from_commit.return_value = MockReport()
         get_repo_permissions.return_value = (True, True)
         commit = CommitWithReportFactory(author=self.org, repository=self.repo)
 
@@ -450,7 +454,9 @@ class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
             "methods": 0,
         }
 
-    def test_commit_uploads_pagination(self, get_repo_permissions):
+    @patch("services.report.build_report_from_commit")
+    def test_commit_uploads_pagination(self, build_report_from_commit, get_repo_permissions):
+        build_report_from_commit.return_value = MockReport()
         get_repo_permissions.return_value = (True, True)
         commit = CommitWithReportFactory(author=self.org, repository=self.repo)
 
