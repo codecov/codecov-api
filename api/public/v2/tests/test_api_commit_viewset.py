@@ -80,10 +80,12 @@ class BaseRepoCommitTestCase(TestCase):
                 "diff": 0,
             },
         )
-
         self.client = APIClient()
         self.client.force_login_owner(self.current_owner)
 
+
+@patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
+class RepoCommitListTestCase(BaseRepoCommitTestCase):
     def test_commit_list_not_authenticated(self, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
 
