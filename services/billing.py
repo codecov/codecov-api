@@ -204,39 +204,42 @@ class StripeService(AbstractPaymentService):
 
         if is_upgrading:
             if subscription_schedule_id:
-                self._modify_subscription_schedule(
-                    owner, subscription, subscription_schedule_id, desired_plan
-                )
-            else:
                 log.info(
-                    f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
+                    f"Releasing Stripe schedule for owner {owner.ownerid} to {desired_plan['value']} with {desired_plan['quantity']} seats by user #{self.requesting_user.ownerid}"
                 )
-                stripe.Subscription.modify(
-                    owner.stripe_subscription_id,
-                    cancel_at_period_end=False,
-                    items=[
-                        {
-                            "id": subscription["items"]["data"][0]["id"],
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "quantity": desired_plan["quantity"],
-                        }
-                    ],
-                    metadata=self._get_checkout_session_and_subscription_metadata(
-                        owner
-                    ),
-                    proration_behavior=proration_behavior,
-                )
+                stripe.SubscriptionSchedule.release(subscription_schedule_id)
+            log.info(
+                f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
+            )
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id,
+                cancel_at_period_end=False,
+                items=[
+                    {
+                        "id": subscription["items"]["data"][0]["id"],
+                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_plan["quantity"],
+                    }
+                ],
+                metadata=self._get_checkout_session_and_subscription_metadata(owner),
+                proration_behavior=proration_behavior,
+            )
 
-                plan_service = PlanService(current_org=owner)
-                plan_service.update_plan(
-                    name=desired_plan["value"], user_count=desired_plan["quantity"]
-                )
+            plan_service = PlanService(current_org=owner)
+            plan_service.update_plan(
+                name=desired_plan["value"], user_count=desired_plan["quantity"]
+            )
 
-                log.info(
-                    f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
-                )
+            log.info(
+                f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            )
         else:
             if subscription_schedule_id:
+                new_plan = desired_plan["value"]
+                new_quantity = desired_plan["quantity"]
+
+                print("downgrade", new_plan, new_quantity)
+
                 self._modify_subscription_schedule(
                     owner, subscription, subscription_schedule_id, desired_plan
                 )
