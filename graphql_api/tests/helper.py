@@ -14,6 +14,9 @@ class GraphQLTestHelper:
     ):
         url = f"/graphql/{provider}"
 
+        # Hopping this change will trigger ATS on the test_flags tests (at least)
+        print("The test files are ignored :') ")
+
         if owner:
             self.client = Client()
             self.client.force_login_owner(owner)
