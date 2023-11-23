@@ -150,6 +150,7 @@ query_components_comparison = """
         $org: String!
         $repo: String!
         $pullid: Int!
+        $filters: ComponentsFilters
     ) {
         owner(username: $org) {
             repository(name: $repo) {
@@ -159,7 +160,7 @@ query_components_comparison = """
                             __typename
                             ... on Comparison {
                                 componentComparisonsCount
-                                componentComparisons {
+                                componentComparisons(filters: $filters) {
                                     id
                                     name
                                     baseTotals {
@@ -311,6 +312,118 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                                 {
                                     "id": "golang",
                                     "name": "golang",
+                                    "baseTotals": {"percentCovered": 72.92638},
+                                    "headTotals": {"percentCovered": 85.71429},
+                                    "patchTotals": {"percentCovered": 28.57143},
+                                },
+                            ],
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.commit_components")
+    def test_components_filter(self, commit_components_mock):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {"component_id": "python", "paths": [".*/*.py"], "name": "python"}
+            ),
+            Component.from_dict(
+                {"component_id": "golang", "paths": [".*/*.go"], "name": "golang"}
+            ),
+        ]
+
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="python",
+        )
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="golang",
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pullid": self.pull.pullid,
+            "filters": {"components": ["python"]},
+        }
+        data = self.gql_request(query_components_comparison, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "__typename": "Comparison",
+                            "componentComparisonsCount": 2,
+                            "componentComparisons": [
+                                {
+                                    "id": "python",
+                                    "name": "python",
+                                    "baseTotals": {"percentCovered": 72.92638},
+                                    "headTotals": {"percentCovered": 85.71429},
+                                    "patchTotals": {"percentCovered": 28.57143},
+                                },
+                            ],
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.commit_components")
+    def test_components_multi_filter(self, commit_components_mock):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {"component_id": "python", "paths": [".*/*.py"], "name": "python"}
+            ),
+            Component.from_dict(
+                {"component_id": "golang", "paths": [".*/*.go"], "name": "golang"}
+            ),
+            Component.from_dict(
+                {"component_id": "js", "paths": [".*/*.js"], "name": "javascript"}
+            ),
+        ]
+
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="python",
+        )
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="golang",
+        )
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="js",
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pullid": self.pull.pullid,
+            "filters": {"components": ["python", "javascript"]},
+        }
+        data = self.gql_request(query_components_comparison, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "__typename": "Comparison",
+                            "componentComparisonsCount": 3,
+                            "componentComparisons": [
+                                {
+                                    "id": "python",
+                                    "name": "python",
+                                    "baseTotals": {"percentCovered": 72.92638},
+                                    "headTotals": {"percentCovered": 85.71429},
+                                    "patchTotals": {"percentCovered": 28.57143},
+                                },
+                                {
+                                    "id": "js",
+                                    "name": "javascript",
                                     "baseTotals": {"percentCovered": 72.92638},
                                     "headTotals": {"percentCovered": 85.71429},
                                     "patchTotals": {"percentCovered": 28.57143},
