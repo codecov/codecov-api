@@ -234,24 +234,14 @@ class StripeService(AbstractPaymentService):
                 f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
         else:
-            if subscription_schedule_id:
-                new_plan = desired_plan["value"]
-                new_quantity = desired_plan["quantity"]
-
-                print("downgrade", new_plan, new_quantity)
-
-                self._modify_subscription_schedule(
-                    owner, subscription, subscription_schedule_id, desired_plan
-                )
-            else:
+            if not subscription_schedule_id:
                 schedule = stripe.SubscriptionSchedule.create(
                     from_subscription=owner.stripe_subscription_id
                 )
                 subscription_schedule_id = schedule.id
-
-                self._modify_subscription_schedule(
-                    owner, subscription, subscription_schedule_id, desired_plan
-                )
+            self._modify_subscription_schedule(
+                owner, subscription, subscription_schedule_id, desired_plan
+            )
 
     def _modify_subscription_schedule(
         self, owner, subscription, subscription_schedule_id, desired_plan
