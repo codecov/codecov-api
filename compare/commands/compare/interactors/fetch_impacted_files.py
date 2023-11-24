@@ -3,7 +3,12 @@ from typing import List, Optional, Union
 
 from codecov.commands.base import BaseInteractor
 from services.comparison import Comparison, ComparisonReport, ImpactedFile
-from services.report import files_belonging_to_flags
+from services.report import (
+    files_belonging_to_flags,
+    files_in_sessions,
+    get_sessions_ids,
+)
+from services.components import commit_components, components_filtered_report
 
 
 class ImpactedFileParameter(enum.Enum):
@@ -27,16 +32,49 @@ class FetchImpactedFiles(BaseInteractor):
             impacted_files = self.sort_impacted_files(
                 impacted_files, parameter, direction
             )
-        flags = filters.get("flags", [])
-        if flags and comparison:
-            head_commit_report = comparison.head_report
-            if set(flags) & set(head_commit_report.flags):
+        flags_filter = filters.get("flags", [])
+        components_filter = filters.get("components", [])
+
+        if not comparison:
+            return impacted_files
+
+        head_commit_report = comparison.head_report
+        head_commit = comparison.head_commit
+
+        if components_filter:
+            head_commit_components = commit_components(
+                commit=head_commit, owner=head_commit.author
+            )
+            filtered_components = [
+                component
+                for component in head_commit_components
+                if component.name in components_filter
+            ]
+            head_commit_report = components_filtered_report(
+                report=head_commit_report, component=filtered_components
+            )
+
+            # don't loop twice over the same report
+            if not flags_filter:
+                session_ids = get_sessions_ids(commit_report=head_commit_report)
+                files_in_specific_sessions = files_in_sessions(
+                    commit_report=head_commit_report, session_ids=session_ids
+                )
+                impacted_files = [
+                    file
+                    for file in impacted_files
+                    if file.head_name in files_in_specific_sessions
+                ]
+
+        if flags_filter:
+            if set(flags_filter) & set(head_commit_report.flags):
                 files = files_belonging_to_flags(
-                    commit_report=head_commit_report, flags=flags
+                    commit_report=head_commit_report, flags=flags_filter
                 )
                 impacted_files = [
                     file for file in impacted_files if file.head_name in files
                 ]
+
         return impacted_files
 
     def get_attribute(

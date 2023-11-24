@@ -31,6 +31,22 @@ def component_filtered_report(report: Report, component: Component) -> FilteredR
     return filtered_report
 
 
+def components_filtered_report(
+    report: Report, components: [Component]
+) -> FilteredReport:
+    """
+    Filter a report such that the totals, etc. are only pertaining to the given components.
+    """
+    flags = []
+    paths = []
+    for component in components:
+        flags.extend(component.get_matching_flags(report.flags.keys()))
+        paths.extend(component.paths)
+
+    filtered_report = report.filter(flags=flags, paths=paths)
+    return filtered_report
+
+
 class ComponentComparison:
     def __init__(self, comparison: Comparison, component: Component):
         self.comparison = comparison

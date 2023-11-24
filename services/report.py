@@ -253,6 +253,13 @@ def sessions_with_specific_flags(
     return dict(sessions)
 
 
+def get_sessions_ids(commit_report: Report) -> List[int]:
+    sessions = [(sid, session) for sid, session in commit_report.sessions.items()]
+
+    sessions_dict = dict(sessions)
+    return list(sessions_dict.keys())
+
+
 def files_in_sessions(commit_report: Report, session_ids: List[int]) -> List[str]:
     files, session_ids = [], set(session_ids)
     for file in commit_report:
