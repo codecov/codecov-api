@@ -144,6 +144,193 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.components.commit_components")
+    def test_components_filtering(self, commit_components_mock, full_report_mock):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "python1.1",
+                    "name": "Python",
+                    "paths": [".*/*.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "golang1.2",
+                    "name": "Golang",
+                    "paths": [".*/*.go"],
+                }
+            ),
+        ]
+
+        full_report_mock.return_value = sample_report()
+
+        query_commit_components = """
+            query CommitComponents(
+                $org: String!
+                $repo: String!
+                $sha: String!
+                $filter: ComponentsFilters
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $sha) {
+                                components (filters: $filter) {
+                                    id
+                                    name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        # Find one item
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["Python"]},
+        }
+        data = self.gql_request(query_commit_components, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "components": [
+                            {
+                                "id": "python1.1",
+                                "name": "Python",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
+        # Find no items
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["C++"]},
+        }
+        data = self.gql_request(query_commit_components, variables=variables)
+        assert data == {"owner": {"repository": {"commit": {"components": []}}}}
+
+        # Find all items
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": []},
+        }
+        data = self.gql_request(query_commit_components, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "components": [
+                            {
+                                "id": "python1.1",
+                                "name": "Python",
+                            },
+                            {
+                                "id": "golang1.2",
+                                "name": "Golang",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
+        # Find some items
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["C", "Golang"]},
+        }
+        data = self.gql_request(query_commit_components, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "components": [
+                            {
+                                "id": "golang1.2",
+                                "name": "Golang",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
+    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.components.commit_components")
+    def test_components_filtering_case_insensitive(
+        self, commit_components_mock, full_report_mock
+    ):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "cpython",
+                    "name": "PyThOn",
+                    "paths": [".*/*.py"],
+                }
+            ),
+        ]
+
+        full_report_mock.return_value = sample_report()
+
+        query_commit_components = """
+            query CommitComponents(
+                $org: String!
+                $repo: String!
+                $sha: String!
+                $filter: ComponentsFilters
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $sha) {
+                                components (filters: $filter) {
+                                    id
+                                    name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["pYtHoN"]},
+        }
+        data = self.gql_request(query_commit_components, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "components": [
+                            {
+                                "id": "cpython",
+                                "name": "PyThOn",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+
 
 query_components_comparison = """
     query ComponentsComparison(
