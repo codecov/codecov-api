@@ -218,7 +218,13 @@ async def resolve_total_uploads(commit, info):
 
 @commit_bindable.field("components")
 @sync_to_async
-def resolve_components(commit: Commit, info) -> List[Component]:
+def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
     request = info.context["request"]
     info.context["component_commit"] = commit
-    return components.commit_components(commit, request.user)
+    all_components = components.commit_components(commit, request.user)
+
+    if filters and filters.get("components"):
+        terms = [v.lower() for v in filters["components"]]
+        return filter(lambda c: c.name.lower() in terms, all_components)
+
+    return all_components

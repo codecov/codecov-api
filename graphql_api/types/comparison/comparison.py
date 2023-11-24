@@ -184,18 +184,29 @@ def resolve_flag_comparisons(
 @comparison_bindable.field("componentComparisons")
 @sync_to_async
 def resolve_component_comparisons(
-    comparison_report: ComparisonReport, info
+    comparison_report: ComparisonReport, info, filters=None
 ) -> List[ComponentComparison]:
     current_owner = info.context["request"].current_owner
     head_commit = comparison_report.commit_comparison.compare_commit
     components = components_service.commit_components(head_commit, current_owner)
+    list_components = comparison_report.commit_comparison.component_comparisons.all()
+
+    if filters and filters.get("components"):
+        terms = [v.lower() for v in filters["components"]]
+        components = [
+            component for component in components if component.name.lower() in terms
+        ]
+
+        list_components = list_components.filter(
+            component_id__in=[component.component_id for component in components]
+        )
 
     # store for child resolvers (needed to get the component name, for example)
     info.context["components"] = {
         component.component_id: component for component in components
     }
 
-    return list(comparison_report.commit_comparison.component_comparisons.all())
+    return list(list_components)
 
 
 @comparison_bindable.field("componentComparisonsCount")
