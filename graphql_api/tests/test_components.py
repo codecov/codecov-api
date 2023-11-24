@@ -621,3 +621,59 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
+
+    @patch("services.components.commit_components")
+    def test_components_filter_case_insensitive(self, commit_components_mock):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {"component_id": "python1.1", "paths": [".*/*.py"], "name": "PYThon"}
+            ),
+            Component.from_dict(
+                {"component_id": "golang1.2", "paths": [".*/*.go"], "name": "GOLang"}
+            ),
+        ]
+
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="python1.1",
+        )
+        ComponentComparisonFactory(
+            commit_comparison=self.comparison,
+            component_id="golang1.2",
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "pullid": self.pull.pullid,
+            "filters": {"components": ["PYThon", "golANG"]},
+        }
+        data = self.gql_request(query_components_comparison, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "pull": {
+                        "compareWithBase": {
+                            "__typename": "Comparison",
+                            "componentComparisonsCount": 2,
+                            "componentComparisons": [
+                                {
+                                    "id": "python1.1",
+                                    "name": "PYThon",
+                                    "baseTotals": {"percentCovered": 72.92638},
+                                    "headTotals": {"percentCovered": 85.71429},
+                                    "patchTotals": {"percentCovered": 28.57143},
+                                },
+                                {
+                                    "id": "golang1.2",
+                                    "name": "GOLang",
+                                    "baseTotals": {"percentCovered": 72.92638},
+                                    "headTotals": {"percentCovered": 85.71429},
+                                    "patchTotals": {"percentCovered": 28.57143},
+                                },
+                            ],
+                        }
+                    }
+                }
+            }
+        }
