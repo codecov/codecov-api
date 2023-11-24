@@ -11,7 +11,7 @@ type Comparison {
   headTotals: CoverageTotals
   changeCoverage: Float
   flagComparisons: [FlagComparison]
-  componentComparisons: [ComponentComparison!]
+  componentComparisons(filters: ComponentsFilters): [ComponentComparison!]
   hasDifferentNumberOfHeadAndBaseReports: Boolean!
   flagComparisonsCount: Int!
   componentComparisonsCount: Int!
