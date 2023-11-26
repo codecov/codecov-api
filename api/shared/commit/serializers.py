@@ -3,7 +3,23 @@ from shared.reports.resources import Report, ReportFile
 from shared.utils.merge import line_type
 
 
-class CommitTotalsSerializer(serializers.Serializer):
+class BaseTotalsSerializer(serializers.Serializer):
+    files = serializers.IntegerField()
+    lines = serializers.IntegerField()
+    hits = serializers.IntegerField()
+    misses = serializers.IntegerField()
+    partials = serializers.IntegerField()
+    coverage = serializers.SerializerMethodField()
+    branches = serializers.IntegerField()
+    methods = serializers.IntegerField()
+
+    def get_coverage(self, totals) -> float:
+        if totals.coverage is not None:
+            return round(float(totals.coverage), 2)
+        return 0
+
+
+class CommitTotalsSerializer(BaseTotalsSerializer):
     files = serializers.IntegerField(source="f")
     lines = serializers.IntegerField(source="n")
     hits = serializers.IntegerField(source="h")
@@ -39,15 +55,7 @@ class CommitTotalsSerializer(serializers.Serializer):
         return 0
 
 
-class ReportTotalsSerializer(serializers.Serializer):
-    files = serializers.IntegerField()
-    lines = serializers.IntegerField()
-    hits = serializers.IntegerField()
-    misses = serializers.IntegerField()
-    partials = serializers.IntegerField()
-    coverage = serializers.SerializerMethodField()
-    branches = serializers.IntegerField()
-    methods = serializers.IntegerField()
+class ReportTotalsSerializer(BaseTotalsSerializer):
     messages = serializers.IntegerField()
     sessions = serializers.IntegerField()
     complexity = serializers.FloatField()
@@ -55,17 +63,16 @@ class ReportTotalsSerializer(serializers.Serializer):
     complexity_ratio = serializers.SerializerMethodField()
     diff = serializers.JSONField()
 
-    def get_coverage(self, totals) -> float:
-        if totals.coverage is not None:
-            return round(float(totals.coverage), 2)
-        return 0
-
     def get_complexity_ratio(self, totals) -> float:
         return (
             round((totals.complexity / totals.complexity_total) * 100, 2)
             if totals.complexity and totals.complexity_total
             else 0
         )
+
+
+class UploadTotalsSerializer(BaseTotalsSerializer):
+    pass
 
 
 class ReportFileSerializer(serializers.Serializer):
