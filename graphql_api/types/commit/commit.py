@@ -24,7 +24,7 @@ from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
 from services.comparison import Comparison, ComparisonReport
-from services.components import Component
+from services.components import Component, component_filtered_report
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 from services.report import ReadOnlyReport
@@ -190,9 +190,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
                 f"missing coverage for report with components: {component_filter}"
             )
 
-        commit_report = components.component_filtered_report(
-            commit_report, filtered_components
-        )
+        commit_report = component_filtered_report(commit_report, filtered_components)
 
     report_paths = ReportPaths(
         report=commit_report, path=path, search_term=search_value, filter_flags=flags
