@@ -25,5 +25,5 @@ def resolve_name(component: Component, info) -> str:
 def resolve_totals(component: Component, info) -> Optional[ReportTotals]:
     commit: Commit = info.context["component_commit"]
     report = commit.full_report
-    filtered_report = component_filtered_report(report, component)
+    filtered_report = component_filtered_report(report, [component])
     return filtered_report.totals

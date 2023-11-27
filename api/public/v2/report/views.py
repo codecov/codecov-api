@@ -23,7 +23,7 @@ from codecov_auth.authentication import (
     UserTokenAuthentication,
 )
 from core.models import Commit
-from services.components import commit_components, component_filtered_report
+from services.components import commit_components
 from services.path import ReportPaths, dashboard_commit_file_url
 
 
