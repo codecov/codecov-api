@@ -1,9 +1,10 @@
 import enum
-from typing import List, Optional, Union
+from typing import List, Optional
 
+import services.components as components
 from codecov.commands.base import BaseInteractor
 from services.comparison import Comparison, ComparisonReport, ImpactedFile
-from services.report import files_belonging_to_flags
+from services.report import files_belonging_to_flags, files_in_sessions
 
 
 class ImpactedFileParameter(enum.Enum):
@@ -28,6 +29,31 @@ class FetchImpactedFiles(BaseInteractor):
                 impacted_files, parameter, direction
             )
         flags = filters.get("flags", [])
+        components = filters.get("components", [])
+
+        if components and comparison:
+            head_commit_report = comparison.head_report
+            all_components = components.commit_components(
+                comparison.head_commit, comparison.user
+            )
+            filtered_components = components.filter_components_by_name(
+                all_components, components
+            )
+            commit_report = (
+                components.component_filtered_report(  # of type FilteredReport
+                    head_commit_report, filtered_components
+                )
+            )
+            session_ids = commit_report._calculate_sessionids_to_include()
+            files_in_specific_sessions = files_in_sessions(
+                commit_report=commit_report, session_ids=session_ids
+            )
+            impacted_files = [
+                file
+                for file in impacted_files
+                if file.head_name in files_in_specific_sessions
+            ]
+
         if flags and comparison:
             head_commit_report = comparison.head_report
             if set(flags) & set(head_commit_report.flags):
