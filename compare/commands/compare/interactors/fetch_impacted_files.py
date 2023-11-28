@@ -43,7 +43,7 @@ class FetchImpactedFiles(BaseInteractor):
                 impacted_files = []
 
             commit_report = (
-                components.component_filtered_report(  # of type FilteredReport
+                components.component_filtered_report(
                     head_commit_report, filtered_components
                 )
             )
