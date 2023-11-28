@@ -42,10 +42,8 @@ class FetchImpactedFiles(BaseInteractor):
             if not filtered_components:
                 impacted_files = []
 
-            commit_report = (
-                components.component_filtered_report(
-                    head_commit_report, filtered_components
-                )
+            commit_report = components.component_filtered_report(
+                head_commit_report, filtered_components
             )
 
             session_ids = commit_report.session_ids_to_include
