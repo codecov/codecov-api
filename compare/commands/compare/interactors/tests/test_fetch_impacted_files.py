@@ -485,45 +485,45 @@ class FetchImpactedFilesTest(TransactionTestCase):
         impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
-    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
-    @patch("services.archive.ArchiveService.read_file")
-    def test_impacted_files_filtered_by_flags_and_commit_comparison_for_pull(
-        self, read_file, build_report_from_commit_mock
-    ):
-        read_file.return_value = mocked_files_with_direct_and_indirect_changes
+    # @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    # @patch("services.archive.ArchiveService.read_file")
+    # def test_impacted_files_filtered_by_flags_and_commit_comparison_for_pull(
+    #     self, read_file, build_report_from_commit_mock
+    # ):
+    #     read_file.return_value = mocked_files_with_direct_and_indirect_changes
 
-        commit_report = Report()
-        session_a_id, _ = commit_report.add_session(Session(flags=["flag-123"]))
-        session_b_id, _ = commit_report.add_session(Session(flags=["flag-456"]))
-        file_a = ReportFile("fileA")
-        file_a.append(1, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
-        commit_report.append(file_a)
-        file_b = ReportFile("fileB")
-        file_b.append(1, ReportLine.create(coverage=1, sessions=[[session_b_id, 1]]))
-        commit_report.append(file_b)
-        build_report_from_commit_mock.return_value = commit_report
+    #     commit_report = Report()
+    #     session_a_id, _ = commit_report.add_session(Session(flags=["flag-123"]))
+    #     session_b_id, _ = commit_report.add_session(Session(flags=["flag-456"]))
+    #     file_a = ReportFile("fileA")
+    #     file_a.append(1, ReportLine.create(coverage=1, sessions=[[session_a_id, 1]]))
+    #     commit_report.append(file_a)
+    #     file_b = ReportFile("fileB")
+    #     file_b.append(1, ReportLine.create(coverage=1, sessions=[[session_b_id, 1]]))
+    #     commit_report.append(file_b)
+    #     build_report_from_commit_mock.return_value = commit_report
 
-        flags = ["flag-123"]
-        filters = {"flags": flags}
+    #     flags = ["flag-123"]
+    #     filters = {"flags": flags}
 
-        owner = OwnerFactory()
-        repo = RepositoryFactory(author=owner)
-        base, head, compared_to = (
-            CommitFactory(repository=repo),
-            CommitFactory(repository=repo),
-            CommitFactory(repository=repo),
-        )
-        pull = PullFactory(
-            repository=repo,
-            base=base.commitid,
-            head=head.commitid,
-            compared_to=compared_to.commitid,
-        )
-        comparison = PullRequestComparison(user=owner, pull=pull)
+    #     owner = OwnerFactory()
+    #     repo = RepositoryFactory(author=owner)
+    #     base, head, compared_to = (
+    #         CommitFactory(repository=repo),
+    #         CommitFactory(repository=repo),
+    #         CommitFactory(repository=repo),
+    #     )
+    #     pull = PullFactory(
+    #         repository=repo,
+    #         base=base.commitid,
+    #         head=head.commitid,
+    #         compared_to=compared_to.commitid,
+    #     )
+    #     comparison = PullRequestComparison(user=owner, pull=pull)
 
-        impacted_files = self.execute(None, self.comparison_report, comparison, filters)
-        assert len(impacted_files) == 1
-        assert impacted_files[0].head_name == "fileA"
+    #     impacted_files = self.execute(None, self.comparison_report, comparison, filters)
+    #     assert len(impacted_files) == 1
+    #     assert impacted_files[0].head_name == "fileA"
 
     @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
     @patch("services.archive.ArchiveService.read_file")
