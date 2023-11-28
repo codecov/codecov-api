@@ -192,10 +192,9 @@ def resolve_component_comparisons(
     list_components = comparison_report.commit_comparison.component_comparisons.all()
 
     if filters and filters.get("components"):
-        terms = [v.lower() for v in filters["components"]]
-        components = [
-            component for component in components if component.name.lower() in terms
-        ]
+        components = components_service.filter_components_by_name(
+            components, filters["components"]
+        )
 
         list_components = list_components.filter(
             component_id__in=[component.component_id for component in components]
