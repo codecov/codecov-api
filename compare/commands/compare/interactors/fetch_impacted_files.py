@@ -31,7 +31,7 @@ class FetchImpactedFiles(BaseInteractor):
         flags = filters.get("flags", [])
         components_filter = filters.get("components", [])
 
-        if components and comparison:
+        if components_filter and comparison:
             head_commit_report = comparison.head_report
             all_components = components.commit_components(
                 comparison.head_commit, comparison.user
@@ -48,7 +48,7 @@ class FetchImpactedFiles(BaseInteractor):
                 )
             )
 
-            session_ids = commit_report._calculate_sessionids_to_include()
+            session_ids = commit_report.session_ids_to_include
             files_in_specific_sessions = files_in_sessions(
                 commit_report=commit_report, session_ids=session_ids
             )
