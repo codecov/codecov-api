@@ -29,7 +29,7 @@ class FetchImpactedFiles(BaseInteractor):
                 impacted_files, parameter, direction
             )
         flags = filters.get("flags", [])
-        components = filters.get("components", [])
+        components_filter = filters.get("components", [])
 
         if components and comparison:
             head_commit_report = comparison.head_report
@@ -37,13 +37,17 @@ class FetchImpactedFiles(BaseInteractor):
                 comparison.head_commit, comparison.user
             )
             filtered_components = components.filter_components_by_name(
-                all_components, components
+                all_components, components_filter
             )
+            if not filtered_components:
+                impacted_files = []
+
             commit_report = (
                 components.component_filtered_report(  # of type FilteredReport
                     head_commit_report, filtered_components
                 )
             )
+
             session_ids = commit_report._calculate_sessionids_to_include()
             files_in_specific_sessions = files_in_sessions(
                 commit_report=commit_report, session_ids=session_ids
