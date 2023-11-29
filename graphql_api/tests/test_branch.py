@@ -112,6 +112,13 @@ class MockReport(object):
     def get_file_totals(self, path):
         return MockTotals().totals
 
+    def filter(self, paths, flags):
+        return MockFilteredReport()
+
+
+class MockFilteredReport(MockReport):
+    pass
+
 
 class TestBranch(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):

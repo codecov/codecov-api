@@ -149,15 +149,19 @@ class ReportPaths:
         path: PrefixedPath = None,
         search_term: str = None,
         filter_flags: List[str] = [],
+        filter_paths: List[str] = [],
     ):
         self.report = report
         self.unfiltered_report = report
         self.filter_flags = filter_flags
+        self.filter_paths = filter_paths
         self.prefix = path or ""
 
-        # Filter report if flags exist
-        if self.filter_flags:
-            self.report = self.report.filter(flags=self.filter_flags)
+        # Filter report if flags or paths exist
+        if self.filter_flags or self.filter_paths:
+            self.report = self.report.filter(
+                paths=self.filter_paths, flags=self.filter_flags
+            )
 
         self._paths = [
             PrefixedPath(full_path=full_path, prefix=self.prefix)
