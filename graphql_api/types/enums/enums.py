@@ -83,6 +83,10 @@ class LoginProvider(enum.Enum):
     OKTA = "okta"
 
 
+class CiProvider(enum.Enum):
+    GITHUB_ACTIONS = "github_actions"
+
+
 class CommitErrorGeneralType(enum.Enum):
     yaml_error = "YAML_ERROR"
     bot_error = "BOT_ERROR"

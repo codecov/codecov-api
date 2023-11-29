@@ -1,0 +1,6 @@
+union ConfigRepositoryViaPRError = UnauthenticatedError | ValidationError
+
+type ConfigRepositoryViaPRPayload {
+    success: Int
+    error: ConfigRepositoryViaPRError
+}

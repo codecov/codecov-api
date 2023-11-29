@@ -1,7 +1,9 @@
 from codecov.commands.base import BaseCommand
+from graphql_api.types.enums.enums import CiProvider
 from timeseries.models import MeasurementName
 
 from .interactors.activate_measurements import ActivateMeasurementsInteractor
+from .interactors.config_repo_via_PR import ConfigureRepoViaPRInteractor
 from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
@@ -32,4 +34,11 @@ class RepositoryCommands(BaseCommand):
     ):
         return self.get_interactor(ActivateMeasurementsInteractor).execute(
             repo_name, owner_name, measurement_type
+        )
+
+    def configure_repo_via_PR(
+        self, repo_name: str, owner_name: str, ci_provider: CiProvider
+    ):
+        return self.get_interactor(ConfigureRepoViaPRInteractor).execute(
+            repo_name, owner_name, ci_provider
         )

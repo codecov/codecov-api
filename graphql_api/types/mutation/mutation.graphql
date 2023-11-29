@@ -15,6 +15,9 @@ type Mutation {
   regenerateRepositoryToken(
     input: RegenerateRepositoryTokenInput!
   ): RegenerateRepositoryTokenPayload
+  configRepositoryViaPR(
+    input: ConfigRepositoryViaPRInput!
+  ): ConfigRepositoryViaPRPayload
   activateMeasurements(
     input: ActivateMeasurementsInput!
   ): activateMeasurementsPayload
