@@ -8,3 +8,10 @@ repos:
     pass_filenames: false
     require_serial: true
     language: system
+  - id: graphql
+    name: graphql
+    description: "Dump GraphQL schema"
+    entry: python manage.py dump_graphql_schema
+    pass_filesnames: false
+    require_serial: true
+    language: system
