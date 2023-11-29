@@ -173,11 +173,11 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
         filters = {}
     search_value = filters.get("search_value")
     display_type = filters.get("display_type")
-    flags = filters.get("flags", [])
+    flags_filter = filters.get("flags", [])
     component_filter = filters.get("components", [])
     component_paths = []
 
-    if flags and not set(flags) & set(commit_report.flags):
+    if flags_filter and not set(flags_filter) & set(commit_report.flags):
         return UnknownFlags()
 
     if component_filter:
@@ -191,16 +191,28 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
                 f"missing coverage for report with components: {component_filter}"
             )
 
-        flags = []
         for component in filtered_components:
-            flags.extend(component.get_matching_flags(commit_report.flags.keys()))
             component_paths.extend(component.paths)
+
+        if flags_filter:
+            component_flags = []
+            for component in filtered_components:
+                component_flags.extend(
+                    component.get_matching_flags(commit_report.flags.keys())
+                )
+
+            flags_filter = list(set(flags_filter) & set(component_flags))
+
+            if not flags_filter:
+                return UnknownFlags(
+                    f"unknown flags for report with components: {component_filter}"
+                )
 
     report_paths = ReportPaths(
         report=commit_report,
         path=path,
         search_term=search_value,
-        filter_flags=flags,
+        filter_flags=flags_filter,
         filter_paths=component_paths,
     )
 

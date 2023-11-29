@@ -178,11 +178,16 @@ class ReportPaths:
 
     @cached_property
     def files(self) -> List[str]:
+        files = []
+
         if self.filter_flags:
             files = report_service.files_belonging_to_flags(
                 commit_report=self.unfiltered_report, flags=self.filter_flags
             )
+            if self.filter_paths:
+                files = list(set(files) & set(self.report.files))
             return files
+
         return self.report.files
 
     def _filter_commit_report(self) -> None:
