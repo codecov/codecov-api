@@ -174,9 +174,25 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     search_value = filters.get("search_value")
     display_type = filters.get("display_type")
     flags = filters.get("flags", [])
+    component_filter = filters.get("components", [])
 
     if flags and not set(flags) & set(commit_report.flags):
         return UnknownFlags()
+
+    if component_filter:
+        all_components = components.commit_components(commit, current_owner)
+        filtered_components = components.filter_components_by_name(
+            all_components, component_filter
+        )
+
+        if not filtered_components:
+            return MissingCoverage(
+                f"missing coverage for report with components: {component_filter}"
+            )
+
+        commit_report = components.component_filtered_report(
+            commit_report, filtered_components
+        )
 
     report_paths = ReportPaths(
         report=commit_report, path=path, search_term=search_value, filter_flags=flags
@@ -218,7 +234,14 @@ async def resolve_total_uploads(commit, info):
 
 @commit_bindable.field("components")
 @sync_to_async
-def resolve_components(commit: Commit, info) -> List[Component]:
+def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
     request = info.context["request"]
     info.context["component_commit"] = commit
-    return components.commit_components(commit, request.user)
+    all_components = components.commit_components(commit, request.user)
+
+    if filters and filters.get("components"):
+        return components.filter_components_by_name(
+            all_components, filters["components"]
+        )
+
+    return all_components
