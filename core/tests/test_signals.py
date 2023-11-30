@@ -38,3 +38,10 @@ def test_shelter_repo_sync(mocker):
         "projects/test-project-id/topics/test-topic-id",
         b'{"type": "repo", "sync": "one", "id": 91728376}',
     )
+
+    repo.message = "foo"
+    repo.save()
+
+    publish_calls = publish.call_args_list
+    # does not trigger another publish
+    assert len(publish_calls) == 2
