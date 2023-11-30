@@ -12,6 +12,7 @@ from django.forms import ValidationError
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django_prometheus.models import ExportModelOperationsMixin
+from model_utils import FieldTracker
 from shared.config import get_config
 from shared.reports.resources import Report
 
@@ -126,6 +127,9 @@ class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
     )
     activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)
+
+    # tracks field changes being saved
+    tracker = FieldTracker()
 
     class Meta:
         db_table = "repos"
