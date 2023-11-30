@@ -812,3 +812,191 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
+
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    @patch("services.report.files_belonging_to_flags")
+    def test_fetch_path_contents_component_and_flag_filters(
+        self, flag_files_mock, report_mock, commit_components_mock, filtered_mock
+    ):
+        flag_files_mock.return_value = ["fileA.py"]
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "unit",
+                    "name": "unit",
+                    "paths": ["fileA.py"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "integration",
+                    "name": "integration",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["**/*.py"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockReport()
+
+        query_files = """
+            query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            branch(name: $branch) {
+                                head {
+                                    pathContents (path: $path, filters: $filters) {
+                                        __typename
+                                        ... on PathContents {
+                                            results {
+                                                __typename
+                                                name
+                                                path
+                                            }
+                                        }
+                                        ... on MissingCoverage {
+                                            message
+                                        }
+                                        ... on UnknownFlags {
+                                            message
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        components, flags = ["unit"], ["flag-a"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components, "flags": flags},
+        }
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "PathContents",
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileA.py",
+                                        "path": "fileA.py",
+                                    }
+                                ],
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    @patch("services.report.files_belonging_to_flags")
+    def test_fetch_path_contents_component_and_flag_filters_unknown_flags(
+        self, flag_files_mock, report_mock, commit_components_mock, filtered_mock
+    ):
+        flag_files_mock.return_value = ["fileA.py"]
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "unit",
+                    "name": "unit",
+                    "paths": ["fileA.py"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "integration",
+                    "name": "integration",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["**/*.py"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockReport()
+
+        query_files = """
+            query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            branch(name: $branch) {
+                                head {
+                                    pathContents (path: $path, filters: $filters) {
+                                        __typename
+                                        ... on PathContents {
+                                            results {
+                                                __typename
+                                                name
+                                                path
+                                            }
+                                        }
+                                        ... on MissingCoverage {
+                                            message
+                                        }
+                                        ... on UnknownFlags {
+                                            message
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        components, flags = ["integration"], ["flag-a"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components, "flags": flags},
+        }
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "UnknownFlags",
+                                "message": f"unknown flags for report with components: {components}",
+                            }
+                        }
+                    }
+                }
+            }
+        }
