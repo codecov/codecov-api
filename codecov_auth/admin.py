@@ -148,7 +148,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
-    search_fields = ("name__iregex","username__iregex","email__iregex")
+    search_fields = ("name__iregex", "username__iregex", "email__iregex")
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
     inlines = [OrgUploadTokenInline]
