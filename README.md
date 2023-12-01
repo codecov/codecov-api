@@ -9,6 +9,8 @@ A private Django REST Framework API intended to serve Codecov's front end.
 
 ## Getting Started
 
+The Codecov API supports Python 3.12. Updates to requirements are expected to be run on this version.
+
 ### Building
 
 This project contains a makefile. To build the docker image:
