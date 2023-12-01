@@ -175,6 +175,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "student",
         "student_created_at",
         "student_updated_at",
+        "user",
     )
 
     fields = readonly_fields + (
