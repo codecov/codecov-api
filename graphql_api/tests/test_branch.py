@@ -91,7 +91,14 @@ class MockFlag(object):
         return MockTotals()
 
 
+class MockSession(object):
+    pass
+
+
 class MockReport(object):
+    def __init__(self):
+        self.sessions = {1: MockSession()}
+
     def get(self, file):
         return MockTotals()
 
@@ -114,6 +121,9 @@ class MockReport(object):
 
     def filter(self, paths, flags):
         return MockFilteredReport()
+
+    def sessions(self):
+        return [1, 2, 3]
 
 
 class MockFilteredReport(MockReport):
@@ -700,7 +710,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["**/*.py"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                 }
             ),
         ]
@@ -725,9 +735,11 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("services.report.build_report_from_commit")
+    @patch("services.report.files_in_sessions")
     def test_fetch_path_contents_component_filter_has_coverage(
-        self, report_mock, commit_components_mock, filtered_mock
+        self, session_files_mock, report_mock, commit_components_mock, filtered_mock
     ):
+        session_files_mock.return_value = MockReport().files
         components = ["Global"]
         variables = {
             "org": self.org.username,
@@ -757,7 +769,8 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["**/*.py"],
+                    # "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                 }
             ),
         ]
@@ -774,28 +787,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                 "__typename": "PathContents",
                                 "results": [
                                     {
-                                        "__typename": "PathContentFile",
-                                        "name": "fileA.py",
-                                        "path": "fileA.py",
-                                        "hits": 8,
-                                        "misses": 0,
-                                        "partials": 0,
-                                        "lines": 10,
-                                        "percentCovered": 80.0,
-                                        "isCriticalFile": False,
-                                    },
-                                    {
-                                        "__typename": "PathContentFile",
-                                        "name": "fileB.py",
-                                        "path": "fileB.py",
-                                        "hits": 8,
-                                        "misses": 0,
-                                        "partials": 0,
-                                        "lines": 10,
-                                        "percentCovered": 80.0,
-                                        "isCriticalFile": False,
-                                    },
-                                    {
                                         "__typename": "PathContentDir",
                                         "hits": 24,
                                         "lines": 30,
@@ -804,7 +795,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "path": "folder",
                                         "percentCovered": 80.0,
-                                    },
+                                    }
                                 ],
                             }
                         }
@@ -817,9 +808,16 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.commit_components")
     @patch("services.report.build_report_from_commit")
     @patch("services.report.files_belonging_to_flags")
+    @patch("services.report.files_in_sessions")
     def test_fetch_path_contents_component_and_flag_filters(
-        self, flag_files_mock, report_mock, commit_components_mock, filtered_mock
+        self,
+        session_files_mock,
+        flag_files_mock,
+        report_mock,
+        commit_components_mock,
+        filtered_mock,
     ):
+        session_files_mock.return_value = ["fileA.py"]
         flag_files_mock.return_value = ["fileA.py"]
         report_mock.return_value = MockReport()
         commit_components_mock.return_value = [
@@ -842,7 +840,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["**/*.py"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                     "flag_regexes": "flag-a",
                 }
             ),
@@ -939,7 +937,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["**/*.py"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                     "flag_regexes": "flag-a",
                 }
             ),

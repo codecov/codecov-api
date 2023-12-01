@@ -10,6 +10,7 @@ from django.conf import settings
 from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
+from shared.utils.match import match
 
 import services.report as report_service
 from codecov_auth.models import Owner
@@ -178,17 +179,26 @@ class ReportPaths:
 
     @cached_property
     def files(self) -> List[str]:
-        files = []
+        # No filtering, just return files in Report
+        if not self.filter_flags and not self.filter_paths:
+            return self.report.files
 
+        files = []
+        # Do flag filtering if needed
         if self.filter_flags:
             files = report_service.files_belonging_to_flags(
                 commit_report=self.unfiltered_report, flags=self.filter_flags
             )
-            if self.filter_paths:
-                files = list(set(files) & set(self.report.files))
-            return files
+        else:
+            files = report_service.files_in_sessions(
+                commit_report=self.unfiltered_report,
+                session_ids=self.unfiltered_report.sessions.keys(),
+            )
+        # Do path filtering if needed
+        if self.filter_paths:
+            files = [file for file in files if match(self.filter_paths, file)]
 
-        return self.report.files
+        return files
 
     def _filter_commit_report(self) -> None:
         self.report = self.report.filter(flags=self.filter_flags)
