@@ -769,7 +769,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    # "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                     "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                 }
             ),
