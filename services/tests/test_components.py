@@ -118,7 +118,7 @@ class ComponentServiceTest(TransactionTestCase):
                 "paths": [".*/*.go"],
             }
         )
-        report_go = component_filtered_report(report, component_go)
+        report_go = component_filtered_report(report, [component_go])
         assert report_go.files == ["file_1.go"]
         assert report_go.totals.coverage == report.get("file_1.go").totals.coverage
 
@@ -128,7 +128,7 @@ class ComponentServiceTest(TransactionTestCase):
                 "paths": [".*/*.py"],
             }
         )
-        report_py = component_filtered_report(report, component_py)
+        report_py = component_filtered_report(report, [component_py])
         assert report_py.files == ["file_2.py"]
         assert report_py.totals.coverage == report.get("file_2.py").totals.coverage
 

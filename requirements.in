@@ -8,6 +8,7 @@ Django
 django-cors-headers
 django-dynamic-fixture
 django-filter
+django-model-utils
 django-prometheus
 djangorestframework
 drf-spectacular
@@ -17,7 +18,7 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/b490693d9fc8bde8746dfa8eee9d3314159b6911.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/9246e757c553be8b0e9eff28f038308914ec925c.tar.gz#egg=shared
 google-cloud-pubsub
 gunicorn
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz

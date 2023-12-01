@@ -6,6 +6,7 @@ from shared.reports.types import ReportTotals
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
+from services.components import Component
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -84,6 +85,12 @@ class MockTotals(object):
         self.totals.lines = 10
 
 
+class MockFlag(object):
+    @property
+    def totals(self):
+        return MockTotals()
+
+
 class MockReport(object):
     def get(self, file):
         return MockTotals()
@@ -100,7 +107,7 @@ class MockReport(object):
 
     @property
     def flags(self):
-        return ["flag-a"]
+        return {"flag-a": MockFlag()}
 
     def get_file_totals(self, path):
         return MockTotals().totals
@@ -645,6 +652,153 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                             "pathContents": {
                                 "__typename": "UnknownFlags",
                                 "message": "No coverage with chosen flags",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    def test_fetch_path_contents_component_filter_missing_coverage(
+        self, report_mock, commit_components_mock
+    ):
+        components = ["ComponentThree"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components},
+        }
+
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["fileA.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "c2",
+                    "name": "ComponentTwo",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["**/*.py"],
+                }
+            ),
+        ]
+
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "MissingCoverage",
+                                "message": f"missing coverage for report with components: {components}",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    def test_fetch_path_contents_component_filter_has_coverage(
+        self, report_mock, commit_components_mock, filtered_mock
+    ):
+        components = ["Global"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components},
+        }
+
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["fileA.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "c2",
+                    "name": "ComponentTwo",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["**/*.py"],
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockReport()
+
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "PathContents",
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileA.py",
+                                        "path": "fileA.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentDir",
+                                        "hits": 24,
+                                        "lines": 30,
+                                        "misses": 0,
+                                        "name": "folder",
+                                        "partials": 0,
+                                        "path": "folder",
+                                        "percentCovered": 80.0,
+                                    },
+                                ],
                             }
                         }
                     }
