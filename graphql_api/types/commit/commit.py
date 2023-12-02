@@ -206,7 +206,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
             )
         flags_filter = list(flags_filter & set(component_flags))
     else:
-        flags_filter = list(set(flags_filter) | set(component_flags))
+        flags_filter = component_flags
 
     report_paths = ReportPaths(
         report=commit_report,
