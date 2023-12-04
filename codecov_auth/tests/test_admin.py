@@ -5,6 +5,7 @@ from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
+from codecov.commands.exceptions import ValidationError
 from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, UserAdmin
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from codecov_auth.tests.factories import (
@@ -13,7 +14,8 @@ from codecov_auth.tests.factories import (
     SentryUserFactory,
     UserFactory,
 )
-from plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
+from plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS, TrialStatus
+from utils.test_utils import APIClient
 
 
 class OwnerAdminTest(TestCase):
@@ -260,6 +262,56 @@ class OwnerAdminTest(TestCase):
         }
         response = self.client.post(request_url, data=fake_data)
         assert mock_refresh.not_called()
+
+    def test_start_trial_ui_display(self):
+        owner = OwnerFactory()
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_owner_changelist"),
+            {
+                "action": "extend_trial",
+                ACTION_CHECKBOX_NAME: [owner.pk],
+            },
+        )
+        assert res.status_code == 200
+        assert "Extending trial for:" in str(res.content)
+
+    @patch("plan.service.PlanService.start_trial_manually")
+    def test_start_trial_action(self, mock_start_trial_service):
+        mock_start_trial_service.return_value = None
+        org_to_be_trialed = OwnerFactory()
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_owner_changelist"),
+            {
+                "action": "extend_trial",
+                ACTION_CHECKBOX_NAME: [org_to_be_trialed.pk],
+                "end_date": "2024-01-01 01:02:03",
+                "extend_trial": True,
+            },
+        )
+        assert res.status_code == 302
+        assert mock_start_trial_service.called
+
+    @patch("plan.service.PlanService.start_trial_manually")
+    def test_start_trial_paid_plan(self, mock_start_trial_service):
+        mock_start_trial_service.side_effect = ValidationError(
+            "Cannot trial from a paid plan"
+        )
+
+        org_to_be_trialed = OwnerFactory()
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_owner_changelist"),
+            {
+                "action": "extend_trial",
+                ACTION_CHECKBOX_NAME: [org_to_be_trialed.pk],
+                "end_date": "2024-01-01 01:02:03",
+                "extend_trial": True,
+            },
+        )
+        assert res.status_code == 302
+        assert mock_start_trial_service.called
 
 
 class UserAdminTest(TestCase):
