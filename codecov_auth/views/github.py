@@ -35,9 +35,12 @@ class GithubLoginView(LoginMixin, StateMixin, View):
 
     def get_url_to_redirect_to(self, scope):
         redirect_info = self.redirect_info
-        base_url = urljoin(
-            redirect_info["repo_service"].service_url, "login/oauth/authorize"
+        redirect_host = (
+            redirect_info["repo_service"].get_service_url()
+            if redirect_info["repo_service"].get_host_header() is None
+            else "https://" + redirect_info["repo_service"].get_host_header()
         )
+        base_url = urljoin(redirect_host, "login/oauth/authorize")
         state = self.generate_state()
         query = dict(
             response_type="code",

@@ -7,6 +7,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
+from shared.config import ConfigHelper
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
 
@@ -31,6 +32,37 @@ def test_get_github_redirect(client, mocker, mock_redis, settings):
     assert (
         res.url
         == f"https://github.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook&client_id=testclientid&state={state}"
+    )
+
+
+@override_settings(GITHUB_CLIENT_ID="testclientid")
+def test_get_github_redirect_host_override(client, mocker, mock_redis, settings):
+    settings.IS_ENTERPRISE = False
+    config = ConfigHelper()
+    gh_data = {"github": {"url": "https://fake.com", "host_override": "extrafake.com"}}
+
+    def fake_config(*path, default=None):
+        curr = config
+        for key in path:
+            if key in gh_data:
+                curr = gh_data.get(key)
+            elif key in curr:
+                curr = curr.get(key)
+            else:
+                return default
+        return curr
+
+    mock_get_config = mocker.patch(
+        "shared.torngit.github.get_config",
+        side_effect=fake_config,
+    )
+    url = reverse("github-login")
+    res = client.get(url)
+    state = _get_state_from_redis(mock_redis)
+    assert res.status_code == 302
+    assert (
+        res.url
+        == f"https://extrafake.com/login/oauth/authorize?response_type=code&scope=user%3Aemail%2Cread%3Aorg%2Crepo%3Astatus%2Cwrite%3Arepo_hook&client_id=testclientid&state={state}"
     )
 
 
