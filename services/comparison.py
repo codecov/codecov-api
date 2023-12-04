@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple
 import minio
 import pytz
 from asgiref.sync import async_to_sync
-from django.db.models import Prefetch, Q, QuerySet
+from django.db.models import Prefetch, QuerySet
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
 from shared.reports.readonly import ReadOnlyReport
