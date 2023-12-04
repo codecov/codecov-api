@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple
 import minio
 import pytz
 from asgiref.sync import async_to_sync
-from django.db.models import Prefetch, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
 from shared.reports.readonly import ReadOnlyReport
@@ -1270,7 +1270,8 @@ class CommitComparisonService:
     def _load_commit(self, commit_id: int) -> Optional[Commit]:
         prefetch = Prefetch(
             "reports",
-            queryset=CommitReport.objects.filter(code=None)
+            queryset=CommitReport.objects.coverage_reports()
+            .filter(code=None)
             .select_related("reportdetails")
             .defer("reportdetails___files_array"),
         )
