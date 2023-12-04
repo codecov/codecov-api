@@ -1,5 +1,8 @@
 from typing import Optional
 
+import django.forms as forms
+from django.shortcuts import render
+from django.http import HttpResponseRedirect
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
@@ -16,6 +19,41 @@ from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from services.task import TaskService
 from utils.services import get_short_service_name
+
+
+class ExtendTrialForm(forms.Form):
+    start_date = forms.DateTimeField(required=True)
+    end_date = forms.DateTimeField(required=True)
+
+
+def extend_trial(self, request, queryset):
+    if "extend_trial" in request.POST:
+        form = ExtendTrialForm(request.POST)
+        if form.is_valid():
+
+            print(f"START: {form.cleaned_data['start_date']}")
+            print(f"END: {form.cleaned_data['end_date']}")
+            for item in queryset:
+                print(f"TYPE: {type(item)}")
+
+            # # TODO actual logic
+
+            return
+        else:
+            print("not valid")
+    else:
+        form = ExtendTrialForm()
+
+    return render(
+        request,
+        "admin/extend_trial_form.html",
+        context={
+            "form": form,
+            "datasets": queryset,
+        },
+    )
+
+extend_trial.short_description = "Start and extend trial up to a selected date"
 
 
 def impersonate_owner(self, request, queryset):
@@ -44,7 +82,6 @@ def impersonate_owner(self, request, queryset):
         request.user,
     )
     return response
-
 
 impersonate_owner.short_description = "Impersonate the selected owner"
 
@@ -149,7 +186,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
     search_fields = ("name__iregex", "username__iregex", "email__iregex")
-    actions = [impersonate_owner]
+    actions = [impersonate_owner, extend_trial]
     autocomplete_fields = ("bot",)
     inlines = [OrgUploadTokenInline]
 

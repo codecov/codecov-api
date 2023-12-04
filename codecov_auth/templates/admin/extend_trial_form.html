@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<form action="" method="post">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="extend_trial">
+
+  <table>
+    {{ form }}
+  </table>
+
+  <br>
+
+  <p>Extending trial for:</p>
+  <p>
+    <ul>
+      {% for dataset in datasets %}
+        <li>
+          <strong>{{ dataset.username }}</strong>
+          <input type="hidden" name="_selected_action" value="{{ dataset.pk }}" />
+        </li>
+      {% endfor %}
+    </ul>
+  </p>
+
+  <input type="submit" name="extend_trial" class="default" value="Submit">
+</form>
+{% endblock %}
