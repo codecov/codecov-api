@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
@@ -59,7 +60,7 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
         ).first()
         assert owner_profile.default_org == self.default_organization
         assert username == self.default_organization.username
-        
+
     @patch("services.activation.try_auto_activate")
     def test_attempts_to_auto_activate_user_for_default_org(self, try_auto_activate):
         self.execute(owner=self.owner, username=self.default_organization_username)

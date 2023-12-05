@@ -6,6 +6,7 @@ from codecov.db import sync_to_async
 from codecov_auth.models import Owner, OwnerProfile
 from services.activation import try_auto_activate
 
+
 class UpdateDefaultOrganizationInteractor(BaseInteractor):
     def validate(
         self,
