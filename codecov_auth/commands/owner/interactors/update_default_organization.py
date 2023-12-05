@@ -4,7 +4,7 @@ from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov.db import sync_to_async
 from codecov_auth.models import Owner, OwnerProfile
-
+from services.activation import try_auto_activate
 
 class UpdateDefaultOrganizationInteractor(BaseInteractor):
     def validate(
@@ -30,7 +30,10 @@ class UpdateDefaultOrganizationInteractor(BaseInteractor):
             owner_id=self.current_owner.ownerid
         )
         owner_profile.default_org = default_org
-        return owner_profile.save()
+        saved_owner_profile = owner_profile.save()
+        if default_org:
+            try_auto_activate(default_org, owner_profile.owner)
+        return saved_owner_profile
 
     @sync_to_async
     def execute(self, default_org_username: str):
