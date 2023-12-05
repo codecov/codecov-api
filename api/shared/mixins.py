@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -38,8 +40,8 @@ class RepoPropertyMixin(OwnerPropertyMixin):
             Repository, name=self.kwargs.get("repo_name"), author=self.owner
         )
 
-    def get_commit(self) -> Commit:
-        commit_sha = self.request.query_params.get("sha")
+    def get_commit(self, commit_sha: Optional[str] = None) -> Commit:
+        commit_sha = commit_sha or self.request.query_params.get("sha")
         if not commit_sha:
             branch_name = self.request.query_params.get("branch", self.repo.branch)
             branch = self.repo.branches.filter(name=branch_name).first()

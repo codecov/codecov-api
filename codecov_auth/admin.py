@@ -57,8 +57,8 @@ class UserAdmin(AdminMixin, admin.ModelAdmin):
     )
     readonly_fields = []
     search_fields = (
-        "name__iexact",
-        "email__iexact",
+        "name__iregex",
+        "email__iregex",
     )
 
     readonly_fields = (
@@ -96,8 +96,8 @@ class SentryUserAdmin(AdminMixin, admin.ModelAdmin):
         "email",
     )
     search_fields = (
-        "name__iexact",
-        "email__iexact",
+        "name__iregex",
+        "email__iregex",
     )
     readonly_fields = (
         "id",
@@ -148,7 +148,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
-    search_fields = ("username__iexact",)
+    search_fields = ("name__iregex", "username__iregex", "email__iregex")
     actions = [impersonate_owner]
     autocomplete_fields = ("bot",)
     inlines = [OrgUploadTokenInline]
@@ -175,6 +175,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "student",
         "student_created_at",
         "student_updated_at",
+        "user",
     )
 
     fields = readonly_fields + (

@@ -1,10 +1,8 @@
 import json
-from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import TestCase
-from freezegun import freeze_time
 from stripe.error import InvalidRequestError
 
 from codecov_auth.models import Service
@@ -269,7 +267,7 @@ class StripeServiceTests(TestCase):
     def test_delete_subscription_without_schedule_modifies_subscription_to_delete_at_end_of_billing_cycle_if_valid_plan(
         self, modify_mock, retrieve_subscription_mock
     ):
-        plan = "users-pr-inappy"
+        plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
         stripe_schedule_id = None
         owner = OwnerFactory(
@@ -304,7 +302,7 @@ class StripeServiceTests(TestCase):
     def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_at_end_of_billing_cycle_if_valid_plan(
         self, schedule_release_mock, retrieve_subscription_mock, modify_mock
     ):
-        plan = "users-pr-inappy"
+        plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
         stripe_schedule_id = "sub_sched_sch1K77Y5GlVGuVgOrkJrLjRnne"
         owner = OwnerFactory(
@@ -342,7 +340,7 @@ class StripeServiceTests(TestCase):
         subscription_modify_mock,
     ):
         original_user_count = 10
-        original_plan = "users-pr-inappy"
+        original_plan = PlanName.CODECOV_PRO_YEARLY.value
         owner = OwnerFactory(
             plan=original_plan,
             plan_user_count=original_user_count,
@@ -363,7 +361,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappy"
+        desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 20
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
@@ -383,7 +381,7 @@ class StripeServiceTests(TestCase):
         retrieve_subscription_mock,
         subscription_modify_mock,
     ):
-        original_plan = "users-pr-inappm"
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
         original_user_count = 10
         owner = OwnerFactory(
             plan=original_plan,
@@ -405,7 +403,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappy"
+        desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 10
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
@@ -426,7 +424,7 @@ class StripeServiceTests(TestCase):
         subscription_modify_mock,
     ):
         original_user_count = 10
-        original_plan = "users-pr-inappm"
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
         owner = OwnerFactory(
             plan=original_plan,
             plan_user_count=original_user_count,
@@ -447,7 +445,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappy"
+        desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 15
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
@@ -467,7 +465,7 @@ class StripeServiceTests(TestCase):
         self, retrieve_subscription_mock, schedule_modify_mock, create_mock
     ):
         original_user_count = 14
-        original_plan = "users-pr-inappm"
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -489,7 +487,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 8
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
@@ -513,7 +511,7 @@ class StripeServiceTests(TestCase):
         self, retrieve_subscription_mock, schedule_modify_mock, create_mock
     ):
         original_user_count = 20
-        original_plan = "users-pr-inappy"
+        original_plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -535,7 +533,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 20
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
@@ -559,7 +557,7 @@ class StripeServiceTests(TestCase):
         self, retrieve_subscription_mock, schedule_modify_mock, create_mock
     ):
         original_user_count = 16
-        original_plan = "users-pr-inappy"
+        original_plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -581,7 +579,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 7
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
@@ -604,7 +602,7 @@ class StripeServiceTests(TestCase):
         self, retrieve_subscription_mock, schedule_modify_mock
     ):
         original_user_count = 13
-        original_plan = "users-pr-inappm"
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -626,7 +624,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 9
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
@@ -640,13 +638,17 @@ class StripeServiceTests(TestCase):
         assert owner.plan == original_plan
         assert owner.plan_user_count == original_user_count
 
-    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.SubscriptionSchedule.release")
     def test_modify_subscription_with_schedule_modifies_schedule_when_user_count_increases(
-        self, retrieve_subscription_mock, schedule_modify_mock
+        self,
+        schedule_release_mock,
+        retrieve_subscription_mock,
+        subscription_modify_mock,
     ):
         original_user_count = 17
-        original_plan = "users-pr-inappm"
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -654,7 +656,7 @@ class StripeServiceTests(TestCase):
             stripe_subscription_id=stripe_subscription_id,
         )
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 26
 
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
@@ -672,19 +674,18 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 26
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
-
         self.stripe.modify_subscription(owner, desired_plan)
-
-        self._assert_schedule_modify(
-            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
+        schedule_release_mock.assert_called_once_with(schedule_id)
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
         owner.refresh_from_db()
-        assert owner.plan == original_plan
-        assert owner.plan_user_count == original_user_count
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == desired_user_count
 
     @patch("services.billing.stripe.SubscriptionSchedule.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -692,7 +693,7 @@ class StripeServiceTests(TestCase):
         self, retrieve_subscription_mock, schedule_modify_mock
     ):
         original_user_count = 15
-        original_plan = "users-pr-inappy"
+        original_plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -714,7 +715,7 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 15
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
 
@@ -728,13 +729,17 @@ class StripeServiceTests(TestCase):
         assert owner.plan == original_plan
         assert owner.plan_user_count == original_user_count
 
-    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
-    def test_modify_subscription_with_schedule_modifies_schedule_when_plan_upgrades(
-        self, retrieve_subscription_mock, schedule_modify_mock
+    @patch("services.billing.stripe.SubscriptionSchedule.release")
+    def test_modify_subscription_with_schedule_releases_schedule_when_plan_upgrades(
+        self,
+        schedule_release_mock,
+        retrieve_subscription_mock,
+        subscription_modify_mock,
     ):
         original_user_count = 15
-        original_plan = "users-pr-inappm"
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -756,26 +761,31 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappy"
+        desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 15
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
-        self.stripe.modify_subscription(owner, desired_plan)
 
-        self._assert_schedule_modify(
-            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
+        self.stripe.modify_subscription(owner, desired_plan)
+        schedule_release_mock.assert_called_once_with(schedule_id)
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
         owner.refresh_from_db()
-        assert owner.plan == original_plan
-        assert owner.plan_user_count == original_user_count
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == desired_user_count
 
-    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
-    def test_modify_subscription_with_schedule_modifies_schedule_when_plan_upgrades_and_count_decreases(
-        self, retrieve_subscription_mock, schedule_modify_mock
+    @patch("services.billing.stripe.SubscriptionSchedule.release")
+    def test_modify_subscription_with_schedule_releases_schedule_when_plan_upgrades_and_count_decreases(
+        self,
+        schedule_release_mock,
+        retrieve_subscription_mock,
+        subscription_modify_mock,
     ):
         original_user_count = 15
-        original_plan = "users-pr-inappm"
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -797,26 +807,30 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappy"
+        desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 10
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
         self.stripe.modify_subscription(owner, desired_plan)
-
-        self._assert_schedule_modify(
-            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
+        schedule_release_mock.assert_called_once_with(schedule_id)
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
         owner.refresh_from_db()
-        assert owner.plan == original_plan
-        assert owner.plan_user_count == original_user_count
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == desired_user_count
 
-    @patch("services.billing.stripe.SubscriptionSchedule.modify")
+    @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
-    def test_modify_subscription_with_schedule_modifies_schedule_when_plan_downgrades_and_count_increases(
-        self, retrieve_subscription_mock, schedule_modify_mock
+    @patch("services.billing.stripe.SubscriptionSchedule.release")
+    def test_modify_subscription_with_schedule_releases_schedule_when_plan_downgrades_and_count_increases(
+        self,
+        schedule_release_mock,
+        retrieve_subscription_mock,
+        subscription_modify_mock,
     ):
         original_user_count = 15
-        original_plan = "users-pr-inappy"
+        original_plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "33043sdf"
         owner = OwnerFactory(
             plan=original_plan,
@@ -838,124 +852,135 @@ class StripeServiceTests(TestCase):
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
 
-        desired_plan_name = "users-pr-inappm"
+        desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 20
         desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
-        self.stripe.modify_subscription(owner, desired_plan)
 
-        self._assert_schedule_modify(
-            schedule_modify_mock, owner, subscription_params, desired_plan, schedule_id
+        self.stripe.modify_subscription(owner, desired_plan)
+        schedule_release_mock.assert_called_once_with(schedule_id)
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
         )
 
         owner.refresh_from_db()
-        assert owner.plan == original_plan
-        assert owner.plan_user_count == original_user_count
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == desired_user_count
 
     def test_get_proration_params(self):
         # Test same plan, increased users
-        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=10)
-        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=10)
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 14}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # Test same plan, decrease users
-        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
-        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=20)
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 14}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
 
         # Test going from monthly to yearly
-        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
-        desired_plan = {"value": "users-pr-inappy", "quantity": 14}
+        owner = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
+        )
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 14}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # monthly to Sentry monthly plan
-        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
-        desired_plan = {"value": "users-sentrym", "quantity": 19}
+        owner = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
+        )
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
         self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": "users-sentrym", "quantity": 20}
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
         self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
-        desired_plan = {"value": "users-sentrym", "quantity": 21}
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # yearly to Sentry monthly plan
-        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
-        desired_plan = {"value": "users-sentrym", "quantity": 19}
+        owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=20)
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": "users-sentrym", "quantity": 20}
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": "users-sentrym", "quantity": 21}
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # monthly to Sentry monthly plan
-        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
-        desired_plan = {"value": "users-sentrym", "quantity": 19}
+        owner = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
+        )
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": "users-sentrym", "quantity": 20}
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
-        desired_plan = {"value": "users-sentrym", "quantity": 21}
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # yearly to Sentry yearly plan
-        owner = OwnerFactory(plan="users-pr-inappy", plan_user_count=20)
-        desired_plan = {"value": "users-sentryy", "quantity": 19}
+        owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=20)
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 19}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": "users-sentryy", "quantity": 20}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 20}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
-        desired_plan = {"value": "users-sentryy", "quantity": 21}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 21}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # monthly to Sentry yearly plan
-        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=20)
-        desired_plan = {"value": "users-sentryy", "quantity": 19}
+        owner = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
+        )
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 19}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
-        desired_plan = {"value": "users-sentryy", "quantity": 20}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 20}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
-        desired_plan = {"value": "users-sentryy", "quantity": 21}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 21}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # Team to Sentry
-        owner = OwnerFactory(plan="users-teamm", plan_user_count=10)
-        desired_plan = {"value": "users-sentrym", "quantity": 10}
+        owner = OwnerFactory(plan=PlanName.TEAM_MONTHLY.value, plan_user_count=10)
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 10}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # Team to Pro
-        owner = OwnerFactory(plan="users-teamm", plan_user_count=10)
-        desired_plan = {"value": "users-pr-inappm", "quantity": 10}
+        owner = OwnerFactory(plan=PlanName.TEAM_MONTHLY.value, plan_user_count=10)
+        desired_plan = {"value": PlanName.CODECOV_PRO_MONTHLY.value, "quantity": 10}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
         )
 
         # Sentry to Team
-        owner = OwnerFactory(plan="users-sentrym", plan_user_count=10)
-        desired_plan = {"value": "users-teamm", "quantity": 10}
+        owner = OwnerFactory(plan=PlanName.SENTRY_MONTHLY.value, plan_user_count=10)
+        desired_plan = {"value": PlanName.TEAM_MONTHLY.value, "quantity": 10}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
 
         # Sentry to Pro
-        owner = OwnerFactory(plan="users-pr-inappm", plan_user_count=10)
-        desired_plan = {"value": "users-teamm", "quantity": 10}
+        owner = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=10
+        )
+        desired_plan = {"value": PlanName.TEAM_MONTHLY.value, "quantity": 10}
         assert self.stripe._get_proration_params(owner, desired_plan) == "none"
 
     @patch("services.billing.stripe.checkout.Session.create")
@@ -972,7 +997,10 @@ class StripeServiceTests(TestCase):
         expected_id = "fkkgosd"
         create_checkout_session_mock.return_value = {"id": expected_id}
         desired_quantity = 25
-        desired_plan = {"value": "users-pr-inappm", "quantity": desired_quantity}
+        desired_plan = {
+            "value": PlanName.CODECOV_PRO_MONTHLY.value,
+            "quantity": desired_quantity,
+        }
 
         assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
 
@@ -1018,7 +1046,10 @@ class StripeServiceTests(TestCase):
         expected_id = "fkkgosd"
         create_checkout_session_mock.return_value = {"id": expected_id}
         desired_quantity = 25
-        desired_plan = {"value": "users-pr-inappm", "quantity": desired_quantity}
+        desired_plan = {
+            "value": PlanName.CODECOV_PRO_MONTHLY.value,
+            "quantity": desired_quantity,
+        }
 
         assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
 
@@ -1064,7 +1095,10 @@ class StripeServiceTests(TestCase):
         expected_id = "fkkgosd"
         create_checkout_session_mock.return_value = {"id": expected_id}
         desired_quantity = 25
-        desired_plan = {"value": "users-pr-inappm", "quantity": desired_quantity}
+        desired_plan = {
+            "value": PlanName.CODECOV_PRO_MONTHLY.value,
+            "quantity": desired_quantity,
+        }
 
         assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
 
@@ -1110,7 +1144,10 @@ class StripeServiceTests(TestCase):
         expected_id = "fkkgosd"
         create_checkout_session_mock.return_value = {"id": expected_id}
         desired_quantity = 25
-        desired_plan = {"value": "users-pr-inappm", "quantity": desired_quantity}
+        desired_plan = {
+            "value": PlanName.CODECOV_PRO_MONTHLY.value,
+            "quantity": desired_quantity,
+        }
 
         assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
 
@@ -1348,7 +1385,9 @@ class BillingServiceTests(TestCase):
         self, delete_subscription_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="tor_dsoe")
-        self.billing_service.update_plan(owner, {"value": "users-basic"})
+        self.billing_service.update_plan(
+            owner, {"value": PlanName.BASIC_PLAN_NAME.value}
+        )
         delete_subscription_mock.assert_called_once_with(owner)
 
     @patch("plan.service.PlanService.set_default_plan_data")
@@ -1363,7 +1402,9 @@ class BillingServiceTests(TestCase):
         set_default_plan_data,
     ):
         owner = OwnerFactory()
-        self.billing_service.update_plan(owner, {"value": "users-basic"})
+        self.billing_service.update_plan(
+            owner, {"value": PlanName.BASIC_PLAN_NAME.value}
+        )
 
         set_default_plan_data.assert_called_once()
 
@@ -1383,7 +1424,7 @@ class BillingServiceTests(TestCase):
         set_default_plan_data,
     ):
         owner = OwnerFactory(stripe_subscription_id=10)
-        desired_plan = {"value": "users-pr-inappy", "quantity": 10}
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 10}
         self.billing_service.update_plan(owner, desired_plan)
 
         modify_subscription_mock.assert_called_once_with(owner, desired_plan)
@@ -1404,7 +1445,7 @@ class BillingServiceTests(TestCase):
         set_default_plan_data,
     ):
         owner = OwnerFactory(stripe_subscription_id=None)
-        desired_plan = {"value": "users-pr-inappy", "quantity": 10}
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 10}
         self.billing_service.update_plan(owner, desired_plan)
 
         create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
@@ -1439,7 +1480,7 @@ class BillingServiceTests(TestCase):
         self, modify_subscription_mock, create_checkout_session_mock
     ):
         owner = OwnerFactory(sentry_user_id="sentry-user")
-        desired_plan = {"value": "users-sentrym"}
+        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value}
         self.billing_service.update_plan(owner, desired_plan)
 
         modify_subscription_mock.assert_not_called()
@@ -1451,7 +1492,7 @@ class BillingServiceTests(TestCase):
         self, modify_subscription_mock, create_checkout_session_mock
     ):
         owner = OwnerFactory(sentry_user_id="sentry-user")
-        desired_plan = {"value": "users-sentryy"}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value}
         self.billing_service.update_plan(owner, desired_plan)
 
         modify_subscription_mock.assert_not_called()

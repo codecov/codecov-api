@@ -7,7 +7,7 @@ from api.shared.error_views import not_found
 from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRouter
 
 from .branch.views import BranchViewSet
-from .commit.views import CommitsViewSet
+from .commit.views import CommitsUploadsViewSet, CommitsViewSet
 from .compare.views import CompareViewSet
 from .component.views import ComponentViewSet
 from .coverage.views import CoverageViewSet, FlagCoverageViewSet
@@ -67,9 +67,8 @@ file_report_router.register(
 service_prefix = "<str:service>/"
 owner_prefix = "<str:service>/<str:owner_username>/"
 repo_prefix = "<str:service>/<str:owner_username>/repos/<str:repo_name>/"
-flag_prefix = (
-    "<str:service>/<str:owner_username>/repos/<str:repo_name>/flags/<str:flag_name>/"
-)
+flag_prefix = repo_prefix + "flags/<str:flag_name>/"
+commit_prefix = repo_prefix + "commits/<str:commitid>/"
 
 urlpatterns = [
     path(r"schema/", SpectacularAPIView.as_view(), name="api-v2-schema"),
@@ -97,6 +96,11 @@ urlpatterns = [
     path(repo_prefix, include(report_router.urls)),
     path(repo_prefix, include(file_report_router.urls)),
     path(repo_prefix, include(coverage_router.urls)),
+    path(
+        f"{commit_prefix}uploads/",
+        CommitsUploadsViewSet.as_view({"get": "list"}),
+        name="api-v2-commits-uploads",
+    ),
 ]
 
 if settings.TIMESERIES_ENABLED:
