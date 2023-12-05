@@ -3,6 +3,7 @@ input PathContentsFilters {
   displayType: PathContentDisplayType
   ordering: PathContentsOrdering
   flags: [String!]
+  components: [String!]
 }
 
 input PathContentsOrdering {

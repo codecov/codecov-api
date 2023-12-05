@@ -173,13 +173,47 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
         filters = {}
     search_value = filters.get("search_value")
     display_type = filters.get("display_type")
-    flags = filters.get("flags", [])
+    flags_filter = filters.get("flags", [])
+    component_filter = filters.get("components", [])
+    component_paths = []
+    component_flags = []
 
-    if flags and not set(flags) & set(commit_report.flags):
-        return UnknownFlags()
+    if component_filter:
+        all_components = components.commit_components(commit, current_owner)
+        filtered_components = components.filter_components_by_name(
+            all_components, component_filter
+        )
+
+        if not filtered_components:
+            return MissingCoverage(
+                f"missing coverage for report with components: {component_filter}"
+            )
+
+        component_flags = []
+        for component in filtered_components:
+            component_paths.extend(component.paths)
+            component_flags.extend(
+                component.get_matching_flags(commit_report.flags.keys())
+            )
+
+    if flags_filter:
+        flags_filter = set(flags_filter)
+        if not (flags_filter & set(commit_report.flags)):
+            return UnknownFlags()
+        if not (flags_filter & set(component_flags)):
+            return UnknownFlags(
+                f"unknown flags for report with components: {component_filter}"
+            )
+        flags_filter = list(flags_filter & set(component_flags))
+    else:
+        flags_filter = component_flags
 
     report_paths = ReportPaths(
-        report=commit_report, path=path, search_term=search_value, filter_flags=flags
+        report=commit_report,
+        path=path,
+        search_term=search_value,
+        filter_flags=flags_filter,
+        filter_paths=component_paths,
     )
 
     if len(report_paths.paths) == 0:
@@ -218,7 +252,14 @@ async def resolve_total_uploads(commit, info):
 
 @commit_bindable.field("components")
 @sync_to_async
-def resolve_components(commit: Commit, info) -> List[Component]:
+def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
     request = info.context["request"]
     info.context["component_commit"] = commit
-    return components.commit_components(commit, request.user)
+    all_components = components.commit_components(commit, request.user)
+
+    if filters and filters.get("components"):
+        return components.filter_components_by_name(
+            all_components, filters["components"]
+        )
+
+    return all_components

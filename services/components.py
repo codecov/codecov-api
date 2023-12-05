@@ -22,13 +22,29 @@ def commit_components(commit: Commit, owner: Owner) -> List[Component]:
     return yaml.get_components()
 
 
-def component_filtered_report(report: Report, component: Component) -> FilteredReport:
+def component_filtered_report(
+    report: Report, components: List[Component]
+) -> FilteredReport:
     """
     Filter a report such that the totals, etc. are only pertaining to the given component.
     """
-    flags = component.get_matching_flags(report.flags.keys())
-    filtered_report = report.filter(flags=flags, paths=component.paths)
+    flags, paths = [], []
+    for component in components:
+        flags.extend(component.get_matching_flags(report.flags.keys()))
+        paths.extend(component.paths)
+    filtered_report = report.filter(flags=flags, paths=paths)
     return filtered_report
+
+
+def filter_components_by_name(
+    components: List[Component], terms: List[str]
+) -> List[Component]:
+    """
+    Given a list of Components and a list of strings (terms),
+    return a new list of Components only including Components with names in terms (case insensitive)
+    """
+    terms = [v.lower() for v in terms]
+    return list(filter(lambda c: c.name.lower() in terms, components))
 
 
 class ComponentComparison:
@@ -38,11 +54,11 @@ class ComponentComparison:
 
     @cached_property
     def base_report(self) -> FilteredReport:
-        return component_filtered_report(self.comparison.base_report, self.component)
+        return component_filtered_report(self.comparison.base_report, [self.component])
 
     @cached_property
     def head_report(self) -> FilteredReport:
-        return component_filtered_report(self.comparison.head_report, self.component)
+        return component_filtered_report(self.comparison.head_report, [self.component])
 
     @cached_property
     def base_totals(self) -> ReportTotals:
