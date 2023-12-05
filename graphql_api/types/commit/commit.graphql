@@ -12,7 +12,7 @@ type Commit {
   yamlState: YamlStates
   ciPassed: Boolean
   flagNames: [String]
-  coverageFile(path: String!, flags: [String]): File
+  coverageFile(path: String!, flags: [String], components: [String]): File
   compareWithParent: ComparisonResult
   uploads(
     first: Int

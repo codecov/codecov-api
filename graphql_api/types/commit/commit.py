@@ -3,8 +3,10 @@ from typing import List
 import sentry_sdk
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from shared.reports.filtered import FilteredReportFile
+from shared.reports.resources import ReportFile
 
-import services.components as components
+import services.components as components_service
 import services.path as path_service
 import services.report as report_service
 from codecov.db import sync_to_async
@@ -24,7 +26,7 @@ from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
 from services.comparison import Comparison, ComparisonReport
-from services.components import Component
+from services.components import Component, component_filtered_report
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 from services.report import ReadOnlyReport
@@ -39,9 +41,22 @@ commit_bindable.set_alias("branchName", "branch")
 
 @commit_bindable.field("coverageFile")
 @sync_to_async
-def resolve_file(commit, info, path, flags=None):
-    commit_report = commit.full_report.filter(flags=flags)
-    file_report = commit_report.get(path)
+def resolve_file(commit, info, path, flags=None, components=None):
+    _else, paths = None, []
+    if components:
+        paths = []
+        all_components = components_service.commit_components(
+            commit, info.context["request"].current_owner
+        )
+        filtered_components = components_service.filter_components_by_name(
+            all_components, components
+        )
+        for fc in filtered_components:
+            paths.extend(fc.paths)
+        _else = FilteredReportFile(ReportFile(path), [])
+
+    commit_report = commit.full_report.filter(flags=flags, paths=paths)
+    file_report = commit_report.get(path, _else=_else)
 
     return {
         "commit_report": commit_report,
@@ -179,8 +194,8 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     component_flags = []
 
     if component_filter:
-        all_components = components.commit_components(commit, current_owner)
-        filtered_components = components.filter_components_by_name(
+        all_components = components_service.commit_components(commit, current_owner)
+        filtered_components = components_service.filter_components_by_name(
             all_components, component_filter
         )
 
@@ -255,10 +270,10 @@ async def resolve_total_uploads(commit, info):
 def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
     request = info.context["request"]
     info.context["component_commit"] = commit
-    all_components = components.commit_components(commit, request.user)
+    all_components = components_service.commit_components(commit, request.user)
 
     if filters and filters.get("components"):
-        return components.filter_components_by_name(
+        return components_service.filter_components_by_name(
             all_components, filters["components"]
         )
 
