@@ -23,6 +23,7 @@ from reports.tests.factories import (
     UploadFlagMembershipFactory,
 )
 from services.comparison import MissingComparisonReport
+from services.components import Component
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -550,6 +551,86 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["totals"] == fake_coverage["totals"]
         assert coverageFile["isCriticalFile"] == True
         assert coverageFile["hashedPath"] == hashlib.md5("path".encode()).hexdigest()
+
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    def test_fetch_commit_coverage_file_with_components(
+        self, report_mock, commit_components_mock, filtered_mock
+    ):
+        components = ["Global"]
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+            "components": components,
+        }
+
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["fileA.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "c2",
+                    "name": "ComponentTwo",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["**/*.py"],
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockReport()
+
+        query_files = """
+        query FetchCommit($org: String!, $repo: String!, $commit: String!, $components: [String!]!) {
+            owner(username: $org) {
+                repository(name: $repo) {
+                    ... on Repository {
+                        commit(id: $commit) {
+                            coverageFile(path: "path", components: $components) {
+                                hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverageFile": {
+                            "content": None,
+                            "coverage": [
+                                {"coverage": "P", "line": 0},
+                                {"coverage": "H", "line": 1},
+                                {"coverage": "M", "line": 2},
+                            ],
+                            "hashedPath": "d6fe1d0be6347b8ef2427fa629c04485",
+                            "isCriticalFile": False,
+                            "totals": {"coverage": 83.0},
+                        }
+                    }
+                }
+            }
+        }
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
