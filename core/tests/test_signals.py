@@ -1,4 +1,5 @@
 import os
+from unittest.mock import call
 
 import pytest
 from django.test import override_settings
@@ -18,8 +19,29 @@ def test_shelter_repo_sync(mocker):
     publish = mocker.patch("google.cloud.pubsub_v1.PublisherClient.publish")
 
     # this triggers the publish via Django signals
-    RepositoryFactory(repoid=91728376)
+    repo = RepositoryFactory(repoid=91728376)
 
+    # triggers publish on create
     publish.assert_called_once_with(
-        "projects/test-project-id/topics/test-topic-id", b'{"sync": 91728376}'
+        "projects/test-project-id/topics/test-topic-id",
+        b'{"type": "repo", "sync": "one", "id": 91728376}',
     )
+
+    repo.upload_token = "b69cf44c-89d8-48c2-80c9-5508610d3ced"
+    repo.save()
+
+    publish_calls = publish.call_args_list
+    assert len(publish_calls) == 2
+
+    # triggers publish on update
+    assert publish_calls[1] == call(
+        "projects/test-project-id/topics/test-topic-id",
+        b'{"type": "repo", "sync": "one", "id": 91728376}',
+    )
+
+    repo.message = "foo"
+    repo.save()
+
+    publish_calls = publish.call_args_list
+    # does not trigger another publish
+    assert len(publish_calls) == 2

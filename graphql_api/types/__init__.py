@@ -45,6 +45,7 @@ from .segment_comparison import (
     segment_comparison_bindable,
     segments_result_bindable,
 )
+from .self_hosted_license import self_hosted_license, self_hosted_license_bindable
 from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
@@ -84,6 +85,7 @@ types = [
     profile,
     impacted_file,
     config,
+    self_hosted_license,
     user_token,
     repository_config,
 ]
@@ -122,6 +124,7 @@ bindables = [
     impacted_file_bindable,
     impacted_files_result_bindable,
     config_bindable,
+    self_hosted_license_bindable,
     user_token_bindable,
     *mutation_resolvers,
     *enum_types.enum_types,

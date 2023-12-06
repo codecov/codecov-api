@@ -66,6 +66,18 @@ def resolve_is_timescale_enabled(_, info):
     return settings.TIMESERIES_ENABLED
 
 
+@config_bindable.field("selfHostedLicense")
+def resolve_self_hosted_license(_, info):
+    if not settings.IS_ENTERPRISE:
+        return None
+    license = self_hosted.get_current_license()
+
+    if not license.is_valid:
+        None
+
+    return license
+
+
 @config_bindable.field("hasAdmins")
 def resolve_has_admins(_, info):
     if not settings.IS_ENTERPRISE:

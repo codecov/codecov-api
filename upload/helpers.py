@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.utils import timezone
 from jwt import PyJWKClient, PyJWTError
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
+from shared.github import InvalidInstallationError
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
@@ -27,6 +28,7 @@ from upload.tokenless.tokenless import TokenlessUploadHandler
 from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
+from utils.github import get_github_integration_token
 
 from .constants import ci, global_upload_token_providers
 
@@ -314,6 +316,22 @@ def determine_upload_pr_to_use(upload_params):
 
 
 def try_to_get_best_possible_bot_token(repository):
+    if repository.using_integration and repository.author.integration_id:
+        try:
+            github_token = get_github_integration_token(
+                repository.author.service,
+                integration_id=repository.author.integration_id,
+            )
+            return dict(key=github_token)
+        except InvalidInstallationError:
+            log.warning(
+                "Invalid installation error",
+                extra=dict(
+                    service=repository.author.service,
+                    integration_id=repository.author.integration_id,
+                ),
+            )
+            # now we'll fallback to trying an OAuth token
     service = repository.author.service
     if repository.bot is not None and repository.bot.oauth_token is not None:
         log.info(

@@ -35,9 +35,12 @@ class GithubLoginView(LoginMixin, StateMixin, View):
 
     def get_url_to_redirect_to(self, scope):
         redirect_info = self.redirect_info
-        base_url = urljoin(
-            redirect_info["repo_service"].service_url, "login/oauth/authorize"
+        redirect_host = (
+            redirect_info["repo_service"].get_service_url()
+            if redirect_info["repo_service"].get_host_header() is None
+            else "https://" + redirect_info["repo_service"].get_host_header()
         )
+        base_url = urljoin(redirect_host, "login/oauth/authorize")
         state = self.generate_state()
         query = dict(
             response_type="code",
@@ -163,5 +166,5 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         eight_hours_later = datetime.utcnow() + timedelta(hours=8)
         eight_hours_later_iso = eight_hours_later.isoformat() + "Z"
         response.set_cookie(
-            "session_expiry", eight_hours_later_iso, domain=domain_to_use
+            "session_expiry", eight_hours_later_iso, domain=domain_to_use, secure=True
         )

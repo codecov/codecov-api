@@ -283,7 +283,7 @@ TEAM_PLAN_REPRESENTATIONS = {
         benefits=[
             "Up to 10 users",
             "Unlimited repositories",
-            "2500 uploads",
+            "2500 private repo uploads",
             "Patch coverage analysis",
         ],
         tier_name=TierName.TEAM.value,
@@ -298,7 +298,7 @@ TEAM_PLAN_REPRESENTATIONS = {
         benefits=[
             "Up to 10 users",
             "Unlimited repositories",
-            "2500 uploads",
+            "2500 private repo uploads",
             "Patch coverage analysis",
         ],
         tier_name=TierName.TEAM.value,
