@@ -45,7 +45,7 @@ class CustomGunicornLogFormatter(JsonFormatter):
         "levelname": "level",
         "r": "request",
         "a": "useragent",
-        "f": "referer",  # the biggest concern in my mind: should this be correctly spelled historically (one r) or correctly spelled linguistically (two r)
+        "f": "referrer",
         "b": "response_length",
         "h": "remote_address",
         "t": "request_time",

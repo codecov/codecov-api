@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 
 from core.models import Commit
 from reports.models import CommitReport
@@ -22,7 +22,8 @@ class CommitLoader(BaseLoader):
         # prefetch the CommitReport with the ReportLevelTotals and ReportDetails
         prefetch = Prefetch(
             "reports",
-            queryset=CommitReport.objects.filter(code=None)
+            queryset=CommitReport.objects.coverage_reports()
+            .filter(code=None)
             .select_related("reportleveltotals", "reportdetails")
             .defer("reportdetails___files_array"),
         )
