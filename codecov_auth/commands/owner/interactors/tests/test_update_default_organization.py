@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
@@ -58,6 +60,17 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
         ).first()
         assert owner_profile.default_org == self.default_organization
         assert username == self.default_organization.username
+
+    @patch(
+        "codecov_auth.commands.owner.interactors.update_default_organization.try_auto_activate"
+    )
+    def test_attempts_to_auto_activate_user_for_default_org(self, try_auto_activate):
+        self.execute(owner=self.owner, username=self.default_organization_username)
+
+        try_auto_activate.assert_called_once_with(
+            self.default_organization,
+            self.owner,
+        )
 
     def test_update_owners_default_org_when_current_user_is_selected(self):
         username = self.execute(owner=self.owner, username=self.owner.username)
