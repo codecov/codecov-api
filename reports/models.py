@@ -51,11 +51,6 @@ class CommitReport(
 
     objects = CommitReportManager()
 
-    class Meta:
-        indexes = [
-            models.Index(fields=["commit_id", "report_type", "code"]),
-        ]
-
 
 class ReportResults(
     ExportModelOperationsMixin("reports.report_results"), BaseCodecovModel
