@@ -216,3 +216,37 @@ class UploadLevelTotals(AbstractTotals):
 
     class Meta:
         db_table = "reports_uploadleveltotals"
+
+
+class Test(BaseCodecovModel):
+    repository = models.ForeignKey(
+        "core.Repository",
+        db_column="repoid",
+        related_name="tests",
+        on_delete=models.CASCADE,
+    )
+    name = models.TextField()
+    testsuite = models.TextField()
+
+    class Meta:
+        db_table = "reports_test"
+
+
+class TestInstance(BaseCodecovModel):
+    test = models.ForeignKey(
+        "Test",
+        db_column="test_id",
+        related_name="testruns",
+        on_delete=models.CASCADE,
+    )
+    duration_seconds = models.FloatField()
+    outcome = models.IntegerField()
+    report = models.ForeignKey(
+        "ReportSession",
+        db_column="upload_id",
+        related_name="testruns",
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        db_table = "reports_testrun"
