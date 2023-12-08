@@ -44,7 +44,6 @@ commit_bindable.set_alias("branchName", "branch")
 def resolve_file(commit, info, path, flags=None, components=None):
     _else, paths = None, []
     if components:
-        paths = []
         all_components = components_service.commit_components(
             commit, info.context["request"].current_owner
         )
@@ -64,6 +63,7 @@ def resolve_file(commit, info, path, flags=None, components=None):
         "commit": commit,
         "path": path,
         "flags": flags,
+        "components": components,
     }
 
 
