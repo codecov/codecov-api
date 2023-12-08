@@ -9,7 +9,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
-from reports.models import ReportResults
+from reports.models import CommitReport, ReportResults
 from services.task import TaskService
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin
@@ -39,6 +39,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
             serializer.validated_data["code"] = None
         instance = serializer.save(
             commit_id=commit.id,
+            report_type=CommitReport.ReportType.COVERAGE,
         )
         TaskService().preprocess_upload(
             repository.repoid, commit.commitid, instance.code
