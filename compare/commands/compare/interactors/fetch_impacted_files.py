@@ -39,7 +39,6 @@ class FetchImpactedFiles(BaseInteractor):
 
         components_paths = []
         components_flags = []
-        res = impacted_files
 
         head_commit_report = comparison.head_report
         if components_filter:
@@ -72,7 +71,8 @@ class FetchImpactedFiles(BaseInteractor):
                 ]
 
                 impacted_files = flags_filtered
-                res = impacted_files
+
+        res = impacted_files
 
         if components_paths:
             res = [
