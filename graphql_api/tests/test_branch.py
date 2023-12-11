@@ -916,7 +916,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("services.report.build_report_from_commit")
