@@ -1,9 +1,12 @@
 import enum
-from typing import List, Optional, Union
+from typing import List, Optional
 
+from shared.utils.match import match
+
+import services.components as components
 from codecov.commands.base import BaseInteractor
 from services.comparison import Comparison, ComparisonReport, ImpactedFile
-from services.report import files_belonging_to_flags
+from services.report import files_belonging_to_flags, files_in_sessions
 
 
 class ImpactedFileParameter(enum.Enum):
@@ -27,17 +30,56 @@ class FetchImpactedFiles(BaseInteractor):
             impacted_files = self.sort_impacted_files(
                 impacted_files, parameter, direction
             )
-        flags = filters.get("flags", [])
-        if flags and comparison:
-            head_commit_report = comparison.head_report
-            if set(flags) & set(head_commit_report.flags):
-                files = files_belonging_to_flags(
-                    commit_report=head_commit_report, flags=flags
+
+        if not comparison:
+            return impacted_files
+
+        flags_filter = filters.get("flags", [])
+        components_filter = filters.get("components", [])
+
+        components_paths = []
+        components_flags = []
+
+        head_commit_report = comparison.head_report
+        if components_filter:
+            all_components = components.commit_components(
+                comparison.head_commit, comparison.user
+            )
+            filtered_components = components.filter_components_by_name(
+                all_components, components_filter
+            )
+            for component in filtered_components:
+                components_paths.extend(component.paths)
+                components_flags.extend(
+                    component.get_matching_flags(head_commit_report.flags.keys())
                 )
+
+        # Flags & Components intersection
+        if components_flags:
+            if flags_filter:
+                flags_filter = list(set(flags_filter) & set(components_flags))
+            else:
+                flags_filter = components_flags
+
+        if flags_filter:
+            if set(flags_filter) & set(head_commit_report.flags):
+                files = files_belonging_to_flags(
+                    commit_report=head_commit_report, flags=flags_filter
+                )
+
                 impacted_files = [
                     file for file in impacted_files if file.head_name in files
                 ]
-        return impacted_files
+
+        res = impacted_files
+
+        if components_paths:
+            res = [
+                file
+                for file in impacted_files
+                if match(components_paths, file.head_name)
+            ]
+        return res
 
     def get_attribute(
         self, impacted_file: ImpactedFile, parameter: ImpactedFileParameter
