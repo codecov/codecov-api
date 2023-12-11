@@ -213,11 +213,11 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
                     component.get_matching_flags(commit_report.flags.keys())
                 )
 
-    if flags_filter:
-        if component_flags:
+    if component_flags:
+        if flags_filter:
             flags_filter = list(set(flags_filter) & set(component_flags))
-    else:
-        flags_filter = component_flags
+        else:
+            flags_filter = component_flags
 
     if flags_filter and not commit_report.flags:
         return UnknownFlags(f"No coverage with chosen flags: {flags_filter}")
