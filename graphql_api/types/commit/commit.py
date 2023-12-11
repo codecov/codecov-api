@@ -188,8 +188,10 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
         filters = {}
     search_value = filters.get("search_value")
     display_type = filters.get("display_type")
+
     flags_filter = filters.get("flags", [])
     component_filter = filters.get("components", [])
+
     component_paths = []
     component_flags = []
 
@@ -204,24 +206,21 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
                 f"missing coverage for report with components: {component_filter}"
             )
 
-        component_flags = []
         for component in filtered_components:
             component_paths.extend(component.paths)
-            component_flags.extend(
-                component.get_matching_flags(commit_report.flags.keys())
-            )
+            if commit_report.flags:
+                component_flags.extend(
+                    component.get_matching_flags(commit_report.flags.keys())
+                )
 
-    if flags_filter:
-        flags_filter = set(flags_filter)
-        if not (flags_filter & set(commit_report.flags)):
-            return UnknownFlags()
-        if not (flags_filter & set(component_flags)):
-            return UnknownFlags(
-                f"unknown flags for report with components: {component_filter}"
-            )
-        flags_filter = list(flags_filter & set(component_flags))
-    else:
-        flags_filter = component_flags
+    if component_flags:
+        if flags_filter:
+            flags_filter = list(set(flags_filter) & set(component_flags))
+        else:
+            flags_filter = component_flags
+
+    if flags_filter and not commit_report.flags:
+        return UnknownFlags(f"No coverage with chosen flags: {flags_filter}")
 
     report_paths = ReportPaths(
         report=commit_report,
