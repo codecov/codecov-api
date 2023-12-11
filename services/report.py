@@ -250,7 +250,7 @@ def sessions_with_specific_flags(
     sessions = [
         (sid, session)
         for sid, session in commit_report.sessions.items()
-        if set(session.flags) & set(flags)
+        if session.flags and set(session.flags) & set(flags)
     ]
     return dict(sessions)
 
