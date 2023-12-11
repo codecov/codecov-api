@@ -213,16 +213,13 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
 
     if flags_filter:
         flags_filter = set(flags_filter)
-        if not set(commit_report.flags) & flags_filter:
-            return UnknownFlags()
-        if not set(commit_report.flags) & set(component_flags):
-            return UnknownFlags(
-                f"unknown flags for report with components: {component_filter}"
-            )
         if component_flags:
             flags_filter = list(flags_filter & set(component_flags))
     else:
         flags_filter = component_flags
+
+    if flags_filter and not set(commit_report.flags):
+        return UnknownFlags()
 
     report_paths = ReportPaths(
         report=commit_report,
