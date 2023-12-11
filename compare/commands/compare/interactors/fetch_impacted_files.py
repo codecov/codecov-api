@@ -66,11 +66,10 @@ class FetchImpactedFiles(BaseInteractor):
                 files = files_belonging_to_flags(
                     commit_report=head_commit_report, flags=flags_filter
                 )
-                flags_filtered = [
+
+                impacted_files = [
                     file for file in impacted_files if file.head_name in files
                 ]
-
-                impacted_files = flags_filtered
 
         res = impacted_files
 
