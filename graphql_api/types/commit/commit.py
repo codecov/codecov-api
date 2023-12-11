@@ -213,9 +213,9 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
 
     if flags_filter:
         flags_filter = set(flags_filter)
-        if not (flags_filter & set(commit_report.flags)):
+        if not set(commit_report.flags) & flags_filter:
             return UnknownFlags()
-        if not (set(commit_report.flags) & set(component_flags)):
+        if not set(commit_report.flags) & set(component_flags):
             return UnknownFlags(
                 f"unknown flags for report with components: {component_filter}"
             )
