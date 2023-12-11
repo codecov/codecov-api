@@ -36,8 +36,9 @@ class AsyncGraphqlView(GraphQLAsyncView):
         req_body = json.loads(request.body.decode("utf-8")) if request.body else {}
 
         # clean up graphql query to remove new lines and extra spaces
-        req_body["query"] = req_body["query"].replace("\n", " ")
-        req_body["query"] = req_body["query"].replace("  ", "").strip()
+        if "query" in req_body and isinstance(req_body["query"], str):
+            req_body["query"] = req_body["query"].replace("\n", " ")
+            req_body["query"] = req_body["query"].replace("  ", "").strip()
 
         # put everything together for log
         log_data = {

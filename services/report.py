@@ -115,7 +115,9 @@ def fetch_commit_report(commit: Commit) -> Optional[CommitReport]:
     All the necessary report relations are prefetched.
     """
     return (
-        commit.reports.prefetch_related(
+        commit.reports.coverage_reports()
+        .filter(code=None)
+        .prefetch_related(
             Prefetch(
                 "sessions",
                 queryset=ReportSession.objects.prefetch_related("flags").select_related(

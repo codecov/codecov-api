@@ -241,10 +241,16 @@ class Commit(ExportModelOperationsMixin("core.commit"), models.Model):
     @cached_property
     def commitreport(self):
         reports = list(self.reports.all())
-        # This is almost always prefetched w/ `filter(code=None)` and so the
-        # reports above have `code=None`.  In the case that the reports were not
-        # prefetched we'll filter again in memory.
-        reports = [report for report in reports if report.code is None]
+        # This is almost always prefetched w/ `filter(code=None)` and
+        # `filter(Q(report_type=None) | Q(report_type=CommitReport.ReportType.COVERAGE))`
+        # (in which case `.all()` returns the already filtered results)
+        # In the case that the reports were not prefetched we'll filter again in memory.
+        reports = [
+            report
+            for report in reports
+            if report.code is None
+            and (report.report_type is None or report.report_type == "coverage")
+        ]
         return reports[0] if reports else None
 
     @cached_property
