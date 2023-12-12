@@ -38,7 +38,9 @@ def test_reports_post(client, db, mocker):
         url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
     )
     assert response.status_code == 201
-    assert CommitReport.objects.filter(commit_id=commit.id, code="code1").exists()
+    assert CommitReport.objects.filter(
+        commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
+    ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
 
 
@@ -63,7 +65,9 @@ def test_create_report_already_exists(client, db, mocker):
         url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
     )
     assert response.status_code == 201
-    assert CommitReport.objects.filter(commit_id=commit.id, code="code").exists()
+    assert CommitReport.objects.filter(
+        commit_id=commit.id, code="code", report_type=CommitReport.ReportType.COVERAGE
+    ).exists()
     mocked_call.assert_called_once()
 
 
@@ -86,7 +90,9 @@ def test_reports_post_code_as_default(client, db, mocker):
         url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
     )
     assert response.status_code == 201
-    assert CommitReport.objects.filter(commit_id=commit.id, code=None).exists()
+    assert CommitReport.objects.filter(
+        commit_id=commit.id, code=None, report_type=CommitReport.ReportType.COVERAGE
+    ).exists()
     mocked_call.assert_called_once()
 
 

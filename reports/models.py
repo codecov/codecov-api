@@ -8,6 +8,7 @@ from shared.config import get_config
 from shared.reports.enums import UploadState, UploadType
 
 from codecov.models import BaseCodecovModel
+from reports.managers import CommitReportManager
 from upload.constants import ci
 from utils.config import should_write_data_to_storage_config_check
 from utils.model_utils import ArchiveField
@@ -35,10 +36,20 @@ class AbstractTotals(
 class CommitReport(
     ExportModelOperationsMixin("reports.commit_report"), BaseCodecovModel
 ):
+    class ReportType(models.TextChoices):
+        COVERAGE = "coverage"
+        TEST_RESULTS = "test_results"
+        BUNDLE_ANALYSIS = "bundle_analysis"
+
     commit = models.ForeignKey(
         "core.Commit", related_name="reports", on_delete=models.CASCADE
     )
     code = models.CharField(null=True, max_length=100)
+    report_type = models.CharField(
+        null=True, max_length=100, choices=ReportType.choices
+    )
+
+    objects = CommitReportManager()
 
 
 class ReportResults(
