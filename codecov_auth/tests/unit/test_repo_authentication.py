@@ -15,6 +15,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyQueryTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     RepositoryTokenAuthentication,
+    TokenlessAuthentication,
 )
 from codecov_auth.models import OrganizationLevelToken, RepositoryToken
 from codecov_auth.tests.factories import OwnerFactory
@@ -341,3 +342,73 @@ class TestOrgLevelTokenAuthentication(object):
         assert auth.allows_repo(repository)
         assert auth.allows_repo(other_repo_from_owner)
         assert not auth.allows_repo(random_repo)
+
+
+class TestTokenlessAuth(object):
+    @pytest.mark.parametrize(
+        "headers",
+        [{}, {"X-Tokenless": "user-name/repo-forked"}, {"X-Tokenless-PR": "15"}],
+    )
+    def test_tokenless_missing_headers(self, headers):
+        request = APIRequestFactory().post(
+            "/upload/unknown_provider/owner::::repo/commits/commit_sha/reports/report_code/uploads",
+            headers=headers,
+        )
+        authentication = TokenlessAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed) as exp:
+            authentication.authenticate(request)
+        assert str(exp.value) == "Not valid tokenless upload"
+
+    def test_tokenless_bad_path(self):
+        request = APIRequestFactory().post(
+            "/endpoint",
+            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed) as exp:
+            authentication.authenticate(request)
+        assert str(exp.value) == "Not valid tokenless upload"
+
+    def test_tokenless_unknown_service(self):
+        request = APIRequestFactory().post(
+            "/upload/unknown_provider/owner::::repo/commits/commit_sha/reports/report_code/uploads",
+            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed) as exp:
+            authentication.authenticate(request)
+        assert str(exp.value) == "Not valid tokenless upload"
+
+    def test_tokenless_unknown_repository(self, db):
+        request = APIRequestFactory().post(
+            "/upload/github/owner::::repo/commits/commit_sha/reports/report_code/uploads",
+            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed) as exp:
+            authentication.authenticate(request)
+        assert str(exp.value) == "Not valid tokenless upload"
+
+    def test_tokenless_private_repo(self, db):
+        repo = RepositoryFactory()
+        repo.private = True
+        assert repo.private == True
+        assert repo.service == "github"
+        request = APIRequestFactory().post(
+            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
+            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed) as exp:
+            authentication.authenticate(request)
+        assert str(exp.value) == "Not valid tokenless upload"
+
+    def test_tokenless(self, db, mocker):
+        request = APIRequestFactory().post(
+            "/upload/github/owner::::repo/commits/commit_sha/reports/report_code/uploads",
+            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+        res = authentication.authenticate(request)
+        assert res == None
+        assert False

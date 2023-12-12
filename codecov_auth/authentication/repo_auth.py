@@ -1,6 +1,8 @@
-from typing import List
+import re
+from typing import List, Optional, Tuple
 from uuid import UUID
 
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
@@ -8,9 +10,11 @@ from django.utils import timezone
 from rest_framework import authentication, exceptions
 
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
-from codecov_auth.models import OrganizationLevelToken, Owner, RepositoryToken
+from codecov_auth.models import OrganizationLevelToken, Owner, RepositoryToken, Service
 from core.models import Repository
+from services.repo_providers import RepoProviderService
 from upload.helpers import get_global_tokens
+from upload.views.helpers import get_repository_from_string
 
 
 class LegacyTokenRepositoryAuth(RepositoryAuthInterface):
@@ -174,3 +178,57 @@ class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
             token.owner,
             OrgLevelTokenRepositoryAuth(token),
         )
+
+
+class TokenlessAuthentication(authentication.TokenAuthentication):
+    """This is named ironically, but provides authentication for tokenless uploads.
+    Tokenless only works in FORKs of PUBLIC repos.
+    It allows PRs from external contributors (forks) to upload coverage
+    for the upstream repo when running in a PR.
+
+    While it uses the same "shell" (authentication.TOkenAuthentication)
+    it doesn't really rely on tokens to authenticate.
+    """
+
+    auth_failed_message = "Not valid tokenless upload"
+
+    def _get_repo_info_from_request_path(self, request) -> Repository:
+        path_info = request.get_full_path_info()
+        upload_views_prefix_regex = r"/upload/(\w+)/([\w:]+)/commits"
+        match = re.search(upload_views_prefix_regex, path_info)
+
+        if match is None:
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        # Validate provider
+        service = match.group(1)
+        try:
+            service_enum = Service(service)
+        except ValueError:
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        # Validate that next group exists and decode slug
+        encoded_slug = match.group(2)
+        repo = get_repository_from_string(service_enum, encoded_slug)
+        if repo is None:
+            # Purposefully using the generic message so that we don't tell that
+            # we don't have a certain repo
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        return repo
+
+    @async_to_sync
+    async def authenticate(self, request):
+        fork_slug = request.headers.get("X-Tokenless", None)
+        fork_pr = request.headers.get("X-Tokenless-PR", None)
+        if not fork_slug or not fork_pr:
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        # Get the repo
+        repository = self._get_repo_info_from_request_path(request)
+        # Tokneless is only for public repos
+        if repository.private:
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        # Get the provider service to check the tokenless claim
+        repository_service = RepoProviderService().get_adapter(
+            repository.author, repository
+        )
+        pull_request = await repository_service.get_pull_request(fork_pr)
+
+        return None
