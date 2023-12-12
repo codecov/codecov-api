@@ -219,7 +219,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     def _get_repo_info_from_request_path(self, request) -> Repository:
         path_info = request.get_full_path_info()
         # The repo part comes from https://stackoverflow.com/a/22312124
-        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@\:/\-~]+)\/commits"
+        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@:_/-~]+)\/commits"
         match = re.search(upload_views_prefix_regex, path_info)
 
         if match is None:
