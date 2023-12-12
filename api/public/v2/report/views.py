@@ -120,7 +120,7 @@ class BaseReportViewSet(
         if path and flag:
             report = report.filter(flags=[flag], paths=[f"{path}*"])
         elif path:
-            report = report.filter(paths=[f"{path}*"])
+            report = report.filter(paths=[f"{path}.*"])
         elif flag:
             report = report.filter(flags=[flag])
         elif component_id:
