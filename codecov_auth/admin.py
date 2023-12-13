@@ -1,21 +1,68 @@
 from typing import Optional
 
+import django.forms as forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import Select
-from django.http import HttpRequest
-from django.shortcuts import redirect
+from django.http import HttpRequest, HttpResponseRedirect
+from django.shortcuts import redirect, render
 from django.utils.html import format_html
 
 from codecov.admin import AdminMixin
+from codecov.commands.exceptions import ValidationError
 from codecov_auth.helpers import History
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
+from plan.service import PlanService
 from services.task import TaskService
 from utils.services import get_short_service_name
+
+
+class ExtendTrialForm(forms.Form):
+    end_date = forms.DateTimeField(
+        label="Trial End Date (YYYY-MM-DD HH:MM:SS):", required=True
+    )
+
+
+def extend_trial(self, request, queryset):
+    if "extend_trial" in request.POST:
+        form = ExtendTrialForm(request.POST)
+        if form.is_valid():
+            for org in queryset:
+                plan_service = PlanService(current_org=org)
+                try:
+                    plan_service.start_trial_manually(
+                        current_owner=request.current_owner,
+                        end_date=form.cleaned_data["end_date"],
+                    )
+                except ValidationError as e:
+                    self.message_user(
+                        request,
+                        e.message + f" for {org.username}",
+                        level=messages.ERROR,
+                    )
+                else:
+                    self.message_user(
+                        request, f"Successfully started trial for {org.username}"
+                    )
+            return
+    else:
+        form = ExtendTrialForm()
+
+    return render(
+        request,
+        "admin/extend_trial_form.html",
+        context={
+            "form": form,
+            "datasets": queryset,
+        },
+    )
+
+
+extend_trial.short_description = "Start and extend trial up to a selected date"
 
 
 def impersonate_owner(self, request, queryset):
@@ -149,7 +196,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
     search_fields = ("name__iregex", "username__iregex", "email__iregex")
-    actions = [impersonate_owner]
+    actions = [impersonate_owner, extend_trial]
     autocomplete_fields = ("bot",)
     inlines = [OrgUploadTokenInline]
 
