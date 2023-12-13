@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
@@ -5,6 +7,7 @@ from rest_framework.test import APIClient
 
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
+from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from upload.views.commits import CommitViews
 
@@ -165,3 +168,62 @@ def test_create_commit_already_exists(db, client, mocker):
     assert response.status_code == 201
     assert expected_response == response_json
     mocked_call.assert_called_with(commitid=commit.commitid, repoid=repository.repoid)
+
+
+def test_commit_tokenless(db, client, mocker):
+    repository = RepositoryFactory.create(private=False, author__username="codecov")
+    mocked_call = mocker.patch.object(TaskService, "update_commit")
+
+    fake_provider_service = MagicMock(
+        name="fake_provider_service",
+        get_pull_request=AsyncMock(
+            return_value={
+                "base": {"slug": f"codecov/{repository.name}"},
+                "head": {"slug": f"someone/{repository.name}"},
+            }
+        ),
+    )
+    mocker.patch.object(
+        RepoProviderService, "get_adapter", return_value=fake_provider_service
+    )
+
+    client = APIClient()
+    repo_slug = f"{repository.author.username}::::{repository.name}"
+    url = reverse(
+        "new_upload.commits",
+        args=[repository.author.service, repo_slug],
+    )
+    response = client.post(
+        url,
+        {
+            "commitid": "commit_sha",
+            "pullid": "4",
+            "branch": f"someone/{repository.name}:abc",
+        },
+        format="json",
+        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
+    )
+    assert response.status_code == 201
+    response_json = response.json()
+    commit = Commit.objects.get(commitid="commit_sha")
+    expected_response = {
+        "author": None,
+        "branch": f"someone/{repository.name}:abc",
+        "ci_passed": None,
+        "commitid": "commit_sha",
+        "message": None,
+        "parent_commit_id": None,
+        "repository": {
+            "name": repository.name,
+            "is_private": repository.private,
+            "active": repository.active,
+            "language": repository.language,
+            "yaml": repository.yaml,
+        },
+        "pullid": 4,
+        "state": None,
+        "timestamp": commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    }
+    assert expected_response == response_json
+    mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
+    fake_provider_service.get_pull_request.assert_called_with("4")

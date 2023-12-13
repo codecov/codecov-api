@@ -6,6 +6,7 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    TokenlessAuthentication,
 )
 from core.models import Commit
 from services.task import TaskService
@@ -23,6 +24,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
     ]
 
     def get_queryset(self):

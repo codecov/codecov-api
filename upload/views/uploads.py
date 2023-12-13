@@ -13,6 +13,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     OrgLevelTokenRepositoryAuth,
     RepositoryLegacyTokenAuthentication,
+    TokenlessAuthentication,
 )
 from codecov_auth.models import OrganizationLevelToken
 from core.models import Commit, Repository
@@ -47,6 +48,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
     ]
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
@@ -157,7 +159,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
 
     def get_token(self, commit: Commit):
         repo = commit.repository
-        if isinstance(self.request.auth, OrgLevelTokenRepositoryAuth):
+        if isinstance(self.request.auth, TokenlessAuthentication):
+            token = "tokenless_upload"
+        elif isinstance(self.request.auth, OrgLevelTokenRepositoryAuth):
             token = (
                 OrganizationLevelToken.objects.filter(owner=repo.author).first().token
             )
