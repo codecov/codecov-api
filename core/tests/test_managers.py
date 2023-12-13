@@ -139,3 +139,12 @@ class RepositoryQuerySetTests(TestCase):
             repoids = repos.values_list("repoid", flat=True)
             assert public_repo.repoid in repoids
             assert deleted_repo.repoid not in repoids
+
+        with self.subTest("when repository is deleted, don't return it"):
+            owner = OwnerFactory()
+            deleted_owned_repo = RepositoryFactory(author=owner, deleted=True)
+
+            repos = Repository.objects.viewable_repos(owner)
+            assert public_repo.repoid in repoids
+            assert deleted_repo not in repoids
+            assert deleted_owned_repo not in repoids
