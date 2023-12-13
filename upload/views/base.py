@@ -59,16 +59,25 @@ class GetterMixin(ShelterMixin):
             )
             raise ValidationError("Commit SHA not found")
 
-    def get_report(self, commit: Commit) -> CommitReport:
+    def get_report(
+        self, commit: Commit, report_type=CommitReport.ReportType.COVERAGE
+    ) -> CommitReport:
         report_code = self.kwargs.get("report_code")
         if report_code == "default":
             report_code = None
-        try:
-            report = CommitReport.objects.get(code=report_code, commit=commit)
-            return report
-        except CommitReport.DoesNotExist:
+        queryset = CommitReport.objects.filter(code=report_code, commit=commit)
+        if report_type == CommitReport.ReportType.COVERAGE:
+            queryset = queryset.coverage_reports()
+        else:
+            queryset = queryset.filter(report_type=report_type)
+        report = queryset.first()
+        if report is None:
             log.warning(
                 "Report not found",
                 extra=dict(commit_sha=commit.commitid, report_code=report_code),
             )
             raise ValidationError(f"Report not found")
+        if report.report_type is None:
+            report.report_type = CommitReport.ReportType.COVERAGE
+            report.save()
+        return report

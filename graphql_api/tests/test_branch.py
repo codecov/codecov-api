@@ -91,7 +91,14 @@ class MockFlag(object):
         return MockTotals()
 
 
+class MockSession(object):
+    pass
+
+
 class MockReport(object):
+    def __init__(self):
+        self.sessions = {1: MockSession()}
+
     def get(self, file):
         return MockTotals()
 
@@ -111,6 +118,25 @@ class MockReport(object):
 
     def get_file_totals(self, path):
         return MockTotals().totals
+
+    def filter(self, paths, flags):
+        return MockFilteredReport()
+
+    def sessions(self):
+        return [1, 2, 3]
+
+
+class MockFilteredReport(MockReport):
+    pass
+
+
+class MockNoFlagsReport(object):
+    def __init__(self):
+        self.sessions = {1: MockSession()}
+
+    @property
+    def flags(self):
+        return None
 
 
 class TestBranch(GraphQLTestHelper, TransactionTestCase):
@@ -632,7 +658,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.report.build_report_from_commit")
     def test_fetch_path_contents_unknown_flags(self, report_mock):
-        report_mock.return_value = MockReport()
+        report_mock.return_value = MockNoFlagsReport()
 
         data = self.gql_request(
             query_files,
@@ -651,7 +677,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                         "head": {
                             "pathContents": {
                                 "__typename": "UnknownFlags",
-                                "message": "No coverage with chosen flags",
+                                "message": "No coverage with chosen flags: ['test-123']",
                             }
                         }
                     }
@@ -693,7 +719,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["**/*.py"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                 }
             ),
         ]
@@ -718,9 +744,11 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("services.report.build_report_from_commit")
+    @patch("services.report.files_in_sessions")
     def test_fetch_path_contents_component_filter_has_coverage(
-        self, report_mock, commit_components_mock, filtered_mock
+        self, session_files_mock, report_mock, commit_components_mock, filtered_mock
     ):
+        session_files_mock.return_value = MockReport().files
         components = ["Global"]
         variables = {
             "org": self.org.username,
@@ -750,7 +778,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["**/*.py"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
                 }
             ),
         ]
@@ -767,28 +795,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                 "__typename": "PathContents",
                                 "results": [
                                     {
-                                        "__typename": "PathContentFile",
-                                        "name": "fileA.py",
-                                        "path": "fileA.py",
-                                        "hits": 8,
-                                        "misses": 0,
-                                        "partials": 0,
-                                        "lines": 10,
-                                        "percentCovered": 80.0,
-                                        "isCriticalFile": False,
-                                    },
-                                    {
-                                        "__typename": "PathContentFile",
-                                        "name": "fileB.py",
-                                        "path": "fileB.py",
-                                        "hits": 8,
-                                        "misses": 0,
-                                        "partials": 0,
-                                        "lines": 10,
-                                        "percentCovered": 80.0,
-                                        "isCriticalFile": False,
-                                    },
-                                    {
                                         "__typename": "PathContentDir",
                                         "hits": 24,
                                         "lines": 30,
@@ -797,7 +803,305 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "path": "folder",
                                         "percentCovered": 80.0,
-                                    },
+                                    }
+                                ],
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    @patch("services.report.files_belonging_to_flags")
+    @patch("services.report.files_in_sessions")
+    def test_fetch_path_contents_component_and_flag_filters(
+        self,
+        session_files_mock,
+        flag_files_mock,
+        report_mock,
+        commit_components_mock,
+        filtered_mock,
+    ):
+        session_files_mock.return_value = ["fileA.py"]
+        flag_files_mock.return_value = ["fileA.py"]
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "unit",
+                    "name": "unit",
+                    "paths": ["fileA.py"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "integration",
+                    "name": "integration",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockReport()
+
+        query_files = """
+            query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            branch(name: $branch) {
+                                head {
+                                    pathContents (path: $path, filters: $filters) {
+                                        __typename
+                                        ... on PathContents {
+                                            results {
+                                                __typename
+                                                name
+                                                path
+                                            }
+                                        }
+                                        ... on MissingCoverage {
+                                            message
+                                        }
+                                        ... on UnknownFlags {
+                                            message
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        components, flags = ["unit"], ["flag-a"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components, "flags": flags},
+        }
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "PathContents",
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileA.py",
+                                        "path": "fileA.py",
+                                    }
+                                ],
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    @patch("services.report.files_belonging_to_flags")
+    def test_fetch_path_contents_component_and_flag_filters_unknown_flags(
+        self, flag_files_mock, report_mock, commit_components_mock, filtered_mock
+    ):
+        flag_files_mock.return_value = ["fileA.py"]
+        report_mock.return_value = MockNoFlagsReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "unit",
+                    "name": "unit",
+                    "paths": ["fileA.py"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "integration",
+                    "name": "integration",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockNoFlagsReport()
+
+        query_files = """
+            query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            branch(name: $branch) {
+                                head {
+                                    pathContents (path: $path, filters: $filters) {
+                                        __typename
+                                        ... on PathContents {
+                                            results {
+                                                __typename
+                                                name
+                                                path
+                                            }
+                                        }
+                                        ... on MissingCoverage {
+                                            message
+                                        }
+                                        ... on UnknownFlags {
+                                            message
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        components, flags = ["integration"], ["flag-a"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components, "flags": flags},
+        }
+        data = self.gql_request(query_files, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "UnknownFlags",
+                                "message": f"No coverage with chosen flags: {flags}",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("services.report.build_report_from_commit")
+    @patch("services.report.files_belonging_to_flags")
+    @patch("services.report.files_in_sessions")
+    def test_fetch_path_contents_component_flags_filters(
+        self,
+        session_files_mock,
+        flag_files_mock,
+        report_mock,
+        commit_components_mock,
+        filtered_mock,
+    ):
+        session_files_mock.return_value = ["fileA.py"]
+        flag_files_mock.return_value = ["fileA.py"]
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "unit",
+                    "name": "unit",
+                    "paths": ["fileA.py"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "integration",
+                    "name": "integration",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "flag_regexes": "flag-a",
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockReport()
+
+        query_files = """
+            query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            branch(name: $branch) {
+                                head {
+                                    pathContents (path: $path, filters: $filters) {
+                                        __typename
+                                        ... on PathContents {
+                                            results {
+                                                __typename
+                                                name
+                                                path
+                                            }
+                                        }
+                                        ... on MissingCoverage {
+                                            message
+                                        }
+                                        ... on UnknownFlags {
+                                            message
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        components = ["unit"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components},
+        }
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "PathContents",
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileA.py",
+                                        "path": "fileA.py",
+                                    }
                                 ],
                             }
                         }

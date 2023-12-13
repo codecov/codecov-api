@@ -195,6 +195,47 @@ class PlanServiceTests(TestCase):
         assert current_org.plan_auto_activate == True
         assert current_org.trial_fired_by == current_owner.ownerid
 
+    def test_plan_service_start_trial_manually(self):
+        trial_start_date = None
+        trial_end_date = None
+        plan_user_count = 5
+        current_org = OwnerFactory(
+            plan=PlanName.BASIC_PLAN_NAME.value,
+            trial_start_date=trial_start_date,
+            trial_end_date=trial_end_date,
+            trial_status=TrialStatus.NOT_STARTED.value,
+            plan_user_count=plan_user_count,
+        )
+        plan_service = PlanService(current_org=current_org)
+        current_owner = OwnerFactory()
+
+        plan_service.start_trial_manually(
+            current_owner=current_owner, end_date="2024-01-01 00:00:00"
+        )
+        assert current_org.trial_start_date == datetime.utcnow()
+        assert current_org.trial_end_date == "2024-01-01 00:00:00"
+        assert current_org.trial_status == TrialStatus.ONGOING.value
+        assert current_org.plan == PlanName.TRIAL_PLAN_NAME.value
+        assert current_org.pretrial_users_count == plan_user_count
+        assert current_org.plan_user_count == TRIAL_PLAN_SEATS
+        assert current_org.plan_auto_activate == True
+        assert current_org.trial_fired_by == current_owner.ownerid
+
+    def test_plan_service_start_trial_manually_already_on_paid_plan(self):
+        current_org = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_MONTHLY.value,
+            trial_start_date=None,
+            trial_end_date=None,
+            trial_status=TrialStatus.NOT_STARTED.value,
+        )
+        plan_service = PlanService(current_org=current_org)
+        current_owner = OwnerFactory()
+
+        with self.assertRaises(ValidationError) as e:
+            plan_service.start_trial_manually(
+                current_owner=current_owner, end_date="2024-01-01 00:00:00"
+            )
+
     def test_plan_service_returns_plan_data_for_non_trial_basic_plan(self):
         trial_start_date = None
         trial_end_date = None

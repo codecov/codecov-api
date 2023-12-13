@@ -367,7 +367,7 @@ class GithubWebhookHandler(APIView):
 
         action, pullid = request.data.get("action"), request.data.get("number")
 
-        if action in ["opened", "closed", "reopened", "synchronize"]:
+        if action in ["opened", "closed", "reopened", "synchronize", "labeled"]:
             log.info(
                 f"Pull request action is '{action}', triggering pulls_sync task",
                 extra=dict(

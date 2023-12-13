@@ -3,7 +3,8 @@ class MissingHeadReport:
 
 
 class UnknownFlags:
-    message = "No coverage with chosen flags"
+    def __init__(self, message="No coverage with chosen flags"):
+        self.message = message
 
 
 class MissingBaseCommit:

@@ -39,6 +39,21 @@ def sample_report():
     return report
 
 
+def sample_report_2():
+    report = Report()
+    first_file = ReportFile("App/file1.py")
+    first_file.append(
+        1, ReportLine.create(coverage=1, sessions=[[0, 1]], complexity=(10, 2))
+    )
+    second_file = ReportFile("AppOld/file2.py")
+    second_file.append(
+        51, ReportLine.create(coverage="1/2", type="b", sessions=[[0, 1]])
+    )
+    report.append(first_file)
+    report.append(second_file)
+    return report
+
+
 def flags_report():
     report = Report()
     session_a_id, _ = report.add_session(Session(flags=["flag-a"]))
@@ -470,6 +485,34 @@ class ReportViewSetTestCase(TestCase):
         }
 
         build_report_from_commit.assert_called_once_with(self.commit1)
+        assert res.status_code == 200
+
+    @patch("services.report.build_report_from_commit")
+    def test_report_path_regex_filter(
+        self, build_report_from_commit, get_repo_permissions
+    ):
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.return_value = sample_report_2()
+
+        # Report has files App/file1.py and AppOld/file2.py
+
+        # Only match App/file1.py
+        res = self._request_report(path="App/")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["totals"]["files"] == 1
+        assert data["files"][0]["name"] == "App/file1.py"
+
+        # Match both files
+        res = self._request_report(path="App")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["totals"]["files"] == 2
+        assert data["files"][0]["name"] in ["App/file1.py", "AppOld/file2.py"]
+
+        # Match no files
+        res = self._request_report(path="Apps")
+        assert res.status_code == 404
 
     @patch("services.report.build_report_from_commit")
     def test_report_invalid_path(self, build_report_from_commit, get_repo_permissions):
