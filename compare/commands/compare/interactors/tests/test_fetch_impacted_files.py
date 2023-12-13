@@ -590,6 +590,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
             CommitFactory(repository=repo),
         )
         pull = PullFactory(
+            pullid=256,
             repository=repo,
             base=base.commitid,
             head=head.commitid,
