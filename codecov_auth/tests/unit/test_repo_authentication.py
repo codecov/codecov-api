@@ -424,6 +424,10 @@ class TestTokenlessAuth(object):
             ),
             ("/upload/github/ownerSEPARATORexample-repo/commits", "owner/example-repo"),
             (
+                "/upload/github/ownerSEPARATOR__example-repo__/commits",
+                "owner/__example-repo__",
+            ),
+            (
                 "/upload/github/ownerSEPARATOR~example-repo:copy/commits",
                 "owner/~example-repo:copy",
             ),

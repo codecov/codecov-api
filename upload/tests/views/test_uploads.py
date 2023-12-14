@@ -301,6 +301,7 @@ def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
     upload_task_mock = mocker.patch(
         "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
+    analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
 
     repository = RepositoryFactory(
         name="the_repo",
@@ -399,6 +400,25 @@ def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
     )
     presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
     upload_task_mock.assert_called()
+    analytics_service_mock.return_value.account_uploaded_coverage_report.assert_called_with(
+        commit.repository.author.ownerid,
+        {
+            "commit": commit.commitid,
+            "branch": commit.branch,
+            "pr": commit.pullid,
+            "repo": commit.repository.name,
+            "repository_name": commit.repository.name,
+            "repository_id": commit.repository.repoid,
+            "service": commit.repository.service,
+            "build": upload.build_code,
+            "build_url": upload.build_url,
+            "flags": ",".join(upload.flag_names),
+            "owner": commit.repository.author.ownerid,
+            "token": "tokenless_upload",
+            "version": "version",
+            "uploader_type": "CLI",
+        },
+    )
 
 
 @override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")

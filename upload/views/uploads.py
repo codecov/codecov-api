@@ -13,6 +13,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     OrgLevelTokenRepositoryAuth,
     RepositoryLegacyTokenAuthentication,
+    TokenlessAuth,
     TokenlessAuthentication,
 )
 from codecov_auth.models import OrganizationLevelToken
@@ -159,7 +160,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
 
     def get_token(self, commit: Commit):
         repo = commit.repository
-        if isinstance(self.request.auth, TokenlessAuthentication):
+        if isinstance(self.request.auth, TokenlessAuth):
             token = "tokenless_upload"
         elif isinstance(self.request.auth, OrgLevelTokenRepositoryAuth):
             token = (

@@ -216,7 +216,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     def _get_repo_info_from_request_path(self, request) -> Repository:
         path_info = request.get_full_path_info()
         # The repo part comes from https://stackoverflow.com/a/22312124
-        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@:_/-~]+)\/commits"
+        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@:_/\-~]+)\/commits"
         match = re.search(upload_views_prefix_regex, path_info)
 
         if match is None:
@@ -251,7 +251,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         fork_slug = request.headers.get("X-Tokenless", None)
         fork_pr = request.headers.get("X-Tokenless-PR", None)
         if fork_slug is None or fork_pr is None:
-            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+            return None
         # Get the repo
         repository = self._get_repo_info_from_request_path(request)
         # Tokneless is only for public repos
