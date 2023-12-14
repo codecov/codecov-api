@@ -447,8 +447,12 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
     if parent_commit_id and commit.parent_commit_id is None:
         commit.parent_commit_id = parent_commit_id
         edited = True
+    if branch and commit.branch != branch:
+        # A branch head may have been moved; this allows commits to be "moved"
+        commit.branch = branch
+        edited = True
     if edited:
-        commit.save(update_fields=["parent_commit_id", "state"])
+        commit.save(update_fields=["parent_commit_id", "state", "branch"])
     return commit
 
 
