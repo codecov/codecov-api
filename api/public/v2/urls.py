@@ -1,3 +1,5 @@
+# debugging
+
 from django.conf import settings, urls
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
