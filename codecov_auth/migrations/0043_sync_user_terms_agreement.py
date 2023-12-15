@@ -2,8 +2,7 @@
 
 
 from django.db import migrations
-
-from utils.migrations import RiskyRunSQL
+from shared.django_apps.migration_utils import RiskyRunSQL
 
 
 class Migration(migrations.Migration):
