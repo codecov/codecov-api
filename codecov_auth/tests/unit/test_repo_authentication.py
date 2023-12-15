@@ -402,6 +402,53 @@ class TestTokenlessAuth(object):
             authentication.authenticate(request)
         assert str(exp.value) == "Not valid tokenless upload"
 
+    @pytest.mark.parametrize(
+        "request_uri,repo_slug",
+        [
+            ("/upload/github/ownerSEPARATORthe_repo/commits", "owner/the_repo"),
+            ("/upload/github/ownerSEPARATORthe_repo/commits/", "owner/the_repo"),
+            (
+                "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports",
+                "owner/the_repo",
+            ),
+            (
+                "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/",
+                "owner/the_repo",
+            ),
+            (
+                "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/default/uploads",
+                "owner/the_repo",
+            ),
+            (
+                "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/default/uploads/",
+                "owner/the_repo",
+            ),
+            ("/upload/github/ownerSEPARATORexample-repo/commits", "owner/example-repo"),
+            (
+                "/upload/github/ownerSEPARATOR~example-repo:copy/commits",
+                "owner/~example-repo:copy",
+            ),
+        ],
+    )
+    def test_tokenless_matches_paths(self, request_uri, repo_slug, db):
+        author_name, repo_name = repo_slug.split("/")
+        # Doing this because of ATS.
+        # For pytest '::' is the divider between a test class and a test function.
+        # There's a non-zero chance that the full test name would be mis-interpreted by pytest
+        # And these tests would never work with ATS.
+        # Sadly there's no way to escape the '::' sequence
+        request_uri = request_uri.replace("SEPARATOR", "::::")
+        repo = RepositoryFactory(
+            name=repo_name, author__username=author_name, private=False
+        )
+        assert repo.service == "github"
+        request = APIRequestFactory().post(
+            request_uri,
+            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+        assert authentication._get_repo_info_from_request_path(request) == repo
+
     def test_tokenless_private_repo(self, db):
         repo = RepositoryFactory()
         repo.private = True
