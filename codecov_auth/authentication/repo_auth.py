@@ -253,7 +253,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     def authenticate(self, request):
         fork_slug = request.headers.get("X-Tokenless", None)
         fork_pr = request.headers.get("X-Tokenless-PR", None)
-        if not fork_slug or not fork_pr:
+        if fork_slug is None or fork_pr is None:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
         # Get the repo
         repository = self._get_repo_info_from_request_path(request)
