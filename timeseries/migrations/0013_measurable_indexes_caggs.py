@@ -2,8 +2,7 @@
 
 from django.conf import settings
 from django.db import migrations, models
-
-from utils.migrations import RiskyAddConstraint, RiskyAddIndex
+from shared.django_apps.migration_utils import RiskyAddConstraint, RiskyAddIndex
 
 
 class Migration(migrations.Migration):

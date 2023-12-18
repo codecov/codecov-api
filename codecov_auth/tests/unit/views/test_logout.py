@@ -32,7 +32,7 @@ class LogoutViewTest(TransactionTestCase):
         self.assertEqual(self._is_authenticated(), True)
 
         res = self._get("/logout/gh")
-        assert res.url == "/"
+        assert res.url == "http://localhost:3000"
         self.assertEqual(res.status_code, 302)
 
         res = self._get("/graphql/gh/")
@@ -47,7 +47,7 @@ class LogoutViewTest(TransactionTestCase):
         self.assertEqual(self._is_authenticated(), True)
 
         res = self._get("/logout/gh?to=/test")
-        assert res.url == "/test"
+        assert res.url == "http://localhost:3000"
         self.assertEqual(res.status_code, 302)
 
         res = self._get("/graphql/gh/")

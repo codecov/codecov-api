@@ -4,7 +4,7 @@ from django.shortcuts import redirect
 
 
 def logout_view(request, **kwargs):
-    redirect_url = request.GET.get("to", "/")
+    redirect_url = settings.CODECOV_DASHBOARD_URL
     response = redirect(redirect_url)
     logout(request)
     kwargs_cookie = dict(
