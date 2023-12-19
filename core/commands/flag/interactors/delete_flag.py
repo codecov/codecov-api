@@ -27,6 +27,9 @@ class DeleteFlagInteractor(BaseInteractor):
         if settings.IS_ENTERPRISE:
             if not self_hosted.is_admin_owner(self.current_user):
                 raise Unauthorized()
+        else:
+            if not owner.is_admin(self.current_user):
+                raise Unauthorized()
 
     def execute(self, owner_username: str, repo_name: str, flag_name: str):
         owner = Owner.objects.filter(
