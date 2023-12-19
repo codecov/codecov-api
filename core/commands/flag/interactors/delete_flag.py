@@ -24,8 +24,9 @@ class DeleteFlagInteractor(BaseInteractor):
         if not repo:
             raise ValidationError("Repo not found")
 
-        if settings.IS_ENTERPRISE and not self_hosted.is_admin_owner(self.current_user):
-            raise Unauthorized()
+        if settings.IS_ENTERPRISE:
+            if not self_hosted.is_admin_owner(self.current_user):
+                raise Unauthorized()
 
     def execute(self, owner_username: str, repo_name: str, flag_name: str):
         owner = Owner.objects.filter(
