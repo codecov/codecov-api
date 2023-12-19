@@ -6,6 +6,8 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.bundle_analysis.storage import BUCKET_NAME
+from shared.storage import get_appropriate_storage_service
 
 from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
@@ -83,7 +85,9 @@ class BundleAnalysisView(APIView):
         storage_path = f"v1/uploads/{upload_external_id}.json"
 
         archive_service = ArchiveService(repo)
-        url = archive_service.create_presigned_put(storage_path)
+        url = archive_service.storage.create_presigned_put(
+            BUCKET_NAME, storage_path, 30
+        )
 
         task_arguments = {
             # these are used in the upload task when saving an upload record

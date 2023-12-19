@@ -1,5 +1,6 @@
 import json
 import re
+from unittest.mock import ANY
 
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -41,7 +42,7 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
     # returns presigned storage URL
     assert res.json() == {"url": "test-presigned-put"}
 
-    create_presigned_put.assert_called_once
+    create_presigned_put.assert_called_once_with("bundle-analysis", ANY, 30)
     call = create_presigned_put.mock_calls[0]
     _, storage_path, _ = call.args
     match = re.match(r"v1/uploads/([\d\w\-]+)\.json", storage_path)
