@@ -108,7 +108,9 @@ class GithubLoginView(LoginMixin, StateMixin, View):
     def actual_login_step(self, request):
         code = request.GET.get("code")
         state = request.GET.get("state")
-        redirection_url = self.get_redirection_url_from_state(state)
+        redirection_url, is_valid = self.get_redirection_url_from_state(state)
+        if not is_valid:
+            return redirect(redirection_url)
         try:
             user_dict = self.fetch_user_data(code)
             if user_dict is None:

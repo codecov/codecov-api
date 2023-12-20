@@ -34,8 +34,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             self.current_user.email = input.business_email
             self.current_user.save()
 
-        if input.marketing_consent:
-            self.send_data_to_marketo()
+        self.send_data_to_marketo()
 
     def send_data_to_marketo(self):
         event_data = {
