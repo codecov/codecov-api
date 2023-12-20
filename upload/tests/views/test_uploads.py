@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from django.conf import settings
@@ -20,6 +20,7 @@ from reports.models import (
 )
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.archive import ArchiveService, MinioEndpoints
+from services.repo_providers import RepoProviderService
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
 
@@ -289,6 +290,135 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     )
     presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
     upload_task_mock.assert_called()
+
+
+@patch("shared.metrics.metrics.incr")
+def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
+    presigned_put_mock = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
+    upload_task_mock = mocker.patch(
+        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+    )
+    analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
+
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=False,
+    )
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    repository.save()
+    commit_report.save()
+
+    fake_provider_service = MagicMock(
+        name="fake_provider_service",
+        get_pull_request=AsyncMock(
+            return_value={
+                "base": {"slug": f"codecov/{repository.name}"},
+                "head": {"slug": f"someone/{repository.name}"},
+            }
+        ),
+    )
+    mocker.patch.object(
+        RepoProviderService, "get_adapter", return_value=fake_provider_service
+    )
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.uploads",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
+    )
+    response = client.post(
+        url,
+        {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+        },
+        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
+    )
+    assert response.status_code == 201
+    response_json = response.json()
+    fake_provider_service.get_pull_request.assert_called_with("4")
+    upload = ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).first()
+    assert all(
+        map(
+            lambda x: x in response_json.keys(),
+            ["external_id", "created_at", "raw_upload_location", "url"],
+        )
+    )
+    assert (
+        response_json.get("url")
+        == f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+    )
+
+    assert ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).exists()
+    assert RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag1"
+    ).exists()
+    assert RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag2"
+    ).exists()
+    flag1 = RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag1"
+    ).first()
+    flag2 = RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag2"
+    ).first()
+    assert UploadFlagMembership.objects.filter(
+        report_session_id=upload.id, flag_id=flag1.id
+    ).exists()
+    assert UploadFlagMembership.objects.filter(
+        report_session_id=upload.id, flag_id=flag2.id
+    ).exists()
+    assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+    mock_metrics.assert_has_calls(
+        [call("upload.cli.version"), call("uploads.accepted", 1)]
+    )
+
+    archive_service = ArchiveService(repository)
+    assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
+        version="v4",
+        date=upload.created_at.strftime("%Y-%m-%d"),
+        repo_hash=archive_service.storage_hash,
+        commit_sha=commit.commitid,
+        reportid=commit_report.external_id,
+        uploadid=upload.external_id,
+    )
+    presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
+    upload_task_mock.assert_called()
+    analytics_service_mock.return_value.account_uploaded_coverage_report.assert_called_with(
+        commit.repository.author.ownerid,
+        {
+            "commit": commit.commitid,
+            "branch": commit.branch,
+            "pr": commit.pullid,
+            "repo": commit.repository.name,
+            "repository_name": commit.repository.name,
+            "repository_id": commit.repository.repoid,
+            "service": commit.repository.service,
+            "build": upload.build_code,
+            "build_url": upload.build_url,
+            "flags": ",".join(upload.flag_names),
+            "owner": commit.repository.author.ownerid,
+            "token": "tokenless_upload",
+            "version": "version",
+            "uploader_type": "CLI",
+        },
+    )
 
 
 @override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
