@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 
 from codecov.commands.exceptions import (
     NotFound,
@@ -77,4 +77,34 @@ class FlagCommandsTest(TransactionTestCase):
                 owner_username=self.org.username,
                 repo_name=self.repo.name,
                 flag_name="nonexistent",
+            )
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("services.self_hosted.get_config")
+    def test_delete_flag_self_hosted_admin(self, get_config_mock):
+        get_config_mock.return_value = [
+            {"service": "github", "username": self.owner.username},
+        ]
+
+        self.command.delete_flag(
+            owner_username=self.org.username,
+            repo_name=self.repo.name,
+            flag_name=self.flag.flag_name,
+        )
+
+        self.flag.refresh_from_db()
+        assert self.flag.deleted is True
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("services.self_hosted.get_config")
+    def test_delete_flag_self_hosted_non_admin(self, get_config_mock):
+        get_config_mock.return_value = [
+            {"service": "github", "username": "someone-else"},
+        ]
+
+        with self.assertRaises(Unauthorized):
+            self.command.delete_flag(
+                owner_username=self.org.username,
+                repo_name=self.repo.name,
+                flag_name=self.flag.flag_name,
             )
