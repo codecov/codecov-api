@@ -790,7 +790,12 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
     @patch("services.task.TaskService.delete_timeseries")
     @patch("services.task.TaskService.flush_repo")
     def test_erase_as_admin_self_hosted(
-        self, mocked_flush_repo, mocked_delete_timeseries, mocked_get_config, mocked_get_object, mocked_get_permissions
+        self,
+        mocked_flush_repo,
+        mocked_delete_timeseries,
+        mocked_get_config,
+        mocked_get_object,
+        mocked_get_permissions,
     ):
         mocked_get_permissions.return_value = True, True
         self.org.admins = [self.current_owner.ownerid]
