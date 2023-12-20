@@ -97,6 +97,7 @@ env.bak/
 venv.bak/
 .testenv
 .envrc
+.debug
 
 codecov/static/*
 !codecov/static/__init__.py
