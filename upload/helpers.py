@@ -682,7 +682,10 @@ def dispatch_upload_task(
         3600,
         timezone.now().timestamp(),
     )
-
+    cache_key = f"monthly_upload_usage_{repository.author.ownerid}"
+    uploads_used = redis.get(cache_key)
+    if uploads_used is not None:
+        redis.set(cache_key, int(uploads_used) + 1, ex=259200)
     commitid = task_arguments.get("commit")
 
     TaskService().upload(
