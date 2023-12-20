@@ -85,14 +85,19 @@ def test_generate_state_when_wrong_url(mock_redis):
 
 def test_get_redirection_url_from_state_no_state(mock_redis):
     mixin = set_up_mixin()
-    with pytest.raises(SuspiciousOperation):
-        mixin.get_redirection_url_from_state("not exist")
+    assert mixin.get_redirection_url_from_state("not exist") == (
+        "http://localhost:3000/gh",
+        False,
+    )
 
 
 def test_get_redirection_url_from_state_give_url(mock_redis):
     mixin = set_up_mixin()
     mock_redis.set(f"oauth-state-abc", "http://localhost/gh/codecov")
-    assert mixin.get_redirection_url_from_state("abc") == "http://localhost/gh/codecov"
+    assert mixin.get_redirection_url_from_state("abc") == (
+        "http://localhost/gh/codecov",
+        True,
+    )
 
 
 def test_remove_state_with_with_delay(mock_redis):
