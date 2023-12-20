@@ -134,6 +134,7 @@ class TaskService(object):
         self,
         repoid,
         commitid,
+        report_type=None,
         report_code=None,
         debug=False,
         rebuild=False,
@@ -144,6 +145,7 @@ class TaskService(object):
             kwargs=dict(
                 repoid=repoid,
                 commitid=commitid,
+                report_type=report_type,
                 report_code=report_code,
                 debug=debug,
                 rebuild=rebuild,
@@ -155,13 +157,19 @@ class TaskService(object):
         self,
         repoid,
         commitid,
+        report_type=None,
         report_code=None,
         countdown=0,
         debug=False,
         rebuild=False,
     ):
         return self.upload_signature(
-            repoid, commitid, report_code=report_code, debug=debug, rebuild=rebuild
+            repoid,
+            commitid,
+            report_type=report_type,
+            report_code=report_code,
+            debug=debug,
+            rebuild=rebuild,
         ).apply_async(countdown=countdown)
 
     def notify_signature(self, repoid, commitid, current_yaml=None, empty_upload=None):
