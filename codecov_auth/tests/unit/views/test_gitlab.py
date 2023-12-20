@@ -90,6 +90,57 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     assert encryptor.decode(owner.oauth_token) == f"{access_token}: :{refresh_token}"
 
 
+def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
+    settings.GITLAB_CLIENT_ID = (
+        "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
+    )
+    settings.GITLAB_CLIENT_SECRET = (
+        "testi1iinnfrhnf2q6htycgexmp04f1z2mrd7w7u8bigskhwq2km6yls8e2mddzh"
+    )
+    settings.COOKIES_DOMAIN = ".simple.site"
+    settings.COOKIE_SECRET = "cookie-secret"
+
+    access_token = "testp2twc8gxedplfn91tm4zn4r4ak2xgyr4ug96q86r2gr0re0143f20nuftka8"
+    refresh_token = "testqyuk6z4s086jcvwoncxz8owl57o30qx1mhxlw3lgqliisujsiakh3ejq91tt"
+
+    async def helper_func(*args, **kwargs):
+        return {
+            "id": 3124507,
+            "name": "Thiago Ramos",
+            "username": "ThiagoCodecov",
+            "state": "active",
+            "access_token": access_token,
+            "token_type": "Bearer",
+            "refresh_token": refresh_token,
+            "scope": "api",
+        }
+
+    async def helper_list_teams_func(*args, **kwargs):
+        return [
+            {
+                "email": "hello@codecov.io",
+                "id": "8226205",
+                "name": "Codecov",
+                "username": "codecov",
+            }
+        ]
+
+    mocker.patch.object(Gitlab, "get_authenticated_user", side_effect=helper_func)
+    mocker.patch.object(Gitlab, "list_teams", side_effect=helper_list_teams_func)
+    mocker.patch(
+        "services.task.TaskService.refresh",
+        return_value=mocker.MagicMock(
+            as_tuple=mocker.MagicMock(return_value=("a", "b"))
+        ),
+    )
+    url = reverse("gitlab-login")
+    res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
+    assert res.status_code == 302
+    assert res.url == "http://localhost:3000/gl"
+
+    assert "current_owner_id" not in client.session
+
+
 def test_get_github_already_with_code_gitlab_error(
     client, mocker, db, mock_redis, settings
 ):
