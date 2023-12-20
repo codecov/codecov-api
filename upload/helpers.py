@@ -20,8 +20,10 @@ from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundE
 from codecov_auth.models import Owner
 from core.models import Commit, CommitNotification, Pull, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
+from plan.service import PlanService
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
+from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from upload.tokenless.tokenless import TokenlessUploadHandler
@@ -29,12 +31,14 @@ from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
 from utils.github import get_github_integration_token
+from utils.uploads_used import get_uploads_used, increment_uploads_used
 
 from .constants import ci, global_upload_token_providers
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 
 log = logging.getLogger(__name__)
+redis = get_redis_connection()
 
 
 def parse_params(data):
@@ -473,23 +477,14 @@ def get_global_tokens():
 def check_commit_upload_constraints(commit: Commit):
     if settings.UPLOAD_THROTTLING_ENABLED and commit.repository.private:
         owner = _determine_responsible_owner(commit.repository)
-        limit = USER_PLAN_REPRESENTATIONS.get(owner.plan, {}).monthly_uploads_limit
+        plan_service = PlanService(current_org=owner)
+        limit = plan_service.monthly_uploads_limit
         if limit is not None:
             did_commit_uploads_start_already = ReportSession.objects.filter(
                 report__commit=commit
             ).exists()
             if not did_commit_uploads_start_already:
-                limit = USER_PLAN_REPRESENTATIONS[owner.plan].monthly_uploads_limit
-                uploads_used = ReportSession.objects.filter(
-                    report__commit__repository__author_id=owner.ownerid,
-                    report__commit__repository__private=True,
-                    created_at__gte=timezone.now() - timedelta(days=30),
-                    # attempt at making the query more performant by telling the db to not
-                    # check old commits, which are unlikely to have recent uploads
-                    report__commit__timestamp__gte=timezone.now() - timedelta(days=60),
-                    upload_type="uploaded",
-                )[:limit].count()
-                if uploads_used >= limit:
+                if get_uploads_used(redis, plan_service, limit, owner) >= limit:
                     log.warning(
                         "User exceeded its limits for usage",
                         extra=dict(ownerid=owner.ownerid, repoid=commit.repository_id),
@@ -682,10 +677,7 @@ def dispatch_upload_task(
         3600,
         timezone.now().timestamp(),
     )
-    cache_key = f"monthly_upload_usage_{repository.author.ownerid}"
-    uploads_used = redis.get(cache_key)
-    if uploads_used is not None:
-        redis.set(cache_key, int(uploads_used) + 1, ex=259200)
+    increment_uploads_used(redis, repository.author)
     commitid = task_arguments.get("commit")
 
     TaskService().upload(

@@ -249,7 +249,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["repository"]["name"] == repo.name
 
-    def test_resolve_number_of_uploads_per_user(self):
+    @patch("redis.Redis.get")
+    def test_resolve_number_of_uploads_per_user(self, mocked_get):
+        mocked_get.return_value = None
         query_uploads_number = """{
             owner(username: "%s") {
                numberOfUploads
