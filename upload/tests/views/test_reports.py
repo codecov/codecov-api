@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, MagicMock
+
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -5,6 +7,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport, ReportResults
 from reports.tests.factories import ReportResultsFactory
+from services.repo_providers import RepoProviderService
 from services.task.task import TaskService
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -42,6 +45,52 @@ def test_reports_post(client, db, mocker):
         commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+
+
+def test_reports_post_tokenless(client, db, mocker):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=False,
+    )
+    commit = CommitFactory(repository=repository)
+    repository.save()
+
+    fake_provider_service = MagicMock(
+        name="fake_provider_service",
+        get_pull_request=AsyncMock(
+            return_value={
+                "base": {"slug": f"codecov/{repository.name}"},
+                "head": {"slug": f"someone/{repository.name}"},
+            }
+        ),
+    )
+    mocker.patch.object(
+        RepoProviderService, "get_adapter", return_value=fake_provider_service
+    )
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(
+        url,
+        data={"code": "code1"},
+        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
+    )
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+    assert response.status_code == 201
+    assert CommitReport.objects.filter(
+        commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
+    ).exists()
+    mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+    fake_provider_service.get_pull_request.assert_called_with("4")
 
 
 def test_create_report_already_exists(client, db, mocker):

@@ -244,7 +244,7 @@ def test_get_github_already_with_code_github_error(
 def test_state_not_known(client, mocker, db, mock_redis, settings):
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "doesnt exist"})
-    assert res.status_code == 400
+    assert res.status_code == 302
     assert "current_owner_id" not in client.session
 
 
