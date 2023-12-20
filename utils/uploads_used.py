@@ -19,9 +19,10 @@ def get_uploads_used(redis, plan_service, limit, owner):
         uploads_used = redis.get(cache_key)
         if uploads_used is None:
             uploads_used = query_uploads_used(plan_service, limit, owner)
+            redis.set(cache_key, uploads_used, ex=cache_time)
         else:
             uploads_used = int(uploads_used)
-        redis.set(cache_key, uploads_used, ex=cache_time)
+
     except OSError as e:
         log.warning(
             f"Error connecting to redis for rate limit check: {e}",
