@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from shared.bundle_analysis import BundleAnalysisReport, StoragePaths
-from shared.bundle_analysis.storage import BUCKET_NAME
+from shared.bundle_analysis.storage import get_bucket_name
 from shared.storage.memory import MemoryStorageService
 
 from core.tests.factories import CommitFactory, RepositoryFactory
@@ -37,7 +37,7 @@ def test_load_report(get_storage_service):
     assert load_report(commit) is None
 
     with open("./services/tests/samples/bundle_report.sqlite", "rb") as f:
-        storage.write_file(BUCKET_NAME, storage_path, f)
+        storage.write_file(get_bucket_name(), storage_path, f)
 
     report = load_report(commit)
     assert report is not None

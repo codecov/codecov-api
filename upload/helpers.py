@@ -20,7 +20,7 @@ from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundE
 from codecov_auth.models import Owner
 from core.models import Commit, CommitNotification, Pull, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
-from reports.models import ReportSession
+from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
@@ -645,18 +645,40 @@ def store_report_in_redis(request, commitid, reportid, redis):
     return redis_key
 
 
-def dispatch_upload_task(task_arguments, repository, redis):
+def dispatch_upload_task(
+    task_arguments,
+    repository,
+    redis,
+    report_type=CommitReport.ReportType.COVERAGE,
+):
     # Store task arguments in redis
     cache_uploads_eta = get_config(("setup", "cache", "uploads"), default=86400)
-    repo_queue_key = f"uploads/{repository.repoid}/{task_arguments.get('commit')}"
-    countdown = 4 if task_arguments.get("version") == "v4" else 0
+    if report_type == CommitReport.ReportType.COVERAGE:
+        repo_queue_key = f"uploads/{repository.repoid}/{task_arguments.get('commit')}"
+    else:
+        repo_queue_key = (
+            f"uploads/{repository.repoid}/{task_arguments.get('commit')}/{report_type}"
+        )
+
+    countdown = 0
+    if task_arguments.get("version") == "v4":
+        countdown = 4
+    if report_type == CommitReport.ReportType.BUNDLE_ANALYSIS:
+        countdown = 4
 
     redis.rpush(repo_queue_key, dumps(task_arguments))
     redis.expire(
         repo_queue_key, cache_uploads_eta if cache_uploads_eta is not True else 86400
     )
+
+    if report_type == CommitReport.ReportType.COVERAGE:
+        latest_upload_key = (
+            f"latest_upload/{repository.repoid}/{task_arguments.get('commit')}"
+        )
+    else:
+        latest_upload_key = f"latest_upload/{repository.repoid}/{task_arguments.get('commit')}/{report_type}"
     redis.setex(
-        f"latest_upload/{repository.repoid}/{task_arguments.get('commit')}",
+        latest_upload_key,
         3600,
         timezone.now().timestamp(),
     )
@@ -666,6 +688,7 @@ def dispatch_upload_task(task_arguments, repository, redis):
     TaskService().upload(
         repoid=repository.repoid,
         commitid=commitid,
+        report_type=str(report_type),
         report_code=task_arguments.get("report_code"),
         countdown=max(
             countdown, int(get_config("setup", "upload_processing_delay") or 0)

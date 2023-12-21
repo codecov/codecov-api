@@ -8,6 +8,7 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    TokenlessAuthentication,
 )
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
@@ -25,6 +26,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
     ]
 
     def perform_create(self, serializer):

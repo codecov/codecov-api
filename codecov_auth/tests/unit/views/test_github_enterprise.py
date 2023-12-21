@@ -238,7 +238,7 @@ def test_state_not_known(client, mocker, db, mock_redis, settings):
     settings.GITHUB_ENTERPRISE_CLIENT_ID = "3d44be0e772666136a13"
     url = reverse("ghe-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "doesnt exist"})
-    assert res.status_code == 400
+    assert res.status_code == 302
     assert "github_enterprise-token" not in res.cookies
     assert "github_enterprise-username" not in res.cookies
 
