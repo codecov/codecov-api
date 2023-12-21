@@ -88,6 +88,12 @@ def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
     return plan_service.available_plans(owner=owner)
 
 
+@owner_bindable.field("hasPrivateRepos")
+@sync_to_async
+def resolve_has_private_repos(owner: Owner, info) -> List[PlanData]:
+    return owner.has_private_repos
+
+
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
