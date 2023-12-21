@@ -7,8 +7,14 @@ from upload.views.legacy import UploadDownloadHandler, UploadHandler
 from upload.views.reports import ReportResultsView, ReportViews
 from upload.views.upload_completion import UploadCompletionView
 from upload.views.uploads import UploadViews
+from upload.views.test_results import TestResultsView
 
 urlpatterns = [
+    path(
+        "test_results/v1",
+        TestResultsView.as_view(),
+        name="upload-test-results",
+    ),
     path(
         "bundle_analysis/v1",
         BundleAnalysisView.as_view(),
