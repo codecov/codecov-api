@@ -569,3 +569,52 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         assert res["errors"][0]["message"] == MissingService.message
         assert res["data"]["owner"] is None
+
+    def test_owner_query_with_private_repos(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        RepositoryFactory(author=current_org, active=True, activated=True, private=True)
+        query = """{
+            owner(username: "%s") {
+                hasPrivateRepos
+            }
+        }
+        """ % (
+            current_org.username
+        )
+
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["hasPrivateRepos"] == True
+
+    def test_owner_query_with_public_repos(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        RepositoryFactory(
+            author=current_org,
+            active=True,
+            activated=True,
+            private=False,
+            name="test-one",
+        )
+        RepositoryFactory(
+            author=current_org,
+            active=True,
+            activated=True,
+            private=False,
+            name="test-two",
+        )
+        query = """{
+            owner(username: "%s") {
+                hasPrivateRepos
+            }
+        }
+        """ % (
+            current_org.username
+        )
+
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["hasPrivateRepos"] == False

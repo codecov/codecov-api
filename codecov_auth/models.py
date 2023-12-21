@@ -274,6 +274,10 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
         return self.repository_set.filter(active=True, private=True).count()
 
     @property
+    def has_private_repos(self):
+        return self.repository_set.filter(private=True).exists()
+
+    @property
     def repo_credits(self):
         # Returns the number of private repo credits remaining
         # Only meaningful for legacy plans
