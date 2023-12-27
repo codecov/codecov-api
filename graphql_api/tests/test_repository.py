@@ -96,7 +96,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-01-01")
     def test_when_repository_has_no_coverage(self):
-
         repo = RepositoryFactory(
             author=self.owner, active=True, private=True, name="a", yaml=self.yaml
         )
@@ -432,13 +431,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
-            yaml = {
-                "flag_management" : {
-                    "individual_flags": {
-                        "carryforward_mode": "labels"
-                    }
-                }
-            }
+            yaml={
+                "flag_management": {"individual_flags": {"carryforward_mode": "labels"}}
+            },
         )
 
         self.gql_request(
