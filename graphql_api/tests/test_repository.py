@@ -437,8 +437,5 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             },
         )
 
-        self.gql_request(
-            query_repository % "name",
-            owner=self.owner,
-            variables={"name": repo.name},
-        )
+        res = self.fetch_repository(repo.name)
+        assert res["isATSConfigured"] == True
