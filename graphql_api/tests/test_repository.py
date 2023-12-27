@@ -174,6 +174,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
+            "isATSConfigured": False,
             "bot": None,
         }
 

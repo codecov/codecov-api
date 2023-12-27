@@ -289,10 +289,10 @@ def resolve_is_ats_configured(repository: Repository, info) -> bool:
         repository.yaml is not None
         and "flag_management" in repository.yaml
         and "individual_flags" in repository.yaml["flag_management"]
-        and "carryforward_mode" in 
-            repository.yaml["flag_management"]["individual_flags"]
+        and "carryforward_mode"
+        in repository.yaml["flag_management"]["individual_flags"]
         and repository.yaml["flag_management"]["individual_flags"]["carryforward_mode"]
-            == "labels"
+        == "labels"
     )
 
 
