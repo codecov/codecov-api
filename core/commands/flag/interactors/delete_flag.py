@@ -1,3 +1,6 @@
+from django.conf import settings
+
+import services.self_hosted as self_hosted
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import (
     NotFound,
@@ -21,8 +24,12 @@ class DeleteFlagInteractor(BaseInteractor):
         if not repo:
             raise ValidationError("Repo not found")
 
-        if not owner.is_admin(self.current_owner):
-            raise Unauthorized()
+        if settings.IS_ENTERPRISE:
+            if not self_hosted.is_admin_owner(self.current_owner):
+                raise Unauthorized()
+        else:
+            if not owner.is_admin(self.current_owner):
+                raise Unauthorized()
 
     def execute(self, owner_username: str, repo_name: str, flag_name: str):
         owner = Owner.objects.filter(
