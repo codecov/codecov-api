@@ -1,6 +1,7 @@
 import json
 from unittest.mock import Mock, patch
 
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework.reverse import reverse
 from shared.torngit.exceptions import TorngitClientGeneralError
@@ -782,6 +783,49 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         assert response.status_code == 403
         assert response.data["detail"] == "User not activated"
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("api.shared.repo.mixins.RepositoryViewSetMixin.get_object")
+    @patch("services.self_hosted.get_config")
+    @patch("services.task.TaskService.delete_timeseries")
+    @patch("services.task.TaskService.flush_repo")
+    def test_erase_as_admin_self_hosted(
+        self,
+        mocked_flush_repo,
+        mocked_delete_timeseries,
+        mocked_get_config,
+        mocked_get_object,
+        mocked_get_permissions,
+    ):
+        mocked_get_permissions.return_value = True, True
+        self.org.admins = [self.current_owner.ownerid]
+        self.org.save()
+
+        mocked_get_config.return_value = [
+            {"service": "github", "username": "codecov-user"},
+        ]
+        mocked_get_object.return_value = self.repo
+
+        response = self._erase()
+        assert response.status_code == 200
+
+        mocked_flush_repo.assert_called_once_with(repository_id=self.repo.pk)
+        mocked_delete_timeseries.assert_called_once_with(repository_id=self.repo.pk)
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("services.self_hosted.get_config")
+    @patch("api.shared.permissions.get_provider")
+    def test_erase_as_non_admin_self_hosted(
+        self, mocked_get_provider, mocked_get_config, mocked_get_permissions
+    ):
+        mocked_get_provider.return_value = GetAdminProviderAdapter()
+        mocked_get_config.return_value = [
+            {"service": "github", "username": "someone-else"},
+        ]
+        mocked_get_permissions.return_value = True, True
+
+        response = self._erase()
+        assert response.status_code == 403
 
     def test_retrieve_returns_yaml(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, False
