@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Tuple
+from typing import List
 from uuid import UUID
 
 from asgiref.sync import async_to_sync
@@ -11,7 +11,12 @@ from rest_framework import authentication, exceptions
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
-from codecov_auth.models import OrganizationLevelToken, Owner, RepositoryToken, Service
+from codecov_auth.models import (
+    OrganizationLevelToken,
+    RepositoryToken,
+    Service,
+    TokenTypeChoices,
+)
 from core.models import Repository
 from rollouts import TOKENLESS_AUTH_BY_OWNER_SLUG, owner_slug
 from services.repo_providers import RepoProviderService
@@ -73,25 +78,17 @@ class OrgLevelTokenRepositoryAuth(RepositoryAuthInterface):
 
 
 class TokenlessAuth(RepositoryAuthInterface):
-    def __init__(self) -> None:
-        pass
+    def __init__(self, repository: Repository) -> None:
+        self._repository = repository
 
     def get_scopes(self):
-        raise NotImplementedError()
+        return [TokenTypeChoices.UPLOAD]
 
     def allows_repo(self, repository):
-        raise NotImplementedError()
-
-    def get_repositories_queryset(self) -> QuerySet:
-        """Returns the QuerySet that generates get_repositories list.
-        Because QuerySets are lazy you can add further filters on top of it improving performance.
-        """
-        raise NotImplementedError()
+        return repository in self.get_repositories()
 
     def get_repositories(self) -> List[Repository]:
-        # This might be an expensive function depending on the owner in question (thousands of repos)
-        # Consider using get_repositories_queryset if possible and adding more filters to it
-        raise NotImplementedError()
+        return [self._repository]
 
 
 class RepositoryLegacyQueryTokenAuthentication(authentication.BaseAuthentication):
@@ -219,7 +216,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     def _get_repo_info_from_request_path(self, request) -> Repository:
         path_info = request.get_full_path_info()
         # The repo part comes from https://stackoverflow.com/a/22312124
-        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@\:/\-~]+)\/commits"
+        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@:_/\-~]+)\/commits"
         match = re.search(upload_views_prefix_regex, path_info)
 
         if match is None:
@@ -254,7 +251,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         fork_slug = request.headers.get("X-Tokenless", None)
         fork_pr = request.headers.get("X-Tokenless-PR", None)
         if fork_slug is None or fork_pr is None:
-            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+            return None
         # Get the repo
         repository = self._get_repo_info_from_request_path(request)
         # Tokneless is only for public repos
@@ -281,5 +278,5 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
 
         return (
             RepositoryAsUser(repository),
-            TokenlessAuth(),
+            TokenlessAuth(repository),
         )

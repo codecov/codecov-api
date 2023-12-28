@@ -358,9 +358,8 @@ class TestTokenlessAuth(object):
             headers=headers,
         )
         authentication = TokenlessAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed) as exp:
-            authentication.authenticate(request)
-        assert str(exp.value) == "Not valid tokenless upload"
+        res = authentication.authenticate(request)
+        assert res is None
 
     def test_tokenless_bad_path(self):
         request = APIRequestFactory().post(
@@ -424,6 +423,10 @@ class TestTokenlessAuth(object):
                 "owner/the_repo",
             ),
             ("/upload/github/ownerSEPARATORexample-repo/commits", "owner/example-repo"),
+            (
+                "/upload/github/ownerSEPARATOR__example-repo__/commits",
+                "owner/__example-repo__",
+            ),
             (
                 "/upload/github/ownerSEPARATOR~example-repo:copy/commits",
                 "owner/~example-repo:copy",
@@ -543,6 +546,7 @@ class TestTokenlessAuth(object):
     @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
     def test_tokenless_success_no_mocker_flag(self, mock_repo_provider, db):
         repo = RepositoryFactory(private=False, author__username="codecov")
+        random_repo = RepositoryFactory()
         pr_info = {
             "base": {"slug": f"{repo.author.username}/{repo.name}"},
             "head": {"slug": f"some-user/{repo.name}"},
@@ -563,4 +567,8 @@ class TestTokenlessAuth(object):
         repo_as_user, auth_class = res
         assert repo_as_user.is_authenticated()
         assert isinstance(auth_class, TokenlessAuth)
+        assert auth_class.get_repositories() == [repo]
+        assert auth_class.allows_repo(repo)
+        assert not auth_class.allows_repo(random_repo)
+        assert auth_class.get_scopes() == ["upload"]
         mock_adapter.get_pull_request.assert_called_with("15")
