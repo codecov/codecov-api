@@ -1,10 +1,12 @@
 import logging
 
 from asgiref.sync import async_to_sync
+from django.conf import settings
 from django.http import Http404
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework.permissions import BasePermission
 
+import services.self_hosted as self_hosted
 from api.shared.mixins import InternalPermissionsMixin, SuperPermissionsMixin
 from api.shared.repo.repository_accessors import RepoAccessors
 from services.activation import try_auto_activate
@@ -137,14 +139,19 @@ class UserIsAdminPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and request.current_owner
-            and (
-                view.owner.is_admin(request.current_owner)
-                or self._is_admin_on_provider(request.current_owner, view.owner)
+        if settings.IS_ENTERPRISE:
+            return request.user.is_authenticated and self_hosted.is_admin_owner(
+                request.current_owner
             )
-        )
+        else:
+            return (
+                request.user.is_authenticated
+                and request.current_owner
+                and (
+                    view.owner.is_admin(request.current_owner)
+                    or self._is_admin_on_provider(request.current_owner, view.owner)
+                )
+            )
 
     @torngit_safe
     def _is_admin_on_provider(self, user, owner):

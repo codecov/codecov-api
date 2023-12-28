@@ -24,6 +24,7 @@ class RepositoryFactory(DjangoModelFactory):
     fork = None
     branch = "master"
     upload_token = factory.Faker("uuid4")
+    image_token = factory.Faker("pystr", min_chars=10, max_chars=10)
     using_integration = False
 
 
