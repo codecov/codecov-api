@@ -2,6 +2,7 @@ import datetime
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase, override_settings
+from core import models
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -125,6 +126,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
+            "language": any(lang for lang in models.Repository.Languages),
             "bot": None,
         }
 
@@ -176,6 +178,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
+            "language": any(lang for lang in models.Repository.Languages),
             "bot": None,
         }
 
