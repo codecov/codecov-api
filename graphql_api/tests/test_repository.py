@@ -68,6 +68,7 @@ default_fields = """
     criticalFiles { name }
     graphToken
     yaml
+    isATSConfigured
     bot { username }
 """
 
@@ -95,7 +96,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-01-01")
     def test_when_repository_has_no_coverage(self):
-
         repo = RepositoryFactory(
             author=self.owner, active=True, private=True, name="a", yaml=self.yaml
         )
@@ -123,6 +123,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
+            "isATSConfigured": False,
             "bot": None,
         }
 
@@ -173,6 +174,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
+            "isATSConfigured": False,
             "bot": None,
         }
 
@@ -424,3 +426,16 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "__typename": "NotFoundError",
             "message": "Not found",
         }
+
+    def test_repository_has_ats_configured(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "flag_management": {"individual_flags": {"carryforward_mode": "labels"}}
+            },
+        )
+
+        res = self.fetch_repository(repo.name)
+        assert res["isATSConfigured"] == True

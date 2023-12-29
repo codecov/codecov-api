@@ -63,6 +63,7 @@ type Repository {
   ): [Measurement!]!
   repositoryConfig: RepositoryConfig
   staticAnalysisToken: String
+  isATSConfigured: Boolean
 }
 
 type PullConnection {
