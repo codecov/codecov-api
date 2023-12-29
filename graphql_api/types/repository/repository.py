@@ -323,6 +323,11 @@ def resolve_repository_config(repository: Repository, info):
     return repository
 
 
+@repository_bindable.field("language")
+def resolve_languate(repository: Repository, info):
+    return repository.language
+
+
 repository_result_bindable = UnionType("RepositoryResult")
 
 

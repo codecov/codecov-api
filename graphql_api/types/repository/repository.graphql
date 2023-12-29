@@ -64,6 +64,7 @@ type Repository {
   repositoryConfig: RepositoryConfig
   staticAnalysisToken: String
   isATSConfigured: Boolean
+  language: String
 }
 
 type PullConnection {

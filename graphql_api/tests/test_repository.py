@@ -439,3 +439,11 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_repository(repo.name)
         assert res["isATSConfigured"] == True
+
+    def test_repository_get_language(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, language="python"
+        )
+
+        res = self.fetch_repository(repo.name)
+        assert res["language"] == "python"
