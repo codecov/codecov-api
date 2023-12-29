@@ -898,6 +898,7 @@ class UploadHandlerHelpersTest(TestCase):
             commitid=task_arguments.get("commit"),
             report_code="local_report",
             countdown=4,
+            report_type="coverage",
         )
 
 

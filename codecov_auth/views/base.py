@@ -102,14 +102,20 @@ class StateMixin(object):
         self.redis.setex(self._get_key_redis(state), 500, redirection_url)
         return state
 
-    def get_redirection_url_from_state(self, state) -> str:
+    def get_redirection_url_from_state(self, state) -> (str, bool):
         data = self.redis.get(self._get_key_redis(state))
         if not data:
-            raise SuspiciousOperation("Error with authentication please try again")
-        return data.decode("utf-8")
+            # we come here after an installation event if the setup url is not set correctly, in that case we usually don't
+            # have the state set, because that only happens when users try to login, therefore we should just ignore
+            # this case and redirect them to what the setup url should be
+            return (
+                f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}",
+                False,
+            )
+        return (data.decode("utf-8"), True)
 
     def remove_state(self, state, delay=0) -> None:
-        redirection_url = self.get_redirection_url_from_state(state)
+        redirection_url, _ = self.get_redirection_url_from_state(state)
         if delay == 0:
             self.redis.delete(self._get_key_redis(state))
         else:

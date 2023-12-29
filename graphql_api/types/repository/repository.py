@@ -283,6 +283,17 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
     return dataset.is_backfilled()
 
 
+@repository_bindable.field("isATSConfigured")
+def resolve_is_ats_configured(repository: Repository, info) -> bool:
+    if not repository.yaml or "flag_management" not in repository.yaml:
+        return False
+
+    # See https://docs.codecov.com/docs/getting-started-with-ats-github-actions on configuring
+    # flags. To use Automated Test Selection, a flag is required with Carryforward mode "labels".
+    individual_flags = repository.yaml["flag_management"].get("individual_flags", {})
+    return individual_flags.get("carryforward_mode") == "labels"
+
+
 @repository_bindable.field("measurements")
 @sync_to_async
 def resolve_measurements(

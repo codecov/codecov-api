@@ -15,6 +15,7 @@ type Owner {
   repository(name: String!): RepositoryResult!
   repositoryDeprecated(name: String!): Repository
   numberOfUploads: Int
+  hasPrivateRepos: Boolean!
   isAdmin: Boolean!
   hashOwnerid: String!
   ownerid: Int!
