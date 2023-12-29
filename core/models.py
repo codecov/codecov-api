@@ -352,6 +352,7 @@ class Pull(ExportModelOperationsMixin("core.pull"), models.Model):
     user_provided_base_sha = models.TextField(null=True)
     compared_to = models.TextField(null=True)
     commentid = models.TextField(null=True)
+    bundle_analysis_commentid = models.TextField(null=True)
     author = models.ForeignKey(
         "codecov_auth.Owner", db_column="author", on_delete=models.SET_NULL, null=True
     )
