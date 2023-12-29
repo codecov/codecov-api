@@ -2,10 +2,10 @@ import datetime
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase, override_settings
-from core import models
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
+from core import models
 from core.tests.factories import (
     CommitFactory,
     PullFactory,
