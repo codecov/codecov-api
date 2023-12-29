@@ -99,7 +99,12 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @freeze_time("2021-01-01")
     def test_when_repository_has_no_coverage(self):
         repo = RepositoryFactory(
-            author=self.owner, active=True, private=True, name="a", yaml=self.yaml
+            author=self.owner,
+            active=True,
+            private=True,
+            name="a",
+            yaml=self.yaml,
+            language="rust"
         )
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
@@ -126,7 +131,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
-            "language": any(lang for lang in models.Repository.Languages),
+            "language": "rust",
             "bot": None,
         }
 
@@ -138,6 +143,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             private=True,
             name="b",
             yaml=self.yaml,
+            language="erlang"
         )
 
         hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
@@ -178,7 +184,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
-            "language": any(lang for lang in models.Repository.Languages),
+            "language": "erlang",
             "bot": None,
         }
 
