@@ -69,6 +69,7 @@ default_fields = """
     graphToken
     yaml
     isATSConfigured
+    language
     bot { username }
 """
 
