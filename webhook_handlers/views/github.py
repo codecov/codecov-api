@@ -507,7 +507,7 @@ class GithubWebhookHandler(APIView):
                     "GHM webhook - user purchasing but has a Stripe Subscription",
                     extra=dict(
                         username=username,
-                        plan_name=subscription.plan.get("name", None),
+                        old_plan_name=subscription.plan.get("name", None),
                         quantity=subscription.quantity,
                     ),
                 )

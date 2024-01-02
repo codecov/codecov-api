@@ -864,7 +864,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
         log_warning_mock.assert_called_with(
             "GHM webhook - user purchasing but has a Stripe Subscription",
-            extra=dict(username="username", plan_name=plan, quantity=quantity),
+            extra=dict(username="username", old_plan_name=plan, quantity=quantity),
         )
 
         sync_plans_mock.assert_called_once_with(
