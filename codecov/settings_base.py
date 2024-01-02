@@ -526,6 +526,10 @@ if SENTRY_DSN is not None:
             ),
         },
     )
+elif IS_DEV:
+    sentry_sdk.init(
+        spotlight=IS_DEV,
+    )
 
 SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
 SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
