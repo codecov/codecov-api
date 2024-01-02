@@ -19,14 +19,14 @@ from core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+from plan.constants import PlanName
 from utils.config import get_config
 from webhook_handlers.constants import (
     GitHubHTTPHeaders,
     GitHubWebhookEvents,
     WebhookHandlerErrorMessages,
 )
-
-MockedSubscription = namedtuple("Subscription", ["status"])
+from webhook_handlers.tests.test_github import MockedSubscription
 
 WEBHOOK_SECRET = b"testixik8qdauiab1yiffydimvi72ekq"
 
@@ -719,7 +719,11 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             service="github_enterprise",
             stripe_subscription_id="abc",
         )
-        subscription_retrieve_mock.return_value = MockedSubscription("active")
+        quantity = 14
+        plan = PlanName.CODECOV_PRO_MONTHLY.value
+        subscription_retrieve_mock.return_value = MockedSubscription(
+            "active", plan, quantity
+        )
         response = self._post_event_data(
             event=GitHubWebhookEvents.MARKETPLACE_PURCHASE,
             data={
@@ -731,7 +735,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
         log_warning_mock.assert_called_with(
             "GHM webhook - user purchasing but has a Stripe Subscription",
-            extra=dict(username="username"),
+            extra=dict(username="username", old_plan_name=plan, quantity=quantity),
         )
 
         sync_plans_mock.assert_called_once_with(
