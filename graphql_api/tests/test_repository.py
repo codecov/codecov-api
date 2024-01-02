@@ -104,7 +104,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             private=True,
             name="a",
             yaml=self.yaml,
-            language="rust"
+            language="rust",
         )
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
@@ -143,7 +143,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             private=True,
             name="b",
             yaml=self.yaml,
-            language="erlang"
+            language="erlang",
         )
 
         hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
