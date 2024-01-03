@@ -1,4 +1,3 @@
-import email
 import logging
 import re
 from abc import ABC, abstractmethod
@@ -416,15 +415,15 @@ class StripeService(AbstractPaymentService):
         if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
             return None
 
-        log.info(f"Stripe update email address owner {owner.ownerid}")
+        log.info(f"Stripe update email address for owner {owner.ownerid}")
         if owner.stripe_subscription_id is None:
             log.info(
-                f"stripe_subscription_id is None, no updating stripe email for owner {owner.ownerid}"
+                f"stripe_subscription_id is None, not updating stripe email for owner {owner.ownerid}"
             )
             return None
         stripe.Customer.modify(owner.stripe_customer_id, email=email_address)
         log.info(
-            f"Stripe success update email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
 
     @_log_stripe_error

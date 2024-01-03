@@ -1532,6 +1532,12 @@ class BillingServiceTests(TestCase):
         self.billing_service.update_payment_method(owner, "abc")
         get_subscription_mock.assert_called_once_with(owner, "abc")
 
+    @patch("services.tests.test_billing.MockPaymentService.update_email_address")
+    def test_email_address(self, get_subscription_mock):
+        owner = OwnerFactory()
+        self.billing_service.update_email_address(owner, "test@gmail.com")
+        get_subscription_mock.assert_called_once_with(owner, "test@gmail.com")
+
     @patch("services.tests.test_billing.MockPaymentService.get_invoice")
     def test_get_invoice(self, get_invoice_mock):
         owner = OwnerFactory()
