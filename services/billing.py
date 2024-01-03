@@ -1,4 +1,5 @@
 import logging
+import re
 from abc import ABC, abstractmethod
 
 import stripe
@@ -61,6 +62,10 @@ class AbstractPaymentService(ABC):
 
     @abstractmethod
     def update_payment_method(self, owner, payment_method):
+        pass
+
+    @abstractmethod
+    def update_email_address(self, owner, email_address):
         pass
 
     @abstractmethod
@@ -406,6 +411,22 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
+    def update_email_address(self, owner: Owner, email_address: str):
+        if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
+            return None
+
+        log.info(f"Stripe update email address for owner {owner.ownerid}")
+        if owner.stripe_subscription_id is None:
+            log.info(
+                f"stripe_subscription_id is None, not updating stripe email for owner {owner.ownerid}"
+            )
+            return None
+        stripe.Customer.modify(owner.stripe_customer_id, email=email_address)
+        log.info(
+            f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+        )
+
+    @_log_stripe_error
     def apply_cancellation_discount(self, owner: Owner):
         if owner.stripe_subscription_id is None:
             log.info(
@@ -465,6 +486,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def update_payment_method(self, owner, payment_method):
+        pass
+
+    def update_email_address(self, owner, email_address):
         pass
 
     def get_schedule(self, owner):
@@ -533,6 +557,15 @@ class BillingService:
         the card data differently
         """
         return self.payment_service.update_payment_method(owner, payment_method)
+
+    def update_email_address(self, owner: Owner, email_address: str):
+        """
+        Takes an owner and a new email. Email is a string coming directly from
+        the front-end. If the owner has a payment id and if it's a valid email,
+        the payment service will update the email address in the upstream service.
+        Otherwise returns None.
+        """
+        return self.payment_service.update_email_address(owner, email_address)
 
     def apply_cancellation_discount(self, owner: Owner):
         return self.payment_service.apply_cancellation_discount(owner)
