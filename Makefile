@@ -18,6 +18,7 @@ export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
 export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
 API_DOMAIN ?= api
+PROXY_NETWORK ?= api_default
 
 # Codecov CLI version to use
 CODECOV_CLI_VERSION := 0.4.1
@@ -253,7 +254,7 @@ proxy.run: # Used to run the proxy
 proxy.run:
 	make proxy.build
 	make proxy.down
-	docker run --rm --network api_default -e FRP_TOKEN=${FRP_TOKEN} -e DOMAIN=${API_DOMAIN} --name api-proxy ${API_DOCKER_REPO}/proxy:latest
+	docker run --rm --network ${PROXY_NETWORK} -e FRP_TOKEN=${FRP_TOKEN} -e DOMAIN=${API_DOMAIN} --name api-proxy ${API_DOCKER_REPO}/proxy:latest
 	sleep 3
 	make proxy.logs
 	# You should see "[api] start proxy success"
