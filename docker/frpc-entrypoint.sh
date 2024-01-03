@@ -24,7 +24,7 @@ if [ $REMOTE_PORT ]; then
   sed -i "s|remote_port = 6000|remote_port = $REMOTE_PORT|g" /frp/frpc.ini
 fi
 if [ $DOMAIN ]; then
-  sed -i "s|subdomain = local-api-stripe|subdomain = $DOMAIN|g" /frp/frpc.ini
-  sed -i "s|\[local-api-stripe\]|\[$DOMAIN\]|g" /frp/frpc.ini
+  sed -i "s|subdomain = api|subdomain = $DOMAIN|g" /frp/frpc.ini
+  sed -i "s|\[api\]|\[$DOMAIN\]|g" /frp/frpc.ini
 fi
 /frp/frpc -c /frp/frpc.ini
