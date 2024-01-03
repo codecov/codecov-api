@@ -20,7 +20,6 @@ from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.views.helpers import get_repository_from_string
 
-
 log = logging.getLogger(__name__)
 
 
@@ -112,4 +111,4 @@ class TestResultsView(APIView):
             report_type=CommitReport.ReportType.TEST_RESULTS,
         )
 
-        return Response({"url": url}, status=201)
+        return Response({"raw_upload_location": url}, status=201)
