@@ -3,16 +3,12 @@ import logging
 from .settings_base import *
 
 DEBUG = True
-ALLOWED_HOSTS = get_config(
-    "setup", "api_allowed_hosts", default=["localhost", "local-api-stripe.ngrok.io"]
-)
+ALLOWED_HOSTS = get_config("setup", "api_allowed_hosts", default=["localhost", "local-api-stripe.ngrok.io"])
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
 
 STRIPE_API_KEY = get_config("services", "stripe", "api_key", default="default")
-STRIPE_ENDPOINT_SECRET = get_config(
-    "services", "stripe", "endpoint_secret", default="default"
-)
+STRIPE_ENDPOINT_SECRET = get_config("services", "stripe", "endpoint_secret", default="default")
 STRIPE_PLAN_IDS = {
     "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
     "users-pr-inappy": "plan_H6P16wij3lUuxg",
@@ -22,7 +18,7 @@ STRIPE_PLAN_IDS = {
 
 CORS_ALLOW_CREDENTIALS = True
 
-GITHUB_CLIENT_ID = "3d44be0e772666136a13"
+# GITHUB_CLIENT_ID = "3d44be0e772666136a13"
 
 CODECOV_URL = "localhost"
 BITBUCKET_REDIRECT_URI = "localhost:8000"
