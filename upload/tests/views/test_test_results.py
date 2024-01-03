@@ -2,11 +2,10 @@ import json
 import re
 from unittest.mock import ANY
 
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory
-
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from codecov_auth.tests.factories import OrganizationLevelTokenFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.redis_configuration import get_redis_connection
