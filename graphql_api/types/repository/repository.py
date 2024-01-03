@@ -323,7 +323,7 @@ def resolve_repository_config(repository: Repository, info):
     return repository
 
 
-@repository_bindable.field("language")
+@repository_bindable.field("primaryLanguage")
 def resolve_languate(repository: Repository, info):
     return repository.language
 

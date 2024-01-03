@@ -70,7 +70,7 @@ default_fields = """
     graphToken
     yaml
     isATSConfigured
-    language
+    primaryLanguage
     bot { username }
 """
 
@@ -131,7 +131,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
-            "language": "rust",
+            "primaryLanguage": "rust",
             "bot": None,
         }
 
@@ -184,7 +184,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
-            "language": "erlang",
+            "primaryLanguage": "erlang",
             "bot": None,
         }
 
@@ -456,4 +456,4 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         res = self.fetch_repository(repo.name)
-        assert res["language"] == "python"
+        assert res["primaryLanguage"] == "python"
