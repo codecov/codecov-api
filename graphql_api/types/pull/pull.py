@@ -2,9 +2,10 @@ from ariadne import ObjectType
 from asgiref.sync import async_to_sync
 
 from codecov.db import sync_to_async
-from core.models import Pull
+from core.models import Commit, Pull
 from graphql_api.actions.commits import pull_commits
 from graphql_api.actions.comparison import validate_commit_comparison
+from graphql_api.dataloader.bundle_analysis import load_bundle_analysis_comparison
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -78,6 +79,27 @@ async def resolve_compare_with_base(pull, info, **kwargs):
 
     if commit_comparison:
         return ComparisonReport(commit_comparison)
+
+
+@pull_bindable.field("bundleAnalysisCompareWithBase")
+@sync_to_async
+def resolve_bundle_analysis_compare_with_base(pull, info, **kwargs):
+    if not pull.compared_to:
+        if is_first_pull_request(pull):
+            return FirstPullRequest()
+        else:
+            return MissingBaseCommit()
+    if not pull.head:
+        return MissingHeadCommit()
+
+    base_commit = Commit.objects.filter(commitid=pull.compared_to).first()
+    if not base_commit:
+        return MissingBaseCommit()
+    head_commit = Commit.objects.filter(commitid=pull.head).first()
+    if not head_commit:
+        return MissingHeadCommit()
+
+    return load_bundle_analysis_comparison(base_commit, head_commit)
 
 
 @pull_bindable.field("commits")

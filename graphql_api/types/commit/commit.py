@@ -3,8 +3,10 @@ from typing import List
 import sentry_sdk
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from shared.bundle_analysis import BundleAnalysisReportLoader
 from shared.reports.filtered import FilteredReportFile
 from shared.reports.resources import ReportFile
+from shared.storage import get_appropriate_storage_service
 
 import services.components as components_service
 import services.path as path_service
@@ -14,6 +16,7 @@ from core.models import Commit
 from graphql_api.actions.commits import commit_uploads
 from graphql_api.actions.comparison import validate_commit_comparison
 from graphql_api.actions.path_contents import sort_path_contents
+from graphql_api.dataloader.bundle_analysis import load_bundle_analysis_comparison
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -21,12 +24,19 @@ from graphql_api.helpers.connection import (
     queryset_to_connection,
     queryset_to_connection_sync,
 )
-from graphql_api.types.comparison.comparison import MissingBaseCommit, MissingHeadReport
+from graphql_api.types.comparison.comparison import (
+    MissingBaseCommit,
+    MissingBaseReport,
+    MissingHeadReport,
+)
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
+from reports.models import CommitReport
+from services.archive import ArchiveService
+from services.bundle_analysis import BundleAnalysisComparison
 from services.comparison import Comparison, ComparisonReport
-from services.components import Component, component_filtered_report
+from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 from services.report import ReadOnlyReport
@@ -143,6 +153,16 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
 
     if commit_comparison:
         return ComparisonReport(commit_comparison)
+
+
+@commit_bindable.field("bundleAnalysisCompareWithParent")
+@sync_to_async
+def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
+    base_commit = Commit.objects.filter(commitid=commit.parent_commit_id).first()
+    if not base_commit:
+        return MissingBaseCommit()
+
+    return load_bundle_analysis_comparison(base_commit, commit)
 
 
 @commit_bindable.field("flagNames")
