@@ -2,14 +2,13 @@ import json
 import re
 from unittest.mock import ANY
 
-
 from django.urls import reverse
 from rest_framework.test import APIClient
 
 from core.models import Commit
 from core.tests.factories import RepositoryFactory
-from services.task import TaskService
 from services.redis_configuration import get_redis_connection
+from services.task import TaskService
 
 
 def test_upload_test_Results(db, client, mocker, mock_redis):
