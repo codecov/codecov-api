@@ -5,13 +5,14 @@ from unittest.mock import ANY
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from codecov_auth.tests.factories import OrganizationLevelTokenFactory
 from core.models import Commit
-from core.tests.factories import RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService
 
 
-def test_upload_test_Results(db, client, mocker, mock_redis):
+def test_upload_test_results(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
@@ -23,8 +24,6 @@ def test_upload_test_Results(db, client, mocker, mock_redis):
 
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION=f"token {repository.upload_token}")
-
-    print("HELLO HELLO", repository.author.username, repository.name)
 
     res = client.post(
         reverse("upload-test-results"),
@@ -80,3 +79,63 @@ def test_upload_test_Results(db, client, mocker, mock_redis):
         report_code=None,
         report_type="test_results",
     )
+
+
+def test_test_results_org_token(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+    create_presigned_put = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create()
+    org_token = OrganizationLevelTokenFactory.create(owner=repository.author)
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {org_token.token}")
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
+            "slug": f"{repository.author.username}::::{repository.name}",
+        },
+        format="json",
+    )
+    assert res.status_code == 201
+
+
+def test_upload_bundle_analysis_missing_args(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+    create_presigned_put = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create()
+    commit = CommitFactory.create(repository=repository)
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {repository.upload_token}")
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": commit.commitid,
+        },
+        format="json",
+    )
+    assert res.status_code == 400
+    assert res.json() == {"slug": ["This field is required."]}
+    assert not upload.called
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "slug": f"{repository.author.username}::::{repository.name}",
+        },
+        format="json",
+    )
+    assert res.status_code == 400
+    assert res.json() == {"commit": ["This field is required."]}
+    assert not upload.called
