@@ -505,7 +505,11 @@ class GithubWebhookHandler(APIView):
             if subscription.status == "active":
                 log.warning(
                     "GHM webhook - user purchasing but has a Stripe Subscription",
-                    extra=dict(username=username),
+                    extra=dict(
+                        username=username,
+                        old_plan_name=subscription.plan.get("name", None),
+                        quantity=subscription.quantity,
+                    ),
                 )
         TaskService().sync_plans(
             sender=request.data["sender"],

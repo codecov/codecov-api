@@ -5,6 +5,7 @@ from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
+from core import models
 from core.tests.factories import (
     CommitFactory,
     PullFactory,
@@ -69,6 +70,7 @@ default_fields = """
     graphToken
     yaml
     isATSConfigured
+    primaryLanguage
     bot { username }
 """
 
@@ -97,7 +99,12 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @freeze_time("2021-01-01")
     def test_when_repository_has_no_coverage(self):
         repo = RepositoryFactory(
-            author=self.owner, active=True, private=True, name="a", yaml=self.yaml
+            author=self.owner,
+            active=True,
+            private=True,
+            name="a",
+            yaml=self.yaml,
+            language="rust",
         )
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
@@ -124,6 +131,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
+            "primaryLanguage": "rust",
             "bot": None,
         }
 
@@ -135,6 +143,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             private=True,
             name="b",
             yaml=self.yaml,
+            language="erlang",
         )
 
         hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
@@ -175,6 +184,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
+            "primaryLanguage": "erlang",
             "bot": None,
         }
 
@@ -439,3 +449,11 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_repository(repo.name)
         assert res["isATSConfigured"] == True
+
+    def test_repository_get_language(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, language="python"
+        )
+
+        res = self.fetch_repository(repo.name)
+        assert res["primaryLanguage"] == "python"
