@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1.3
+FROM alpine
+
+ENV FRP_VERSION=v0.51.3
+
+RUN addgroup -S frp \
+&& adduser -D -S -h /var/frp -s /sbin/nologin -G frp frp \
+&& apk add --no-cache curl \
+&& curl -fSL https://github.com/fatedier/frp/releases/download/${FRP_VERSION}/frp_${FRP_VERSION:1}_linux_amd64.tar.gz -o frp.tar.gz \
+&& tar -zxv -f frp.tar.gz \
+&& rm -rf frp.tar.gz \
+&& mv frp_*_linux_amd64 /frp \
+&& chown -R frp:frp /frp
+
+COPY --chown=frp:frp docker/frpc-entrypoint.sh /frp/entrypoint.sh
+RUN chmod 755 /frp/entrypoint.sh
+USER frp
+
+WORKDIR /frp
+ADD docker/frpc.ini /frp/frpc.ini
+
+EXPOSE 6000 7000
+
+CMD ["/frp/entrypoint.sh"]

@@ -17,6 +17,8 @@ export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
 export API_DOCKER_VERSION=${VERSION}
 export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
+API_DOMAIN ?= api
+PROXY_NETWORK ?= api_default
 
 # Codecov CLI version to use
 CODECOV_CLI_VERSION := 0.4.1
@@ -235,3 +237,42 @@ test_env:
 	make test_env.check_db
 	make test_env.run_unit
 	make test_env.check-for-migration-conflicts
+
+
+### START Proxy Commands
+.PHONY: proxy.build
+proxy.build: # Used to build the proxy
+proxy.build:
+	docker build -f docker/Dockerfile-proxy . -t ${API_DOCKER_REPO}/proxy:latest -t ${API_DOCKER_REPO}/proxy:${release_version}-${sha} \
+			--label "org.label-schema.build-date"="$(build_date)" \
+			--label "org.label-schema.name"="API Proxy" \
+			--label "org.label-schema.vendor"="api" \
+			--label "org.label-schema.version"="${release_version}"
+
+.PHONY: proxy.run
+proxy.run: # Used to run the proxy
+proxy.run:
+	make proxy.build
+	make proxy.down
+	docker run --rm --network ${PROXY_NETWORK} -e FRP_TOKEN=${FRP_TOKEN} -e DOMAIN=${API_DOMAIN} --name api-proxy ${API_DOCKER_REPO}/proxy:latest
+	sleep 3
+	make proxy.logs
+	# You should see "[api] start proxy success"
+	# If no logs then proxy failed to start. Check if you are on VPN. If you get a 404, check if you are on VPN
+
+.PHONY: proxy.logs
+proxy.logs: # Used to logs the proxy
+proxy.logs:
+	docker logs api-proxy
+
+.PHONY: proxy.shell
+proxy.shell: # Used to shell the proxy
+proxy.shell:
+	docker exec -it api-proxy sh
+
+.PHONY: proxy.down
+proxy.down: # Used to down the proxy
+proxy.down:
+	docker kill api-proxy || true
+
+### END PROXY Commands
