@@ -7,6 +7,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
 from core.models import Commit
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
+from reports.models import CommitReport
 from reports.tests.factories import CommitReportFactory, ReportLevelTotalsFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -58,6 +59,49 @@ default_pull_request_detail_query = """
     }
     behindBy
     behindByCommit
+"""
+
+pull_request_detail_query_with_bundle_analysis = """
+    title
+    state
+    pullId
+    updatestamp
+    author {
+        username
+    }
+    head {
+        totals {
+            coverage
+        }
+    }
+    comparedTo {
+        commitid
+    }
+    compareWithBase {
+        __typename
+        ... on Comparison {
+            patchTotals {
+                coverage
+            }
+        }
+    }
+    bundleAnalysisCompareWithBase {
+        __typename
+        ... on BundleAnalysisComparison {
+            sizeDelta
+        }
+    }
+    behindBy
+    behindByCommit
+"""
+
+pull_request_bundle_analysis_missing_reports = """
+    bundleAnalysisCompareWithBase {
+        __typename
+        ... on BundleAnalysisComparison {
+            sizeDelta
+        }
+    }
 """
 
 query_pull_request_detail = """{
@@ -115,7 +159,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             ).commitid,
             compared_to=None,
         )
-        pull = self.fetch_one_pull_request(my_pull.pullid)
+        pull = self.fetch_one_pull_request(
+            my_pull.pullid, pull_request_detail_query_with_bundle_analysis
+        )
         assert pull == {
             "title": "test-null-base",
             "state": "OPEN",
@@ -125,6 +171,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": {"totals": None},
             "comparedTo": None,
             "compareWithBase": {
+                "__typename": "MissingBaseCommit",
+            },
+            "bundleAnalysisCompareWithBase": {
                 "__typename": "MissingBaseCommit",
             },
             "behindBy": None,
@@ -144,7 +193,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             head=None,
             compared_to=None,
         )
-        pull = self.fetch_one_pull_request(second_pr.pullid)
+        pull = self.fetch_one_pull_request(
+            second_pr.pullid, pull_request_detail_query_with_bundle_analysis
+        )
         assert pull == {
             "title": "test-null-author",
             "state": "OPEN",
@@ -154,6 +205,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": None,
             "comparedTo": None,
             "compareWithBase": {
+                "__typename": "MissingBaseCommit",
+            },
+            "bundleAnalysisCompareWithBase": {
                 "__typename": "MissingBaseCommit",
             },
             "behindBy": None,
@@ -173,7 +227,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             head=None,
         )
-        pull = self.fetch_one_pull_request(second_pr.pullid)
+        pull = self.fetch_one_pull_request(
+            second_pr.pullid, pull_request_detail_query_with_bundle_analysis
+        )
         assert pull == {
             "title": "test-null-head",
             "state": "OPEN",
@@ -183,6 +239,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": None,
             "comparedTo": None,
             "compareWithBase": {
+                "__typename": "MissingHeadCommit",
+            },
+            "bundleAnalysisCompareWithBase": {
                 "__typename": "MissingHeadCommit",
             },
             "behindBy": None,
@@ -198,7 +257,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             compared_to=None,
         )
 
-        res = self.fetch_one_pull_request(first_pr.pullid)
+        res = self.fetch_one_pull_request(
+            first_pr.pullid, pull_request_detail_query_with_bundle_analysis
+        )
         assert res == {
             "title": "dummy-first-pr",
             "state": "OPEN",
@@ -208,6 +269,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "head": None,
             "comparedTo": None,
             "compareWithBase": {
+                "__typename": "FirstPullRequest",
+            },
+            "bundleAnalysisCompareWithBase": {
                 "__typename": "FirstPullRequest",
             },
             "behindBy": None,
@@ -291,6 +355,47 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             },
             "behindBy": 23,
             "behindByCommit": "1089nf898as-jdf09hahs09fgh",
+        }
+
+    def test_compare_bundle_analysis_missing_reports(self):
+        head = CommitFactory(
+            repository=self.repository,
+            author=self.owner,
+            commitid="5672734ij1n234918231290j12nasdfioasud0f9",
+            totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
+        )
+        compared_to = CommitFactory(
+            repository=self.repository,
+            author=self.owner,
+            commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s",
+        )
+
+        my_pull = PullFactory(
+            repository=self.repository,
+            title="test-pull-request",
+            author=self.owner,
+            head=head.commitid,
+            compared_to=compared_to.commitid,
+            behind_by=23,
+            behind_by_commit="1089nf898as-jdf09hahs09fgh",
+        )
+
+        pull = self.fetch_one_pull_request(
+            my_pull.pullid, pull_request_bundle_analysis_missing_reports
+        )
+        assert pull == {
+            "bundleAnalysisCompareWithBase": {"__typename": "MissingHeadReport"}
+        }
+
+        CommitReportFactory(
+            commit=head, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        pull = self.fetch_one_pull_request(
+            my_pull.pullid, pull_request_bundle_analysis_missing_reports
+        )
+        assert pull == {
+            "bundleAnalysisCompareWithBase": {"__typename": "MissingBaseReport"}
         }
 
     @freeze_time("2021-02-02")

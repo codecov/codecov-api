@@ -4,6 +4,7 @@ from graphql_api.types.comparison.comparison import (
     FirstPullRequest,
     MissingBaseCommit,
     MissingBaseReport,
+    MissingHeadCommit,
     MissingHeadReport,
 )
 from services.bundle_analysis import BundleAnalysisComparison, BundleComparison
@@ -17,6 +18,8 @@ bundle_comparison_bindable = ObjectType("BundleComparison")
 def resolve_bundle_analysis_comparison_result_type(obj, *_):
     if isinstance(obj, BundleAnalysisComparison):
         return "BundleAnalysisComparison"
+    elif isinstance(obj, MissingHeadCommit):
+        return "MissingHeadCommit"
     elif isinstance(obj, MissingBaseCommit):
         return "MissingBaseCommit"
     elif isinstance(obj, FirstPullRequest):

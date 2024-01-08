@@ -85,21 +85,17 @@ async def resolve_compare_with_base(pull, info, **kwargs):
 @sync_to_async
 def resolve_bundle_analysis_compare_with_base(pull, info, **kwargs):
     if not pull.compared_to:
-        if is_first_pull_request(pull):
+        if pull.repository.pull_requests.order_by("id").first() == pull:
             return FirstPullRequest()
         else:
             return MissingBaseCommit()
     if not pull.head:
         return MissingHeadCommit()
 
-    base_commit = Commit.objects.filter(commitid=pull.compared_to).first()
-    if not base_commit:
-        return MissingBaseCommit()
-    head_commit = Commit.objects.filter(commitid=pull.head).first()
-    if not head_commit:
-        return MissingHeadCommit()
-
-    return load_bundle_analysis_comparison(base_commit, head_commit)
+    return load_bundle_analysis_comparison(
+        Commit.objects.filter(commitid=pull.compared_to).first(),
+        Commit.objects.filter(commitid=pull.head).first(),
+    )
 
 
 @pull_bindable.field("commits")
