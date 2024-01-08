@@ -3,10 +3,8 @@ from typing import List
 import sentry_sdk
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from shared.bundle_analysis import BundleAnalysisReportLoader
 from shared.reports.filtered import FilteredReportFile
 from shared.reports.resources import ReportFile
-from shared.storage import get_appropriate_storage_service
 
 import services.components as components_service
 import services.path as path_service
@@ -32,9 +30,6 @@ from graphql_api.types.comparison.comparison import (
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
-from reports.models import CommitReport
-from services.archive import ArchiveService
-from services.bundle_analysis import BundleAnalysisComparison
 from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import ReportPaths

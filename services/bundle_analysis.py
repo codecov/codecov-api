@@ -7,7 +7,6 @@ from shared.bundle_analysis import (
 )
 from shared.bundle_analysis import BundleAnalysisReport, BundleAnalysisReportLoader
 from shared.bundle_analysis import BundleChange as SharedBundleChange
-from shared.bundle_analysis import BundleReport as SharedBundleReport
 from shared.storage import get_appropriate_storage_service
 
 from core.models import Commit
