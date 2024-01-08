@@ -500,6 +500,8 @@ class GithubWebhookHandler(APIView):
         with suppress(Exception):
             # log if users purchase GHM plans while having a stripe plan
             username = request.data["marketplace_purchase"]["account"]["login"]
+            new_plan_seats = request.data["marketplace_purchase"]["unit_count"]
+            new_plan_name = request.data["marketplace_purchase"]["plan"]["name"]
             owner = Owner.objects.get(service=self.service_name, username=username)
             subscription = BillingService(requesting_user=owner).get_subscription(owner)
             if subscription.status == "active":
@@ -508,7 +510,9 @@ class GithubWebhookHandler(APIView):
                     extra=dict(
                         username=username,
                         old_plan_name=subscription.plan.get("name", None),
-                        quantity=subscription.quantity,
+                        old_plan_seats=subscription.quantity,
+                        new_plan_name=new_plan_name,
+                        new_plan_seats=new_plan_seats,
                     ),
                 )
         TaskService().sync_plans(
