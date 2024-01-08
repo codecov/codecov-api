@@ -1,0 +1,86 @@
+from ariadne import ObjectType, UnionType
+
+from graphql_api.types.comparison.comparison import (
+    FirstPullRequest,
+    MissingBaseCommit,
+    MissingBaseReport,
+    MissingHeadReport,
+)
+from services.bundle_analysis import BundleAnalysisComparison, BundleComparison
+
+bundle_analysis_comparison_result_bindable = UnionType("BundleAnalysisComparisonResult")
+bundle_analysis_comparison_bindable = ObjectType("BundleAnalysisComparison")
+bundle_comparison_bindable = ObjectType("BundleComparison")
+
+
+@bundle_analysis_comparison_result_bindable.type_resolver
+def resolve_bundle_analysis_comparison_result_type(obj, *_):
+    if isinstance(obj, BundleAnalysisComparison):
+        return "BundleAnalysisComparison"
+    elif isinstance(obj, MissingBaseCommit):
+        return "MissingBaseCommit"
+    elif isinstance(obj, FirstPullRequest):
+        return "FirstPullRequest"
+    elif isinstance(obj, MissingHeadReport):
+        return "MissingHeadReport"
+    elif isinstance(obj, MissingBaseReport):
+        return "MissingBaseReport"
+
+
+@bundle_analysis_comparison_bindable.field("sizeDelta")
+def resolve_size_delta(bundles_analysis_comparison: BundleAnalysisComparison, info):
+    return bundles_analysis_comparison.size_delta
+
+
+@bundle_analysis_comparison_bindable.field("sizeTotal")
+def resolve_size_total(bundles_analysis_comparison: BundleAnalysisComparison, info):
+    return bundles_analysis_comparison.size_total
+
+
+@bundle_analysis_comparison_bindable.field("loadTimeDelta")
+def resolve_load_time_delta(
+    bundles_analysis_comparison: BundleAnalysisComparison, info
+):
+    return bundles_analysis_comparison.load_time_delta
+
+
+@bundle_analysis_comparison_bindable.field("loadTimeTotal")
+def resolve_load_time_total(
+    bundles_analysis_comparison: BundleAnalysisComparison, info
+):
+    return bundles_analysis_comparison.load_time_total
+
+
+@bundle_analysis_comparison_bindable.field("bundles")
+def resolve_bundles(bundles_analysis_comparison: BundleAnalysisComparison, info):
+    return bundles_analysis_comparison.bundles
+
+
+@bundle_comparison_bindable.field("name")
+def resolve_name(bundle_comparison: BundleComparison, info):
+    return bundle_comparison.bundle_name
+
+
+@bundle_comparison_bindable.field("changeType")
+def resolve_change_type(bundle_comparison: BundleComparison, info):
+    return bundle_comparison.change_type
+
+
+@bundle_comparison_bindable.field("sizeDelta")
+def resolve_size_delta(bundle_comparison: BundleComparison, info):
+    return bundle_comparison.size_delta
+
+
+@bundle_comparison_bindable.field("sizeTotal")
+def resolve_size_total(bundle_comparison: BundleComparison, info):
+    return bundle_comparison.size_total
+
+
+@bundle_comparison_bindable.field("loadTimeDelta")
+def resolve_load_time_delta(bundle_comparison: BundleComparison, info):
+    return bundle_comparison.load_time_delta
+
+
+@bundle_comparison_bindable.field("loadTimeTotal")
+def resolve_load_time_total(bundle_comparison: BundleComparison, info):
+    return bundle_comparison.load_time_total

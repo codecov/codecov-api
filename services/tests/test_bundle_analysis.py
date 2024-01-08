@@ -42,3 +42,6 @@ def test_load_report(get_storage_service):
     report = load_report(commit)
     assert report is not None
     assert isinstance(report, BundleAnalysisReport)
+
+
+# TODO: Tests BundleAnalysisComparison and BundleComparison
