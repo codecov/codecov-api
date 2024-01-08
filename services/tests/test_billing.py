@@ -1221,6 +1221,25 @@ class StripeServiceTests(TestCase):
             customer_id, invoice_settings={"default_payment_method": payment_method_id}
         )
 
+    def test_update_email_address_with_invalid_email(self):
+        owner = OwnerFactory(stripe_subscription_id=None)
+        assert self.stripe.update_email_address(owner, "not-an-email") == None
+
+    def test_update_email_address_when_no_subscription(self):
+        owner = OwnerFactory(stripe_subscription_id=None)
+        assert self.stripe.update_email_address(owner, "test@gmail.com") == None
+
+    @patch("services.billing.stripe.Customer.modify")
+    def test_update_email_address(self, modify_customer_mock):
+        subscription_id = "sub_abc"
+        customer_id = "cus_abc"
+        email = "test@gmail.com"
+        owner = OwnerFactory(
+            stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
+        )
+        self.stripe.update_email_address(owner, "test@gmail.com")
+        modify_customer_mock.assert_called_once_with(customer_id, email=email)
+
     @patch("services.billing.stripe.Invoice.retrieve")
     def test_get_invoice_not_found(self, retrieve_invoice_mock):
         invoice_id = "abc"
@@ -1351,6 +1370,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def update_payment_method(self, owner, plan):
+        pass
+
+    def update_email_address(self, owner, email_address):
         pass
 
     def get_schedule(self, owner):
@@ -1509,6 +1531,12 @@ class BillingServiceTests(TestCase):
         owner = OwnerFactory()
         self.billing_service.update_payment_method(owner, "abc")
         get_subscription_mock.assert_called_once_with(owner, "abc")
+
+    @patch("services.tests.test_billing.MockPaymentService.update_email_address")
+    def test_email_address(self, get_subscription_mock):
+        owner = OwnerFactory()
+        self.billing_service.update_email_address(owner, "test@gmail.com")
+        get_subscription_mock.assert_called_once_with(owner, "test@gmail.com")
 
     @patch("services.tests.test_billing.MockPaymentService.get_invoice")
     def test_get_invoice(self, get_invoice_mock):

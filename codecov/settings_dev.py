@@ -4,7 +4,7 @@ from .settings_base import *
 
 DEBUG = True
 ALLOWED_HOSTS = get_config(
-    "setup", "api_allowed_hosts", default=["localhost", "local-api-stripe.ngrok.io"]
+    "setup", "api_allowed_hosts", default=["localhost", "api.lt.codecov.dev"]
 )
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
