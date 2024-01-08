@@ -18,7 +18,6 @@ from codecov_auth.models import (
     TokenTypeChoices,
 )
 from core.models import Repository
-from rollouts import TOKENLESS_AUTH_BY_OWNER_SLUG, owner_slug
 from services.repo_providers import RepoProviderService
 from upload.helpers import get_global_tokens
 from upload.views.helpers import get_repository_from_string
@@ -256,13 +255,6 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         repository = self._get_repo_info_from_request_path(request)
         # Tokneless is only for public repos
         if repository.private:
-            raise exceptions.AuthenticationFailed(self.auth_failed_message)
-        # Adding a Feature to this for internal testing
-        # before wide release
-        # TODO: remove Feature after tokenless goes to general access
-        if not TOKENLESS_AUTH_BY_OWNER_SLUG.check_value(
-            owner_slug(repository.author), default=False
-        ):
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
         # Get the provider service to check the tokenless claim
         repository_service = RepoProviderService().get_adapter(

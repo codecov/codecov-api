@@ -11,7 +11,6 @@ from rest_framework.test import APIRequestFactory
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 
 from codecov_auth.authentication.repo_auth import (
-    TOKENLESS_AUTH_BY_OWNER_SLUG,
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyQueryTokenAuthentication,
@@ -468,9 +467,6 @@ class TestTokenlessAuth(object):
 
     @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
     def test_tokenless_pr_not_found(self, mock_repo_provider, db, mocker):
-        mocker.patch.object(
-            TOKENLESS_AUTH_BY_OWNER_SLUG, "check_value", return_value=True
-        )
         repo = RepositoryFactory(private=False)
         mock_adapter = MagicMock(
             name="mock_provider_adapter",
@@ -502,9 +498,6 @@ class TestTokenlessAuth(object):
             get_pull_request=AsyncMock(name="mock_get_pr", return_value=pr_info),
         )
         mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
-        mocker.patch.object(
-            TOKENLESS_AUTH_BY_OWNER_SLUG, "check_value", return_value=True
-        )
         request = APIRequestFactory().post(
             f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
             headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
@@ -522,9 +515,6 @@ class TestTokenlessAuth(object):
             "base": {"slug": f"{repo.author.username}/{repo.name}"},
             "head": {"slug": f"some-user/{repo.name}"},
         }
-        mocker.patch.object(
-            TOKENLESS_AUTH_BY_OWNER_SLUG, "check_value", return_value=True
-        )
         mock_adapter = MagicMock(
             name="mock_provider_adapter",
             get_pull_request=AsyncMock(name="mock_get_pr", return_value=pr_info),
@@ -541,34 +531,4 @@ class TestTokenlessAuth(object):
         repo_as_user, auth_class = res
         assert repo_as_user.is_authenticated()
         assert isinstance(auth_class, TokenlessAuth)
-        mock_adapter.get_pull_request.assert_called_with("15")
-
-    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
-    def test_tokenless_success_no_mocker_flag(self, mock_repo_provider, db):
-        repo = RepositoryFactory(private=False, author__username="codecov")
-        random_repo = RepositoryFactory()
-        pr_info = {
-            "base": {"slug": f"{repo.author.username}/{repo.name}"},
-            "head": {"slug": f"some-user/{repo.name}"},
-        }
-        mock_adapter = MagicMock(
-            name="mock_provider_adapter",
-            get_pull_request=AsyncMock(name="mock_get_pr", return_value=pr_info),
-        )
-        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
-
-        request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": f"some-user/{repo.name}", "X-Tokenless-PR": "15"},
-        )
-        authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is not None
-        repo_as_user, auth_class = res
-        assert repo_as_user.is_authenticated()
-        assert isinstance(auth_class, TokenlessAuth)
-        assert auth_class.get_repositories() == [repo]
-        assert auth_class.allows_repo(repo)
-        assert not auth_class.allows_repo(random_repo)
-        assert auth_class.get_scopes() == ["upload"]
         mock_adapter.get_pull_request.assert_called_with("15")
