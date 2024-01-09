@@ -250,4 +250,4 @@ class TestInstance(BaseCodecovModel):
     failure_message = models.TextField(null=True)
 
     class Meta:
-        db_table = "reports_testrun"
+        db_table = "reports_testinstance"
