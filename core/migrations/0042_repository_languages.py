@@ -2,6 +2,7 @@
 
 import django.contrib.postgres.fields
 from django.db import migrations, models
+from shared.django_apps.migration_utils import RiskyAddField
 
 
 class Migration(migrations.Migration):
@@ -20,7 +21,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
+        RiskyAddField(
             model_name="repository",
             name="languages",
             field=django.contrib.postgres.fields.ArrayField(
