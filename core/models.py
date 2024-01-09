@@ -103,6 +103,7 @@ class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
     language = models.TextField(
         null=True, blank=True, choices=Languages.choices
     )  # Really an ENUM in db
+    languages = ArrayField(models.CharField(), default=[], blank=True)
     fork = models.ForeignKey(
         "core.Repository",
         db_column="forkid",
@@ -127,6 +128,7 @@ class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
     )
     activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)
+    bundle_analysis_enabled = models.BooleanField(null=True, default=False)
 
     # tracks field changes being saved
     tracker = FieldTracker()
