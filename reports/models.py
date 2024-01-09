@@ -236,7 +236,7 @@ class TestInstance(BaseCodecovModel):
     test = models.ForeignKey(
         "Test",
         db_column="test_id",
-        related_name="testruns",
+        related_name="testinstances",
         on_delete=models.CASCADE,
     )
     duration_seconds = models.FloatField()
@@ -244,7 +244,7 @@ class TestInstance(BaseCodecovModel):
     report = models.ForeignKey(
         "ReportSession",
         db_column="upload_id",
-        related_name="testruns",
+        related_name="testinstances",
         on_delete=models.CASCADE,
     )
     failure_message = models.TextField(null=True)
