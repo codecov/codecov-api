@@ -858,13 +858,23 @@ class GithubWebhookHandlerTests(APITestCase):
             data={
                 "action": action,
                 "sender": sender,
-                "marketplace_purchase": {"account": account},
+                "marketplace_purchase": {
+                    "account": account,
+                    "plan": {"name": "gh-marketplace"},
+                    "unit_count": 200,
+                },
             },
         )
 
         log_warning_mock.assert_called_with(
             "GHM webhook - user purchasing but has a Stripe Subscription",
-            extra=dict(username="username", old_plan_name=plan, quantity=quantity),
+            extra={
+                "username": "username",
+                "old_plan_name": plan,
+                "old_plan_seats": quantity,
+                "new_plan_name": "gh-marketplace",
+                "new_plan_seats": 200,
+            },
         )
 
         sync_plans_mock.assert_called_once_with(
