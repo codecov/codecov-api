@@ -230,6 +230,12 @@ class Test(BaseCodecovModel):
 
     class Meta:
         db_table = "reports_test"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["repository", "name", "testsuite"],
+                name="tests_repository_name_testsuite",
+            )
+        ]
 
 
 class TestInstance(BaseCodecovModel):
