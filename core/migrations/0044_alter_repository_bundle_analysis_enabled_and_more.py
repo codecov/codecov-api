@@ -2,6 +2,7 @@
 
 import django.contrib.postgres.fields
 from django.db import migrations, models
+from shared.django_apps.migration_utils import RiskyAlterField
 
 
 class Migration(migrations.Migration):
@@ -23,12 +24,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+       RiskyAlterField(
             model_name="repository",
             name="bundle_analysis_enabled",
             field=models.BooleanField(default=False, null=True),
         ),
-        migrations.AlterField(
+        RiskyAlterField(
             model_name="repository",
             name="languages",
             field=django.contrib.postgres.fields.ArrayField(
