@@ -324,8 +324,13 @@ def resolve_repository_config(repository: Repository, info):
 
 
 @repository_bindable.field("primaryLanguage")
-def resolve_languate(repository: Repository, info):
+def resolve_language(repository: Repository, info):
     return repository.language
+
+
+@repository_bindable.field("bundleAnalysisEnabled")
+def resolve_bundle_analysis_enabled(repository: Repository, info):
+    return repository.bundle_analysis_enabled
 
 
 repository_result_bindable = UnionType("RepositoryResult")
