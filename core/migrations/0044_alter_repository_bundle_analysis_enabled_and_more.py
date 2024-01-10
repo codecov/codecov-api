@@ -19,18 +19,24 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ('core', '0043_repository_bundle_analysis_enabled'),
+        ("core", "0043_repository_bundle_analysis_enabled"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='repository',
-            name='bundle_analysis_enabled',
+            model_name="repository",
+            name="bundle_analysis_enabled",
             field=models.BooleanField(default=False, null=True),
         ),
         migrations.AlterField(
-            model_name='repository',
-            name='languages',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(), blank=True, default=[], null=True, size=None),
+            model_name="repository",
+            name="languages",
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=models.CharField(),
+                blank=True,
+                default=[],
+                null=True,
+                size=None,
+            ),
         ),
     ]
