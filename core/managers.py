@@ -278,6 +278,8 @@ class RepositoryQuerySet(QuerySet):
             private=git_repo["private"],
             branch=git_repo.get("branch") or git_repo.get("default_branch") or "master",
             name=git_repo["name"],
+            languages=[],
+            bundle_analysis_enabled=False,
         )
 
         # If this is a fork, create the forked repo and save it to the new repo.
