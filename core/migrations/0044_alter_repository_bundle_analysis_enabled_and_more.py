@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-       RiskyAlterField(
+        RiskyAlterField(
             model_name="repository",
             name="bundle_analysis_enabled",
             field=models.BooleanField(default=False, null=True),
