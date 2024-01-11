@@ -71,6 +71,7 @@ default_fields = """
     yaml
     isATSConfigured
     primaryLanguage
+    bundleAnalysisEnabled
     bot { username }
 """
 
@@ -132,6 +133,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "yaml": "test: test\n",
             "isATSConfigured": False,
             "primaryLanguage": "rust",
+            "bundleAnalysisEnabled": False,
             "bot": None,
         }
 
@@ -185,6 +187,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "yaml": "test: test\n",
             "isATSConfigured": False,
             "primaryLanguage": "erlang",
+            "bundleAnalysisEnabled": False,
             "bot": None,
         }
 
@@ -457,3 +460,10 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_repository(repo.name)
         assert res["primaryLanguage"] == "python"
+
+    def test_repository_get_bundle_analysis_enabled(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, bundle_analysis_enabled=True
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["bundleAnalysisEnabled"] == True
