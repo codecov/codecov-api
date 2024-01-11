@@ -65,6 +65,7 @@ type Repository {
   staticAnalysisToken: String
   isATSConfigured: Boolean
   primaryLanguage: String
+  bundleAnalysisEnabled: Boolean
 }
 
 type PullConnection {

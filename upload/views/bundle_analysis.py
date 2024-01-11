@@ -62,10 +62,18 @@ class BundleAnalysisView(APIView):
         else:
             raise NotAuthenticated()
 
+        update_fields = []
         if not repo.active or not repo.activated:
             repo.active = True
             repo.activated = True
-            repo.save(update_fields=["active", "activated"])
+            update_fields += ["active", "activated"]
+
+        if not repo.bundle_analysis_enabled:
+            repo.bundle_analysis_enabled = True
+            update_fields += ["bundle_analysis_enabled"]
+
+        if update_fields:
+            repo.save(update_fields=update_fields)
 
         commit, _ = Commit.objects.get_or_create(
             commitid=data["commit"],
