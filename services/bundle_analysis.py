@@ -64,14 +64,11 @@ class BundleAnalysisComparison(object):
 
         for bundle_change in self.comparison.bundle_changes():
             self.total_size_delta += bundle_change.size_delta
-
-            if (
-                self.comparison.head_report
-                and self.comparison.head_report.bundle_report(bundle_change.bundle_name)
-            ):
-                head_bundle_report_size = self.comparison.head_report.bundle_report(
-                    bundle_change.bundle_name
-                ).total_size()
+            head_bundle_report = self.comparison.head_report.bundle_report(
+                bundle_change.bundle_name
+            )
+            if self.comparison.head_report and head_bundle_report:
+                head_bundle_report_size = head_bundle_report.total_size()
             else:
                 head_bundle_report_size = 0
             self.bundle_comparisons.append(

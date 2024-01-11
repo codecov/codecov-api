@@ -32,7 +32,7 @@ class BundleAnalysisComparisonLoader(TransactionTestCase):
 
         assert loader == True
 
-    def test_loader_only_coverage_base_report(self):
+    def test_loader_missing_base_report(self):
         base_commit = CommitFactory(repository=self.repo)
         CommitReportFactory(
             commit=base_commit, report_type=CommitReport.ReportType.COVERAGE
@@ -44,7 +44,7 @@ class BundleAnalysisComparisonLoader(TransactionTestCase):
         )
         assert loader.message == MissingBaseReport.message
 
-    def test_loader_only_coverage_head_report(self):
+    def test_loader_missing_head_report(self):
         head_commit = CommitFactory(repository=self.repo)
         CommitReportFactory(
             commit=head_commit, report_type=CommitReport.ReportType.COVERAGE
