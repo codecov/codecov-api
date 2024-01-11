@@ -324,12 +324,12 @@ def resolve_repository_config(repository: Repository, info):
 
 
 @repository_bindable.field("primaryLanguage")
-def resolve_language(repository: Repository, info):
+def resolve_language(repository: Repository, info) -> str:
     return repository.language
 
 
 @repository_bindable.field("bundleAnalysisEnabled")
-def resolve_bundle_analysis_enabled(repository: Repository, info):
+def resolve_bundle_analysis_enabled(repository: Repository, info) -> bool:
     return repository.bundle_analysis_enabled
 
 
