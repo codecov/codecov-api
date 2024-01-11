@@ -328,6 +328,11 @@ def resolve_language(repository: Repository, info) -> str:
     return repository.language
 
 
+@repository_bindable.field("languages")
+def resolve_languages(repository: Repository, info) -> List[str]:
+    return repository.languages
+
+
 @repository_bindable.field("bundleAnalysisEnabled")
 def resolve_bundle_analysis_enabled(repository: Repository, info) -> bool:
     return repository.bundle_analysis_enabled
