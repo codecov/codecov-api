@@ -104,6 +104,7 @@ class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
         null=True, blank=True, choices=Languages.choices
     )  # Really an ENUM in db
     languages = ArrayField(models.CharField(), default=[], blank=True, null=True)
+    languages_last_updated = DateTimeWithoutTZField(null=True, blank=True)
     fork = models.ForeignKey(
         "core.Repository",
         db_column="forkid",
