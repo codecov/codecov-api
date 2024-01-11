@@ -2,6 +2,7 @@
 
 import core.models
 from django.db import migrations
+from shared.django_apps.migration_utils import RiskyAddField
 
 
 class Migration(migrations.Migration):
@@ -19,7 +20,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
+        RiskyAddField(
             model_name='repository',
             name='languages_last_updated',
             field=core.models.DateTimeWithoutTZField(blank=True, null=True),
