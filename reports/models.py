@@ -227,13 +227,14 @@ class Test(BaseCodecovModel):
     )
     name = models.TextField()
     testsuite = models.TextField()
+    env = models.TextField(default="")
 
     class Meta:
         db_table = "reports_test"
         constraints = [
             models.UniqueConstraint(
-                fields=["repository", "name", "testsuite"],
-                name="tests_repository_name_testsuite",
+                fields=["repository", "name", "testsuite", "env"],
+                name="tests_repository_name_testsuite_env",
             )
         ]
 
