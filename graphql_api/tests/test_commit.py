@@ -5,7 +5,10 @@ from unittest.mock import AsyncMock, PropertyMock, patch
 
 import yaml
 from django.test import TransactionTestCase
+from shared.bundle_analysis import StoragePaths
+from shared.bundle_analysis.storage import get_bucket_name
 from shared.reports.types import LineSession
+from shared.storage.memory import MemoryStorageService
 
 import services.comparison as comparison
 from codecov_auth.tests.factories import OwnerFactory
@@ -14,6 +17,7 @@ from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
 from graphql_api.types.enums.enums import UploadType
+from reports.models import CommitReport
 from reports.tests.factories import (
     CommitReportFactory,
     ReportLevelTotalsFactory,
@@ -22,6 +26,7 @@ from reports.tests.factories import (
     UploadFactory,
     UploadFlagMembershipFactory,
 )
+from services.archive import ArchiveService
 from services.comparison import MissingComparisonReport
 from services.components import Component
 from services.profiling import CriticalFile
@@ -699,7 +704,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
         query = (
             query_commit
-            % "compareWithParent { __typename ... on Comparison { state } }"
+            % """
+            compareWithParent { __typename ... on Comparison { state } }
+            bundleAnalysisCompareWithParent { __typename ... on BundleAnalysisComparison { sizeDelta } }
+            """
         )
         variables = {
             "org": self.org.username,
@@ -709,6 +717,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["__typename"] == "MissingBaseCommit"
+        assert (
+            commit["bundleAnalysisCompareWithParent"]["__typename"]
+            == "MissingBaseCommit"
+        )
 
     def test_compare_with_parent_comparison_missing_when_commit_comparison_state_is_errored(
         self,
@@ -730,23 +742,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["__typename"] == "MissingComparison"
-
-    def test_fetch_commit_compare_no_parent(self):
-        self.commit.parent_commit_id = None
-        self.commit.save()
-
-        query = (
-            query_commit
-            % "compareWithParent { __typename ... on Comparison { state } }"
-        )
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "commit": self.commit.commitid,
-        }
-        data = self.gql_request(query, variables=variables)
-        commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"]["__typename"] == "MissingBaseCommit"
 
     def test_compare_with_parent_change_coverage(self):
         CommitComparisonFactory(
@@ -788,6 +783,113 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["changeCoverage"] == 5.0
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_compare(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        base_commit_report = CommitReportFactory(
+            commit=self.parent_commit,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open("./services/tests/samples/base_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=base_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = (
+            query_commit
+            % """
+            bundleAnalysisCompareWithParent {
+                __typename
+                ... on BundleAnalysisComparison {
+                    sizeDelta
+                    sizeTotal
+                    loadTimeDelta
+                    loadTimeTotal
+                    bundles {
+                        name
+                        changeType
+                        sizeDelta
+                        sizeTotal
+                        loadTimeDelta
+                        loadTimeTotal
+                    }
+                }
+            }
+            """
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["bundleAnalysisCompareWithParent"] == {
+            "__typename": "BundleAnalysisComparison",
+            "sizeDelta": 36555,
+            "sizeTotal": 201720,
+            "loadTimeDelta": 0.1,
+            "loadTimeTotal": 0.5,
+            "bundles": [
+                {
+                    "name": "b1",
+                    "changeType": "changed",
+                    "sizeDelta": 5,
+                    "sizeTotal": 20,
+                    "loadTimeDelta": 0.0,
+                    "loadTimeTotal": 0.0,
+                },
+                {
+                    "name": "b2",
+                    "changeType": "changed",
+                    "sizeDelta": 50,
+                    "sizeTotal": 200,
+                    "loadTimeDelta": 0.0,
+                    "loadTimeTotal": 0.0,
+                },
+                {
+                    "name": "b3",
+                    "changeType": "added",
+                    "sizeDelta": 1500,
+                    "sizeTotal": 1500,
+                    "loadTimeDelta": 0.0,
+                    "loadTimeTotal": 0.0,
+                },
+                {
+                    "name": "b5",
+                    "changeType": "changed",
+                    "sizeDelta": 50000,
+                    "sizeTotal": 200000,
+                    "loadTimeDelta": 0.1,
+                    "loadTimeTotal": 0.5,
+                },
+                {
+                    "name": "b4",
+                    "changeType": "removed",
+                    "sizeDelta": -15000,
+                    "sizeTotal": 0,
+                    "loadTimeDelta": -0.0,
+                    "loadTimeTotal": 0.0,
+                },
+            ],
+        }
 
     def test_compare_with_parent_missing_change_coverage(self):
         CommitComparisonFactory(

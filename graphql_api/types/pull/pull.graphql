@@ -9,6 +9,7 @@ type Pull {
   head: Commit
   comparedTo: Commit
   compareWithBase: ComparisonResult
+  bundleAnalysisCompareWithBase: BundleAnalysisComparisonResult
   commits(
     first: Int
     after: String
