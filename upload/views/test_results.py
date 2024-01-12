@@ -18,6 +18,7 @@ from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
+from upload.serializers import FlagListField
 from upload.views.helpers import get_repository_from_string
 
 log = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class UploadSerializer(serializers.Serializer):
     build = serializers.CharField(required=False)
     buildURL = serializers.CharField(required=False)
     job = serializers.CharField(required=False)
+    flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
     service = serializers.CharField(required=False)
 
@@ -88,6 +90,7 @@ class TestResultsView(APIView):
             "build": data.get("build"),  # build_code
             "build_url": data.get("buildURL"),  # build_url
             "job": data.get("job"),  # job_code
+            "flags": data.get("flags"),
             "service": data.get("service"),  # provider
             "url": storage_path,  # storage_path
             # these are used for dispatching the task below
