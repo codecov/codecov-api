@@ -583,12 +583,20 @@ def validate_upload(upload_params, repository, redis):
             repository.author.ownerid, repository
         )
 
-    if not repository.activated or not repository.active or repository.deleted:
+    if (
+        not repository.activated
+        or not repository.active
+        or repository.deleted
+        or not repository.coverage_enabled
+    ):
         # Activate the repository
         repository.activated = True
         repository.active = True
         repository.deleted = False
-        repository.save(update_fields=["activated", "active", "deleted"])
+        repository.coverage_enabled = True
+        repository.save(
+            update_fields=["activated", "active", "deleted", "coverage_enabled"]
+        )
 
 
 def _determine_responsible_owner(repository):
