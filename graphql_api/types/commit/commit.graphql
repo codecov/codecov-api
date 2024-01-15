@@ -15,6 +15,7 @@ type Commit {
   coverageFile(path: String!, flags: [String], components: [String]): File
   compareWithParent: ComparisonResult
   bundleAnalysisCompareWithParent: BundleAnalysisComparisonResult
+  bundleAnalysisReport: BundleAnalysisReportResult
   uploads(
     first: Int
     after: String

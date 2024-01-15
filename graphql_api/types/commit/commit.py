@@ -14,7 +14,10 @@ from core.models import Commit
 from graphql_api.actions.commits import commit_uploads
 from graphql_api.actions.comparison import validate_commit_comparison
 from graphql_api.actions.path_contents import sort_path_contents
-from graphql_api.dataloader.bundle_analysis import load_bundle_analysis_comparison
+from graphql_api.dataloader.bundle_analysis import (
+    load_bundle_analysis_comparison,
+    load_bundle_analysis_report,
+)
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -158,6 +161,12 @@ def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
         return MissingBaseCommit()
 
     return load_bundle_analysis_comparison(base_commit, commit)
+
+
+@commit_bindable.field("bundleAnalysisReport")
+@sync_to_async
+def resolve_bundle_analysis_report(commit: Commit, info, **kwargs):
+    return load_bundle_analysis_report(commit)
 
 
 @commit_bindable.field("flagNames")

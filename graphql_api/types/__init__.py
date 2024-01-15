@@ -9,6 +9,12 @@ from .bundle_analysis_comparison import (
     bundle_analysis_comparison_result_bindable,
     bundle_comparison_bindable,
 )
+from .bundle_analysis_report import (
+    bundle_analysis_report,
+    bundle_analysis_report_bindable,
+    bundle_analysis_report_result_bindable,
+    bundle_report_bindable,
+)
 from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .component import component, component_bindable
@@ -65,6 +71,7 @@ types = [
     me,
     branch,
     bundle_analysis_comparison,
+    bundle_analysis_report,
     commit,
     comparison,
     component,
@@ -104,6 +111,9 @@ bindables = [
     bundle_analysis_comparison_result_bindable,
     bundle_analysis_comparison_bindable,
     bundle_comparison_bindable,
+    bundle_analysis_report_result_bindable,
+    bundle_analysis_report_bindable,
+    bundle_report_bindable,
     commit_bindable,
     comparison_bindable,
     comparison_result_bindable,
