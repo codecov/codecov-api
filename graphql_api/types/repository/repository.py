@@ -338,6 +338,11 @@ def resolve_bundle_analysis_enabled(repository: Repository, info) -> bool:
     return repository.bundle_analysis_enabled
 
 
+@repository_bindable.field("coverageEnabled")
+def resolve_coverage_enabled(repository: Repository, info) -> bool:
+    return repository.coverage_enabled
+
+
 repository_result_bindable = UnionType("RepositoryResult")
 
 

@@ -67,6 +67,7 @@ type Repository {
   primaryLanguage: String
   languages: [String!]
   bundleAnalysisEnabled: Boolean
+  coverageEnabled: Boolean
 }
 
 type PullConnection {
