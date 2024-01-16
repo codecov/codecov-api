@@ -1,10 +1,12 @@
 from distutils.util import strtobool
+from typing import List
 
 from ariadne import ObjectType
 from django.conf import settings
 
 import services.self_hosted as self_hosted
 from codecov.db import sync_to_async
+from codecov_auth.models import Service
 from graphql_api.types.enums.enums import LoginProvider
 
 config_bindable = ObjectType("Config")
@@ -111,3 +113,8 @@ def resolve_bitbucket_server_url(_, info):
 
     if settings.BITBUCKET_SERVER_CLIENT_ID:
         return settings.BITBUCKET_SERVER_URL
+
+
+@config_bindable.field("syncProviders")
+def resolve_sync_providers(_, info) -> List[str]:
+    return Service.values
