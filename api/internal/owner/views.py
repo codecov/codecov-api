@@ -95,6 +95,17 @@ class AccountDetailsViewSet(
         billing.update_payment_method(owner, payment_method)
         return Response(self.get_serializer(owner).data)
 
+    @action(detail=False, methods=["patch"])
+    @stripe_safe
+    def update_email(self, request, *args, **kwargs):
+        new_email = request.data.get("new_email")
+        if not new_email:
+            raise ValidationError(detail="No new_email sent")
+        owner = self.get_object()
+        billing = BillingService(requesting_user=request.current_owner)
+        billing.update_email_address(owner, new_email)
+        return Response(self.get_serializer(owner).data)
+
 
 class UsersOrderingFilter(filters.OrderingFilter):
     def get_valid_fields(self, queryset, view, context=None):
