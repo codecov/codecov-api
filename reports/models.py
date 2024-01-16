@@ -255,6 +255,7 @@ class TestInstance(BaseCodecovModel):
         on_delete=models.CASCADE,
     )
     failure_message = models.TextField(null=True)
+    active = models.BooleanField()
 
     class Meta:
         db_table = "reports_testinstance"
