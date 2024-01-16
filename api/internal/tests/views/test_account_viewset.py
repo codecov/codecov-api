@@ -1129,7 +1129,6 @@ class AccountViewSetTests(APITestCase):
         data = {"new_email": new_email}
         url = reverse("account_details-update-email", kwargs=kwargs)
         response = self.client.patch(url, data=data, format="json")
-        print("asdfasdf", response.__dict__)
         assert response.status_code == status.HTTP_200_OK
 
         modify_customer_mock.assert_called_once_with(
