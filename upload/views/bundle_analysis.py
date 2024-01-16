@@ -32,11 +32,11 @@ class UploadBundleAnalysisPermission(BasePermission):
 class UploadSerializer(serializers.Serializer):
     commit = serializers.CharField(required=True)
     slug = serializers.CharField(required=True)
-    build = serializers.CharField(required=False)
-    buildURL = serializers.CharField(required=False)
-    job = serializers.CharField(required=False)
-    pr = serializers.CharField(required=False)
-    service = serializers.CharField(required=False)
+    build = serializers.CharField(required=False, allow_null=True)
+    buildURL = serializers.CharField(required=False, allow_null=True)
+    job = serializers.CharField(required=False, allow_null=True)
+    pr = serializers.CharField(required=False, allow_null=True)
+    service = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView):
