@@ -334,12 +334,12 @@ def resolve_languages(repository: Repository, info) -> List[str]:
 
 
 @repository_bindable.field("bundleAnalysisEnabled")
-def resolve_bundle_analysis_enabled(repository: Repository, info) -> bool:
+def resolve_bundle_analysis_enabled(repository: Repository, info) -> Optional[bool]:
     return repository.bundle_analysis_enabled
 
 
 @repository_bindable.field("coverageEnabled")
-def resolve_coverage_enabled(repository: Repository, info) -> bool:
+def resolve_coverage_enabled(repository: Repository, info) -> Optional[bool]:
     return repository.coverage_enabled
 
 
