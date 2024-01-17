@@ -76,7 +76,6 @@ class TestResultsView(APIView):
 
         upload_external_id = str(uuid.uuid4())
 
-        # TODO: define this in `shared.bundle_analysis.storage.StoragePaths`
         storage_path = f"v1/uploads/{upload_external_id}.json"
 
         archive_service = ArchiveService(repo)
