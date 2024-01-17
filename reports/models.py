@@ -220,6 +220,10 @@ class UploadLevelTotals(AbstractTotals):
 
 
 class Test(models.Model):
+    # the reason we aren't using the regular primary key
+    # in this case is because we want to be able to compute/predict
+    # the primary key of a Test object ourselves in the processor
+    # so we can easily do concurrent writes to the database
     id = models.TextField(primary_key=True)
 
     external_id = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -234,7 +238,7 @@ class Test(models.Model):
     )
     name = models.TextField()
     testsuite = models.TextField()
-    env = models.TextField(default="")
+    env = models.TextField()
 
     class Meta:
         db_table = "reports_test"
@@ -249,14 +253,13 @@ class TestInstance(BaseCodecovModel):
     )
     duration_seconds = models.FloatField()
     outcome = models.IntegerField()
-    report = models.ForeignKey(
+    upload = models.ForeignKey(
         "ReportSession",
         db_column="upload_id",
         related_name="testinstances",
         on_delete=models.CASCADE,
     )
     failure_message = models.TextField(null=True)
-    timestamp = models.TextField()
 
     class Meta:
         db_table = "reports_testinstance"
