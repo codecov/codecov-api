@@ -258,6 +258,7 @@ class TestInstance(BaseCodecovModel):
     )
     failure_message = models.TextField(null=True)
     active = models.BooleanField()
+    timestamp = models.TextField()
 
     class Meta:
         db_table = "reports_testinstance"
