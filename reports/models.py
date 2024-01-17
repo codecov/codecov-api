@@ -256,7 +256,6 @@ class TestInstance(BaseCodecovModel):
         on_delete=models.CASCADE,
     )
     failure_message = models.TextField(null=True)
-    active = models.BooleanField()
     timestamp = models.TextField()
 
     class Meta:
