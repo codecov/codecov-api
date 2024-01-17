@@ -219,6 +219,7 @@ class UploadLevelTotals(AbstractTotals):
 
 
 class Test(BaseCodecovModel):
+    testid = models.TextField(unique=True)
     repository = models.ForeignKey(
         "core.Repository",
         db_column="repoid",
@@ -245,6 +246,7 @@ class TestInstance(BaseCodecovModel):
         db_column="test_id",
         related_name="testinstances",
         on_delete=models.CASCADE,
+        to_field="testid",
     )
     duration_seconds = models.FloatField()
     outcome = models.IntegerField()
