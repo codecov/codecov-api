@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -218,8 +219,13 @@ class UploadLevelTotals(AbstractTotals):
         db_table = "reports_uploadleveltotals"
 
 
-class Test(BaseCodecovModel):
-    testid = models.TextField(unique=True)
+class Test(models.Model):
+    id = models.TextField(primary_key=True)
+
+    external_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     repository = models.ForeignKey(
         "core.Repository",
         db_column="repoid",
@@ -232,12 +238,6 @@ class Test(BaseCodecovModel):
 
     class Meta:
         db_table = "reports_test"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["repository", "name", "testsuite", "env"],
-                name="tests_repository_name_testsuite_env",
-            )
-        ]
 
 
 class TestInstance(BaseCodecovModel):
@@ -246,7 +246,6 @@ class TestInstance(BaseCodecovModel):
         db_column="test_id",
         related_name="testinstances",
         on_delete=models.CASCADE,
-        to_field="testid",
     )
     duration_seconds = models.FloatField()
     outcome = models.IntegerField()
