@@ -494,6 +494,7 @@ class TestGithubAppInstallationModel(TransactionTestCase):
     def test_covers_some_repos(self):
         owner = OwnerFactory()
         repo = RepositoryFactory(author=owner)
+        same_owner_other_repo = RepositoryFactory(author=owner)
         other_repo_different_owner = RepositoryFactory()
         installation_obj = GithubAppInstallation(
             owner=owner,
@@ -505,6 +506,10 @@ class TestGithubAppInstallationModel(TransactionTestCase):
         assert installation_obj.is_repo_covered_by_integration(repo) == True
         assert (
             installation_obj.is_repo_covered_by_integration(other_repo_different_owner)
+            == False
+        )
+        assert (
+            installation_obj.is_repo_covered_by_integration(same_owner_other_repo)
             == False
         )
         assert list(owner.github_app_installations.all()) == [installation_obj]
