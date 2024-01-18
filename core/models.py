@@ -133,6 +133,7 @@ class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
     activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)
     bundle_analysis_enabled = models.BooleanField(default=False, null=True)
+    coverage_enabled = models.BooleanField(default=False, null=True)
 
     # tracks field changes being saved
     tracker = FieldTracker()
