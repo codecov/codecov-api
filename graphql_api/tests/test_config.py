@@ -279,3 +279,18 @@ class TestConfigType(GraphQLTestHelper, TestCase):
                 "selfHostedLicense": {"expirationDate": "2020-05-09T00:00:00"},
             },
         }
+
+    def test_sync_providers(self):
+        data = self.gql_request("query { config { syncProviders } }")
+        assert data == {
+            "config": {
+                "syncProviders": [
+                    "github",
+                    "gitlab",
+                    "bitbucket",
+                    "github_enterprise",
+                    "gitlab_enterprise",
+                    "bitbucket_server",
+                ],
+            },
+        }

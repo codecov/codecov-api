@@ -324,8 +324,23 @@ def resolve_repository_config(repository: Repository, info):
 
 
 @repository_bindable.field("primaryLanguage")
-def resolve_languate(repository: Repository, info):
+def resolve_language(repository: Repository, info) -> str:
     return repository.language
+
+
+@repository_bindable.field("languages")
+def resolve_languages(repository: Repository, info) -> List[str]:
+    return repository.languages
+
+
+@repository_bindable.field("bundleAnalysisEnabled")
+def resolve_bundle_analysis_enabled(repository: Repository, info) -> Optional[bool]:
+    return repository.bundle_analysis_enabled
+
+
+@repository_bindable.field("coverageEnabled")
+def resolve_coverage_enabled(repository: Repository, info) -> Optional[bool]:
+    return repository.coverage_enabled
 
 
 repository_result_bindable = UnionType("RepositoryResult")

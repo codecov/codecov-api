@@ -83,7 +83,7 @@ coverage==6.0.1
     # via
     #   codecovopentelem
     #   pytest-cov
-cryptography==41.0.4
+cryptography==41.0.7
     # via shared
 ddtrace==0.46.0
     # via -r requirements.in
@@ -371,7 +371,7 @@ sentry-sdk==1.39.1
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/dfd03acd628cca2b45ac49135d442173873047b1.tar.gz
+shared @ https://github.com/codecov/shared/archive/d9a9e9ef3087eb57a70d8e8e387d506aebf5b8af.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
