@@ -65,6 +65,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
         "url": f"v1/uploads/{reportid}.json",
         "commit": commit_sha,
         "report_code": None,
+        "flags": None,
     }
 
     # sets latest upload timestamp
