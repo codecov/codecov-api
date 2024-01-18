@@ -73,6 +73,7 @@ default_fields = """
     primaryLanguage
     languages
     bundleAnalysisEnabled
+    coverageEnabled
     bot { username }
 """
 
@@ -137,6 +138,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "primaryLanguage": "rust",
             "languages": ["python", "rust"],
             "bundleAnalysisEnabled": False,
+            "coverageEnabled": False,
             "bot": None,
         }
 
@@ -193,6 +195,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "primaryLanguage": "erlang",
             "languages": [],
             "bundleAnalysisEnabled": False,
+            "coverageEnabled": False,
             "bot": None,
         }
 
@@ -472,6 +475,13 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_repository(repo.name)
         assert res["bundleAnalysisEnabled"] == True
+
+    def test_repository_get_coverage_enabled(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, coverage_enabled=True
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["coverageEnabled"] == True
 
     def test_repository_get_languages_null(self):
         repo = RepositoryFactory(
