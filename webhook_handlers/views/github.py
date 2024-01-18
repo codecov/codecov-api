@@ -3,6 +3,7 @@ import logging
 import re
 from contextlib import suppress
 from hashlib import sha1, sha256
+from typing import Optional
 
 from django.utils.crypto import constant_time_compare
 from rest_framework import status
@@ -12,7 +13,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.metrics import metrics
 
-from codecov_auth.models import Owner
+from codecov_auth.models import (
+    GITHUB_APP_INSTALLATION_DEFAULT_NAME,
+    GithubAppInstallation,
+    Owner,
+)
 from core.models import Branch, Commit, Pull, Repository
 from services.archive import ArchiveService
 from services.billing import BillingService
@@ -141,7 +146,10 @@ class GithubWebhookHandler(APIView):
                     author__ownerid=owner.ownerid, service_id=repo_service_id
                 )
             except Repository.DoesNotExist:
-                if owner.integration_id:
+                default_ghapp_installation = owner.github_app_installations.filter(
+                    name=GITHUB_APP_INSTALLATION_DEFAULT_NAME
+                ).first()
+                if default_ghapp_installation or owner.integration_id:
                     log.info(
                         "Repository no found but owner is using integration, creating repository"
                     )
@@ -389,7 +397,44 @@ class GithubWebhookHandler(APIView):
 
         return Response()
 
-    def _handle_installation_events(self, request, *args, **kwargs):
+    def _handle_installation_repository_events(self, request, *args, **kwargs):
+        # https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
+        service_id = request.data["installation"]["account"]["id"]
+        username = request.data["installation"]["account"]["login"]
+        owner, _ = Owner.objects.get_or_create(
+            service=self.service_name, service_id=service_id, username=username
+        )
+        installation_id = request.data["installation"]["id"]
+        all_repos_affected = request.data.get("repository_selection") == "all"
+
+        repositories_added_service_ids = set(
+            map(lambda obj: obj["id"], request.data.get("repositories_added", []))
+        )
+        repositories_removed_service_ids = set(
+            map(lambda obj: obj["id"], request.data.get("repositories_removed", []))
+        )
+        ghapp_installation: Optional[
+            GithubAppInstallation
+        ] = owner.github_app_installations.filter(
+            installation_id=installation_id
+        ).first()
+        if ghapp_installation is None:
+            ghapp_installation = GithubAppInstallation(
+                owner=owner, installation_id=installation_id
+            )
+        if all_repos_affected:
+            ghapp_installation.repository_service_ids = None
+        else:
+            repo_list_to_save = set(ghapp_installation.repository_service_ids or [])
+            repo_list_to_save = repo_list_to_save.union(
+                repositories_added_service_ids
+            ).difference(repositories_removed_service_ids)
+            ghapp_installation.repository_service_ids = list(repo_list_to_save)
+        ghapp_installation.save()
+
+    def _handle_installation_events(
+        self, request, *args, event=GitHubWebhookEvents.INSTALLATION, **kwargs
+    ):
         service_id = request.data["installation"]["account"]["id"]
         username = request.data["installation"]["account"]["login"]
         action = request.data.get("action")
@@ -398,18 +443,70 @@ class GithubWebhookHandler(APIView):
             service=self.service_name, service_id=service_id, username=username
         )
 
+        repositories_service_ids = list(
+            map(lambda obj: obj["id"], request.data.get("repositories", []))
+        )
+
+        affects_all_repositories = (
+            request.data["installation"]["repository_selection"] == "all"
+        )
+        installation_id = request.data["installation"]["id"]
+
+        # TODO: Consider adding "suspend" action here?
+        # https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation
         if action == "deleted":
+
+            if event == GitHubWebhookEvents.INSTALLATION:
+                ghapp_installation: Optional[
+                    GithubAppInstallation
+                ] = owner.github_app_installations.filter(
+                    installation_id=installation_id
+                ).first()
+                if ghapp_installation is not None:
+                    ghapp_installation.delete()
+            # Deprecated flow - BEGIN
             owner.integration_id = None
             owner.save()
             owner.repository_set.all().update(using_integration=False, bot=None)
+            # Deprecated flow - END
             log.info(
                 "Owner deleted app integration",
                 extra=dict(ownerid=owner.ownerid, github_webhook_event=self.event),
             )
         else:
+
+            if event == GitHubWebhookEvents.INSTALLATION:
+                ghapp_installation: Optional[
+                    GithubAppInstallation
+                ] = owner.github_app_installations.filter(
+                    installation_id=installation_id
+                ).first()
+                if ghapp_installation is not None:
+                    # Update list of repos
+                    ghapp_installation.repository_service_ids = (
+                        None if affects_all_repositories else repositories_service_ids
+                    )
+                    ghapp_installation.save()
+                else:
+                    # New installation
+                    ghapp_installation = GithubAppInstallation(
+                        owner=owner,
+                        repository_service_ids=(
+                            None
+                            if affects_all_repositories
+                            else repositories_service_ids
+                        ),
+                        installation_id=installation_id,
+                    )
+                    ghapp_installation.save()
+
+            # This flow is deprecated and should be removed once the
+            # work on github app integration model is complete and backfilled
+            # Deprecated flow - BEGIN
             if owner.integration_id is None:
                 owner.integration_id = request.data["installation"]["id"]
                 owner.save()
+            # Deprecated flow - END
 
             log.info(
                 "Triggering refresh task to sync repos",
@@ -428,11 +525,21 @@ class GithubWebhookHandler(APIView):
 
     def installation(self, request, *args, **kwargs):
         _incr_event(GitHubWebhookEvents.INSTALLATION)
-        return self._handle_installation_events(request, *args, **kwargs)
+        return self._handle_installation_events(
+            request, *args, **kwargs, event=GitHubWebhookEvents.INSTALLATION
+        )
 
     def installation_repositories(self, request, *args, **kwargs):
         _incr_event(GitHubWebhookEvents.INSTALLATION_REPOSITORIES)
-        return self._handle_installation_events(request, *args, **kwargs)
+        self._handle_installation_repository_events(request, *args, **kwargs)
+        # This is kept to preserve the logic for deprecated usage of owner.installation_id
+        # It can be removed once the move to codecov_auth.GithubAppInstallation is complete
+        return self._handle_installation_events(
+            request,
+            *args,
+            **kwargs,
+            event=GitHubWebhookEvents.INSTALLATION_REPOSITORIES,
+        )
 
     def organization(self, request, *args, **kwargs):
         action = request.data.get("action")
