@@ -281,12 +281,14 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         }
 
     @override_settings(
+        GITHUB_CLIENT_ID="Github",
         GITHUB_ENTERPRISE_CLIENT_ID="Github Enterprise",
         GITLAB_CLIENT_ID="Gitlab",
         GITLAB_ENTERPRISE_CLIENT_ID="Gitlab Enterprise",
         BITBUCKET_CLIENT_ID="Bitbucket",
         BITBUCKET_SERVER_CLIENT_ID="Bitbucket Server",
         OKTA_OAUTH_CLIENT_ID="Okta",
+        DISABLE_GIT_BASED_LOGIN=True,
     )
     def test_sync_providers(self):
         data = self.gql_request("query { config { syncProviders } }")
