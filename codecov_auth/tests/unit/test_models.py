@@ -13,9 +13,9 @@ from codecov_auth.models import (
     SERVICE_CODECOV_ENTERPRISE,
     SERVICE_GITHUB,
     SERVICE_GITHUB_ENTERPRISE,
+    GithubAppInstallation,
     OrganizationLevelToken,
     Service,
-    TokenTypeChoices,
 )
 from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -463,3 +463,55 @@ class TestOrganizationLevelTokenModel(TransactionTestCase):
         owner.plan = "users-basic"
         owner.save()
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
+
+
+class TestGithubAppInstallationModel(TransactionTestCase):
+    def test_covers_all_repos(self):
+        owner = OwnerFactory()
+        repo1 = RepositoryFactory(author=owner)
+        repo2 = RepositoryFactory(author=owner)
+        repo3 = RepositoryFactory(author=owner)
+        other_repo_different_owner = RepositoryFactory()
+        installation_obj = GithubAppInstallation(
+            owner=owner,
+            repository_service_ids=None,
+            installation_id=100,
+        )
+        installation_obj.save()
+        assert installation_obj.name == "codecov_app_installation"
+        assert installation_obj.covers_all_repos() == True
+        assert installation_obj.is_repo_covered_by_integration(repo1) == True
+        assert (
+            installation_obj.is_repo_covered_by_integration(other_repo_different_owner)
+            == False
+        )
+        assert list(owner.github_app_installations.all()) == [installation_obj]
+        assert installation_obj.repository_queryset().exists()
+        assert set(installation_obj.repository_queryset().all()) == set(
+            [repo1, repo2, repo3]
+        )
+
+    def test_covers_some_repos(self):
+        owner = OwnerFactory()
+        repo = RepositoryFactory(author=owner)
+        same_owner_other_repo = RepositoryFactory(author=owner)
+        other_repo_different_owner = RepositoryFactory()
+        installation_obj = GithubAppInstallation(
+            owner=owner,
+            repository_service_ids=[repo.service_id],
+            installation_id=100,
+        )
+        installation_obj.save()
+        assert installation_obj.covers_all_repos() == False
+        assert installation_obj.is_repo_covered_by_integration(repo) == True
+        assert (
+            installation_obj.is_repo_covered_by_integration(other_repo_different_owner)
+            == False
+        )
+        assert (
+            installation_obj.is_repo_covered_by_integration(same_owner_other_repo)
+            == False
+        )
+        assert list(owner.github_app_installations.all()) == [installation_obj]
+        assert installation_obj.repository_queryset().exists()
+        assert list(installation_obj.repository_queryset().all()) == [repo]
