@@ -71,6 +71,9 @@ default_fields = """
     yaml
     isATSConfigured
     primaryLanguage
+    languages
+    bundleAnalysisEnabled
+    coverageEnabled
     bot { username }
 """
 
@@ -105,6 +108,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             name="a",
             yaml=self.yaml,
             language="rust",
+            languages=["python", "rust"],
         )
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
@@ -132,6 +136,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "yaml": "test: test\n",
             "isATSConfigured": False,
             "primaryLanguage": "rust",
+            "languages": ["python", "rust"],
+            "bundleAnalysisEnabled": False,
+            "coverageEnabled": False,
             "bot": None,
         }
 
@@ -144,6 +151,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             name="b",
             yaml=self.yaml,
             language="erlang",
+            languages=[],
         )
 
         hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
@@ -185,6 +193,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "yaml": "test: test\n",
             "isATSConfigured": False,
             "primaryLanguage": "erlang",
+            "languages": [],
+            "bundleAnalysisEnabled": False,
+            "coverageEnabled": False,
             "bot": None,
         }
 
@@ -457,3 +468,36 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_repository(repo.name)
         assert res["primaryLanguage"] == "python"
+
+    def test_repository_get_bundle_analysis_enabled(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, bundle_analysis_enabled=True
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["bundleAnalysisEnabled"] == True
+
+    def test_repository_get_coverage_enabled(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, coverage_enabled=True
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["coverageEnabled"] == True
+
+    def test_repository_get_languages_null(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, languages=None
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["languages"] == None
+
+    def test_repository_get_languages_empty(self):
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        res = self.fetch_repository(repo.name)
+        assert res["languages"] == []
+
+    def test_repository_get_languages_with_values(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, languages=["C", "C++"]
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["languages"] == ["C", "C++"]

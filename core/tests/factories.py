@@ -21,6 +21,7 @@ class RepositoryFactory(DjangoModelFactory):
     language = factory.Iterator(
         [language.value for language in models.Repository.Languages]
     )
+    languages = []
     fork = None
     branch = "master"
     upload_token = factory.Faker("uuid4")
