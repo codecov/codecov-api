@@ -443,24 +443,29 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
     edited = []
     if commit.state != "pending":
         commit.state = "pending"
-        edited += "pending"
+        edited.append("state")
     if parent_commit_id and commit.parent_commit_id is None:
         commit.parent_commit_id = parent_commit_id
-        edited += "parent_commit_id"
+        edited.append("parent_commit_id")
     if branch and commit.branch != branch:
         # A branch head may have been moved; this allows commits to be "moved"
         commit.branch = branch
-        edited += "branch"
+        edited.append("branch")
     if edited:
-        commit.save(update_fields=["parent_commit_id", "state", "branch"])
+        commit.save(update_fields=edited)
 
     if "branch" in edited:
-        new_branch_head = Commit.objects.latest("timestamp")
-        branch = Branch.objects.filter(name=branch, repository_id=commit.repoid).first()
-        if branch.head != new_branch_head.commitid:
-            branch.head = new_branch_head.commitid
-            branch.save(update_fields=["head"])
-
+        new_branch = Branch.objects.filter(
+            name=branch, repository_id=repository.repoid
+        ).first()
+        if new_branch:
+            new_branch_head = Commit.objects.filter(
+                commitid=new_branch.head,
+                repository_id=repository.repoid,
+            ).first()
+            if new_branch_head is None or new_branch_head.timestamp < commit.timestamp:
+                new_branch.head = commit.commitid
+                new_branch.save(update_fields=["head"])
     return commit
 
 
