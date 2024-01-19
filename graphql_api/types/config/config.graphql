@@ -8,5 +8,5 @@ type Config {
   gitlabEnterpriseURL: String
   bitbucketServerURL: String
   selfHostedLicense: SelfHostedLicense
-  syncProviders: [String!]!
+  syncProviders: [LoginProvider!]!
 }
