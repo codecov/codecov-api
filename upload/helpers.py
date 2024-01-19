@@ -454,6 +454,8 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
     if edited:
         commit.save(update_fields=edited)
 
+    # Update Branch.head object for the new branch
+    # if the current commit is newer than the existing Branch.head commit
     if "branch" in edited:
         new_branch = Branch.objects.filter(
             name=branch, repository_id=repository.repoid
