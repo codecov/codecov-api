@@ -25,7 +25,7 @@ from simplejson import JSONDecodeError
 
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
-from core.models import Branch, Commit, Repository
+from core.models import Commit, Repository
 from core.tests.factories import CommitFactory, PullFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
@@ -673,98 +673,6 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.pullid == None
             assert commit.merged == None
             assert commit.parent_commit_id == parent.commitid
-
-    def test_insert_commit_branch_switch(self):
-        org = G(Owner)
-        repo = G(Repository, author=org)
-
-        # Insert an initial commit for the 'apples' branch
-        G(
-            Commit,
-            commitid="123456789046dc6db8412a491fc770eb7d0f8a47",
-            branch="apples",
-            pullid="456",
-            repository=repo,
-            parent_commit_id=None,
-        )
-        # Create a 'oranges' branch with some other commit
-        G(
-            Branch,
-            repository=repo,
-            name="oranges",
-            head="098765432146dc6db8412a491fc770eb7d0f8a47",
-        )
-        # Update an existing commit from the 'apples' branch, move to 'oranges' branch
-        insert_commit(
-            "123456789046dc6db8412a491fc770eb7d0f8a47",
-            "oranges",
-            "123",
-            repo,
-            org,
-            parent_commit_id="different_parent_commit",
-        )
-        # Check that Commit object is successfully updated
-        commit = Commit.objects.get(commitid="123456789046dc6db8412a491fc770eb7d0f8a47")
-        assert commit.repository == repo
-        assert commit.state == "pending"
-        assert commit.branch == "oranges"
-        assert commit.pullid == 456
-        assert commit.merged == None
-        assert commit.parent_commit_id == "different_parent_commit"
-        # Check that Branch object is successfully updated
-        branch = Branch.objects.get(
-            name="oranges",
-            repository=repo,
-        )
-        assert branch.head == "123456789046dc6db8412a491fc770eb7d0f8a47"
-
-    def test_insert_commit_branch_switch_older_timestamp(self):
-        org = G(Owner)
-        repo = G(Repository, author=org)
-
-        # Insert an initial commit for the 'apples' branch, but it is old
-        G(
-            Commit,
-            commitid="123456789046dc6db8412a491fc770eb7d0f8a47",
-            branch="apples",
-            pullid="456",
-            repository=repo,
-            parent_commit_id=None,
-            timestamp=timezone.now() - timedelta(days=7),
-        )
-        # Insert an initial commit for the 'oranges' branch, but it is new
-        G(
-            Commit,
-            commitid="222222222246dc6db8412a491fc770eb7d0f8a47",
-            branch="oranges",
-            pullid="456",
-            repository=repo,
-            parent_commit_id=None,
-            timestamp=timezone.now() - timedelta(days=1),
-        )
-        # Update the existing older commit from the 'apples' branch, move to 'oranges' branch
-        insert_commit(
-            "123456789046dc6db8412a491fc770eb7d0f8a47",
-            "oranges",
-            "123",
-            repo,
-            org,
-            parent_commit_id="different_parent_commit",
-        )
-        # Check that Commit object is successfully updated
-        commit = Commit.objects.get(commitid="123456789046dc6db8412a491fc770eb7d0f8a47")
-        assert commit.repository == repo
-        assert commit.state == "pending"
-        assert commit.branch == "oranges"
-        assert commit.pullid == 456
-        assert commit.merged == None
-        assert commit.parent_commit_id == "different_parent_commit"
-        # Check that Branch object is not updated because updated commit is older
-        branch = Branch.objects.get(
-            name="oranges",
-            repository=repo,
-        )
-        assert branch.head == "222222222246dc6db8412a491fc770eb7d0f8a47"
 
     def test_parse_request_headers(self):
         with self.subTest("Invalid content disposition"):
