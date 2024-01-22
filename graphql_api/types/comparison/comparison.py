@@ -176,9 +176,22 @@ def resolve_patch_totals(comparison: ComparisonReport, info) -> dict:
 @comparison_bindable.field("flagComparisons")
 @sync_to_async
 def resolve_flag_comparisons(
-    comparison: ComparisonReport, info
+    comparison: ComparisonReport, info, filters=None
 ) -> List[FlagComparison]:
-    return list(get_flag_comparisons(comparison.commit_comparison))
+    # Retrieve all flag comparisons
+    all_flags = get_flag_comparisons(comparison.commit_comparison)
+
+    # If filters are provided, filter the flags
+    if filters and filters.get("term"):
+        filtered_flags = [
+            flag for flag in all_flags 
+            if filters["term"] in flag.repositoryflag.flag_name 
+        ]
+        return filtered_flags
+
+    # If no filters provided, return all flags
+    return list(all_flags)
+
 
 
 @comparison_bindable.field("componentComparisons")
