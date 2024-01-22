@@ -139,7 +139,7 @@ class RepositoryFlag(
     repository = models.ForeignKey(
         "core.Repository", related_name="flags", on_delete=models.CASCADE
     )
-    flag_name = models.CharField(max_length=255)
+    flag_name = models.CharField(max_length=1024)
     deleted = models.BooleanField(null=True)
 
 

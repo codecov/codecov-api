@@ -129,12 +129,26 @@ class UploadViews(ListCreateAPIView, GetterMixin):
 
     def activate_repo(self, repository):
         # Only update the fields if needed
-        if repository.activated and repository.active and not repository.deleted:
+        if (
+            repository.activated
+            and repository.active
+            and not repository.deleted
+            and repository.coverage_enabled
+        ):
             return
         repository.activated = True
         repository.active = True
         repository.deleted = False
-        repository.save(update_fields=["activated", "active", "deleted", "updatestamp"])
+        repository.coverage_enabled = True
+        repository.save(
+            update_fields=[
+                "activated",
+                "active",
+                "deleted",
+                "coverage_enabled",
+                "updatestamp",
+            ]
+        )
 
     def send_analytics_data(self, commit: Commit, upload: ReportSession, version):
         token = self.get_token(commit)
