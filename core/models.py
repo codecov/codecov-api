@@ -116,7 +116,10 @@ class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
     upload_token = models.UUIDField(unique=True, default=uuid.uuid4)
     yaml = models.JSONField(null=True)
     image_token = models.TextField(null=True, default=_gen_image_token)
+
+    # DEPRECATED - replaced by GithubAppInstallation model
     using_integration = models.BooleanField(null=True)
+
     hookid = models.TextField(null=True)
     webhook_secret = models.TextField(null=True)
     bot = models.ForeignKey(
@@ -130,6 +133,7 @@ class Repository(ExportModelOperationsMixin("core.repository"), models.Model):
     activated = models.BooleanField(null=True, default=False)
     deleted = models.BooleanField(default=False)
     bundle_analysis_enabled = models.BooleanField(default=False, null=True)
+    coverage_enabled = models.BooleanField(default=False, null=True)
 
     # tracks field changes being saved
     tracker = FieldTracker()
