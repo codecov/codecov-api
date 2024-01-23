@@ -684,7 +684,10 @@ class TestBadgeHandler(APITestCase):
             "s": 1,
         }
         commit_2 = CommitFactory(
-            repository=repo, author=gh_owner, totals=commit_2_totals
+            commitid="81c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8s",
+            repository=repo,
+            author=gh_owner,
+            totals=commit_2_totals,
         )
         branch_2 = BranchFactory(
             repository=repo, name="branch1", head=commit_2.commitid

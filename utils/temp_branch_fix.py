@@ -12,7 +12,7 @@ def get_or_update_branch_head(
         or branch.head == "9587100eacc554aa9c03422e28b269c551dc1a72"
     ):
         commit = (
-            commits.filter(branch=branch.name, repoid=repoid)
+            commits.filter(branch=branch.name, repository_id=repoid)
             .defer("_report")
             .order_by("-updatestamp")
             .first()
