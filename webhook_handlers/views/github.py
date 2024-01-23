@@ -405,27 +405,21 @@ class GithubWebhookHandler(APIView):
             service=self.service_name, service_id=service_id, username=username
         )
         installation_id = request.data["installation"]["id"]
-        all_repos_affected = request.data.get("repository_selection") == "all"
+        ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
+            installation_id=installation_id, owner=owner
+        )
 
-        repositories_added_service_ids = set(
-            map(lambda obj: obj["id"], request.data.get("repositories_added", []))
-        )
-        repositories_removed_service_ids = set(
-            map(lambda obj: obj["id"], request.data.get("repositories_removed", []))
-        )
-        ghapp_installation: Optional[
-            GithubAppInstallation
-        ] = owner.github_app_installations.filter(
-            installation_id=installation_id
-        ).first()
-        if ghapp_installation is None:
-            ghapp_installation = GithubAppInstallation(
-                owner=owner, installation_id=installation_id
-            )
+        all_repos_affected = request.data.get("repository_selection") == "all"
         if all_repos_affected:
             ghapp_installation.repository_service_ids = None
         else:
             repo_list_to_save = set(ghapp_installation.repository_service_ids or [])
+            repositories_added_service_ids = set(
+                map(lambda obj: obj["id"], request.data.get("repositories_added", []))
+            )
+            repositories_removed_service_ids = set(
+                map(lambda obj: obj["id"], request.data.get("repositories_removed", []))
+            )
             repo_list_to_save = repo_list_to_save.union(
                 repositories_added_service_ids
             ).difference(repositories_removed_service_ids)
@@ -443,13 +437,6 @@ class GithubWebhookHandler(APIView):
             service=self.service_name, service_id=service_id, username=username
         )
 
-        repositories_service_ids = list(
-            map(lambda obj: obj["id"], request.data.get("repositories", []))
-        )
-
-        affects_all_repositories = (
-            request.data["installation"]["repository_selection"] == "all"
-        )
         installation_id = request.data["installation"]["id"]
 
         # TODO: Consider adding "suspend" action here?
@@ -474,31 +461,23 @@ class GithubWebhookHandler(APIView):
                 extra=dict(ownerid=owner.ownerid, github_webhook_event=self.event),
             )
         else:
-
+            # GithubWebhookEvents.INSTALLTION_REPOSITORIES also execute this code
+            # because of deprecated flow. But the GithubAppInstallation shouldn't be changed
             if event == GitHubWebhookEvents.INSTALLATION:
-                ghapp_installation: Optional[
-                    GithubAppInstallation
-                ] = owner.github_app_installations.filter(
-                    installation_id=installation_id
-                ).first()
-                if ghapp_installation is not None:
-                    # Update list of repos
-                    ghapp_installation.repository_service_ids = (
-                        None if affects_all_repositories else repositories_service_ids
-                    )
-                    ghapp_installation.save()
+                ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
+                    installation_id=installation_id, owner=owner
+                )
+                affects_all_repositories = (
+                    request.data["installation"]["repository_selection"] == "all"
+                )
+                if affects_all_repositories:
+                    ghapp_installation.repository_service_ids = None
                 else:
-                    # New installation
-                    ghapp_installation = GithubAppInstallation(
-                        owner=owner,
-                        repository_service_ids=(
-                            None
-                            if affects_all_repositories
-                            else repositories_service_ids
-                        ),
-                        installation_id=installation_id,
+                    repositories_service_ids = list(
+                        map(lambda obj: obj["id"], request.data.get("repositories", []))
                     )
-                    ghapp_installation.save()
+                    ghapp_installation.repository_service_ids = repositories_service_ids
+                ghapp_installation.save()
 
             # This flow is deprecated and should be removed once the
             # work on github app integration model is complete and backfilled
