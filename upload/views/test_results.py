@@ -16,7 +16,7 @@ from codecov_auth.authentication.types import RepositoryAsUser
 from codecov_auth.models import Owner, Service
 from core.models import Commit
 from reports.models import CommitReport
-from services.archive import ArchiveService
+from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import FlagListField
@@ -77,18 +77,15 @@ class TestResultsView(APIView):
 
         upload_external_id = str(uuid.uuid4())
 
-        storage_path = f"v1/uploads/{upload_external_id}.json"
-
         archive_service = ArchiveService(repo)
-        path = "/".join(
-            (
-                "v4/raw",
-                timezone.now().strftime("%Y-%m-%d"),
-                archive_service.get_archive_hash(repo),
-                data["commit"],
-                f"{upload_external_id}.txt",
-            )
+
+        storage_path = MinioEndpoints.test_results.get_path(
+            date=timezone.now().strftime("%Y-%m-%d"),
+            repo_hash=archive_service.get_archive_hash(repo),
+            commit_sha=data["commit"],
+            upload_id=upload_external_id,
         )
+
         url = archive_service.storage.create_presigned_put(
             "test_results", storage_path, 30
         )
