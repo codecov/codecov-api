@@ -106,7 +106,7 @@ def test_test_results_org_token(db, client, mocker, mock_redis):
     assert res.status_code == 201
 
 
-def test_upload_bundle_analysis_missing_args(db, client, mocker, mock_redis):
+def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
