@@ -267,6 +267,58 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             }
         }
 
+    def test_pull_flag_comparisons_with_filter(self):
+        FlagComparisonFactory(
+            commit_comparison=self.commit_comparison,
+            repositoryflag=RepositoryFlagFactory(
+                repository=self.repository, flag_name="flag_one"
+            ),
+            head_totals={"coverage": "85.71429"},
+            base_totals={"coverage": "92.2973"},
+            patch_totals={"coverage": "29.28364"},
+        )
+        FlagComparisonFactory(
+            commit_comparison=self.commit_comparison,
+            repositoryflag=RepositoryFlagFactory(
+                repository=self.repository, flag_name="flag_two"
+            ),
+            head_totals={"coverage": "75.273820"},
+            base_totals={"coverage": "16.293"},
+            patch_totals={"coverage": "68.283496"},
+        )
+        query = """
+            compareWithBase {
+                ... on Comparison {
+                    flagComparisons(filters: { term: "flag_two"}) {
+                        name
+                        patchTotals {
+                            percentCovered
+                        }
+                        headTotals {
+                            percentCovered
+                        }
+                        baseTotals {
+                            percentCovered
+                        }
+                    }
+                }
+            }
+        """
+
+        res = self._request(query)
+        assert res == {
+            "compareWithBase": {
+                "flagComparisons": [
+                    {
+                        "name": "flag_two",
+                        "patchTotals": {"percentCovered": 68.283496},
+                        "headTotals": {"percentCovered": 75.27382},
+                        "baseTotals": {"percentCovered": 16.293},
+                    },
+                ],
+            }
+        }
+
     @patch(
         "services.comparison.Comparison.has_different_number_of_head_and_base_sessions",
         new_callable=PropertyMock,
