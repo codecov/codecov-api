@@ -6,10 +6,38 @@ from django.conf import settings
 
 import services.self_hosted as self_hosted
 from codecov.db import sync_to_async
-from codecov_auth.models import Service
 from graphql_api.types.enums.enums import LoginProvider
 
 config_bindable = ObjectType("Config")
+
+
+def _sync_providers() -> List[str]:
+    login_providers = []
+
+    if settings.GITHUB_CLIENT_ID:
+        login_providers.append(LoginProvider("github"))
+
+    if settings.GITHUB_ENTERPRISE_CLIENT_ID:
+        login_providers.append(LoginProvider("github_enterprise"))
+
+    if settings.GITLAB_CLIENT_ID:
+        login_providers.append(LoginProvider("gitlab"))
+
+    if settings.GITLAB_ENTERPRISE_CLIENT_ID:
+        login_providers.append(LoginProvider("gitlab_enterprise"))
+
+    if settings.BITBUCKET_CLIENT_ID:
+        login_providers.append(LoginProvider("bitbucket"))
+
+    if settings.BITBUCKET_SERVER_CLIENT_ID:
+        login_providers.append(LoginProvider("bitbucket_server"))
+
+    return login_providers
+
+
+@config_bindable.field("syncProviders")
+def resolve_sync_providers(_, info) -> List[str]:
+    return _sync_providers()
 
 
 @config_bindable.field("loginProviders")
@@ -17,23 +45,7 @@ def resolve_login_providers(_, info):
     login_providers = []
 
     if not settings.DISABLE_GIT_BASED_LOGIN:
-        if settings.GITHUB_CLIENT_ID:
-            login_providers.append(LoginProvider("github"))
-
-        if settings.GITHUB_ENTERPRISE_CLIENT_ID:
-            login_providers.append(LoginProvider("github_enterprise"))
-
-        if settings.GITLAB_CLIENT_ID:
-            login_providers.append(LoginProvider("gitlab"))
-
-        if settings.GITLAB_ENTERPRISE_CLIENT_ID:
-            login_providers.append(LoginProvider("gitlab_enterprise"))
-
-        if settings.BITBUCKET_CLIENT_ID:
-            login_providers.append(LoginProvider("bitbucket"))
-
-        if settings.BITBUCKET_SERVER_CLIENT_ID:
-            login_providers.append(LoginProvider("bitbucket_server"))
+        login_providers += _sync_providers()
 
     if settings.OKTA_OAUTH_CLIENT_ID:
         login_providers.append(LoginProvider("okta"))
@@ -113,8 +125,3 @@ def resolve_bitbucket_server_url(_, info):
 
     if settings.BITBUCKET_SERVER_CLIENT_ID:
         return settings.BITBUCKET_SERVER_URL
-
-
-@config_bindable.field("syncProviders")
-def resolve_sync_providers(_, info) -> List[str]:
-    return Service.values
