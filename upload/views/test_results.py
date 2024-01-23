@@ -1,7 +1,7 @@
 import logging
 import uuid
-from datetime import timezone
 
+from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
@@ -83,12 +83,10 @@ class TestResultsView(APIView):
             date=timezone.now().strftime("%Y-%m-%d"),
             repo_hash=archive_service.get_archive_hash(repo),
             commit_sha=data["commit"],
-            upload_id=upload_external_id,
+            uploadid=upload_external_id,
         )
 
-        url = archive_service.storage.create_presigned_put(
-            "test_results", storage_path, 30
-        )
+        url = archive_service.create_presigned_put(storage_path)
 
         task_arguments = {
             # these are used in the upload task when saving an upload record

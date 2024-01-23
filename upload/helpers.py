@@ -670,7 +670,10 @@ def dispatch_upload_task(
     countdown = 0
     if task_arguments.get("version") == "v4":
         countdown = 4
-    if report_type == CommitReport.ReportType.BUNDLE_ANALYSIS or CommitReport.ReportType.TEST_RESULTS:
+    if (
+        report_type == CommitReport.ReportType.BUNDLE_ANALYSIS
+        or CommitReport.ReportType.TEST_RESULTS
+    ):
         countdown = 4
 
     redis.rpush(repo_queue_key, dumps(task_arguments))

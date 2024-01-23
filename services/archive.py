@@ -33,7 +33,7 @@ class MinioEndpoints(Enum):
         "{version}/repos/{repo_hash}/static_analysis/files/{location}"
     )
 
-    test_results = "v1/raw/{date}/{repo_hash}/{commit_sha}/{uploadid}.txt"
+    test_results = "test_results/v1/raw/{date}/{repo_hash}/{commit_sha}/{uploadid}.txt"
 
     def get_path(self, **kwaargs):
         return self.value.format(**kwaargs)

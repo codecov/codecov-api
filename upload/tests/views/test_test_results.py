@@ -42,7 +42,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
     # returns presigned storage URL
     assert res.json() == {"raw_upload_location": "test-presigned-put"}
 
-    create_presigned_put.assert_called_once_with("test_results", ANY, 10)
+    create_presigned_put.assert_called_once_with("archive", ANY, 10)
     call = create_presigned_put.mock_calls[0]
     _, storage_path, _ = call.args
     match = re.match(r"v1/uploads/([\d\w\-]+)\.json", storage_path)
