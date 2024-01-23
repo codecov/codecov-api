@@ -1,6 +1,7 @@
-from django.contrib.auth.models import AnonymousUser
+import pytest
 from django.test import TransactionTestCase
 
+from codecov.commands.exceptions import Unauthenticated
 from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
 
 from ..get_org_upload_token import GetOrgUploadToken
@@ -24,3 +25,11 @@ class GetOrgUploadTokenInteractorTest(TransactionTestCase):
         )
         assert token
         assert len(str(token)) == 36  # default uuid
+
+    async def test_owner_with_org_upload_token_and_anonymous_user(self):
+        with pytest.raises(Unauthenticated):
+            token = await GetOrgUploadToken(None, "github").execute(
+                self.owner_with_upload_token
+            )
+
+            assert token == None
