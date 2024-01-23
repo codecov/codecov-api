@@ -5,7 +5,7 @@ from core.models import Commit
 from graphql_api.types.comparison.comparison import MissingBaseReport, MissingHeadReport
 from reports.models import CommitReport
 from services.archive import ArchiveService
-from services.bundle_analysis import BundleAnalysisComparison
+from services.bundle_analysis import BundleAnalysisComparison, BundleAnalysisReport
 
 
 def load_bundle_analysis_comparison(
@@ -33,3 +33,17 @@ def load_bundle_analysis_comparison(
         base_report_key=base_report.external_id,
         head_report_key=head_report.external_id,
     )
+
+
+def load_bundle_analysis_report(commit: Commit) -> BundleAnalysisReport:
+    report = CommitReport.objects.filter(
+        report_type=CommitReport.ReportType.BUNDLE_ANALYSIS, commit=commit
+    ).first()
+    if report is None:
+        return MissingHeadReport()
+
+    loader = BundleAnalysisReportLoader(
+        storage_service=get_appropriate_storage_service(),
+        repo_key=ArchiveService.get_archive_hash(commit.repository),
+    )
+    return BundleAnalysisReport(loader.load(report.external_id))

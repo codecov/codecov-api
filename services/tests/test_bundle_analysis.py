@@ -2,8 +2,8 @@ from unittest.mock import patch
 
 import pytest
 from django.test import TestCase
+from shared.bundle_analysis import BundleAnalysisReport as SharedBundleAnalysisReport
 from shared.bundle_analysis import (
-    BundleAnalysisReport,
     BundleAnalysisReportLoader,
     BundleChange,
     StoragePaths,
@@ -17,7 +17,9 @@ from reports.tests.factories import CommitReportFactory
 from services.archive import ArchiveService
 from services.bundle_analysis import (
     BundleAnalysisComparison,
+    BundleAnalysisReport,
     BundleComparison,
+    BundleReport,
     load_report,
 )
 
@@ -51,7 +53,7 @@ def test_load_report(get_storage_service):
 
     report = load_report(commit)
     assert report is not None
-    assert isinstance(report, BundleAnalysisReport)
+    assert isinstance(report, SharedBundleAnalysisReport)
 
 
 class TestBundleComparison(TestCase):
@@ -125,3 +127,48 @@ class TestBundleAnalysisComparison(TestCase):
         assert bac.size_total == 201720
         assert bac.load_time_delta == 0.1
         assert bac.load_time_total == 0.5
+
+
+class TestBundleReport(TestCase):
+    def test_bundle_comparison(self):
+        bundle_comparison = BundleReport(
+            "bundle1",
+            7654321,
+        )
+
+        assert bundle_comparison.bundle_name == "bundle1"
+        assert bundle_comparison.size_total == 7654321
+        assert bundle_comparison.load_time_total == 19.5
+
+
+class TestBundleAnalysisReport(TestCase):
+    def setUp(self):
+        self.repo = RepositoryFactory()
+
+        self.commit = CommitFactory(repository=self.repo)
+        self.commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+    @patch("services.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_report(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=self.commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        loader = BundleAnalysisReportLoader(
+            storage_service=storage,
+            repo_key=ArchiveService.get_archive_hash(self.commit.repository),
+        )
+
+        bar = BundleAnalysisReport(loader.load(self.commit_report.external_id))
+
+        assert len(bar.bundles) == 4
+        assert bar.size_total == 201720
+        assert bar.load_time_total == 0.5

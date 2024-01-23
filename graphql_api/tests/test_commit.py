@@ -891,6 +891,88 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             ],
         }
 
+    def test_bundle_analysis_missing_report(self):
+        query = (
+            query_commit
+            % """
+            bundleAnalysisReport {
+                __typename
+                ... on MissingHeadReport {
+                    message
+                }
+            }
+            """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "MissingHeadReport",
+            "message": "Missing head report",
+        }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_report(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = (
+            query_commit
+            % """
+            bundleAnalysisReport {
+                __typename
+                ... on BundleAnalysisReport {
+                    sizeTotal
+                    loadTimeTotal
+                    bundles {
+                        name
+                        sizeTotal
+                        loadTimeTotal
+                    }
+                }
+                ... on MissingHeadReport {
+                    message
+                }
+            }
+            """
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "sizeTotal": 201720,
+            "loadTimeTotal": 0.5,
+            "bundles": [
+                {"name": "b1", "sizeTotal": 20, "loadTimeTotal": 0.0},
+                {"name": "b2", "sizeTotal": 200, "loadTimeTotal": 0.0},
+                {"name": "b3", "sizeTotal": 1500, "loadTimeTotal": 0.0},
+                {"name": "b5", "sizeTotal": 200000, "loadTimeTotal": 0.5},
+            ],
+        }
+
     def test_compare_with_parent_missing_change_coverage(self):
         CommitComparisonFactory(
             base_commit=self.parent_commit,

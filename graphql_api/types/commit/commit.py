@@ -14,7 +14,10 @@ from core.models import Commit
 from graphql_api.actions.commits import commit_uploads
 from graphql_api.actions.comparison import validate_commit_comparison
 from graphql_api.actions.path_contents import sort_path_contents
-from graphql_api.dataloader.bundle_analysis import load_bundle_analysis_comparison
+from graphql_api.dataloader.bundle_analysis import (
+    load_bundle_analysis_comparison,
+    load_bundle_analysis_report,
+)
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.comparison import ComparisonLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -30,6 +33,7 @@ from graphql_api.types.comparison.comparison import (
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
+from services.bundle_analysis import BundleAnalysisReport
 from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
@@ -158,6 +162,14 @@ def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
         return MissingBaseCommit()
 
     return load_bundle_analysis_comparison(base_commit, commit)
+
+
+@commit_bindable.field("bundleAnalysisReport")
+@sync_to_async
+def resolve_bundle_analysis_report(
+    commit: Commit, info, **kwargs
+) -> BundleAnalysisReport:
+    return load_bundle_analysis_report(commit)
 
 
 @commit_bindable.field("flagNames")

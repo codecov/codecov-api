@@ -1,0 +1,15 @@
+union BundleAnalysisReportResult =
+    BundleAnalysisReport
+  | MissingHeadReport
+
+type BundleAnalysisReport {
+  sizeTotal: Int!
+  loadTimeTotal: Float!
+  bundles: [BundleReport]!
+}
+
+type BundleReport {
+  name: String!
+  sizeTotal: Int!
+  loadTimeTotal: Float!
+}
