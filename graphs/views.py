@@ -101,9 +101,8 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             )
             return None, coverage_range
         try:
-            _ = get_or_update_branch_head(repo.commits, branch, repo.repoid)
-            branch.refresh_from_db()
-            commit = repo.commits.filter(commitid=branch.head).first()
+            branch_head = get_or_update_branch_head(repo.commits, branch, repo.repoid)
+            commit = repo.commits.filter(commitid=branch_head).first()
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
             log.warning("Commit not found", extra=dict(commit=branch.head))
@@ -249,8 +248,7 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             if branch is None:
                 return None
 
-            _ = get_or_update_branch_head(repo.commits, branch, repo.repoid)
-            branch.refresh_from_db()
-            commit = repo.commits.filter(commitid=branch.head).first()
+            branch_head = get_or_update_branch_head(repo.commits, branch, repo.repoid)
+            commit = repo.commits.filter(commitid=branch_head).first()
 
         return commit
