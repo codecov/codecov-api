@@ -1,6 +1,7 @@
 from typing import Optional
 
 from django.conf import settings
+from django.db import connection
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property
@@ -19,6 +20,7 @@ from codecov_auth.authentication import (
 from codecov_auth.models import Owner, Service
 from core.models import Commit, Repository
 from utils.services import get_long_service_name
+from utils.temp_branch_fix import get_or_update_branch_head
 
 
 class OwnerPropertyMixin:
@@ -50,7 +52,17 @@ class RepoPropertyMixin(OwnerPropertyMixin):
                     f"The branch '{branch_name}' in not in our records. Please provide a valid branch name.",
                     404,
                 )
-            commit_sha = branch.head
+
+            commit_sha = get_or_update_branch_head(
+                self.repo.commits,
+                branch,
+                self.repo.repoid,
+            )
+            if commit_sha is None:
+                raise NotFound(
+                    f"The head of this branch '{branch_name}' is not in our records. Please specify a valid branch name.",
+                    404,
+                )
 
         commit = self.repo.commits.filter(commitid=commit_sha).first()
         if commit is None:

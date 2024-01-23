@@ -1,6 +1,7 @@
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connection
 from django.http import Http404
 from rest_framework import exceptions
 from rest_framework.exceptions import NotFound
@@ -13,6 +14,7 @@ import services.report as report_service
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
 from graphs.settings import settings
+from utils.temp_branch_fix import get_or_update_branch_head
 
 from .helpers.badge import format_coverage_precision, get_badge
 from .helpers.graphs import icicle, sunburst, tree
@@ -42,7 +44,6 @@ class IgnoreClientContentNegotiation(DefaultContentNegotiation):
 
 
 class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
-
     content_negotiation_class = IgnoreClientContentNegotiation
 
     permission_classes = [AllowAny]
@@ -100,7 +101,8 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             )
             return None, coverage_range
         try:
-            commit = repo.commits.get(commitid=branch.head)
+            _ = get_or_update_branch_head(repo.commits, branch, repo.repoid)
+            commit = repo.commits.filter(commitid=branch.head).first()
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
             log.warning("Commit not found", extra=dict(commit=branch.head))
@@ -246,6 +248,9 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             if branch is None:
                 return None
 
+            branch_head = get_or_update_branch_head(repo.commits, branch, repo.repoid)
+            if branch_head is None:
+                return None
             commit = repo.commits.filter(commitid=branch.head).first()
 
         return commit

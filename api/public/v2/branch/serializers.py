@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from api.public.v2.commit.serializers import CommitDetailSerializer
 from core.models import Branch, Commit
+from utils.temp_branch_fix import get_or_update_branch_head
 
 
 class BranchSerializer(serializers.ModelSerializer):
@@ -19,6 +20,8 @@ class BranchDetailSerializer(BranchSerializer):
     )
 
     def get_head_commit(self, branch: Branch) -> CommitDetailSerializer:
+        _ = get_or_update_branch_head(Commit.objects, branch, branch.repository_id)
+
         commit = (
             Commit.objects.filter(
                 repository_id=branch.repository_id, commitid=branch.head
