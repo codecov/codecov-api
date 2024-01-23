@@ -27,11 +27,6 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
             commit_sha = get_or_update_branch_head(
                 self.repo.commits, branch, self.repo.repoid
             )
-            if commit_sha is None:
-                raise NotFound(
-                    f"The head of this branch '{branch_name}' is not in our records. Please specify a valid branch name.",
-                    404,
-                )
 
         commit = self.repo.commits.filter(commitid=commit_sha).first()
         if commit is None:

@@ -12,8 +12,6 @@ branch_bindable = ObjectType("Branch")
 @branch_bindable.field("headSha")
 def resolve_head_sha(branch: Branch, info) -> str:
     head = get_or_update_branch_head(Commit.objects, branch, branch.repository_id)
-    if head is None:
-        return ""
     return head
 
 

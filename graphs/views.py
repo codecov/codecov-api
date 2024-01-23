@@ -249,9 +249,7 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             if branch is None:
                 return None
 
-            branch_head = get_or_update_branch_head(repo.commits, branch, repo.repoid)
-            if branch_head is None:
-                return None
+            _ = get_or_update_branch_head(repo.commits, branch, repo.repoid)
             branch.refresh_from_db()
             commit = repo.commits.filter(commitid=branch.head).first()
 

@@ -19,7 +19,7 @@ def get_or_update_branch_head(
         )
 
         if commit is None:
-            return None
+            return branch.head
 
         # using this raw sql because the current branches table does not allow for updating based on repoid
         # it only updates based on branch name which means if we were to use the django orm to update this
