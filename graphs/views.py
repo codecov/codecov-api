@@ -102,6 +102,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None, coverage_range
         try:
             _ = get_or_update_branch_head(repo.commits, branch, repo.repoid)
+            branch.refresh_from_db()
             commit = repo.commits.filter(commitid=branch.head).first()
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
@@ -251,6 +252,7 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             branch_head = get_or_update_branch_head(repo.commits, branch, repo.repoid)
             if branch_head is None:
                 return None
+            branch.refresh_from_db()
             commit = repo.commits.filter(commitid=branch.head).first()
 
         return commit

@@ -21,7 +21,7 @@ class BranchDetailSerializer(BranchSerializer):
 
     def get_head_commit(self, branch: Branch) -> CommitDetailSerializer:
         _ = get_or_update_branch_head(Commit.objects, branch, branch.repository_id)
-
+        branch.refresh_from_db()
         commit = (
             Commit.objects.filter(
                 repository_id=branch.repository_id, commitid=branch.head
