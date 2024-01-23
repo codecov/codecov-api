@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import timezone
 
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotAuthenticated
@@ -79,7 +80,18 @@ class TestResultsView(APIView):
         storage_path = f"v1/uploads/{upload_external_id}.json"
 
         archive_service = ArchiveService(repo)
-        url = archive_service.create_presigned_put(storage_path)
+        path = "/".join(
+            (
+                "v4/raw",
+                timezone.now().strftime("%Y-%m-%d"),
+                archive_service.get_archive_hash(repo),
+                data["commit"],
+                f"{upload_external_id}.txt",
+            )
+        )
+        url = archive_service.storage.create_presigned_put(
+            "test_results", storage_path, 30
+        )
 
         task_arguments = {
             # these are used in the upload task when saving an upload record

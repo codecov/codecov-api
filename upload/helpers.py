@@ -569,7 +569,6 @@ def validate_upload(upload_params, repository, redis):
         and not repository.activated
         and not bool(get_config("setup", "enterprise_license", default=False))
     ):
-
         owner = _determine_responsible_owner(repository)
 
         # If author is on per repo billing, check their repo credits
@@ -671,7 +670,7 @@ def dispatch_upload_task(
     countdown = 0
     if task_arguments.get("version") == "v4":
         countdown = 4
-    if report_type == CommitReport.ReportType.BUNDLE_ANALYSIS:
+    if report_type == CommitReport.ReportType.BUNDLE_ANALYSIS or CommitReport.ReportType.TEST_RESULTS:
         countdown = 4
 
     redis.rpush(repo_queue_key, dumps(task_arguments))
