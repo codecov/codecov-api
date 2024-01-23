@@ -8,6 +8,7 @@ from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from api.shared.report.serializers import TreeSerializer
 from services.path import ReportPaths
+from utils.temp_branch_fix import get_or_update_branch_head
 
 
 class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
@@ -23,7 +24,9 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
                     f"The branch '{branch_name}' in not in our records. Please provide a valid branch name.",
                     404,
                 )
-            commit_sha = branch.head
+            commit_sha = get_or_update_branch_head(
+                self.repo.commits, branch, self.repo.repoid
+            )
 
         commit = self.repo.commits.filter(commitid=commit_sha).first()
         if commit is None:
