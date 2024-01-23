@@ -33,6 +33,7 @@ from graphql_api.types.comparison.comparison import (
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
+from services.bundle_analysis import BundleAnalysisReport
 from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
@@ -165,7 +166,9 @@ def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
 
 @commit_bindable.field("bundleAnalysisReport")
 @sync_to_async
-def resolve_bundle_analysis_report(commit: Commit, info, **kwargs):
+def resolve_bundle_analysis_report(
+    commit: Commit, info, **kwargs
+) -> BundleAnalysisReport:
     return load_bundle_analysis_report(commit)
 
 
