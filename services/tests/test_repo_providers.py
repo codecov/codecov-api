@@ -7,11 +7,7 @@ from shared.torngit import Bitbucket, Github, Gitlab
 
 from codecov.db import sync_to_async
 from codecov.tests.base_test import InternalAPITest
-from codecov_auth.models import (
-    GITHUB_APP_INSTALLATION_DEFAULT_NAME,
-    GithubAppInstallation,
-    Owner,
-)
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from services.repo_providers import RepoProviderService
@@ -35,67 +31,6 @@ def mock_get_config_verify_ssl_false(*args):
 def mock_get_env_ca_bundle(*args):
     if args == ("REQUESTS_CA_BUNDLE",):
         return "REQUESTS_CA_BUNDLE"
-
-
-@pytest.mark.parametrize("using_integration", [True, False])
-def test__is_using_integration_deprecated_flow(using_integration, db):
-    repo = RepositoryFactory.create(using_integration=using_integration)
-    assert (
-        RepoProviderService()._is_using_integration(repo.author, repo)
-        == using_integration
-    )
-
-
-def test__is_using_integration_ghapp_covers_all_repos(db):
-    owner = OwnerFactory.create(service="github")
-    repo = RepositoryFactory.create(author=owner)
-    other_repo_same_owner = RepositoryFactory.create(author=owner)
-    repo_different_owner = RepositoryFactory.create()
-    assert repo.author != repo_different_owner.author
-    ghapp_installation = GithubAppInstallation(
-        name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
-        owner=owner,
-        repository_service_ids=None,
-        installation_id=12345,
-    )
-    ghapp_installation.save()
-    assert RepoProviderService()._is_using_integration(repo.author, repo) == True
-    assert (
-        RepoProviderService()._is_using_integration(repo.author, other_repo_same_owner)
-        == True
-    )
-    assert (
-        RepoProviderService()._is_using_integration(
-            repo_different_owner.author, repo_different_owner
-        )
-        == False
-    )
-
-
-def test__is_using_integration_ghapp_covers_some_repos(db):
-    owner = OwnerFactory.create(service="github")
-    repo = RepositoryFactory.create(author=owner)
-    other_repo_same_owner = RepositoryFactory.create(author=owner)
-    repo_different_owner = RepositoryFactory.create()
-    assert repo.author != repo_different_owner.author
-    ghapp_installation = GithubAppInstallation(
-        name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
-        owner=owner,
-        repository_service_ids=[repo.service_id],
-        installation_id=12345,
-    )
-    ghapp_installation.save()
-    assert RepoProviderService()._is_using_integration(repo.author, repo) == True
-    assert (
-        RepoProviderService()._is_using_integration(repo.author, other_repo_same_owner)
-        == False
-    )
-    assert (
-        RepoProviderService()._is_using_integration(
-            repo_different_owner.author, repo_different_owner
-        )
-        == False
-    )
 
 
 class TestRepoProviderService(InternalAPITest):

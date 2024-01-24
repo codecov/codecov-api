@@ -2,7 +2,6 @@ import logging
 import re
 from datetime import timedelta
 from json import dumps
-from typing import Optional
 
 import jwt
 from asgiref.sync import async_to_sync
@@ -18,13 +17,7 @@ from shared.github import InvalidInstallationError
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
-from codecov_auth.models import (
-    GITHUB_APP_INSTALLATION_DEFAULT_NAME,
-    SERVICE_GITHUB,
-    SERVICE_GITHUB_ENTERPRISE,
-    GithubAppInstallation,
-    Owner,
-)
+from codecov_auth.models import Owner
 from core.models import Commit, CommitNotification, Pull, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import CommitReport, ReportSession
@@ -322,37 +315,12 @@ def determine_upload_pr_to_use(upload_params):
         return upload_params.get("pr")
 
 
-def ghapp_installation_id_to_use(repository: Repository) -> Optional[str]:
-    if (
-        repository.service != SERVICE_GITHUB
-        and repository.service != SERVICE_GITHUB_ENTERPRISE
-    ):
-        return None
-
-    gh_app_default_installation: GithubAppInstallation = (
-        repository.author.github_app_installations.filter(
-            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME
-        ).first()
-    )
-    if (
-        gh_app_default_installation
-        and gh_app_default_installation.is_repo_covered_by_integration(repository)
-    ):
-        return gh_app_default_installation.installation_id
-    elif repository.using_integration and repository.author.integration_id:
-        # THIS FLOW IS DEPRECATED
-        # it will (hopefully) be removed after the ghapp installation work is complete
-        # and the data is backfilles appropriately
-        return repository.author.integration_id
-
-
 def try_to_get_best_possible_bot_token(repository):
-    ghapp_installation_id = ghapp_installation_id_to_use(repository)
-    if ghapp_installation_id is not None:
+    if repository.using_integration and repository.author.integration_id:
         try:
             github_token = get_github_integration_token(
                 repository.author.service,
-                installation_id=ghapp_installation_id,
+                integration_id=repository.author.integration_id,
             )
             return dict(key=github_token)
         except InvalidInstallationError:
@@ -360,7 +328,7 @@ def try_to_get_best_possible_bot_token(repository):
                 "Invalid installation error",
                 extra=dict(
                     service=repository.author.service,
-                    integration_id=ghapp_installation_id,
+                    integration_id=repository.author.integration_id,
                 ),
             )
             # now we'll fallback to trying an OAuth token
