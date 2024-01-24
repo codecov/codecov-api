@@ -9,6 +9,7 @@ from celery import chain, signature
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connection
 from django.db.models import Q
 from django.utils import timezone
 from jwt import PyJWKClient, PyJWTError
@@ -18,7 +19,7 @@ from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 
 from codecov_auth.models import Owner
-from core.models import Commit, CommitNotification, Pull, Repository
+from core.models import Branch, Commit, CommitNotification, Pull, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
@@ -440,19 +441,42 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
         },
     )
 
-    edited = False
+    edited = []
     if commit.state != "pending":
         commit.state = "pending"
-        edited = True
+        edited.append("state")
     if parent_commit_id and commit.parent_commit_id is None:
         commit.parent_commit_id = parent_commit_id
-        edited = True
+        edited.append("parent_commit_id")
     if branch and commit.branch != branch:
         # A branch head may have been moved; this allows commits to be "moved"
         commit.branch = branch
-        edited = True
+        edited.append("branch")
     if edited:
-        commit.save(update_fields=["parent_commit_id", "state", "branch"])
+        commit.save(update_fields=edited)
+
+    # Update Branch.head object for the new branch
+    # if the current commit is newer than the existing Branch.head commit
+    if "branch" in edited:
+        new_branch = Branch.objects.filter(
+            name=branch, repository_id=repository.repoid
+        ).first()
+        if new_branch:
+            new_branch_head = Commit.objects.filter(
+                commitid=new_branch.head,
+                repository_id=repository.repoid,
+            ).first()
+            if new_branch_head is None or new_branch_head.timestamp < commit.timestamp:
+                # using this raw sql because the current branches table does not allow for updating based on repoid
+                # it only updates based on branch name which means if we were to use the django orm to update this
+                # branch.head, all branches with the same name as the one we are trying to update would have their head
+                # updated to the value of this ones head
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE branches SET head = %s WHERE branches.repoid = %s AND branches.branch = %s",
+                        [commit.commitid, repository.repoid, branch],
+                    )
+
     return commit
 
 
