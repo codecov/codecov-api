@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -216,3 +217,49 @@ class UploadLevelTotals(AbstractTotals):
 
     class Meta:
         db_table = "reports_uploadleveltotals"
+
+
+class Test(models.Model):
+    # the reason we aren't using the regular primary key
+    # in this case is because we want to be able to compute/predict
+    # the primary key of a Test object ourselves in the processor
+    # so we can easily do concurrent writes to the database
+    id = models.TextField(primary_key=True)
+
+    external_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    repository = models.ForeignKey(
+        "core.Repository",
+        db_column="repoid",
+        related_name="tests",
+        on_delete=models.CASCADE,
+    )
+    name = models.TextField()
+    testsuite = models.TextField()
+    env = models.TextField()
+
+    class Meta:
+        db_table = "reports_test"
+
+
+class TestInstance(BaseCodecovModel):
+    test = models.ForeignKey(
+        "Test",
+        db_column="test_id",
+        related_name="testinstances",
+        on_delete=models.CASCADE,
+    )
+    duration_seconds = models.FloatField()
+    outcome = models.IntegerField()
+    upload = models.ForeignKey(
+        "ReportSession",
+        db_column="upload_id",
+        related_name="testinstances",
+        on_delete=models.CASCADE,
+    )
+    failure_message = models.TextField(null=True)
+
+    class Meta:
+        db_table = "reports_testinstance"
