@@ -224,6 +224,7 @@ class Test(models.Model):
     # in this case is because we want to be able to compute/predict
     # the primary key of a Test object ourselves in the processor
     # so we can easily do concurrent writes to the database
+    # this is a hash of the repoid, name, testsuite and env
     id = models.TextField(primary_key=True)
 
     external_id = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -238,10 +239,20 @@ class Test(models.Model):
     )
     name = models.TextField()
     testsuite = models.TextField()
-    env = models.TextField()
+    # this is a hash of the flags associated with this test
+    # users will use flags to distinguish the same test being run
+    # in a different environment
+    # for example: the same test being run on windows vs. mac
+    flags_hash = models.TextField()
 
     class Meta:
         db_table = "reports_test"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["repository", "name", "testsuite", "flags_hash"],
+                name="reports_test_repoid_name_testsuite_flags_hash",
+            ),
+        ]
 
 
 class TestInstance(BaseCodecovModel):
@@ -251,8 +262,15 @@ class TestInstance(BaseCodecovModel):
         related_name="testinstances",
         on_delete=models.CASCADE,
     )
+
+    class Outcome(models.TextChoices):
+        FAILURE = "failure"
+        SKIP = "skip"
+        ERROR = "error"
+        PASS = "pass"
+
     duration_seconds = models.FloatField()
-    outcome = models.IntegerField()
+    outcome = models.CharField(max_length=100, choices=Outcome.choices)
     upload = models.ForeignKey(
         "ReportSession",
         db_column="upload_id",
