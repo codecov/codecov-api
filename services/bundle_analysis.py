@@ -5,7 +5,8 @@ from django.utils.functional import cached_property
 from shared.bundle_analysis import (
     BundleAnalysisComparison as SharedBundleAnalysisComparison,
 )
-from shared.bundle_analysis import BundleAnalysisReport, BundleAnalysisReportLoader
+from shared.bundle_analysis import BundleAnalysisReport as SharedBundleAnalysisReport
+from shared.bundle_analysis import BundleAnalysisReportLoader
 from shared.bundle_analysis import BundleChange as SharedBundleChange
 from shared.storage import get_appropriate_storage_service
 
@@ -16,7 +17,7 @@ from services.archive import ArchiveService
 
 def load_report(
     commit: Commit, report_code: Optional[str] = None
-) -> Optional[BundleAnalysisReport]:
+) -> Optional[SharedBundleAnalysisReport]:
     storage = get_appropriate_storage_service()
 
     commit_report = commit.reports.filter(
@@ -38,6 +39,36 @@ def load_time_conversion(size):
     Converts total size in bytes to approximate time (in seconds) to download using a 3G internet (3 Mbps)
     """
     return round((8 * size) / (1024 * 1024 * 3), 1)
+
+
+@dataclass
+class BundleAnalysisReport(object):
+    def __init__(self, report: SharedBundleAnalysisReport):
+        self.report = report
+        self.report_bundles = []
+        self.total_size = 0
+        for bundle in self.report.bundle_reports():
+            total_size = bundle.total_size()
+            self.report_bundles.append(BundleReport(bundle.name, total_size))
+            self.total_size += total_size
+
+        self.cleanup()
+
+    def cleanup(self) -> None:
+        if self.report:
+            self.report.cleanup()
+
+    @cached_property
+    def bundles(self):
+        return self.report_bundles
+
+    @cached_property
+    def size_total(self):
+        return self.total_size
+
+    @cached_property
+    def load_time_total(self):
+        return load_time_conversion(self.total_size)
 
 
 @dataclass
@@ -133,3 +164,11 @@ class BundleComparison(object):
     @cached_property
     def load_time_total(self):
         return load_time_conversion(self.head_bundle_report_size)
+
+
+@dataclass
+class BundleReport(object):
+    def __init__(self, name, report_size: int):
+        self.bundle_name = name
+        self.size_total = report_size
+        self.load_time_total = load_time_conversion(report_size)
