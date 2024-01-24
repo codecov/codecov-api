@@ -45,9 +45,17 @@ def test_upload_test_results(db, client, mocker, mock_redis):
     create_presigned_put.assert_called_once_with("archive", ANY, 10)
     call = create_presigned_put.mock_calls[0]
     _, storage_path, _ = call.args
-    match = re.match(r"v1/uploads/([\d\w\-]+)\.json", storage_path)
+    match = re.match(
+        r"test_results/v1/raw/([\d\w\-]+)/([\d\w\-]+)/([\d\w\-]+)/([\d\w\-]+)\.txt",
+        storage_path,
+    )
     assert match
-    (reportid,) = match.groups()
+    (
+        date,
+        repo_hash,
+        commit_sha,
+        reportid,
+    ) = match.groups()
 
     # creates commit
     commit = Commit.objects.get(commitid=commit_sha)
@@ -62,7 +70,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
         "build_url": "test-build-url",
         "job": "test-job",
         "service": "test-service",
-        "url": f"v1/uploads/{reportid}.json",
+        "url": f"test_results/v1/raw/{date}/{repo_hash}/{commit_sha}/{reportid}.txt",
         "commit": commit_sha,
         "report_code": None,
         "flags": None,
@@ -76,7 +84,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit_sha,
         repoid=repository.repoid,
-        countdown=0,
+        countdown=4,
         report_code=None,
         report_type="test_results",
     )
