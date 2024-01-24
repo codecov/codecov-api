@@ -3,7 +3,7 @@ import uuid
 
 from django.utils import timezone
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,6 +21,7 @@ from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import FlagListField
 from upload.views.helpers import get_repository_from_string
+from utils.rollouts import TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG, owner_slug
 
 log = logging.getLogger(__name__)
 
@@ -63,6 +64,11 @@ class TestResultsView(APIView):
             repo = request.user._repository
         else:
             raise NotAuthenticated()
+
+        if not TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG.check_value(
+            owner_slug(repo.author), default=False
+        ):
+            raise PermissionDenied()
 
         commit, _ = Commit.objects.get_or_create(
             commitid=data["commit"],
