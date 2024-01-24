@@ -14,7 +14,7 @@ def get_or_update_branch_head(
         commit = (
             commits.filter(branch=branch.name, repository_id=repoid)
             .defer("_report")
-            .order_by("-updatestamp")
+            .order_by("-timestamp")
             .first()
         )
 
