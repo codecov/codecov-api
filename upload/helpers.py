@@ -462,11 +462,14 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
             name=branch, repository_id=repository.repoid
         ).first()
         if new_branch:
-            new_branch_head = Commit.objects.filter(
+            new_branch_curr_head = Commit.objects.filter(
                 commitid=new_branch.head,
                 repository_id=repository.repoid,
             ).first()
-            if new_branch_head is None or new_branch_head.timestamp < commit.timestamp:
+            if (
+                new_branch_curr_head is None
+                or new_branch_curr_head.timestamp < commit.timestamp
+            ):
                 # using this raw sql because the current branches table does not allow for updating based on repoid
                 # it only updates based on branch name which means if we were to use the django orm to update this
                 # branch.head, all branches with the same name as the one we are trying to update would have their head
