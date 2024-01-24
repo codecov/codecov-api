@@ -1,18 +1,13 @@
 import logging
 from os import getenv
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict
 
 from django.conf import settings
 from shared.encryption.token import encode_token
 from shared.torngit import get
 
 from codecov.db import sync_to_async
-from codecov_auth.models import (
-    GITHUB_APP_INSTALLATION_DEFAULT_NAME,
-    GithubAppInstallation,
-    Owner,
-    Service,
-)
+from codecov_auth.models import Owner, Service
 from core.models import Repository
 from utils.config import get_config
 from utils.encryption import encryptor
@@ -29,14 +24,12 @@ class TorngitInitializationFailed(Exception):
 
 
 def get_token_refresh_callback(
-    owner: Optional[Owner], service: Service
+    owner: Owner, service: Service
 ) -> Callable[[Dict], None]:
     """
     Produces a callback function that will encode and update the oauth token of an owner.
     This callback is passed to the TorngitAdapter for the service.
     """
-    if owner is None:
-        return None
     if service == Service.BITBUCKET or service == Service.BITBUCKET_SERVER:
         return None
 
@@ -53,9 +46,7 @@ def get_token_refresh_callback(
     return callback
 
 
-def get_generic_adapter_params(
-    owner: Optional[Owner], service, use_ssl=False, token=None
-):
+def get_generic_adapter_params(owner: Owner, service, use_ssl=False, token=None):
     if use_ssl:
         verify_ssl = (
             get_config(service, "ssl_pem")
@@ -96,21 +87,7 @@ def get_provider(service, adapter_params):
 
 
 class RepoProviderService(object):
-    def _is_using_integration(self, owner: Optional[Owner], repo: Repository) -> bool:
-        if owner is None:
-            return False
-        ghapp_installation: Optional[
-            GithubAppInstallation
-        ] = owner.github_app_installations.filter(
-            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME
-        ).first()
-        if ghapp_installation:
-            return ghapp_installation.is_repo_covered_by_integration(repo)
-        return repo.using_integration
-
-    def get_adapter(
-        self, owner: Optional[Owner], repo: Repository, use_ssl=False, token=None
-    ):
+    def get_adapter(self, owner: Owner, repo: Repository, use_ssl=False, token=None):
         """
         Return the corresponding implementation for calling the repository provider
 
@@ -122,11 +99,10 @@ class RepoProviderService(object):
         generic_adapter_params = get_generic_adapter_params(
             owner, repo.author.service, use_ssl, token
         )
-
         owner_and_repo_params = {
             "repo": {
                 "name": repo.name,
-                "using_integration": self._is_using_integration(owner, repo),
+                "using_integration": repo.using_integration or False,
                 "service_id": repo.service_id,
                 "private": repo.private,
                 "repoid": repo.repoid,
