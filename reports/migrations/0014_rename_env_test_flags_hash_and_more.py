@@ -4,6 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """
+    BEGIN;
+    --
+    -- Rename field env on test to flags_hash
+    --
+    ALTER TABLE "reports_test" RENAME COLUMN "env" TO "flags_hash";
+    --
+    -- Alter field outcome on testinstance
+    --
+    ALTER TABLE "reports_testinstance" ALTER COLUMN "outcome" TYPE varchar(100) USING "outcome"::varchar(100);
+    --
+    -- Create constraint reports_test_repoid_name_testsuite_flags_hash on model test
+    --
+    ALTER TABLE "reports_test" ADD CONSTRAINT "reports_test_repoid_name_testsuite_flags_hash" UNIQUE ("repoid", "name", "testsuite", "flags_hash");
+    COMMIT;
+    """
 
     dependencies = [
         ("reports", "0013_test_testinstance"),

@@ -224,7 +224,7 @@ class Test(models.Model):
     # in this case is because we want to be able to compute/predict
     # the primary key of a Test object ourselves in the processor
     # so we can easily do concurrent writes to the database
-    # this is a hash of the repoid, name, testsuite and env
+    # this is a hash of the repoid, name, testsuite and flags_hash
     id = models.TextField(primary_key=True)
 
     external_id = models.UUIDField(default=uuid.uuid4, editable=False)
