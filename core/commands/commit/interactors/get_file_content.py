@@ -9,16 +9,16 @@ log = logging.getLogger(__name__)
 class GetFileContentInteractor(BaseInteractor):
     async def get_file_from_service(self, commit, path):
         try:
-            repository_service = RepoProviderService().get_adapter(
+            repository_service = await RepoProviderService().async_get_adapter(
                 owner=self.current_owner, repo=commit.repository
             )
             content = await repository_service.get_source(path, commit.commitid)
             return content.get("content").decode("utf-8")
         # TODO raise this to the API so we can handle it.
-        except Exception as e:
-            log.info(
+        except Exception:
+            log.exception(
                 "GetFileContentInteractor - exception raised",
-                extra=dict(commitid=commit.commitid, path=path, error=e),
+                extra=dict(commitid=commit.commitid),
             )
             return None
 

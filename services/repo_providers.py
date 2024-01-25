@@ -95,21 +95,59 @@ def get_provider(service, adapter_params):
         raise TorngitInitializationFailed()
 
 
+def get_ghapp_default_installation(
+    owner: Optional[Owner],
+) -> Optional[GithubAppInstallation]:
+    if owner is None or owner.service not in [
+        Service.GITHUB.value,
+        Service.GITHUB_ENTERPRISE.value,
+    ]:
+        return None
+    return owner.github_app_installations.filter(
+        name=GITHUB_APP_INSTALLATION_DEFAULT_NAME
+    ).first()
+
+
+async def async_get_ghapp_default_installation(
+    owner: Optional[Owner],
+) -> Optional[GithubAppInstallation]:
+    if owner is None or owner.service not in [
+        Service.GITHUB.value,
+        Service.GITHUB_ENTERPRISE.value,
+    ]:
+        return None
+    return await owner.github_app_installations.filter(
+        name=GITHUB_APP_INSTALLATION_DEFAULT_NAME
+    ).afirst()
+
+
 class RepoProviderService(object):
-    def _is_using_integration(self, owner: Optional[Owner], repo: Repository) -> bool:
-        if owner is None:
-            return False
-        ghapp_installation: Optional[
-            GithubAppInstallation
-        ] = owner.github_app_installations.filter(
-            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME
-        ).first()
+    def _is_using_integration(
+        self, ghapp_installation: GithubAppInstallation, repo: Repository
+    ) -> bool:
         if ghapp_installation:
             return ghapp_installation.is_repo_covered_by_integration(repo)
         return repo.using_integration
 
+    async def async_get_adapter(
+        self, owner: Optional[Owner], repo: Repository, use_ssl=False, token=None
+    ):
+        ghapp = await async_get_ghapp_default_installation(owner)
+        return self._get_adapter(owner, repo, ghapp=ghapp)
+
     def get_adapter(
         self, owner: Optional[Owner], repo: Repository, use_ssl=False, token=None
+    ):
+        ghapp = get_ghapp_default_installation(owner)
+        return self._get_adapter(owner, repo, ghapp=ghapp)
+
+    def _get_adapter(
+        self,
+        owner: Optional[Owner],
+        repo: Repository,
+        use_ssl=False,
+        token=None,
+        ghapp=None,
     ):
         """
         Return the corresponding implementation for calling the repository provider
@@ -126,7 +164,7 @@ class RepoProviderService(object):
         owner_and_repo_params = {
             "repo": {
                 "name": repo.name,
-                "using_integration": self._is_using_integration(owner, repo),
+                "using_integration": self._is_using_integration(ghapp, repo),
                 "service_id": repo.service_id,
                 "private": repo.private,
                 "repoid": repo.repoid,
