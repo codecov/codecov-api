@@ -3,7 +3,7 @@ import logging
 import re
 
 from asgiref.sync import async_to_sync
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
@@ -58,6 +58,10 @@ GLOB_NON_TESTABLE_FILES = [
 ]
 
 
+class EmptyUploadSerializer(serializers.Serializer):
+    should_force = serializers.BooleanField(required=False)
+
+
 class EmptyUploadView(CreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
@@ -67,6 +71,15 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
     ]
 
     def post(self, request, *args, **kwargs):
+        serializer = EmptyUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = serializer.validated_data
+        if "should_force" in data:
+            should_force = data["should_force"]
+        else:
+            should_force = False
+
         repo = self.get_repo()
         commit = self.get_commit(repo)
         yaml = final_commit_yaml(commit, request.user).to_dict()
@@ -91,7 +104,18 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             if any(map(lambda regex: regex.match(file), compiled_files_to_ignore))
         ]
 
-        if set(changed_files) == set(ignored_changed_files):
+        if should_force is True:
+            TaskService().notify(
+                repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
+            )
+            return Response(
+                data={
+                    "result": "Force option was enabled. Triggering passing notifications.",
+                    "non_ignored_files": [],
+                },
+                status=status.HTTP_200_OK,
+            )
+        elif set(changed_files) == set(ignored_changed_files):
             TaskService().notify(
                 repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
             )

@@ -203,6 +203,52 @@ def test_empty_upload_with_testable_file(
 @patch("services.task.TaskService.notify")
 @patch("upload.views.empty_upload.final_commit_yaml")
 @patch("services.repo_providers.RepoProviderService.get_adapter")
+def test_empty_upload_with_testable_file_with_force(
+    mock_repo_provider_service, mock_final_yaml, notify_mock, db, mocker
+):
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
+    mock_final_yaml.return_value = UserYaml(
+        {"ignore": ["file.py", "another_file.py", "README.md"]}
+    )
+    mock_repo_provider_service.return_value = MockedProviderAdapter(
+        ["README.md", "codecov.yml", "template.txt", "base.py"]
+    )
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    repository.save()
+    commit.save()
+
+    owner = repository.author
+    client = APIClient()
+    client.force_authenticate(user=owner)
+    url = reverse(
+        "new_upload.empty_upload",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+        ],
+    )
+    response = client.post(url, data={"should_force": True})
+    response_json = response.json()
+    assert response.status_code == 200
+    assert (
+        response_json.get("result")
+        == "Force option was enabled. Triggering passing notifications."
+    )
+    assert response_json.get("non_ignored_files") == []
+    notify_mock.assert_called_once_with(
+        repoid=repository.repoid, commitid=commit.commitid, empty_upload="pass"
+    )
+
+
+@patch("services.task.TaskService.notify")
+@patch("upload.views.empty_upload.final_commit_yaml")
+@patch("services.repo_providers.RepoProviderService.get_adapter")
 def test_empty_upload_no_changed_files_in_pr(
     mock_repo_provider_service, mock_final_yaml, notify_mock, db, mocker
 ):
