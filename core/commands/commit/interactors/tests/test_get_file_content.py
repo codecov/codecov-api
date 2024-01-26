@@ -34,8 +34,8 @@ class GetFileContentInteractorTest(TransactionTestCase):
         service = owner.service if owner else "github"
         return GetFileContentInteractor(owner, service).execute(*args)
 
-    @patch("services.repo_providers.RepoProviderService.get_adapter")
-    @async_to_sync
+    @patch("services.repo_providers.RepoProviderService.async_get_adapter")
+    @pytest.mark.asyncio
     async def test_when_path_has_file(self, mock_provider_adapter):
         mock_provider_adapter.return_value = MockedProviderAdapter()
 
@@ -48,8 +48,8 @@ class GetFileContentInteractorTest(TransactionTestCase):
         """
         )
 
-    @patch("services.repo_providers.RepoProviderService.get_adapter")
-    @async_to_sync
+    @patch("services.repo_providers.RepoProviderService.async_get_adapter")
+    @pytest.mark.asyncio
     async def test_when_path_has_no_file(self, mock_provider_adapter):
         mock_provider_adapter.side_effect = TorngitObjectNotFoundError(
             response_data=404, message="not found"

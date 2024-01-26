@@ -40,10 +40,7 @@ def mock_get_env_ca_bundle(*args):
 @pytest.mark.parametrize("using_integration", [True, False])
 def test__is_using_integration_deprecated_flow(using_integration, db):
     repo = RepositoryFactory.create(using_integration=using_integration)
-    assert (
-        RepoProviderService()._is_using_integration(repo.author, repo)
-        == using_integration
-    )
+    assert RepoProviderService()._is_using_integration(None, repo) == using_integration
 
 
 def test__is_using_integration_ghapp_covers_all_repos(db):
@@ -59,14 +56,16 @@ def test__is_using_integration_ghapp_covers_all_repos(db):
         installation_id=12345,
     )
     ghapp_installation.save()
-    assert RepoProviderService()._is_using_integration(repo.author, repo) == True
+    assert RepoProviderService()._is_using_integration(ghapp_installation, repo) == True
     assert (
-        RepoProviderService()._is_using_integration(repo.author, other_repo_same_owner)
+        RepoProviderService()._is_using_integration(
+            ghapp_installation, other_repo_same_owner
+        )
         == True
     )
     assert (
         RepoProviderService()._is_using_integration(
-            repo_different_owner.author, repo_different_owner
+            ghapp_installation, repo_different_owner
         )
         == False
     )
@@ -85,14 +84,16 @@ def test__is_using_integration_ghapp_covers_some_repos(db):
         installation_id=12345,
     )
     ghapp_installation.save()
-    assert RepoProviderService()._is_using_integration(repo.author, repo) == True
+    assert RepoProviderService()._is_using_integration(ghapp_installation, repo) == True
     assert (
-        RepoProviderService()._is_using_integration(repo.author, other_repo_same_owner)
+        RepoProviderService()._is_using_integration(
+            ghapp_installation, other_repo_same_owner
+        )
         == False
     )
     assert (
         RepoProviderService()._is_using_integration(
-            repo_different_owner.author, repo_different_owner
+            ghapp_installation, repo_different_owner
         )
         == False
     )
