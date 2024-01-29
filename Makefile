@@ -31,13 +31,13 @@ check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
 test:
-	python -m pytest --cov=./
+	python -m pytest --cov=./ --junitxml=junit.xml
 
 test.unit:
-	python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml
+	python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml
 
 test.integration:
-	python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml
+	python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml
 
 lint:
 	make lint.install
@@ -207,11 +207,17 @@ test_env.check-for-migration-conflicts:
 
 test_env.upload:
 	docker-compose exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
+	docker-compose exec api make test_env.container_upload_test_results CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
 	codecovcli -u ${CODECOV_URL} upload-process --flag unit-latest-uploader --flag unit  \
 	--coverage-files-search-exclude-folder=graphql_api/types/** \
 	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+
+test_env.container_upload_test_results:
+	codecovcli -u ${CODECOV_URL} do-upload --report-type "test_results" \
+	--files-search-exclude-folder=graphql_api/types/** \
+	--files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
 
 test_env.static_analysis:
 	docker-compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
