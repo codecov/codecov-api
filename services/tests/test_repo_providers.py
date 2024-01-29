@@ -11,10 +11,11 @@ from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
     GithubAppInstallation,
     Owner,
+    Service,
 )
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from services.repo_providers import RepoProviderService
+from services.repo_providers import RepoProviderService, get_token_refresh_callback
 from utils.encryption import encryptor
 
 
@@ -97,6 +98,21 @@ def test__is_using_integration_ghapp_covers_some_repos(db):
         )
         == False
     )
+
+
+@pytest.mark.parametrize(
+    "should_have_owner,service",
+    [
+        (False, Service.GITHUB.value),
+        (True, Service.BITBUCKET.value),
+        (True, Service.BITBUCKET_SERVER.value),
+    ],
+)
+def test_token_refresh_callback_none_cases(should_have_owner, service, db):
+    owner = None
+    if should_have_owner:
+        owner = OwnerFactory(service=service)
+    assert get_token_refresh_callback(owner, service) is None
 
 
 class TestRepoProviderService(InternalAPITest):
@@ -319,3 +335,45 @@ class TestRepoProviderService(InternalAPITest):
         user = OwnerFactory()
         adapter = RepoProviderService().get_adapter(owner=user, repo=repo)
         assert adapter.data["owner"]["service_id"] == owner.service_id
+
+    @pytest.mark.asyncio
+    @patch(
+        "services.repo_providers.RepoProviderService._get_adapter",
+        return_value="torngit_adapter",
+    )
+    async def test_async_get_adapter(self, mock__get_adapter):
+        owner = await self.get_owner_gh()
+        ghapp_installation = GithubAppInstallation(
+            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
+            installation_id=1234,
+            owner=owner,
+            repository_service_ids=None,
+        )
+        await ghapp_installation.asave()
+        fetched = await RepoProviderService().async_get_adapter(owner, self.repo_gh)
+        assert fetched == "torngit_adapter"
+        mock__get_adapter.assert_called_with(
+            owner, self.repo_gh, ghapp=ghapp_installation
+        )
+
+    @pytest.mark.asyncio
+    @patch(
+        "services.repo_providers.RepoProviderService._get_adapter",
+        return_value="torngit_adapter",
+    )
+    async def test_async_get_adapter_owner_not_github(self, mock__get_adapter):
+        owner = await self.get_owner_gl()
+        fetched = await RepoProviderService().async_get_adapter(owner, self.repo_gl)
+        assert fetched == "torngit_adapter"
+        mock__get_adapter.assert_called_with(owner, self.repo_gl, ghapp=None)
+
+    @pytest.mark.asyncio
+    @patch(
+        "services.repo_providers.RepoProviderService._get_adapter",
+        return_value="torngit_adapter",
+    )
+    async def test_async_get_adapter_no_installation(self, mock__get_adapter):
+        owner = await self.get_owner_gh()
+        fetched = await RepoProviderService().async_get_adapter(owner, self.repo_gh)
+        assert fetched == "torngit_adapter"
+        mock__get_adapter.assert_called_with(owner, self.repo_gh, ghapp=None)
