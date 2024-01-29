@@ -75,13 +75,23 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         data = serializer.validated_data
-        if "should_force" in data:
-            should_force = data["should_force"]
-        else:
-            should_force = False
+        should_force = data.get("should_force", False)
 
         repo = self.get_repo()
         commit = self.get_commit(repo)
+
+        if should_force is True:
+            TaskService().notify(
+                repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
+            )
+            return Response(
+                data={
+                    "result": "Force option was enabled. Triggering passing notifications.",
+                    "non_ignored_files": [],
+                },
+                status=status.HTTP_200_OK,
+            )
+
         yaml = final_commit_yaml(commit, request.user).to_dict()
         token = try_to_get_best_possible_bot_token(repo)
         provider = RepoProviderService().get_adapter(repo.author, repo, token=token)
@@ -104,18 +114,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             if any(map(lambda regex: regex.match(file), compiled_files_to_ignore))
         ]
 
-        if should_force is True:
-            TaskService().notify(
-                repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
-            )
-            return Response(
-                data={
-                    "result": "Force option was enabled. Triggering passing notifications.",
-                    "non_ignored_files": [],
-                },
-                status=status.HTTP_200_OK,
-            )
-        elif set(changed_files) == set(ignored_changed_files):
+        if set(changed_files) == set(ignored_changed_files):
             TaskService().notify(
                 repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
             )
