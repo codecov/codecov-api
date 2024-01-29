@@ -699,7 +699,7 @@ class TestBadgeHandler(APITestCase):
             "s": 1,
         }
         commit_2 = CommitFactory(
-            commitid="81c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8s",
+            commitid="b1c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8",
             repository=repo,
             author=gh_owner,
             totals=commit_2_totals,
@@ -708,7 +708,7 @@ class TestBadgeHandler(APITestCase):
             repository=repo, name="branch1", head=commit_2.commitid
         )
         commit_3 = CommitFactory(
-            commitid="a1c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8s",
+            commitid="a1c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8",
             repository=repo,
             author=gh_owner,
             totals=commit_3_totals,
@@ -754,7 +754,7 @@ class TestBadgeHandler(APITestCase):
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
         branch_2.refresh_from_db()
-        assert branch_2.head == "a1c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8s"
+        assert branch_2.head == "a1c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8"
 
     def test_badge_with_100_coverage(self):
         gh_owner = OwnerFactory(service="github")

@@ -5,10 +5,16 @@ from upload.views.commits import CommitViews
 from upload.views.empty_upload import EmptyUploadView
 from upload.views.legacy import UploadDownloadHandler, UploadHandler
 from upload.views.reports import ReportResultsView, ReportViews
+from upload.views.test_results import TestResultsView
 from upload.views.upload_completion import UploadCompletionView
 from upload.views.uploads import UploadViews
 
 urlpatterns = [
+    path(
+        "test_results/v1",
+        TestResultsView.as_view(),
+        name="upload-test-results",
+    ),
     path(
         "bundle_analysis/v1",
         BundleAnalysisView.as_view(),
