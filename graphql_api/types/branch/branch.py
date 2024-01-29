@@ -3,7 +3,6 @@ from typing import Optional
 from ariadne import ObjectType
 
 from codecov.db import sync_to_async
-
 from core.models import Branch, Commit
 from graphql_api.dataloader.commit import CommitLoader
 from utils.temp_branch_fix import get_or_update_branch_head
