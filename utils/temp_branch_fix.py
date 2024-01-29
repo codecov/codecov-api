@@ -8,7 +8,7 @@ def get_or_update_branch_head(
 ):
     # there was a bug that set a large number of branch heads to these two shas, so we are rectifying that issue here
     if (
-        branch.head == "81c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8s"
+        branch.head == "81c2b4fa3ae9ef615c8f740c5cba95d9851f9ae8"
         or branch.head == "9587100eacc554aa9c03422e28b269c551dc1a72"
     ):
         commit = (
