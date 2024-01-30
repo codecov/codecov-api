@@ -99,6 +99,7 @@ class StripeDiscountSerializer(serializers.Serializer):
 class StripeCustomerSerializer(serializers.Serializer):
     id = serializers.CharField()
     discount = StripeDiscountSerializer()
+    email = serializers.CharField()
 
 
 class StripeCardSerializer(serializers.Serializer):
