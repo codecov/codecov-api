@@ -31,6 +31,7 @@ class MockSubscription(object):
             },
             "id": "cus_LK&*Hli8YLIO",
             "discount": None,
+            "email": None,
         }
         self.schedule = subscription_params["schedule_id"]
         self.collection_method = subscription_params["collection_method"]
@@ -240,7 +241,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None},
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
             },
@@ -340,10 +341,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {
-                    "id": "cus_LK&*Hli8YLIO",
-                    "discount": None,
-                },
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": 1633512445,
             },
@@ -414,10 +412,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {
-                    "id": "cus_LK&*Hli8YLIO",
-                    "discount": None,
-                },
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
             },
@@ -590,10 +585,7 @@ class AccountViewSetTests(APITestCase):
                     "last4": "abcd",
                 }
             },
-            "customer": {
-                "id": "cus_LK&*Hli8YLIO",
-                "discount": None,
-            },
+            "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
             "collection_method": "charge_automatically",
             "trial_end": None,
         }

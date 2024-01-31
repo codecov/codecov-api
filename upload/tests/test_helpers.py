@@ -4,20 +4,42 @@ from unittest.mock import patch
 import jwt
 import pytest
 from django.conf import settings
+from django.test import TransactionTestCase
 from rest_framework.exceptions import Throttled, ValidationError
 from shared.config import get_config
 from shared.github import InvalidInstallationError
 
+from codecov_auth.models import GithubAppInstallation, Service
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     check_commit_upload_constraints,
     determine_repo_for_upload,
+    ghapp_installation_id_to_use,
     try_to_get_best_possible_bot_token,
     validate_activated_repo,
     validate_upload,
 )
+
+
+class TestGithubAppInstallationUsage(TransactionTestCase):
+    def test_not_github_provider(self):
+        repo = RepositoryFactory(author__service=Service.GITLAB.value)
+        assert ghapp_installation_id_to_use(repo) is None
+
+    def test_github_app_installation_flow(self):
+        owner = OwnerFactory(service=Service.GITHUB.value, integration_id=None)
+        covered_repo = RepositoryFactory(author=owner)
+        not_covered_repo = RepositoryFactory(author=owner)
+        ghapp_installation = GithubAppInstallation(
+            owner=owner,
+            repository_service_ids=[covered_repo.service_id],
+            installation_id=200,
+        )
+        ghapp_installation.save()
+        assert ghapp_installation_id_to_use(covered_repo) == 200
+        assert ghapp_installation_id_to_use(not_covered_repo) is None
 
 
 def test_try_to_get_best_possible_bot_token_no_repobot_no_ownerbot(db):
@@ -72,7 +94,9 @@ def test_try_to_get_best_possible_bot_token_using_integration(
     assert try_to_get_best_possible_bot_token(repository) == {
         "key": "test-token",
     }
-    get_github_integration_token.assert_called_once_with("github", integration_id=12345)
+    get_github_integration_token.assert_called_once_with(
+        "github", installation_id=12345
+    )
 
 
 @patch("upload.helpers.get_github_integration_token")
@@ -92,7 +116,9 @@ def test_try_to_get_best_possible_bot_token_using_invalid_integration(
         "key": "bornana",
         "secret": None,
     }
-    get_github_integration_token.assert_called_once_with("github", integration_id=12345)
+    get_github_integration_token.assert_called_once_with(
+        "github", installation_id=12345
+    )
 
 
 def test_try_to_get_best_possible_nothing_and_is_private(db):
