@@ -80,7 +80,7 @@ class BundleAnalysisComparisonLoader(TransactionTestCase):
 
 class MockReportLoader:
     def load(self, external_id):
-        return None
+        return True
 
 
 class BundleAnalysisReportLoader(TransactionTestCase):

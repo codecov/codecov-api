@@ -46,4 +46,8 @@ def load_bundle_analysis_report(commit: Commit) -> BundleAnalysisReport:
         storage_service=get_appropriate_storage_service(),
         repo_key=ArchiveService.get_archive_hash(commit.repository),
     )
-    return BundleAnalysisReport(loader.load(report.external_id))
+    report = loader.load(report.external_id)
+    if report is None:
+        return MissingHeadReport()
+
+    return BundleAnalysisReport(report)
