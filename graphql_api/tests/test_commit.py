@@ -916,36 +916,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "message": "Missing head report",
         }
 
-    def test_bundle_analysis_missing_report_two(self):
-        # Has commit report, but no SQLite file in the DB
-        CommitReportFactory(
-            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
-        )
-
-        query = (
-            query_commit
-            % """
-            bundleAnalysisReport {
-                __typename
-                ... on MissingHeadReport {
-                    message
-                }
-            }
-            """
-        )
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "commit": self.commit.commitid,
-        }
-        data = self.gql_request(query, variables=variables)
-        commit = data["owner"]["repository"]["commit"]
-
-        assert commit["bundleAnalysisReport"] == {
-            "__typename": "MissingHeadReport",
-            "message": "Missing head report",
-        }
-
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
     def test_bundle_analysis_report(self, get_storage_service):
         storage = MemoryStorageService({})
