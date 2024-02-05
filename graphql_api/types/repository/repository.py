@@ -283,6 +283,17 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
     return dataset.is_backfilled()
 
 
+@repository_bindable.field("isATSConfigured")
+def resolve_is_ats_configured(repository: Repository, info) -> bool:
+    if not repository.yaml or "flag_management" not in repository.yaml:
+        return False
+
+    # See https://docs.codecov.com/docs/getting-started-with-ats-github-actions on configuring
+    # flags. To use Automated Test Selection, a flag is required with Carryforward mode "labels".
+    individual_flags = repository.yaml["flag_management"].get("individual_flags", {})
+    return individual_flags.get("carryforward_mode") == "labels"
+
+
 @repository_bindable.field("measurements")
 @sync_to_async
 def resolve_measurements(
@@ -310,6 +321,26 @@ def resolve_measurements(
 @repository_bindable.field("repositoryConfig")
 def resolve_repository_config(repository: Repository, info):
     return repository
+
+
+@repository_bindable.field("primaryLanguage")
+def resolve_language(repository: Repository, info) -> str:
+    return repository.language
+
+
+@repository_bindable.field("languages")
+def resolve_languages(repository: Repository, info) -> List[str]:
+    return repository.languages
+
+
+@repository_bindable.field("bundleAnalysisEnabled")
+def resolve_bundle_analysis_enabled(repository: Repository, info) -> Optional[bool]:
+    return repository.bundle_analysis_enabled
+
+
+@repository_bindable.field("coverageEnabled")
+def resolve_coverage_enabled(repository: Repository, info) -> Optional[bool]:
+    return repository.coverage_enabled
 
 
 repository_result_bindable = UnionType("RepositoryResult")

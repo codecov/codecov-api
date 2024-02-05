@@ -1,6 +1,7 @@
 from unittest.mock import patch
 from urllib.parse import urlencode
 
+from django.db import connection
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 from shared.reports.resources import Report, ReportFile, ReportLine
@@ -58,11 +59,14 @@ class CoverageViewSetTests(APITestCase):
         self.current_owner = OwnerFactory()
         self.repo = RepositoryFactory(author=self.current_owner)
 
-        self.commit1 = CommitFactory(
+        # the order in which these commits are created matters
+        # because the branch head is the one that is created
+        # later
+        self.commit2 = CommitFactory(
             author=self.current_owner,
             repository=self.repo,
         )
-        self.commit2 = CommitFactory(
+        self.commit1 = CommitFactory(
             author=self.current_owner,
             repository=self.repo,
         )
@@ -73,8 +77,11 @@ class CoverageViewSetTests(APITestCase):
             repository=self.repo,
             branch=self.branch,
         )
-        self.branch.head = self.commit3.commitid
-        self.branch.save()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE branches SET head = %s WHERE branches.repoid = %s AND branches.branch = %s",
+                [self.commit3.commitid, self.repo.repoid, self.branch.name],
+            )
 
         self.client = Client()
         self.client.force_login_owner(self.current_owner)

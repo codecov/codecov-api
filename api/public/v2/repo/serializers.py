@@ -46,7 +46,12 @@ class RepoConfigSerializer(serializers.ModelSerializer):
         label="token used for uploading coverage reports for this repo"
     )
 
+    graph_token = serializers.CharField(
+        source="image_token",
+        label="token used for repository graphs",
+    )
+
     class Meta:
         model = Repository
-        read_only_fields = ("upload_token",)
+        read_only_fields = ("upload_token", "graph_token")
         fields = read_only_fields

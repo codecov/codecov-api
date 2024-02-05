@@ -31,6 +31,7 @@ class MockSubscription(object):
             },
             "id": "cus_LK&*Hli8YLIO",
             "discount": None,
+            "email": None,
         }
         self.schedule = subscription_params["schedule_id"]
         self.collection_method = subscription_params["collection_method"]
@@ -240,7 +241,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None},
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
             },
@@ -340,10 +341,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {
-                    "id": "cus_LK&*Hli8YLIO",
-                    "discount": None,
-                },
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": 1633512445,
             },
@@ -414,10 +412,7 @@ class AccountViewSetTests(APITestCase):
                 "default_payment_method": None,
                 "cancel_at_period_end": False,
                 "current_period_end": 1633512445,
-                "customer": {
-                    "id": "cus_LK&*Hli8YLIO",
-                    "discount": None,
-                },
+                "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
             },
@@ -590,10 +585,7 @@ class AccountViewSetTests(APITestCase):
                     "last4": "abcd",
                 }
             },
-            "customer": {
-                "id": "cus_LK&*Hli8YLIO",
-                "discount": None,
-            },
+            "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
             "collection_method": "charge_automatically",
             "trial_end": None,
         }
@@ -1084,6 +1076,56 @@ class AccountViewSetTests(APITestCase):
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == code
         assert response.data["detail"] == message
+
+    def test_update_email_address_without_body(self):
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        url = reverse("account_details-update-email", kwargs=kwargs)
+        response = self.client.patch(url, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch("services.billing.StripeService.update_email_address")
+    def test_update_email_address_handles_stripe_error(self, stripe_mock):
+        code, message = 402, "Oops, nope"
+        self.current_owner.stripe_customer_id = "flsoe"
+        self.current_owner.stripe_subscription_id = "djfos"
+        self.current_owner.save()
+
+        stripe_mock.side_effect = StripeError(message=message, http_status=code)
+
+        new_email = "test@gmail.com"
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        data = {"new_email": new_email}
+        url = reverse("account_details-update-email", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == code
+        assert response.data["detail"] == message
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_update_email_address(self, modify_customer_mock, retrieve_mock):
+        self.current_owner.stripe_customer_id = "flsoe"
+        self.current_owner.stripe_subscription_id = "djfos"
+        self.current_owner.save()
+
+        new_email = "test@gmail.com"
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        data = {"new_email": new_email}
+        url = reverse("account_details-update-email", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == status.HTTP_200_OK
+
+        modify_customer_mock.assert_called_once_with(
+            self.current_owner.stripe_customer_id, email=new_email
+        )
 
     @patch("api.shared.permissions.get_provider")
     def test_update_without_admin_permissions_returns_404(self, get_provider_mock):

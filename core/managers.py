@@ -27,12 +27,14 @@ class RepositoryQuerySet(QuerySet):
         Filters queryset so that result only includes repos viewable by the
         given owner.
         """
-        filters = Q(private=False) & ~Q(deleted=True)
+        filters = Q(private=False)
 
         if owner is not None:
             filters = filters | Q(author__ownerid=owner.ownerid)
             if owner.permission:
                 filters = filters | Q(repoid__in=owner.permission)
+
+        filters &= ~Q(deleted=True)
 
         return self.filter(filters).exclude(name=None)
 

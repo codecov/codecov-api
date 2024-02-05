@@ -1,0 +1,24 @@
+union BundleAnalysisComparisonResult =
+    BundleAnalysisComparison
+  | FirstPullRequest
+  | MissingBaseCommit
+  | MissingHeadCommit
+  | MissingHeadReport
+  | MissingBaseReport
+
+type BundleAnalysisComparison {
+  bundles: [BundleComparison]!
+  sizeDelta: Int!
+  sizeTotal: Int!
+  loadTimeDelta: Float!
+  loadTimeTotal: Float!
+}
+
+type BundleComparison {
+  name: String!
+  changeType: String!
+  sizeDelta: Int!
+  sizeTotal: Int!
+  loadTimeDelta: Float!
+  loadTimeTotal: Float!
+}

@@ -32,11 +32,11 @@ class UploadBundleAnalysisPermission(BasePermission):
 class UploadSerializer(serializers.Serializer):
     commit = serializers.CharField(required=True)
     slug = serializers.CharField(required=True)
-    build = serializers.CharField(required=False)
-    buildURL = serializers.CharField(required=False)
-    job = serializers.CharField(required=False)
-    pr = serializers.CharField(required=False)
-    service = serializers.CharField(required=False)
+    build = serializers.CharField(required=False, allow_null=True)
+    buildURL = serializers.CharField(required=False, allow_null=True)
+    job = serializers.CharField(required=False, allow_null=True)
+    pr = serializers.CharField(required=False, allow_null=True)
+    service = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView):
@@ -62,10 +62,18 @@ class BundleAnalysisView(APIView):
         else:
             raise NotAuthenticated()
 
+        update_fields = []
         if not repo.active or not repo.activated:
             repo.active = True
             repo.activated = True
-            repo.save(update_fields=["active", "activated"])
+            update_fields += ["active", "activated"]
+
+        if not repo.bundle_analysis_enabled:
+            repo.bundle_analysis_enabled = True
+            update_fields += ["bundle_analysis_enabled"]
+
+        if update_fields:
+            repo.save(update_fields=update_fields)
 
         commit, _ = Commit.objects.get_or_create(
             commitid=data["commit"],

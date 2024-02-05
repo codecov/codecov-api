@@ -63,6 +63,11 @@ type Repository {
   ): [Measurement!]!
   repositoryConfig: RepositoryConfig
   staticAnalysisToken: String
+  isATSConfigured: Boolean
+  primaryLanguage: String
+  languages: [String!]
+  bundleAnalysisEnabled: Boolean
+  coverageEnabled: Boolean
 }
 
 type PullConnection {

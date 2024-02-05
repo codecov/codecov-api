@@ -3,7 +3,7 @@ import logging
 import re
 
 from asgiref.sync import async_to_sync
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
@@ -58,6 +58,10 @@ GLOB_NON_TESTABLE_FILES = [
 ]
 
 
+class EmptyUploadSerializer(serializers.Serializer):
+    should_force = serializers.BooleanField(required=False)
+
+
 class EmptyUploadView(CreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
@@ -67,8 +71,27 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
     ]
 
     def post(self, request, *args, **kwargs):
+        serializer = EmptyUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = serializer.validated_data
+        should_force = data.get("should_force", False)
+
         repo = self.get_repo()
         commit = self.get_commit(repo)
+
+        if should_force is True:
+            TaskService().notify(
+                repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
+            )
+            return Response(
+                data={
+                    "result": "Force option was enabled. Triggering passing notifications.",
+                    "non_ignored_files": [],
+                },
+                status=status.HTTP_200_OK,
+            )
+
         yaml = final_commit_yaml(commit, request.user).to_dict()
         token = try_to_get_best_possible_bot_token(repo)
         provider = RepoProviderService().get_adapter(repo.author, repo, token=token)

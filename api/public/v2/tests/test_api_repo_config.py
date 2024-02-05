@@ -38,6 +38,7 @@ class RepoConfigViewTests(InternalAPITest):
         assert res.status_code == 200
         assert res.json() == {
             "upload_token": self.repo.upload_token,
+            "graph_token": self.repo.image_token,
         }
 
     @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
@@ -59,3 +60,4 @@ class RepoConfigViewTests(InternalAPITest):
         )
         assert res.status_code == 403
         assert self.repo.upload_token not in str(res.content)
+        assert self.repo.image_token not in str(res.content)

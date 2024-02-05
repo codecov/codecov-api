@@ -8,6 +8,7 @@ from hashlib import md5
 
 from django.contrib.postgres.fields import ArrayField, CITextField
 from django.db import models
+from django.db.models.manager import BaseManager
 from django.forms import ValidationError
 from django.utils import timezone
 from django_prometheus.models import ExportModelOperationsMixin
@@ -183,7 +184,10 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
     updatestamp = DateTimeWithoutTZField(default=datetime.now)
     organizations = ArrayField(models.IntegerField(null=True), null=True, blank=True)
     admins = ArrayField(models.IntegerField(null=True), null=True, blank=True)
+
+    # DEPRECATED - replaced by GithubAppInstallation model
     integration_id = models.IntegerField(null=True, blank=True)
+
     permission = ArrayField(models.IntegerField(null=True), null=True)
     bot = models.ForeignKey(
         "Owner", db_column="bot", null=True, on_delete=models.SET_NULL, blank=True
@@ -272,6 +276,10 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
     @property
     def nb_active_private_repos(self):
         return self.repository_set.filter(active=True, private=True).count()
+
+    @property
+    def has_private_repos(self):
+        return self.repository_set.filter(private=True).exists()
 
     @property
     def repo_credits(self):
@@ -465,6 +473,48 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
             except ValueError:
                 pass
         self.save()
+
+
+GITHUB_APP_INSTALLATION_DEFAULT_NAME = "codecov_app_installation"
+
+
+class GithubAppInstallation(
+    ExportModelOperationsMixin("codecov_auth.github_app_installation"), BaseCodecovModel
+):
+
+    # replacement for owner.integration_id
+    # installation id GitHub sends us in the installation-related webhook events
+    installation_id = models.IntegerField(null=False, blank=False)
+    name = models.TextField(default=GITHUB_APP_INSTALLATION_DEFAULT_NAME)
+    # if null, all repos are covered by this installation
+    # otherwise, it's a list of repo.id values
+    repository_service_ids = ArrayField(models.TextField(null=False), null=True)
+
+    owner = models.ForeignKey(
+        Owner,
+        null=False,
+        on_delete=models.CASCADE,
+        blank=False,
+        related_name="github_app_installations",
+    )
+
+    def repository_queryset(self) -> BaseManager[Repository]:
+        """Returns a QuerySet of repositories covered by this installation"""
+        if self.repository_service_ids is None:
+            # All repos covered
+            return Repository.objects.filter(author=self.owner)
+        # Some repos covered
+        return Repository.objects.filter(
+            service_id__in=self.repository_service_ids, author=self.owner
+        )
+
+    def covers_all_repos(self) -> bool:
+        return self.repository_service_ids is None
+
+    def is_repo_covered_by_integration(self, repo: Repository) -> bool:
+        if self.covers_all_repos():
+            return repo.author.ownerid == self.owner.ownerid
+        return repo.service_id in self.repository_service_ids
 
 
 class SentryUser(
