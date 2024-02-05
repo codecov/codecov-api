@@ -473,7 +473,9 @@ CORS_ALLOWED_ORIGINS = []
 
 GRAPHQL_PLAYGROUND = True
 
-UPLOAD_THROTTLING_ENABLED = True
+UPLOAD_THROTTLING_ENABLED = get_config(
+    "setup", "upload_throttling_enabled", default=True
+)
 
 SENTRY_JWT_SHARED_SECRET = get_config(
     "sentry", "jwt_shared_secret", default=None
