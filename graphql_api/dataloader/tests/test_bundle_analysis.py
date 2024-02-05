@@ -83,6 +83,11 @@ class MockReportLoader:
         return True
 
 
+class MockReportLoaderTwo:
+    def load(self, external_id):
+        return None
+
+
 class BundleAnalysisReportLoader(TransactionTestCase):
     def setUp(self):
         self.repo = RepositoryFactory()
@@ -99,6 +104,12 @@ class BundleAnalysisReportLoader(TransactionTestCase):
         mock_report.return_value = True
         loader = load_bundle_analysis_report(self.commit)
         assert loader == True
+
+    @patch("graphql_api.dataloader.bundle_analysis.BundleAnalysisReportLoader")
+    def test_loader_missing_head_report_two(self, mock_loader):
+        mock_loader.return_value = MockReportLoaderTwo()
+        loader = load_bundle_analysis_report(self.commit)
+        assert loader.message == MissingHeadReport.message
 
     def test_loader_missing_head_report(self):
         head_commit = CommitFactory(repository=self.repo)
