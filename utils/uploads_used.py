@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
@@ -14,6 +15,8 @@ cache_time = get_config("setup", "upload_usage_cache_time", 21600)
 
 
 def get_uploads_used(redis, plan_service, limit, owner):
+    if not settings.UPLOAD_THROTTLING_ENABLED:
+        return 0
     cache_key = f"monthly_upload_usage_{owner.ownerid}"
     try:
         uploads_used = redis.get(cache_key)
@@ -58,6 +61,8 @@ def increment_uploads_used(redis, owner):
 
 
 def query_uploads_used(plan_service, limit, owner):
+    if not settings.UPLOAD_THROTTLING_ENABLED:
+        return 0
     queryset = ReportSession.objects.filter(
         report__commit__repository__author_id=owner.ownerid,
         report__commit__repository__private=True,
