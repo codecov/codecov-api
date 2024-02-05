@@ -78,6 +78,10 @@ class MockRedis:
     def setex(self, redis_key, expire_time, report):
         return
 
+    def set(self, redis_key, value, **kwargs):
+        # This is only used when setting the cache key for the number of uploads. Will need to be refactored if we use it for something else.
+        assert self.get(redis_key) + 1 == value
+
 
 class UploadHandlerHelpersTest(TestCase):
     def test_parse_params_validates_valid_input(self):

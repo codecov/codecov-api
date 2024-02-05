@@ -1,18 +1,20 @@
 import logging
-from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.utils import timezone
 from rest_framework.throttling import BaseThrottle
 from shared.reports.enums import UploadType
 
-from plan.constants import USER_PLAN_REPRESENTATIONS
+from plan.service import PlanService
 from reports.models import ReportSession
+from services.redis_configuration import get_redis_connection
 from upload.helpers import _determine_responsible_owner
+from utils.uploads_used import get_uploads_used
 
 log = logging.getLogger(__name__)
+
+redis = get_redis_connection()
 
 
 class UploadsPerCommitThrottle(BaseThrottle):
@@ -48,28 +50,15 @@ class UploadsPerWindowThrottle(BaseThrottle):
 
             if settings.UPLOAD_THROTTLING_ENABLED and repository.private:
                 owner = _determine_responsible_owner(repository)
-                limit = USER_PLAN_REPRESENTATIONS.get(
-                    owner.plan, {}
-                ).monthly_uploads_limit
+                plan_service = PlanService(current_org=owner)
+                limit = plan_service.monthly_uploads_limit
                 if limit is not None:
                     did_commit_uploads_start_already = ReportSession.objects.filter(
                         report__commit=commit
                     ).exists()
                     if not did_commit_uploads_start_already:
-                        limit = USER_PLAN_REPRESENTATIONS[
-                            owner.plan
-                        ].monthly_uploads_limit
-                        uploads_used = ReportSession.objects.filter(
-                            report__commit__repository__author_id=owner.ownerid,
-                            report__commit__repository__private=True,
-                            created_at__gte=timezone.now() - timedelta(days=30),
-                            # attempt at making the query more performant by telling the db to not
-                            # check old commits, which are unlikely to have recent uploads
-                            report__commit__timestamp__gte=timezone.now()
-                            - timedelta(days=60),
-                            upload_type="uploaded",
-                        )[:limit].count()
-                        if uploads_used >= limit:
+
+                        if get_uploads_used(redis, plan_service, limit, owner) >= limit:
                             log.warning(
                                 "User exceeded its limits for usage",
                                 extra=dict(

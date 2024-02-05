@@ -13,6 +13,7 @@ from codecov_auth.models import GithubAppInstallation, Service
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
+from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     check_commit_upload_constraints,
     determine_repo_for_upload,
@@ -159,9 +160,11 @@ def test_check_commit_constraints_settings_disabled(db, settings):
     check_commit_upload_constraints(third_commit)
 
 
-def test_check_commit_constraints_settings_enabled(db, settings):
+def test_check_commit_constraints_settings_enabled(db, settings, mocker):
     settings.UPLOAD_THROTTLING_ENABLED = True
     author = OwnerFactory.create(plan=PlanName.BASIC_PLAN_NAME.value)
+    something = None
+    mocker.patch("redis.Redis.get", return_value=something)
     repository = RepositoryFactory.create(author=author, private=True)
     public_repository = RepositoryFactory.create(author=author, private=False)
     first_commit = CommitFactory.create(repository=repository)
