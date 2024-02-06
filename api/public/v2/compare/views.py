@@ -15,6 +15,7 @@ from api.shared.compare.serializers import (
     ImpactedFilesComparisonSerializer,
     ImpactedFileSegmentsSerializer,
 )
+from api.shared.mixins import OwnerPropertyMixin
 from core.models import Commit
 from services.components import ComponentComparison, commit_components
 from services.decorators import torngit_safe
@@ -47,6 +48,7 @@ comparison_parameters = [
 class CompareViewSet(
     CompareViewSetMixin,
     mixins.RetrieveModelMixin,
+    OwnerPropertyMixin,
 ):
     serializer_class = ComparisonSerializer
 

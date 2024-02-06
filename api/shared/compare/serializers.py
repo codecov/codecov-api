@@ -19,10 +19,36 @@ from services.comparison import (
 log = logging.getLogger(__name__)
 
 
+import functools
+
+
+def check_owner_permissions(required_perm):
+    def decor(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            print("true decor", args[0].context["owner"])
+            print("required perm", required_perm)
+            # if required_perm not in owner.permissions:
+            # return {}
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decor
+
+
 class TotalsComparisonSerializer(serializers.Serializer):
-    base = ReportTotalsSerializer()
-    head = ReportTotalsSerializer()
+    base = serializers.SerializerMethodField()
+    head = serializers.SerializerMethodField()
     patch = ReportTotalsSerializer(source="diff")
+
+    @check_owner_permissions("project_coverage")
+    def get_base(self, comparison):
+        return ReportTotalsSerializer(comparison["base"]).data
+
+    @check_owner_permissions("project_coverage")
+    def get_head(self, comparison):
+        return ReportTotalsSerializer(comparison["head"]).data
 
 
 class LineComparisonSerializer(serializers.Serializer):

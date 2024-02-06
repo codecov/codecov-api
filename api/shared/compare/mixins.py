@@ -153,7 +153,8 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
                 context={
                     "commit_comparison": self.get_or_create_commit_comparison(
                         comparison
-                    )
+                    ),
+                    "owner": self.owner,
                 },
             ).data
         )
