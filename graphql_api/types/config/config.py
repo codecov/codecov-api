@@ -1,4 +1,5 @@
 from distutils.util import strtobool
+from typing import List
 
 from ariadne import ObjectType
 from django.conf import settings
@@ -11,7 +12,7 @@ config_bindable = ObjectType("Config")
 
 
 @config_bindable.field("loginProviders")
-def resolve_login_providers(_, info):
+def resolve_login_providers(_, info) -> List[str]:
     login_providers = []
 
     if not settings.DISABLE_GIT_BASED_LOGIN:
@@ -40,7 +41,7 @@ def resolve_login_providers(_, info):
 
 
 @config_bindable.field("syncProviders")
-def resolve_sync_providers(_, info):
+def resolve_sync_providers(_, info) -> List[str]:
     sync_providers = []
 
     if settings.GITHUB_CLIENT_ID:
