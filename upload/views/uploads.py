@@ -162,7 +162,10 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             "service": commit.repository.service,
             "build": upload.build_code,
             "build_url": upload.build_url,
-            "flags": ",".join(upload.flag_names),
+            # we were previously using upload.flag_names here, and this query might not be optimized
+            # we weren't doing it in the legacy endpoint, but in the new one we are, and it may be causing problems
+            # therefore we are removing this for now to see if it is the source of the issue
+            "flags": "",
             "owner": commit.repository.author.ownerid,
             "token": str(token),
             "version": version,
