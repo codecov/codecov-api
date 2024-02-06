@@ -56,6 +56,13 @@ class UploadSerializer(serializers.ModelSerializer):
         commit = obj.report.commit
         return f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
 
+    def _create_existing_flags_map(self, repoid: int) -> dict:
+        existing_flags = RepositoryFlag.objects.filter(repository_id=repoid).all()
+        existing_flags_map = {}
+        for flag_obj in existing_flags:
+            existing_flags_map[flag_obj.flag_name] = flag_obj
+        return existing_flags_map
+
     def create(self, validated_data):
         flag_names = (
             validated_data.pop("flags") if "flags" in validated_data.keys() else []
@@ -67,17 +74,17 @@ class UploadSerializer(serializers.ModelSerializer):
         )
         upload = ReportSession.objects.create(**validated_data)
         flags = []
+
         if upload:
             repoid = upload.report.commit.repository.repoid
+            existing_flags_map = self._create_existing_flags_map(repoid)
             for individual_flag in flag_names:
-                existing_flag = RepositoryFlag.objects.filter(
-                    repository_id=repoid, flag_name=individual_flag
-                ).first()
-                if not existing_flag:
-                    existing_flag = RepositoryFlag.objects.create(
+                flag_obj = existing_flags_map.get(individual_flag, None)
+                if flag_obj is None:
+                    flag_obj = RepositoryFlag.objects.create(
                         repository_id=repoid, flag_name=individual_flag
                     )
-                flags.append(existing_flag)
+                flags.append(flag_obj)
             upload.flags.set(flags)
             return upload
 
