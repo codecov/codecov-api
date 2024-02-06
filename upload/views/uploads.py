@@ -94,7 +94,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         self.trigger_upload_task(repository, commit.commitid, instance, report)
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
-        self.send_analytics_data(commit, instance, version)
         return instance
 
     def list(
