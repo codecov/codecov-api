@@ -11,9 +11,12 @@ from core.models import Commit
 log = logging.getLogger(__name__)
 
 
+from api.shared.owner_permissions import check_owner_permissions
+
+
 class CommitSerializer(serializers.ModelSerializer):
     author = OwnerSerializer()
-    totals = CommitTotalsSerializer()
+    totals = serializers.SerializerMethodField()
 
     class Meta:
         model = Commit
@@ -27,6 +30,10 @@ class CommitSerializer(serializers.ModelSerializer):
             "totals",
             "state",
         )
+
+    @check_owner_permissions("project_coverage")
+    def get_totals(self, commit):
+        return CommitTotalsSerializer(commit).data
 
 
 class CommitWithFileLevelReportSerializer(CommitSerializer):

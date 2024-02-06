@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from api.internal.commit.serializers import CommitSerializer
 from api.shared.commit.serializers import ReportTotalsSerializer
+from api.shared.owner_permissions import check_owner_permissions
 from compare.models import CommitComparison
 from services.comparison import (
     Comparison,
@@ -17,24 +18,6 @@ from services.comparison import (
 )
 
 log = logging.getLogger(__name__)
-
-
-import functools
-
-
-def check_owner_permissions(required_perm):
-    def decor(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            print("true decor", args[0].context["owner"])
-            print("required perm", required_perm)
-            # if required_perm not in owner.permissions:
-            # return {}
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    return decor
 
 
 class TotalsComparisonSerializer(serializers.Serializer):
@@ -183,10 +166,12 @@ class ImpactedFileSerializer(serializers.Serializer):
     change_coverage = serializers.SerializerMethodField()
     misses_count = serializers.SerializerMethodField()
 
+    @check_owner_permissions("project_coverage")
     def get_base_coverage(self, impacted_file: ImpactedFile) -> serializers.JSONField:
         if impacted_file.base_coverage:
             return dataclasses.asdict(impacted_file.base_coverage)
 
+    @check_owner_permissions("project_coverage")
     def get_head_coverage(self, impacted_file: ImpactedFile) -> serializers.JSONField:
         if impacted_file.head_coverage:
             return dataclasses.asdict(impacted_file.head_coverage)
@@ -244,7 +229,8 @@ class ImpactedFilesComparisonSerializer(ComparisonSerializer):
 
         return [
             ImpactedFileSerializer(
-                impacted_file, context={"comparison": comparison}
+                impacted_file,
+                context={"comparison": comparison, "owner": self.context["owner"]},
             ).data
             for impacted_file in ComparisonReport(commit_comparison).files
         ]
