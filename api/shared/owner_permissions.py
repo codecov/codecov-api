@@ -5,10 +5,9 @@ def check_owner_permissions(required_perm):
     def decor(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            print("true decor", args[0].context["owner"])
-            print("required perm", required_perm)
-            # if required_perm not in owner.permissions:
-            if True:
+            print("required", required_perm)
+            print("allowed", args[0].context["owner_permissions"])
+            if required_perm not in args[0].context["owner_permissions"]:
                 return {}
             return func(*args, **kwargs)
 

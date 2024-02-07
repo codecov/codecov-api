@@ -154,7 +154,7 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
                     "commit_comparison": self.get_or_create_commit_comparison(
                         comparison
                     ),
-                    "owner": self.owner,
+                    "owner_permissions": self.get_owner_permissions(),
                 },
             ).data
         )

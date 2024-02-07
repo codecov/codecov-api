@@ -666,3 +666,59 @@ class UserToken(
     token_type = models.CharField(
         max_length=50, choices=TokenType.choices, default=TokenType.API
     )
+
+
+class OwnerPermission(
+    ExportModelOperationsMixin("codecov_auth.owner_permission"), BaseCodecovModel
+):
+    """
+    Will have values like: ["project_coverage", "patch_coverage", "components", "flags"]
+    """
+
+    name = models.CharField(max_length=100, unique=True, null=False, blank=False)
+
+
+class OwnerTier(
+    ExportModelOperationsMixin("codecov_auth.owner_tier"), BaseCodecovModel
+):
+    """
+    Will have values like: ["free", "team", "pro", "enterprise"]
+    """
+
+    name = models.CharField(max_length=100, unique=True, null=False, blank=False)
+
+
+class OwnerTierPermission(
+    ExportModelOperationsMixin("codecov_auth.owner_tier_permission"), BaseCodecovModel
+):
+    permission = models.ForeignKey(
+        OwnerPermission,
+        null=False,
+        on_delete=models.CASCADE,
+        blank=False,
+        related_name="permission",
+    )
+    tier = models.ForeignKey(
+        OwnerTier,
+        null=False,
+        on_delete=models.CASCADE,
+        blank=False,
+        related_name="tier",
+    )
+
+
+class OwnerTierPlan(
+    ExportModelOperationsMixin("codecov_auth.owner_tier_plan"), BaseCodecovModel
+):
+    """
+    Will have values like: [(team, users-teamm), (team, users-teamy), (pro, users-pr-inappm)]
+    """
+
+    tier = models.ForeignKey(
+        OwnerTier,
+        null=False,
+        on_delete=models.CASCADE,
+        blank=False,
+        related_name="tier_plan",
+    )
+    plan = models.TextField(null=False, blank=False)

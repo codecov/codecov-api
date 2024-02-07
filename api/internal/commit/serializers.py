@@ -33,7 +33,7 @@ class CommitSerializer(serializers.ModelSerializer):
 
     @check_owner_permissions("project_coverage")
     def get_totals(self, commit):
-        return CommitTotalsSerializer(commit).data
+        return CommitTotalsSerializer(commit.totals).data
 
 
 class CommitWithFileLevelReportSerializer(CommitSerializer):

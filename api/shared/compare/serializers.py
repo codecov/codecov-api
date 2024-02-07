@@ -230,7 +230,10 @@ class ImpactedFilesComparisonSerializer(ComparisonSerializer):
         return [
             ImpactedFileSerializer(
                 impacted_file,
-                context={"comparison": comparison, "owner": self.context["owner"]},
+                context={
+                    "comparison": comparison,
+                    "owner_permissions": self.context["owner_permissions"],
+                },
             ).data
             for impacted_file in ComparisonReport(commit_comparison).files
         ]
