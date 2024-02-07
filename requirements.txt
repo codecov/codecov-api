@@ -366,7 +366,7 @@ sentry-sdk==1.39.1
     # via -r requirements.in
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/ab5469751ea957770650669ef59f46ce82ced67e.tar.gz
+shared @ https://github.com/codecov/shared/archive/1afb5adec611f80e7dced354a5a5a5b14644adab.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
