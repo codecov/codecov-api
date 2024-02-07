@@ -20,8 +20,8 @@ from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import FlagListField
-from upload.views.helpers import get_repository_from_string
 from upload.views.base import ShelterMixin
+from upload.views.helpers import get_repository_from_string
 from utils.rollouts import TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG, owner_slug
 
 log = logging.getLogger(__name__)
