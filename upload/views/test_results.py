@@ -21,6 +21,7 @@ from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.serializers import FlagListField
 from upload.views.helpers import get_repository_from_string
+from upload.views.base import ShelterMixin
 from utils.rollouts import TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG, owner_slug
 
 log = logging.getLogger(__name__)
@@ -40,9 +41,13 @@ class UploadSerializer(serializers.Serializer):
     flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
     service = serializers.CharField(required=False)
+    storage_path = serializers.CharField(required=False)
 
 
-class TestResultsView(APIView):
+class TestResultsView(
+    APIView,
+    ShelterMixin,
+):
     permission_classes = [UploadTestResultsPermission]
     authentication_classes = [
         OrgLevelTokenAuthentication,
@@ -85,12 +90,14 @@ class TestResultsView(APIView):
 
         archive_service = ArchiveService(repo)
 
-        storage_path = MinioEndpoints.test_results.get_path(
-            date=timezone.now().strftime("%Y-%m-%d"),
-            repo_hash=archive_service.get_archive_hash(repo),
-            commit_sha=data["commit"],
-            uploadid=upload_external_id,
-        )
+        storage_path = data.get("storage_path", None)
+        if storage_path is None or not self.is_shelter_request():
+            storage_path = MinioEndpoints.test_results.get_path(
+                date=timezone.now().strftime("%Y-%m-%d"),
+                repo_hash=archive_service.get_archive_hash(repo),
+                commit_sha=data["commit"],
+                uploadid=upload_external_id,
+            )
 
         url = archive_service.create_presigned_put(storage_path)
 
