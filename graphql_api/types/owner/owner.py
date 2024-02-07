@@ -113,6 +113,22 @@ async def resolve_repository(owner, info, name):
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
 
+    from codecov_auth.models import OwnerTierPermission, OwnerTierPlan
+
+    def get_owner_permissions():
+        tier = OwnerTierPlan.objects.filter(plan=owner.plan).first()
+        if tier is None:
+            return None
+
+        perms = OwnerTierPermission.objects.filter(tier=tier.tier)
+        if perms is None:
+            return None
+
+        return [item.permission.name for item in perms]
+
+    owner_permissions = await sync_to_async(get_owner_permissions)()
+    info.context["owner_permissions"] = owner_permissions
+
     return repository
 
 
