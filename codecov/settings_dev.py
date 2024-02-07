@@ -3,8 +3,12 @@ import logging
 from .settings_base import *
 
 DEBUG = True
+# for shelter add "host.docker.internal" and make sure to map it to localhost
+# in your /etc/hosts
 ALLOWED_HOSTS = get_config(
-    "setup", "api_allowed_hosts", default=["localhost", "api.lt.codecov.dev"]
+    "setup",
+    "api_allowed_hosts",
+    default=["localhost", "api.lt.codecov.dev", "host.docker.internal"],
 )
 
 WEBHOOK_URL = ""  # NGROK TUNNEL HERE
@@ -35,3 +39,6 @@ CORS_ALLOWED_ORIGINS = [
 
 COOKIES_DOMAIN = "localhost"
 SESSION_COOKIE_DOMAIN = "localhost"
+
+# add for shelter
+# SHELTER_SHARED_SECRET = "supersecret"
