@@ -551,6 +551,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             {"planName": "users-basic"},
             {"planName": "users-pr-inappm"},
             {"planName": "users-pr-inappy"},
+            {"planName": "users-teamm"},
+            {"planName": "users-teamy"},
         ]
 
     def test_owner_query_with_no_service(self):
