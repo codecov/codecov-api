@@ -217,7 +217,7 @@ test_env.container_upload:
 test_env.container_upload_test_results:
 	codecovcli -u ${CODECOV_URL} do-upload --report-type "test_results" \
 	--files-search-exclude-folder=graphql_api/types/** \
-	--files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
+	--files-search-exclude-folder=api/internal/tests/unit/views/cassetes/** || true
 
 test_env.static_analysis:
 	docker-compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
