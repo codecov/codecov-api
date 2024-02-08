@@ -347,6 +347,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
@@ -362,6 +363,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result.append(FREE_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
@@ -389,6 +391,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result = []
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
@@ -406,6 +409,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
@@ -439,6 +443,7 @@ class AvailablePlansBeforeTrial(TestCase):
         expected_result.append(BASIC_PLAN)
         expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
         expected_result += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
+        expected_result += TEAM_PLAN_REPRESENTATIONS.values()
 
         assert plan_service.available_plans(owner=self.owner) == expected_result
 
@@ -693,6 +698,7 @@ class AvailablePlansExpiredTrialMoreThanTenSeatsLessThanTenActivatedUsers(TestCa
         self.expected_result = []
         self.expected_result.append(BASIC_PLAN)
         self.expected_result += PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS.values()
+        self.expected_result += TEAM_PLAN_REPRESENTATIONS.values()
         assert (
             self.plan_service.available_plans(owner=self.owner) == self.expected_result
         )

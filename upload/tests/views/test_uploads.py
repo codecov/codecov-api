@@ -412,7 +412,7 @@ def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
             "service": commit.repository.service,
             "build": upload.build_code,
             "build_url": upload.build_url,
-            "flags": ",".join(upload.flag_names),
+            "flags": "",
             "owner": commit.repository.author.ownerid,
             "token": "tokenless_upload",
             "version": "version",

@@ -126,18 +126,12 @@ class PlanService:
         if owner and sentry.is_sentry_user(owner=owner):
             available_plans += SENTRY_PAID_USER_PLAN_REPRESENTATIONS.values()
 
-        # If user is already in team plan or is/have trialed
-        if (
-            self.plan_name in TEAM_PLAN_REPRESENTATIONS
-            or self.trial_status == TrialStatus.EXPIRED.value
-            or self.trial_status == TrialStatus.ONGOING.value
-        ):
             # If number of activated users is less than or equal to TEAM_PLAN_MAX_USERS
-            if (
-                self.plan_activated_users is None
-                or len(self.plan_activated_users) <= TEAM_PLAN_MAX_USERS
-            ):
-                available_plans += TEAM_PLAN_REPRESENTATIONS.values()
+        if (
+            self.plan_activated_users is None
+            or len(self.plan_activated_users) <= TEAM_PLAN_MAX_USERS
+        ):
+            available_plans += TEAM_PLAN_REPRESENTATIONS.values()
 
         return available_plans
 

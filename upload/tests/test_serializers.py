@@ -122,6 +122,25 @@ def test_upload_serializer_null_build_url_empty_flags(transactional_db, mocker):
     assert serializer.is_valid()
 
 
+def test__create_existing_flags_map(transactional_db, mocker):
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
+    upload = get_fake_upload_with_flags()
+    serializer = UploadSerializer(instance=upload)
+    flags_map = serializer._create_existing_flags_map(
+        upload.report.commit.repository.repoid
+    )
+    upload_flags = upload.flags.all()
+    flag1 = list(filter(lambda flag: flag.flag_name == "flag1", upload_flags))[0]
+    flag2 = list(filter(lambda flag: flag.flag_name == "flag2", upload_flags))[0]
+    assert flags_map == {
+        "flag1": flag1,
+        "flag2": flag2,
+    }
+
+
 def test_commit_serializer_contains_expected_fields(transactional_db, mocker):
     commit = CommitFactory.create()
     serializer = CommitSerializer(commit)
