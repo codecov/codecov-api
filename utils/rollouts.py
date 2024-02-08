@@ -14,5 +14,8 @@ TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG = Feature(
         "github/codecov": "enabled",
         "bitbucket/codecov": "enabled",
         "gitlab/codecov": "enabled",
+        "github/getsentry": "enabled",
+        "github/rohan-at-sentry": "enabled",
+        "github/Tandem-Mobile": "enabled",
     },
 )
