@@ -83,6 +83,15 @@ class LoginProvider(enum.Enum):
     OKTA = "okta"
 
 
+class SyncProvider(enum.Enum):
+    GITHUB = "github"
+    GITHUB_ENTERPRISE = "github_enterprise"
+    GITLAB = "gitlab"
+    GITLAB_ENTERPRISE = "gitlab_enterprise"
+    BITBUCKET = "bitbucket"
+    BITBUCKET_SERVER = "bitbucket_server"
+
+
 class CommitErrorGeneralType(enum.Enum):
     yaml_error = "YAML_ERROR"
     bot_error = "BOT_ERROR"

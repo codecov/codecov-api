@@ -9,6 +9,7 @@ from .enums import (
     PathContentDisplayType,
     PullRequestState,
     RepositoryOrdering,
+    SyncProvider,
     TypeProjectOnboarding,
     UploadErrorEnum,
     UploadState,
