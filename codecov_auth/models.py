@@ -481,7 +481,6 @@ GITHUB_APP_INSTALLATION_DEFAULT_NAME = "codecov_app_installation"
 class GithubAppInstallation(
     ExportModelOperationsMixin("codecov_auth.github_app_installation"), BaseCodecovModel
 ):
-
     # replacement for owner.integration_id
     # installation id GitHub sends us in the installation-related webhook events
     installation_id = models.IntegerField(null=False, blank=False)
@@ -585,7 +584,7 @@ class OwnerProfile(
         MAINTAIN_COVERAGE = "MAINTAIN_COVERAGE"
         TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
-    
+
     class CustomerIntent(models.TextChoices):
         BUSINESS = "BUSINESS"
         PERSONAL = "PERSONAL"
@@ -602,6 +601,7 @@ class OwnerProfile(
         Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
     )
     customer_intent = models.TextField(choices=CustomerIntent.choices, null=True)
+
 
 class Session(ExportModelOperationsMixin("codecov_auth.session"), models.Model):
     class Meta:
