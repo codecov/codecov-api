@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('codecov_auth', '0048_githubappinstallation'),
+        ("codecov_auth", "0048_githubappinstallation"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ownerprofile',
-            name='customer_intent',
-            field=models.TextField(choices=[('BUSINESS', 'Business'), ('PERSONAL', 'Personal')], null=True),
+            model_name="ownerprofile",
+            name="customer_intent",
+            field=models.TextField(
+                choices=[("BUSINESS", "Business"), ("PERSONAL", "Personal")], null=True
+            ),
         ),
     ]
