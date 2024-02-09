@@ -81,11 +81,11 @@ class TotalsViewSetTestCase(TestCase):
         # the order in which these commits are created matters
         # because the branch head is the one that is created
         # later
-        self.commit2 = CommitFactory(
+        self.commit1 = CommitFactory(
             author=self.org,
             repository=self.repo,
         )
-        self.commit1 = CommitFactory(
+        self.commit2 = CommitFactory(
             author=self.org,
             repository=self.repo,
         )
