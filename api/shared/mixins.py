@@ -20,7 +20,6 @@ from codecov_auth.authentication import (
 from codecov_auth.models import Owner, Service
 from core.models import Commit, Repository
 from utils.services import get_long_service_name
-from utils.temp_branch_fix import get_or_update_branch_head
 
 
 class OwnerPropertyMixin:
@@ -53,11 +52,7 @@ class RepoPropertyMixin(OwnerPropertyMixin):
                     404,
                 )
 
-            commit_sha = get_or_update_branch_head(
-                self.repo.commits,
-                branch,
-                self.repo.repoid,
-            )
+            commit_sha = branch.head
 
         commit = self.repo.commits.filter(commitid=commit_sha).first()
         if commit is None:
