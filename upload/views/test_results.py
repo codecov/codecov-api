@@ -70,10 +70,26 @@ class TestResultsView(
         else:
             raise NotAuthenticated()
 
+        log.info(
+            "Checking to see if user is in test results feature rollout",
+            extra=dict(ownerid=owner.ownerid, repoid=repo.repoid, author=repo.author),
+        )
+
         if not TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG.check_value(
             owner_slug(repo.author), default=False
         ):
+            log.warning(
+                "User is not included in rollout, exiting",
+                extra=dict(
+                    ownerid=owner.ownerid, repoid=repo.repoid, author=repo.author
+                ),
+            )
             raise PermissionDenied()
+
+        log.info(
+            "User is included in rollout, continuing",
+            extra=dict(ownerid=owner.ownerid, repoid=repo.repoid, author=repo.author),
+        )
 
         commit, _ = Commit.objects.get_or_create(
             commitid=data["commit"],
