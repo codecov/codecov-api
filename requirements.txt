@@ -83,7 +83,7 @@ coverage==6.0.1
     # via
     #   codecovopentelem
     #   pytest-cov
-cryptography==41.0.7
+cryptography==42.0.0
     # via shared
 ddtrace==0.46.0
     # via -r requirements.in
@@ -394,7 +394,7 @@ sqlalchemy==1.4.50
     # via shared
 sqlparse==0.4.4
     # via django
-starlette==0.27.0
+starlette==0.36.2
     # via ariadne
 statsd==3.3.0
     # via shared
