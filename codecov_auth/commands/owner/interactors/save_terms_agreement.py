@@ -17,6 +17,7 @@ class TermsAgreementInput:
     marketing_consent: bool = False
     customer_intent: Optional[str] = None
 
+
 class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
 
