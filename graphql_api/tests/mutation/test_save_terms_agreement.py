@@ -17,11 +17,11 @@ query = """
 """
 
 
-class SaveSaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
+class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
     def _request(self, owner=None):
         return self.gql_request(
             query,
-            variables={"input": {"termsAgreement": True}},
+            variables={"input": {"termsAgreement": True, "customer_intent": "business"}},
             owner=owner,
         )
 

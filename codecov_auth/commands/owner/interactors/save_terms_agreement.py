@@ -6,6 +6,7 @@ from django.utils import timezone
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov.db import sync_to_async
+from codecov_auth.models import OwnerProfile
 from services.analytics import AnalyticsService
 
 
@@ -14,7 +15,7 @@ class TermsAgreementInput:
     business_email: Optional[str] = None
     terms_agreement: bool = False
     marketing_consent: bool = False
-
+    customer_intent: Optional[str] = None
 
 class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
@@ -29,6 +30,13 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         self.current_user.terms_agreement = input.terms_agreement
         self.current_user.terms_agreement_at = timezone.now()
         self.current_user.save()
+
+        OwnerProfile.objects.update_or_create(
+            owner=self.current_owner,
+            defaults={
+                "customer_intent": input.customer_intent,
+            },
+        )
 
         if input.business_email is not None and input.business_email != "":
             self.current_user.email = input.business_email
@@ -48,6 +56,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             business_email=input.get("businessEmail"),
             terms_agreement=input.get("termsAgreement"),
             marketing_consent=input.get("marketingConsent"),
+            customer_intent=input.get("customerIntent"),
         )
         self.validate(typed_input)
         return self.update_terms_agreement(typed_input)
