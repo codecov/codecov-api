@@ -8,6 +8,12 @@ class Migration(migrations.Migration):
         ("codecov_auth", "0048_githubappinstallation"),
     ]
 
+    # BEGIN;
+    # --
+    # -- Add field customer_intent to ownerprofile
+    # --
+    # ALTER TABLE "codecov_auth_ownerprofile" ADD COLUMN "customer_intent" text NULL;
+    # COMMIT;
     operations = [
         migrations.AddField(
             model_name="ownerprofile",
