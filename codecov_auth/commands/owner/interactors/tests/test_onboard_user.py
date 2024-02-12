@@ -20,7 +20,6 @@ class OnboardUserInteractorTest(TransactionTestCase):
             "type_projects": [OwnerProfile.ProjectType.PERSONAL],
             "goals": [OwnerProfile.Goal.STARTING_WITH_TESTS, OwnerProfile.Goal.OTHER],
             "other_goal": "feel confident in my code",
-            "customer_intent": "business",
         }
 
     async def test_when_unauthenticated_raise(self):
@@ -49,4 +48,3 @@ class OnboardUserInteractorTest(TransactionTestCase):
         assert user.profile.type_projects == self.good_params["type_projects"]
         assert user.profile.goals == self.good_params["goals"]
         assert user.profile.other_goal == self.good_params["other_goal"]
-        assert user.profile.customer_intent == self.good_params["customer_intent"]
