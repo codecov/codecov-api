@@ -101,3 +101,4 @@ class WebhookHandlerErrorMessages:
     SKIP_NOT_ACTIVE = "OK. Skip because repo is not active."
     SKIP_PROCESSING = "OK. Skip because commit not found or is processing."
     SKIP_PENDING_STATUSES = "Ok. Skip because status is pending."
+    SKIP_WEBHOOK_IGNORED = "Ok. Skip because config says to ignore this webhook"
