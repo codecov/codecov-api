@@ -435,9 +435,8 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch("webhook_handlers.views.github.get_config")
     def test_push_exits_early_with_200_if_repo_name_is_ignored(self, get_config_mock):
-        get_config_mock.side_effect = [WEBHOOK_SECRET.decode("utf-8"), []]
+        get_config_mock.side_effect = [WEBHOOK_SECRET.decode("utf-8"), [self.repo.name]]
 
-        self.repo.active = False
         self.repo.save()
         unmerged_commit = CommitFactory(repository=self.repo, merged=False)
         branch_name = "new-branch-name"
@@ -456,6 +455,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
 
         unmerged_commit.refresh_from_db()
+
         assert unmerged_commit.branch != branch_name
 
     @patch("redis.Redis.sismember", lambda x, y, z: True)
