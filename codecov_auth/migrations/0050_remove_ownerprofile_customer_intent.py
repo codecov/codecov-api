@@ -4,9 +4,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('codecov_auth', '0049_ownerprofile_customer_intent'),
+        ("codecov_auth", "0049_ownerprofile_customer_intent"),
     ]
 
     # BEGIN;
@@ -17,7 +16,7 @@ class Migration(migrations.Migration):
     # COMMIT;
     operations = [
         migrations.RemoveField(
-            model_name='ownerprofile',
-            name='customer_intent',
+            model_name="ownerprofile",
+            name="customer_intent",
         ),
     ]
