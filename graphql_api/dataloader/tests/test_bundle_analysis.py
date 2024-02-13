@@ -4,12 +4,44 @@ from django.test import TransactionTestCase
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.dataloader.bundle_analysis import (
+    MissingBaseReportError,
+    MissingHeadReportError,
     load_bundle_analysis_comparison,
     load_bundle_analysis_report,
 )
 from graphql_api.types.comparison.comparison import MissingBaseReport, MissingHeadReport
 from reports.models import CommitReport
 from reports.tests.factories import CommitReportFactory
+
+
+class MockReportLoader:
+    def load(self, external_id):
+        return True
+
+
+class MockReportLoaderTwo:
+    def load(self, external_id):
+        return None
+
+
+class MockBundleAnalysisLoaderServiceMissingHeadReport:
+    """
+    During construction of the Comparison the shared code may raise an exception
+    when accessing head_report if it is not available
+    """
+
+    def __init__(self):
+        raise MissingHeadReportError()
+
+
+class MockBundleAnalysisLoaderServiceMissingBaseReport:
+    """
+    During construction of the Comparison the shared code may raise an exception
+    when accessing base_report if it is not available
+    """
+
+    def __init__(self):
+        raise MissingBaseReportError()
 
 
 class BundleAnalysisComparisonLoader(TransactionTestCase):
@@ -77,15 +109,21 @@ class BundleAnalysisComparisonLoader(TransactionTestCase):
         )
         assert loader.message == MissingHeadReport.message
 
+    def test_loader_raises_missing_head_report(self):
+        with patch(
+            "graphql_api.dataloader.bundle_analysis.BundleAnalysisComparison",
+            side_effect=MissingHeadReportError(),
+        ):
+            loader = load_bundle_analysis_comparison(self.base_commit, self.head_commit)
+            assert loader.message == MissingHeadReport.message
 
-class MockReportLoader:
-    def load(self, external_id):
-        return True
-
-
-class MockReportLoaderTwo:
-    def load(self, external_id):
-        return None
+    def test_loader_raises_missing_base_report(self):
+        with patch(
+            "graphql_api.dataloader.bundle_analysis.BundleAnalysisComparison",
+            side_effect=MissingBaseReportError(),
+        ):
+            loader = load_bundle_analysis_comparison(self.base_commit, self.head_commit)
+            assert loader.message == MissingBaseReport.message
 
 
 class BundleAnalysisReportLoader(TransactionTestCase):

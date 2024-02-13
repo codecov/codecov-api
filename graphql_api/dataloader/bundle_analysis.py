@@ -1,4 +1,8 @@
-from shared.bundle_analysis import BundleAnalysisReportLoader
+from shared.bundle_analysis import (
+    BundleAnalysisReportLoader,
+    MissingBaseReportError,
+    MissingHeadReportError,
+)
 from shared.storage import get_appropriate_storage_service
 
 from core.models import Commit
@@ -28,11 +32,16 @@ def load_bundle_analysis_comparison(
         repo_key=ArchiveService.get_archive_hash(head_commit.repository),
     )
 
-    return BundleAnalysisComparison(
-        loader=loader,
-        base_report_key=base_report.external_id,
-        head_report_key=head_report.external_id,
-    )
+    try:
+        return BundleAnalysisComparison(
+            loader=loader,
+            base_report_key=base_report.external_id,
+            head_report_key=head_report.external_id,
+        )
+    except MissingBaseReportError:
+        return MissingBaseReport()
+    except MissingHeadReportError:
+        return MissingHeadReport()
 
 
 def load_bundle_analysis_report(commit: Commit) -> BundleAnalysisReport:
