@@ -585,10 +585,6 @@ class OwnerProfile(
         TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
 
-    class CustomerIntent(models.TextChoices):
-        BUSINESS = "BUSINESS"
-        PERSONAL = "PERSONAL"
-
     owner = models.OneToOneField(
         Owner, on_delete=models.CASCADE, unique=True, related_name="profile"
     )
