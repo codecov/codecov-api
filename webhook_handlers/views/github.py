@@ -458,11 +458,11 @@ class GithubWebhookHandler(APIView):
         if action == "deleted":
 
             if event == GitHubWebhookEvents.INSTALLATION:
-                ghapp_installation: Optional[GithubAppInstallation] = (
-                    owner.github_app_installations.filter(
-                        installation_id=installation_id
-                    ).first()
-                )
+                ghapp_installation: Optional[
+                    GithubAppInstallation
+                ] = owner.github_app_installations.filter(
+                    installation_id=installation_id
+                ).first()
                 if ghapp_installation is not None:
                     ghapp_installation.delete()
             # Deprecated flow - BEGIN
