@@ -68,6 +68,10 @@ class TrialStatus(models.TextChoices):
 
 
 class User(ExportModelOperationsMixin("codecov_auth.user"), BaseCodecovModel):
+    class CustomerIntent(models.TextChoices):
+        BUSINESS = "BUSINESS"
+        PERSONAL = "PERSONAL"
+
     email = CITextField(null=True)
     name = models.TextField(null=True)
     is_staff = models.BooleanField(null=True, default=False)
@@ -75,6 +79,7 @@ class User(ExportModelOperationsMixin("codecov_auth.user"), BaseCodecovModel):
     external_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     terms_agreement = models.BooleanField(null=True, default=False, blank=True)
     terms_agreement_at = DateTimeWithoutTZField(null=True, blank=True)
+    customer_intent = models.TextField(choices=CustomerIntent.choices, null=True)
 
     REQUIRED_FIELDS = []
     USERNAME_FIELD = "external_id"
@@ -584,10 +589,6 @@ class OwnerProfile(
         MAINTAIN_COVERAGE = "MAINTAIN_COVERAGE"
         TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
-
-    class CustomerIntent(models.TextChoices):
-        BUSINESS = "BUSINESS"
-        PERSONAL = "PERSONAL"
 
     owner = models.OneToOneField(
         Owner, on_delete=models.CASCADE, unique=True, related_name="profile"
