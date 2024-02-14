@@ -585,10 +585,6 @@ class OwnerProfile(
         TEAM_REQUIREMENTS = "TEAM_REQUIREMENTS"
         OTHER = "OTHER"
 
-    class CustomerIntent(models.TextChoices):
-        BUSINESS = "BUSINESS"
-        PERSONAL = "PERSONAL"
-
     owner = models.OneToOneField(
         Owner, on_delete=models.CASCADE, unique=True, related_name="profile"
     )
@@ -600,7 +596,6 @@ class OwnerProfile(
     default_org = models.ForeignKey(
         Owner, on_delete=models.CASCADE, null=True, related_name="profiles_with_default"
     )
-    customer_intent = models.TextField(choices=CustomerIntent.choices, null=True)
 
 
 class Session(ExportModelOperationsMixin("codecov_auth.session"), models.Model):
