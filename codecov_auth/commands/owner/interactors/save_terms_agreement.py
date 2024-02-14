@@ -14,7 +14,7 @@ class TermsAgreementInput:
     business_email: Optional[str] = None
     terms_agreement: bool = False
     marketing_consent: bool = False
-    customer_intent: Optional[str] = None
+    customer_intent: str = None
 
 
 class SaveTermsAgreementInteractor(BaseInteractor):
