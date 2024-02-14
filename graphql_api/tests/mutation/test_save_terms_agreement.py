@@ -21,9 +21,7 @@ class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
     def _request(self, owner=None):
         return self.gql_request(
             query,
-            variables={
-                "input": {"termsAgreement": True, "customerIntent": "business"}
-            },
+            variables={"input": {"termsAgreement": True, "customerIntent": "business"}},
             owner=owner,
         )
 
