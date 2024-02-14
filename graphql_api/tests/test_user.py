@@ -46,5 +46,5 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
             "student": True,
             "studentCreatedAt": "2023-06-19T00:00:00",
             "studentUpdatedAt": "2023-06-20T00:00:00",
-            "customerIntent": "Business"
+            "customerIntent": "Business",
         }
