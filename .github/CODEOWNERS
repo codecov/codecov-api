@@ -1,0 +1,3 @@
+upload/ @codecov/codecov/platform
+graphql_api/ @codecov/codecov/applications
+**/migrations/ @codecov/database-migration-reviewers
