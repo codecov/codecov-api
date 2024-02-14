@@ -4,9 +4,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('codecov_auth', '0050_remove_ownerprofile_customer_intent'),
+        ("codecov_auth", "0050_remove_ownerprofile_customer_intent"),
     ]
 
     # BEGIN;
@@ -17,8 +16,10 @@ class Migration(migrations.Migration):
     # COMMIT;
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='customer_intent',
-            field=models.TextField(choices=[('BUSINESS', 'Business'), ('PERSONAL', 'Personal')], null=True),
+            model_name="user",
+            name="customer_intent",
+            field=models.TextField(
+                choices=[("BUSINESS", "Business"), ("PERSONAL", "Personal")], null=True
+            ),
         ),
     ]
