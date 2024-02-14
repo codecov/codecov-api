@@ -22,7 +22,7 @@ class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
         return self.gql_request(
             query,
             variables={
-                "input": {"termsAgreement": True, "customer_intent": "business"}
+                "input": {"termsAgreement": True, "customerIntent": "business"}
             },
             owner=owner,
         )
