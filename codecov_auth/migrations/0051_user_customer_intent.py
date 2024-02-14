@@ -10,9 +10,9 @@ class Migration(migrations.Migration):
 
     # BEGIN;
     # --
-    # -- Remove field customer_intent from ownerprofile
+    # -- Add field customer_intent to user
     # --
-    # ALTER TABLE "codecov_auth_ownerprofile" DROP COLUMN "customer_intent" CASCADE;
+    # ALTER TABLE "users" ADD COLUMN "customer_intent" text NULL;
     # COMMIT;
     operations = [
         migrations.AddField(
