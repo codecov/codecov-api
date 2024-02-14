@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     # BEGIN;
     # --
-    # -- Add field customer_intent to user
+    # -- Add field customer_intent to users
     # --
     # ALTER TABLE "users" ADD COLUMN "customer_intent" text NULL;
     # COMMIT;
