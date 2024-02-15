@@ -30,5 +30,9 @@ type BundleReport {
   name: String!
   sizeTotal: Int!
   loadTimeTotal: Float!
+  moduleExtensions: [String!]!
+  moduleCount: Int!
+  assets(filters: BundleAnalysisReportFilters): [BundleAsset]!
+  asset(name: String!): BundleAsset
   bundleData: BundleData!
 }

@@ -7,4 +7,5 @@ type BundleAnalysisReport {
   loadTimeTotal: Float!
   bundles: [BundleReport]!
   bundleData: BundleData!
+  bundle(name: String!): BundleReport
 }
