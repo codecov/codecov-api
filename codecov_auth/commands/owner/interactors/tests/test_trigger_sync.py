@@ -22,5 +22,8 @@ class IsSyncingInteractorTest(TransactionTestCase):
     async def test_call_is_refreshing(self, mock_trigger_refresh):
         await TriggerSyncInteractor(self.owner, "github").execute()
         mock_trigger_refresh.assert_called_once_with(
-            self.owner.ownerid, self.owner.username, using_integration=False, manual_trigger=True
+            self.owner.ownerid,
+            self.owner.username,
+            using_integration=False,
+            manual_trigger=True,
         )
