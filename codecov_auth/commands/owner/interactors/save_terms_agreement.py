@@ -25,7 +25,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             raise ValidationError("Terms of agreement cannot be null")
         if input.customer_intent not in [
             "Business",
-            "Business",
+            "BUSINESS",
             "Personal",
             "PERSONAL",
         ]:
@@ -36,8 +36,8 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     def update_terms_agreement(self, input: TermsAgreementInput):
         self.current_user.terms_agreement = input.terms_agreement
         self.current_user.terms_agreement_at = timezone.now()
-        self.current_user.save()
         self.current_user.customer_intent = input.customer_intent
+        self.current_user.save()
 
         if input.business_email is not None and input.business_email != "":
             self.current_user.email = input.business_email
