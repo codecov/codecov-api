@@ -6,17 +6,5 @@ type BundleAnalysisReport {
   sizeTotal: Int!
   loadTimeTotal: Float!
   bundles: [BundleReport]!
-  bundle(name: String!, filters: BundleAnalysisReportFilters): BundleReport
-  moduleExtensions: [String!]!
-  moduleCount: Int!
-  assets: [BundleAsset]!
-  asset(name: String!): BundleAsset
-  bundleData: BundleData!
-}
-
-type BundleReport {
-  name: String!
-  sizeTotal: Int!
-  loadTimeTotal: Float!
   bundleData: BundleData!
 }

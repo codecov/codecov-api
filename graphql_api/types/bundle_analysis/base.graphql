@@ -25,3 +25,10 @@ type BundleAsset {
   modules: [BundleModule]!
   bundleData: BundleData!
 }
+
+type BundleReport {
+  name: String!
+  sizeTotal: Int!
+  loadTimeTotal: Float!
+  bundleData: BundleData!
+}
