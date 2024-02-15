@@ -23,6 +23,13 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     def validate(self, input: TermsAgreementInput):
         if input.terms_agreement is None:
             raise ValidationError("Terms of agreement cannot be null")
+        if input.customer_intent not in [
+            "Business",
+            "Business",
+            "Personal",
+            "PERSONAL",
+        ]:
+            raise ValidationError("Invalid customer intent provided")
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
