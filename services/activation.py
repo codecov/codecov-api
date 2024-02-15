@@ -42,6 +42,9 @@ class CloudActivator(BaseActivator):
         self.org.activate_user(self.owner)
 
     def is_activated(self) -> bool:
+        if not self.org.plan_activated_users:
+            return False
+
         return self.owner.pk in self.org.plan_activated_users
 
 
