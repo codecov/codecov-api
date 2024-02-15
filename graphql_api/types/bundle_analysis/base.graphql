@@ -1,0 +1,27 @@
+type BundleSize {
+  gzip: Int!
+  uncompress: Int!
+}
+
+type BundleLoadTime {
+  threeG: Int!
+  highSpeed: Int!
+}
+
+type BundleData {
+  loadTime: BundleLoadTime!
+  size: BundleSize!
+}
+
+type BundleModule {
+  name: String!
+  bundleData: BundleData!
+}
+
+type BundleAsset {
+  name: String!
+  normalizedName: String!
+  moduleExtensions: [String!]!
+  modules: [BundleModule]!
+  bundleData: BundleData!
+}
