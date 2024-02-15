@@ -200,6 +200,7 @@ class TaskService(object):
         sync_teams=True,
         sync_repos=True,
         using_integration=False,
+        manual_trigger=False,
     ):
         """
         Send sync_teams and/or sync_repos task message
@@ -228,6 +229,7 @@ class TaskService(object):
                         ownerid=ownerid,
                         username=username,
                         using_integration=using_integration,
+                        manual_trigger=manual_trigger,
                     ),
                 )
             )
