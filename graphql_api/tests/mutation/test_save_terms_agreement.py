@@ -51,5 +51,10 @@ class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
     def test_invalid_customer_intent(self):
         owner = OwnerFactory()
         assert self._request_invalid_customer_intent(owner=owner) == {
-            "saveTermsAgreement": None
+            "saveTermsAgreement": {
+                "error": {
+                    "__typename": "ValidationError",
+                    "message": "Invalid customer intent provided",
+                }
+            }
         }
