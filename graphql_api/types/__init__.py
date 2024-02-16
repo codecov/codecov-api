@@ -14,10 +14,8 @@ from .bundle_analysis import (
     bundle_asset_bindable,
     bundle_comparison_bindable,
     bundle_data_bindable,
-    bundle_load_time_bindable,
     bundle_module_bindable,
     bundle_report_bindable,
-    bundle_size_bindable,
 )
 from .commit import commit, commit_bindable
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
@@ -115,8 +113,6 @@ bindables = [
     branch_bindable,
     bundle_module_bindable,
     bundle_asset_bindable,
-    bundle_size_bindable,
-    bundle_load_time_bindable,
     bundle_data_bindable,
     bundle_analysis_comparison_result_bindable,
     bundle_analysis_comparison_bindable,

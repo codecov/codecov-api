@@ -3,10 +3,8 @@ from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from .base import (
     bundle_asset_bindable,
     bundle_data_bindable,
-    bundle_load_time_bindable,
     bundle_module_bindable,
     bundle_report_bindable,
-    bundle_size_bindable,
 )
 from .comparison import (
     bundle_analysis_comparison_bindable,

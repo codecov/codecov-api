@@ -34,11 +34,54 @@ def load_report(
     return loader.load(commit_report.external_id)
 
 
+# TODO: depreacted with Issue 1199
 def load_time_conversion(size):
     """
     Converts total size in bytes to approximate time (in seconds) to download using a 3G internet (3 Mbps)
     """
     return round((8 * size) / (1024 * 1024 * 3), 1)
+
+
+@dataclass
+class BundleLoadTime:
+    """
+    Value in Milliseconds
+    Reference for speed estimation:
+    https://firefox-source-docs.mozilla.org/devtools-user/network_monitor/throttling/index.html
+    """
+
+    three_g: int
+    high_speed: int
+
+
+@dataclass
+class BundleSize:
+    """
+    Value in Bytes
+    """
+
+    gzip: int
+    uncompress: int
+
+
+@dataclass
+class BundleData:
+    def __init__(self, size_in_bytes: int):
+        self.size_in_bytes = size_in_bytes
+
+    @cached_property
+    def size(self) -> BundleSize:
+        return BundleSize(
+            gzip=int(self.size_in_bytes * 0.001),
+            uncompress=int(self.size_in_bytes),
+        )
+
+    @cached_property
+    def load_time(self) -> BundleLoadTime:
+        return BundleLoadTime(
+            three_g=int(((8 * self.size_in_bytes) / (750 * 1000)) * 1000),
+            high_speed=int(((8 * self.size_in_bytes) / (30 * 1000 * 1000)) * 1000),
+        )
 
 
 @dataclass
