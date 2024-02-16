@@ -123,6 +123,7 @@ class PrometheusUserAgentLabelTest(TestCase):
                 if metric.name in USER_AGENT_METRICS:
                     for sample in metric.samples:
                         assert (
-                            sample.labels["user_agent"] == "none"
+                            sample.labels["user_agent"]
+                            == "none"  # not all requests have User-Agent header defined
                             or sample.labels["user_agent"] == user_agent
                         )

@@ -11,25 +11,7 @@ from django_prometheus.middleware import (
 
 from utils.services import get_long_service_name
 
-
-def get_service_long_name(request: HttpRequest) -> Optional[str]:
-    resolver_match = resolve(request.path_info)
-    service = resolver_match.kwargs.get("service")
-    if service is not None:
-        resolver_match.kwargs["service"] = get_long_service_name(service.lower())
-        service = get_long_service_name(service.lower())
-        return service
-    return None
-
-
-class ServiceMiddleware(MiddlewareMixin):
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        service = get_service_long_name(request)
-        if service:
-            view_kwargs["service"] = service
-        return None
-
-
+# Prometheus metrics that will additional be annotated with User-Agent http header as label
 USER_AGENT_METRICS = [
     "django_http_requests_unknown_latency_including_middlewares_total",
     "django_http_requests_latency_seconds_by_view_method",
@@ -50,9 +32,27 @@ USER_AGENT_METRICS = [
 ]
 
 
+def get_service_long_name(request: HttpRequest) -> Optional[str]:
+    resolver_match = resolve(request.path_info)
+    service = resolver_match.kwargs.get("service")
+    if service is not None:
+        resolver_match.kwargs["service"] = get_long_service_name(service.lower())
+        service = get_long_service_name(service.lower())
+        return service
+    return None
+
+
+class ServiceMiddleware(MiddlewareMixin):
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        service = get_service_long_name(request)
+        if service:
+            view_kwargs["service"] = service
+        return None
+
+
 class CustomMetricsWithUA(Metrics):
     """
-    Prometheus blah blah with user_agent header label
+    django_prometheus Metrics class but with extra user_agent label for applicable metrics
     """
 
     def register_metric(self, metric_cls, name, documentation, labelnames=(), **kwargs):
@@ -65,7 +65,7 @@ class CustomMetricsWithUA(Metrics):
 
 class AppMetricsBeforeMiddlewareWithUA(PrometheusBeforeMiddleware):
     """
-    Prometheus blah blah but with user_agent header label
+    django_prometheus monitoring middleware using custom Metrics class
     """
 
     metrics_cls = CustomMetricsWithUA
@@ -73,7 +73,7 @@ class AppMetricsBeforeMiddlewareWithUA(PrometheusBeforeMiddleware):
 
 class AppMetricsAfterMiddlewareWithUA(PrometheusAfterMiddleware):
     """
-    Prometheus blah blah but with user_agent header label
+    django_prometheus monitoring middleware using custom Metrics class that injects User-Agent label when possible
     """
 
     metrics_cls = CustomMetricsWithUA
