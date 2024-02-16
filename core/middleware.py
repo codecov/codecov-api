@@ -11,7 +11,7 @@ from django_prometheus.middleware import (
 
 from utils.services import get_long_service_name
 
-# Prometheus metrics that will additional be annotated with User-Agent http header as label
+# Prometheus metrics that will be annotated with User-Agent http header as label
 USER_AGENT_METRICS = [
     "django_http_requests_unknown_latency_including_middlewares_total",
     "django_http_requests_latency_seconds_by_view_method",
