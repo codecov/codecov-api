@@ -433,6 +433,31 @@ class GithubWebhookHandlerTests(APITestCase):
         unmerged_commit.refresh_from_db()
         assert unmerged_commit.branch != branch_name
 
+    @patch("webhook_handlers.views.github.get_config")
+    def test_push_exits_early_with_200_if_repo_name_is_ignored(self, get_config_mock):
+        get_config_mock.side_effect = [WEBHOOK_SECRET.decode("utf-8"), [self.repo.name]]
+
+        self.repo.save()
+        unmerged_commit = CommitFactory(repository=self.repo, merged=False)
+        branch_name = "new-branch-name"
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PUSH,
+            data={
+                "ref": "refs/heads/" + branch_name,
+                "repository": {"id": self.repo.service_id},
+                "commits": [
+                    {"id": unmerged_commit.commitid, "message": unmerged_commit.message}
+                ],
+            },
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        unmerged_commit.refresh_from_db()
+
+        assert unmerged_commit.branch != branch_name
+
     @patch("redis.Redis.sismember", lambda x, y, z: True)
     @patch("services.task.TaskService.status_set_pending")
     def test_push_triggers_set_pending_task_on_most_recent_commit(
