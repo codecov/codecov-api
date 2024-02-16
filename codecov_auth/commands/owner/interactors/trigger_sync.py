@@ -16,4 +16,5 @@ class TriggerSyncInteractor(BaseInteractor):
             self.current_owner.ownerid,
             self.current_owner.username,
             using_integration=False,
+            manual_trigger=True,
         )
