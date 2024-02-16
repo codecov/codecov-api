@@ -24,7 +24,6 @@ from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
 
-
 log = logging.getLogger(__name__)
 
 
