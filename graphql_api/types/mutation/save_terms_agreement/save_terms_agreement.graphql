@@ -8,5 +8,5 @@ input SaveTermsAgreementInput {
   businessEmail: String
   termsAgreement: Boolean!
   marketingConsent: Boolean
-  customerIntent: String!
+  customerIntent: String
 }
