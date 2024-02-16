@@ -3,6 +3,7 @@ from prometheus_client import REGISTRY
 
 from core.middleware import USER_AGENT_METRICS
 
+
 # TODO: consolidate with worker/helpers/tests/unit/test_checkpoint_logger.py into shared repo
 class CounterAssertion:
     def __init__(self, metric, labels, expected_value):
@@ -15,6 +16,7 @@ class CounterAssertion:
 
     def __repr__(self):
         return f"<CounterAssertion: {self.metric} {self.labels}>"
+
 
 # TODO: consolidate with worker/helpers/tests/unit/test_checkpoint_logger.py into shared repo
 class CounterAssertionSet:
