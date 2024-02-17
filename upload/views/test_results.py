@@ -7,6 +7,7 @@ from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from sentry_sdk import metrics
 
 from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
@@ -18,7 +19,7 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
-from upload.helpers import dispatch_upload_task
+from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
 from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
@@ -87,6 +88,16 @@ class TestResultsView(
         log.info(
             "User is included in rollout, continuing",
             extra=dict(repoid=repo.repoid, author=repo.author),
+        )
+
+        metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="test_results",
+                request=request,
+                repository=repo,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
 
         commit, _ = Commit.objects.get_or_create(
