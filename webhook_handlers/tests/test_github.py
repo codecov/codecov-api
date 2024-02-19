@@ -627,7 +627,6 @@ class GithubWebhookHandlerTests(APITestCase):
         pull.refresh_from_db()
         assert pull.title == new_title
 
-    # THIS
     @patch("services.task.TaskService.refresh")
     def test_installation_creates_new_owner_if_dne(self, mock_refresh):
         username, service_id = "newuser", 123456
@@ -1030,7 +1029,6 @@ class GithubWebhookHandlerTests(APITestCase):
         assert installation.installation_id == installation_id
         assert installation.repository_service_ids == None
 
-    # THIS
     @patch("services.task.TaskService.refresh")
     def test_installation_trigger_refresh_with_other_actions(self, refresh_mock):
         owner = OwnerFactory(service=Service.GITHUB.value)
