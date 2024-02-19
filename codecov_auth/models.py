@@ -494,6 +494,12 @@ class GithubAppInstallation(
     # otherwise, it's a list of repo.id values
     repository_service_ids = ArrayField(models.TextField(null=False), null=True)
 
+    # Needed to get a JWT for the app
+    # NULL for the default app, which is configured in the install YAML
+    app_id = models.IntegerField(null=True, blank=False)
+    # Same comments for app_id apply
+    pem_path = models.TextField(null=True, blank=False)
+
     owner = models.ForeignKey(
         Owner,
         null=False,
