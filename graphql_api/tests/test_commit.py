@@ -932,31 +932,70 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             )
             storage.write_file(get_bucket_name(), storage_path, f)
 
-        query = (
-            query_commit
-            % """
-            bundleAnalysisReport {
-                __typename
-                ... on BundleAnalysisReport {
-                    sizeTotal
-                    loadTimeTotal
-                    bundles {
-                        name
-                        sizeTotal
-                        loadTimeTotal
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!, $filters: BundleAnalysisReportFilters) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        sizeTotal
+                                        loadTimeTotal
+                                        bundles {
+                                            name
+                                            sizeTotal
+                                            loadTimeTotal
+                                            moduleExtensions
+                                            moduleCount
+                                            assets(filters: $filters) {
+                                                name
+                                            }
+                                            asset(name: "not_exist") {
+                                                name
+                                            }
+                                            bundleData {
+                                                loadTime {
+                                                    threeG
+                                                    highSpeed
+                                                }
+                                                size {
+                                                    gzip
+                                                    uncompress
+                                                }
+                                            }
+                                        }
+                                        bundleData {
+                                            loadTime {
+                                                threeG
+                                                highSpeed
+                                            }
+                                            size {
+                                                gzip
+                                                uncompress
+                                            }
+                                        }
+                                        bundle(name: "not_exist") {
+                                            name
+                                        }
+                                    }
+                                    ... on MissingHeadReport {
+                                        message
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                ... on MissingHeadReport {
-                    message
-                }
             }
-            """
-        )
+        """
 
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
             "commit": self.commit.commitid,
+            "filters": {"moduleExtensions": []},
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
@@ -966,11 +1005,94 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "sizeTotal": 201720,
             "loadTimeTotal": 0.5,
             "bundles": [
-                {"name": "b1", "sizeTotal": 20, "loadTimeTotal": 0.0},
-                {"name": "b2", "sizeTotal": 200, "loadTimeTotal": 0.0},
-                {"name": "b3", "sizeTotal": 1500, "loadTimeTotal": 0.0},
-                {"name": "b5", "sizeTotal": 200000, "loadTimeTotal": 0.5},
+                {
+                    "name": "b1",
+                    "sizeTotal": 20,
+                    "loadTimeTotal": 0.0,
+                    "moduleExtensions": [],
+                    "moduleCount": 0,
+                    "assets": [],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 0,
+                            "highSpeed": 0,
+                        },
+                        "size": {
+                            "gzip": 0,
+                            "uncompress": 20,
+                        },
+                    },
+                },
+                {
+                    "name": "b2",
+                    "sizeTotal": 200,
+                    "loadTimeTotal": 0.0,
+                    "moduleExtensions": [],
+                    "moduleCount": 0,
+                    "assets": [],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 2,
+                            "highSpeed": 0,
+                        },
+                        "size": {
+                            "gzip": 0,
+                            "uncompress": 200,
+                        },
+                    },
+                },
+                {
+                    "name": "b3",
+                    "sizeTotal": 1500,
+                    "loadTimeTotal": 0.0,
+                    "moduleExtensions": [],
+                    "moduleCount": 0,
+                    "assets": [],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 16,
+                            "highSpeed": 0,
+                        },
+                        "size": {
+                            "gzip": 1,
+                            "uncompress": 1500,
+                        },
+                    },
+                },
+                {
+                    "name": "b5",
+                    "sizeTotal": 200000,
+                    "loadTimeTotal": 0.5,
+                    "moduleExtensions": [],
+                    "moduleCount": 0,
+                    "assets": [],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 2133,
+                            "highSpeed": 53,
+                        },
+                        "size": {
+                            "gzip": 200,
+                            "uncompress": 200000,
+                        },
+                    },
+                },
             ],
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 2151,
+                    "highSpeed": 53,
+                },
+                "size": {
+                    "gzip": 201,
+                    "uncompress": 201720,
+                },
+            },
+            "bundle": None,
         }
 
     def test_compare_with_parent_missing_change_coverage(self):
