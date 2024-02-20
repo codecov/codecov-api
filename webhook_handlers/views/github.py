@@ -249,6 +249,20 @@ class GithubWebhookHandler(APIView):
             )
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
+        push_webhook_ignore_repos = get_config(
+            "setup", "push_webhook_ignore_repo_names", default=[]
+        )
+        if repo.name in push_webhook_ignore_repos:
+            log.debug(
+                "Codecov is configured to ignore this repository name",
+                extra=dict(
+                    repoid=repo.repoid,
+                    github_webhook_event=self.event,
+                    repo_name=repo.name,
+                ),
+            )
+            return Response(data=WebhookHandlerErrorMessages.SKIP_WEBHOOK_IGNORED)
+
         branch_name = self.request.data.get("ref")[11:]
         commits = self.request.data.get("commits", [])
 
