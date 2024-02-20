@@ -14,6 +14,7 @@ class TermsAgreementInput:
     business_email: Optional[str] = None
     terms_agreement: bool = False
     marketing_consent: bool = False
+    customer_intent: Optional[str] = None
 
 
 class SaveTermsAgreementInteractor(BaseInteractor):
@@ -22,12 +23,20 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     def validate(self, input: TermsAgreementInput):
         if input.terms_agreement is None:
             raise ValidationError("Terms of agreement cannot be null")
+        if input.customer_intent and input.customer_intent not in [
+            "Business",
+            "BUSINESS",
+            "Personal",
+            "PERSONAL",
+        ]:
+            raise ValidationError("Invalid customer intent provided")
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
     def update_terms_agreement(self, input: TermsAgreementInput):
         self.current_user.terms_agreement = input.terms_agreement
         self.current_user.terms_agreement_at = timezone.now()
+        self.current_user.customer_intent = input.customer_intent
         self.current_user.save()
 
         if input.business_email is not None and input.business_email != "":
@@ -48,6 +57,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             business_email=input.get("businessEmail"),
             terms_agreement=input.get("termsAgreement"),
             marketing_consent=input.get("marketingConsent"),
+            customer_intent=input.get("customerIntent"),
         )
         self.validate(typed_input)
         return self.update_terms_agreement(typed_input)

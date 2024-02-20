@@ -39,3 +39,9 @@ def resolve_student_created_at(user: Owner, info) -> Optional[datetime]:
 @user_bindable.field("studentUpdatedAt")
 def resolve_student_updated_at(user: Owner, info) -> Optional[datetime]:
     return user.student_updated_at
+
+
+@user_bindable.field("customerIntent")
+def resolve_customer_intent(user: Owner, info) -> str:
+    owner = user
+    return owner.user.customer_intent
