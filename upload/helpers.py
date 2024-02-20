@@ -175,9 +175,7 @@ def parse_params(data):
                     else (
                         value[7:]
                         if value[:7] == "origin/"
-                        else value[11:]
-                        if value[:11] == "refs/heads/"
-                        else value
+                        else value[11:] if value[:11] == "refs/heads/" else value
                     )
                 ),
             ),
@@ -753,6 +751,7 @@ def validate_activated_repo(repository):
         )
 
 
+# headers["User-Agent"] should look something like this: codecov-cli/0.4.7 or codecov-uploader/0.7.1
 def get_agent_from_headers(headers):
     try:
         return headers["User-Agent"].split("/")[0].split("-")[1]
@@ -763,7 +762,7 @@ def get_agent_from_headers(headers):
                 err=str(e),
             ),
         )
-        return "unsupported-user-agent"
+        return "unknown-user-agent"
 
 
 def get_version_from_headers(headers):
@@ -777,7 +776,7 @@ def get_version_from_headers(headers):
                 err=str(e),
             ),
         )
-        return "unsupported-user-agent"
+        return "unknown-user-agent"
 
 
 def generate_upload_sentry_metrics_tags(
