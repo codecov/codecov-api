@@ -80,17 +80,22 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
 
     async def test_teardown_delete_temp_files(self):
         os.system("rm -rf /tmp/*")
-        tempfile.mkstemp()
-        tempfile.mkdtemp()
+        # Will be deleted
+        tempfile.mkstemp(prefix="bundle_analysis_")
+        tempfile.mkdtemp(prefix="bundle_analysis_")
+
+        # Will not be deleted
+        tempfile.mkstemp(prefix="something_else")
+        tempfile.mkdtemp(prefix="something_else")
 
         before_files = os.listdir("/tmp")
-        assert len(before_files) == 2
+        assert len(before_files) == 4
 
         schema = generate_schema_that_raise_with(Unauthorized())
         await self.do_query(schema)
 
         after_files = os.listdir("/tmp")
-        assert len(after_files) == 0
+        assert len(after_files) == 2
         os.system("rm -rf /tmp/*")
 
     @patch("graphql_api.views.shutil.rmtree")
@@ -98,8 +103,8 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
         rmtree_mock.side_effect = Exception("something went wrong")
 
         os.system("rm -rf /tmp/*")
-        tempfile.mkstemp()
-        tempfile.mkdtemp()
+        tempfile.mkstemp(prefix="bundle_analysis_")
+        tempfile.mkdtemp(prefix="bundle_analysis_")
 
         before_files = os.listdir("/tmp")
         assert len(before_files) == 2
