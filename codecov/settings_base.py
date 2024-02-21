@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    "core.middleware.AppMetricsBeforeMiddlewareWithUA",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -62,7 +62,7 @@ MIDDLEWARE = [
     "core.middleware.ServiceMiddleware",
     "codecov_auth.middleware.CurrentOwnerMiddleware",
     "codecov_auth.middleware.ImpersonationMiddleware",
-    "django_prometheus.middleware.PrometheusAfterMiddleware",
+    "core.middleware.AppMetricsAfterMiddlewareWithUA",
 ]
 
 ROOT_URLCONF = "codecov.urls"
