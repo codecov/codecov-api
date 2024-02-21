@@ -3,16 +3,18 @@ from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .branch import branch, branch_bindable
-from .bundle_analysis_comparison import (
+from .bundle_analysis import (
+    bundle_analysis,
     bundle_analysis_comparison,
     bundle_analysis_comparison_bindable,
     bundle_analysis_comparison_result_bindable,
-    bundle_comparison_bindable,
-)
-from .bundle_analysis_report import (
     bundle_analysis_report,
     bundle_analysis_report_bindable,
     bundle_analysis_report_result_bindable,
+    bundle_asset_bindable,
+    bundle_comparison_bindable,
+    bundle_data_bindable,
+    bundle_module_bindable,
     bundle_report_bindable,
 )
 from .commit import commit, commit_bindable
@@ -70,6 +72,7 @@ types = [
     query,
     me,
     branch,
+    bundle_analysis,
     bundle_analysis_comparison,
     bundle_analysis_report,
     commit,
@@ -108,6 +111,9 @@ bindables = [
     query_bindable,
     me_bindable,
     branch_bindable,
+    bundle_module_bindable,
+    bundle_asset_bindable,
+    bundle_data_bindable,
     bundle_analysis_comparison_result_bindable,
     bundle_analysis_comparison_bindable,
     bundle_comparison_bindable,

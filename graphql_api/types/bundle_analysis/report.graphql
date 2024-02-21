@@ -6,10 +6,6 @@ type BundleAnalysisReport {
   sizeTotal: Int!
   loadTimeTotal: Float!
   bundles: [BundleReport]!
-}
-
-type BundleReport {
-  name: String!
-  sizeTotal: Int!
-  loadTimeTotal: Float!
+  bundleData: BundleData!
+  bundle(name: String!): BundleReport
 }
