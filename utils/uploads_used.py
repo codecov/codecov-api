@@ -11,7 +11,7 @@ from utils.config import get_config
 
 log = logging.getLogger(__name__)
 # default 6 hours for now
-cache_time = get_config("setup", "upload_usage_cache_time", 21600)
+cache_time = get_config("setup", "upload_usage_cache_time", default=21600)
 
 
 def get_uploads_used(redis, plan_service, limit, owner):
