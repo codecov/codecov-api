@@ -40,7 +40,7 @@ python-redis-lock
 pytz
 redis
 requests
-sentry-sdk
+sentry-sdk>=1.40.0
 setproctitle
 simplejson
 stripe

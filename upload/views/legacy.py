@@ -19,6 +19,7 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import metrics
 
 from codecov.db import sync_to_async
@@ -34,6 +35,7 @@ from upload.helpers import (
     determine_upload_commit_to_use,
     determine_upload_pr_to_use,
     dispatch_upload_task,
+    generate_upload_sentry_metrics_tags,
     insert_commit,
     parse_headers,
     parse_params,
@@ -143,6 +145,16 @@ class UploadHandler(APIView, ShelterMixin):
             response.content = "Found too many repos"
             metrics.incr("uploads.rejected", 1)
             return response
+
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+            ),
+        )
 
         log.info(
             "Found repository for upload request",
@@ -304,9 +316,11 @@ class UploadHandler(APIView, ShelterMixin):
             "build_url": build_url,
             "reportid": reportid,
             "redis_key": redis_key,  # location of report for v2 uploads; this will be "None" for v4 uploads
-            "url": path
-            if path  # If a path was generated for a v4 upload, pass that to the 'url' field, potentially overwriting it
-            else upload_params.get("url"),
+            "url": (
+                path
+                if path  # If a path was generated for a v4 upload, pass that to the 'url' field, potentially overwriting it
+                else upload_params.get("url")
+            ),
             # These values below might be different from the initial request parameters, so overwrite them here to ensure they're up-to-date
             "commit": commitid,
             "branch": branch,
