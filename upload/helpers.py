@@ -175,7 +175,9 @@ def parse_params(data):
                     else (
                         value[7:]
                         if value[:7] == "origin/"
-                        else value[11:] if value[:11] == "refs/heads/" else value
+                        else value[11:]
+                        if value[:11] == "refs/heads/"
+                        else value
                     )
                 ),
             ),
