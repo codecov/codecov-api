@@ -51,9 +51,3 @@ def resolve_bundle_data(
     bundles_analysis_report: BundleAnalysisReport, info
 ) -> BundleData:
     return BundleData(bundles_analysis_report.size_total)
-
-
-@bundle_analysis_report_bindable.field("moduleCount")
-def resolve_module_count(bundles_analysis_report: BundleAnalysisReport, info) -> int:
-    # TODO: Unimplemented
-    return 0
