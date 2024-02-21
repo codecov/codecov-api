@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "staticanalysis",
     "timeseries",
     "django_prometheus",
+    "user_measurements",
+    "psqlextra",
 ]
 
 MIDDLEWARE = [
@@ -198,7 +200,7 @@ CONN_MAX_AGE = int(get_config("services", "database", "conn_max_age", default=0)
 
 DATABASES = {
     "default": {
-        "ENGINE": "django_prometheus.db.backends.postgresql",
+        "ENGINE": "psqlextra.backend",
         "NAME": DATABASE_NAME,
         "USER": DATABASE_USER,
         "PASSWORD": DATABASE_PASSWORD,
@@ -210,7 +212,7 @@ DATABASES = {
 
 if DATABASE_READ_REPLICA_ENABLED:
     DATABASES["default_read"] = {
-        "ENGINE": "django_prometheus.db.backends.postgresql",
+        "ENGINE": "psqlextra.backend",
         "NAME": DATABASE_READ_NAME,
         "USER": DATABASE_READ_USER,
         "PASSWORD": DATABASE_READ_PASSWORD,
@@ -221,7 +223,7 @@ if DATABASE_READ_REPLICA_ENABLED:
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        "ENGINE": "django_prometheus.db.backends.postgresql",
+        "ENGINE": "psqlextra.backend",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
@@ -232,7 +234,7 @@ if TIMESERIES_ENABLED:
 
     if TIMESERIES_DATABASE_READ_REPLICA_ENABLED:
         DATABASES["timeseries_read"] = {
-            "ENGINE": "django_prometheus.db.backends.postgresql",
+            "ENGINE": "psqlextra.backend",
             "NAME": TIMESERIES_DATABASE_READ_NAME,
             "USER": TIMESERIES_DATABASE_READ_USER,
             "PASSWORD": TIMESERIES_DATABASE_READ_PASSWORD,
@@ -240,6 +242,12 @@ if TIMESERIES_ENABLED:
             "PORT": TIMESERIES_DATABASE_READ_PORT,
             "CONN_MAX_AGE": CONN_MAX_AGE,
         }
+
+# See https://django-postgres-extra.readthedocs.io/en/master/settings.html
+POSTGRES_EXTRA_DB_BACKEND_BASE: "django_prometheus.db.backends.postgresql"
+
+# Allows to use the pgpartition command
+PSQLEXTRA_PARTITIONING_MANAGER = 'user_measurements.partitioning.manager'
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 

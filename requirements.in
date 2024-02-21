@@ -9,6 +9,7 @@ django-cors-headers
 django-dynamic-fixture
 django-filter
 django-model-utils
+django-postgres-extra>=2.0.8
 django-prometheus
 djangorestframework
 drf-spectacular
