@@ -464,7 +464,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None,
+        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
     def test_installation_creates_new_owner_if_dne(self):
         username, service_id = "newuser", 123456
@@ -477,7 +477,10 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "repository_selection": "selected",
                     "account": {"id": service_id, "login": username},
                 },
-                "repositories": [{"id": "12321"}, {"id": "12343"}],
+                "repositories": [
+                    {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
+                    {"id": "12343", "node_id": "R_kgDOG2tABC"},
+                ],
                 "sender": {"type": "User"},
             },
         )
@@ -502,7 +505,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None,
+        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
     def test_installation_creates_new_owner_if_dne_all_repos(self):
         username, service_id = "newuser", 123456
@@ -515,7 +518,10 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "repository_selection": "all",
                     "account": {"id": service_id, "login": username},
                 },
-                "repositories": [{"id": "12321"}, {"id": "12343"}],
+                "repositories": [
+                    {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
+                    {"id": "12343", "node_id": "R_kgDOG2tABC"},
+                ],
                 "sender": {"type": "User"},
             },
         )
@@ -540,7 +546,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None,
+        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
     def test_installation_repositories_creates_new_owner_if_dne(self):
         username, service_id = "newuser", 123456
@@ -609,7 +615,10 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
                 },
-                "repositories": [{"id": "12321"}, {"id": "12343"}],
+                "repositories": [
+                    {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
+                    {"id": "12343", "node_id": "R_kgDOG2tABC"},
+                ],
                 "action": "deleted",
                 "sender": {"type": "User"},
             },
@@ -630,7 +639,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None,
+        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
     def test_installation_repositories_update_existing_ghapp(self):
         # Should set integration_id to null for owner,
@@ -663,8 +672,10 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
                 },
-                "repositories_added": [{"id": repo2.service_id}],
-                "repositories_removed": [{"id": repo1.service_id}],
+                "repositories_added": [{"id": repo2.service_id, "node_id": "R_repo2"}],
+                "repositories_removed": [
+                    {"id": repo1.service_id, "node_id": "R_repo1"}
+                ],
                 "repository_selection": "selected",
                 "action": "added",
                 "sender": {"type": "User"},
@@ -677,7 +688,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None,
+        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
     def test_installation_repositories_update_existing_ghapp_all_repos(self):
         # Should set integration_id to null for owner,
@@ -710,7 +721,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "repository_selection": "all",
                     "account": {"id": owner.service_id, "login": owner.username},
                 },
-                "repositories_added": [{"id": repo2.service_id}],
+                "repositories_added": [{"id": repo2.service_id, "node_id": "R_repo2"}],
                 "repositories_removed": [],
                 "repository_selection": "all",
                 "action": "deleted",
@@ -724,7 +735,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None,
+        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
     def test_installation_with_other_actions_sets_owner_itegration_id_if_none(
         self,
@@ -743,7 +754,10 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
                 },
-                "repositories": [{"id": "12321"}, {"id": "12343"}],
+                "repositories": [
+                    {"id": "12321", "node_id": "R_12321CAT"},
+                    {"id": "12343", "node_id": "R_12343DOG"},
+                ],
                 "action": "added",
                 "sender": {"type": "User"},
             },
@@ -763,7 +777,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration: None,
+        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
     def test_installation_repositories_with_other_actions_sets_owner_itegration_id_if_none(
         self,
@@ -814,20 +828,25 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                 },
                 "action": "added",
                 "sender": {"type": "User"},
-                "repositories": [{"id": "12321"}, {"id": "12343"}],
+                "repositories": [
+                    {"id": "12321", "node_id": "R_12321CAT"},
+                    {"id": "12343", "node_id": "R_12343DOG"},
+                ],
             },
         )
 
-        refresh_mock.assert_has_calls(
-            [
-                call(
-                    ownerid=owner.ownerid,
-                    username=owner.username,
-                    sync_teams=False,
-                    sync_repos=True,
-                    using_integration=True,
-                ),
-            ]
+        assert refresh_mock.call_count == 1
+        _, kwargs = refresh_mock.call_args_list[0]
+        # Because we throw these into a set we need to order them here
+        # In practive it doesn't matter, but for the test it does.
+        kwargs["repos_affected"].sort()
+        assert kwargs == dict(
+            ownerid=owner.ownerid,
+            username=owner.username,
+            sync_teams=False,
+            sync_repos=True,
+            using_integration=True,
+            repos_affected=[("12321", "R_12321CAT"), ("12343", "R_12343DOG")],
         )
 
     def test_organization_with_removed_action_removes_user_from_org_and_activated_user_list(
