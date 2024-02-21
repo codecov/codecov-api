@@ -65,14 +65,16 @@ def parse_params(data):
             "type": "string",
             "nullable": True,
             "default_setter": (
-                lambda document: document.get("slug")
-                .rsplit("/", 1)[0]
-                .replace(
-                    "/", ":"
-                )  # we use ':' as separator for gitlab subgroups internally
-                if document.get("slug")
-                and len(document.get("slug").rsplit("/", 1)) == 2
-                else None
+                lambda document: (
+                    document.get("slug")
+                    .rsplit("/", 1)[0]
+                    .replace(
+                        "/", ":"
+                    )  # we use ':' as separator for gitlab subgroups internally
+                    if document.get("slug")
+                    and len(document.get("slug").rsplit("/", 1)) == 2
+                    else None
+                )
             ),
         },
         # repo name, we set this by parsing the value of "slug" if provided
@@ -80,10 +82,12 @@ def parse_params(data):
             "type": "string",
             "nullable": True,
             "default_setter": (
-                lambda document: document.get("slug").rsplit("/", 1)[1]
-                if document.get("slug")
-                and len(document.get("slug").rsplit("/", 1)) == 2
-                else None
+                lambda document: (
+                    document.get("slug").rsplit("/", 1)[1]
+                    if document.get("slug")
+                    and len(document.get("slug").rsplit("/", 1)) == 2
+                    else None
+                )
             ),
         },
         # indicates whether the token provided is a global upload token rather than a repository upload token
@@ -91,9 +95,11 @@ def parse_params(data):
         "using_global_token": {
             "type": "boolean",
             "default_setter": (
-                lambda document: True
-                if document.get("token") and document.get("token") in global_tokens
-                else False
+                lambda document: (
+                    True
+                    if document.get("token") and document.get("token") in global_tokens
+                    else False
+                )
             ),
         },
         # --- The following parameters are expected to be provided in the upload request.
@@ -126,9 +132,11 @@ def parse_params(data):
                 lambda value: "travis" if value == "travis-org" else value,
             ),  # if "travis-org" was passed as the service rename it to "travis" before validating
             "default_setter": (
-                lambda document: global_tokens[document.get("token")]
-                if document.get("using_global_token")
-                else None
+                lambda document: (
+                    global_tokens[document.get("token")]
+                    if document.get("using_global_token")
+                    else None
+                )
             ),
         },
         # pull request number
@@ -149,9 +157,9 @@ def parse_params(data):
             "regex": r"^(\d+|false|null|undefined|true)$",
             "nullable": True,
             "coerce": (
-                lambda value: None
-                if value in ["false", "null", "undefined", "true"]
-                else value
+                lambda value: (
+                    None if value in ["false", "null", "undefined", "true"] else value
+                )
             ),
         },
         "build_url": {"type": "string", "regex": r"^https?\:\/\/(.{,200})"},
@@ -160,14 +168,18 @@ def parse_params(data):
             "type": "string",
             "nullable": True,
             "coerce": (
-                lambda value: None
-                if value == "HEAD"
-                # if prefixed with "origin/" or "refs/heads", the prefix will be removed
-                else value[7:]
-                if value[:7] == "origin/"
-                else value[11:]
-                if value[:11] == "refs/heads/"
-                else value,
+                lambda value: (
+                    None
+                    if value == "HEAD"
+                    # if prefixed with "origin/" or "refs/heads", the prefix will be removed
+                    else (
+                        value[7:]
+                        if value[:7] == "origin/"
+                        else value[11:]
+                        if value[:11] == "refs/heads/"
+                        else value
+                    )
+                ),
             ),
         },
         "tag": {"type": "string"},
@@ -183,9 +195,9 @@ def parse_params(data):
             "type": "string",
             "nullable": True,
             "coerce": (
-                lambda value: None
-                if value in ["null", "undefined", "none", "nil"]
-                else value
+                lambda value: (
+                    None if value in ["null", "undefined", "none", "nil"] else value
+                )
             ),
         },
         "name": {"type": "string"},
@@ -739,3 +751,43 @@ def validate_activated_repo(repository):
         raise ValidationError(
             f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
         )
+
+
+# headers["User-Agent"] should look something like this: codecov-cli/0.4.7 or codecov-uploader/0.7.1
+def get_agent_from_headers(headers):
+    try:
+        return headers["User-Agent"].split("/")[0].split("-")[1]
+    except Exception as e:
+        log.warning(
+            "Error getting agent from user agent header",
+            extra=dict(
+                err=str(e),
+            ),
+        )
+        return "unknown-user-agent"
+
+
+def get_version_from_headers(headers):
+
+    try:
+        return headers["User-Agent"].split("/")[1]
+    except Exception as e:
+        log.warning(
+            "Error getting version from user agent header",
+            extra=dict(
+                err=str(e),
+            ),
+        )
+        return "unknown-user-agent"
+
+
+def generate_upload_sentry_metrics_tags(
+    action, request, repository, is_shelter_request
+):
+    return dict(
+        agent=get_agent_from_headers(request.headers),
+        version=get_version_from_headers(request.headers),
+        action=action,
+        repo_visibility="private" if repository.private is True else "public",
+        is_using_shelter="yes" if is_shelter_request else "no",
+    )
