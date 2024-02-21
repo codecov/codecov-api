@@ -110,7 +110,7 @@ class BundleAnalysisReport(object):
 
     def cleanup(self) -> None:
         if self.report:
-            self.report.cleanup()
+            self.report.cleanup(delete_file=False)
 
     @cached_property
     def bundles(self):
