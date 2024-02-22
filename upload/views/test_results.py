@@ -23,7 +23,6 @@ from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_
 from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
-from utils.rollouts import TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG, owner_slug
 
 log = logging.getLogger(__name__)
 
@@ -70,25 +69,6 @@ class TestResultsView(
             repo = request.user._repository
         else:
             raise NotAuthenticated()
-
-        log.info(
-            "Checking to see if user is in test results feature rollout",
-            extra=dict(repoid=repo.repoid, author=repo.author),
-        )
-
-        if not TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG.check_value(
-            owner_slug(repo.author), default=False
-        ):
-            log.warning(
-                "User is not included in rollout, exiting",
-                extra=dict(repoid=repo.repoid, author=repo.author),
-            )
-            raise PermissionDenied()
-
-        log.info(
-            "User is included in rollout, continuing",
-            extra=dict(repoid=repo.repoid, author=repo.author),
-        )
 
         metrics.incr(
             "upload",
