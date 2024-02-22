@@ -28,12 +28,11 @@ query = """
 @freeze_time("2023-06-19")
 class UserTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.service_id = 1
         self.user = OwnerFactory(
             username="codecov-user",
             name="codecov-name",
             service="github",
-            service_id=self.service_id,
+            service_id=1,
             student=True,
             student_created_at=timezone.now(),
             student_updated_at=timezone.now() + timedelta(days=1),
@@ -43,7 +42,7 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
             username="codecov-user",
             name="codecov-name",
             service="github",
-            service_id=self.service_id,
+            service_id=2,
             student=True,
             student_created_at=timezone.now(),
             student_updated_at=timezone.now() + timedelta(days=1),
