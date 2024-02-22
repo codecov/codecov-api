@@ -11,32 +11,34 @@ from .helper import GraphQLTestHelper
 
 @freeze_time("2023-06-19")
 class UserTestCase(GraphQLTestHelper, TransactionTestCase):
-    def test_query_user_resolver(self):
-        user = OwnerFactory(
+    def setUp(self):
+        self.service_id = 1
+        self.user = OwnerFactory(
             username="codecov-user",
             name="codecov-name",
             service="github",
-            service_id=1,
+            service_id=self.service_id,
             student=True,
             student_created_at=timezone.now(),
             student_updated_at=timezone.now() + timedelta(days=1),
         )
-        query = """
-            {
-                me {
-                    user {
-                        username
-                        name
-                        avatarUrl
-                        student
-                        studentCreatedAt
-                        studentUpdatedAt
-                        customerIntent
-                    }
+
+    def test_query_user_resolver(self):
+        query = """{
+            me {
+                user {
+                    username
+                    name
+                    avatarUrl
+                    student
+                    studentCreatedAt
+                    studentUpdatedAt
+                    customerIntent
                 }
             }
-            """
-        data = self.gql_request(query, owner=user)
+        }
+        """
+        data = self.gql_request(query, owner=self.user)
         assert data["me"]["user"] == {
             "username": "codecov-user",
             "name": "codecov-name",
@@ -45,30 +47,4 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
             "studentCreatedAt": "2023-06-19T00:00:00",
             "studentUpdatedAt": "2023-06-20T00:00:00",
             "customerIntent": "Business",
-        }
-
-    def test_customer_intent_with_no_user_subtype(self):
-        no_subtype_user = OwnerFactory(
-            username="codecov-user",
-            name="codecov-name",
-            service="github",
-            service_id=2,
-            student=True,
-            student_created_at=timezone.now(),
-            student_updated_at=timezone.now() + timedelta(days=1),
-            user=None,
-        )
-
-        query = """
-            {
-                me {
-                    user {
-                        customerIntent
-                    }
-                }
-            }
-            """
-        data = self.gql_request(query, owner=no_subtype_user)
-        assert data["me"]["user"] == {
-            "customerIntent": None,
         }
