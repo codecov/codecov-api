@@ -8,22 +8,6 @@ from codecov_auth.tests.factories import OwnerFactory
 
 from .helper import GraphQLTestHelper
 
-query = """
-    {
-        me {
-            user {
-                username
-                name
-                avatarUrl
-                student
-                studentCreatedAt
-                studentUpdatedAt
-                customerIntent
-            }
-        }
-    }
-    """
-
 
 @freeze_time("2023-06-19")
 class UserTestCase(GraphQLTestHelper, TransactionTestCase):
@@ -50,6 +34,21 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
         )
 
     def test_query_user_resolver(self):
+        query = """
+            {
+                me {
+                    user {
+                        username
+                        name
+                        avatarUrl
+                        student
+                        studentCreatedAt
+                        studentUpdatedAt
+                        customerIntent
+                    }
+                }
+            }
+            """
         data = self.gql_request(query, owner=self.user)
         assert data["me"]["user"] == {
             "username": "codecov-user",
@@ -62,13 +61,16 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
         }
 
     def test_customer_intent_with_no_user_subtype(self):
+        query = """
+            {
+                me {
+                    user {
+                        customerIntent
+                    }
+                }
+            }
+            """
         data = self.gql_request(query, owner=self.no_subtype_user)
         assert data["me"]["user"] == {
-            "username": "codecov-user",
-            "name": "codecov-name",
-            "avatarUrl": f"https://avatars0.githubusercontent.com/u/{self.service_id}?v=3&s=55",
-            "student": True,
-            "studentCreatedAt": "2023-06-19T00:00:00",
-            "studentUpdatedAt": "2023-06-20T00:00:00",
             "customerIntent": None,
         }
