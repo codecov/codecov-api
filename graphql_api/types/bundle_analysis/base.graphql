@@ -1,0 +1,40 @@
+type BundleSize {
+  gzip: Int!
+  uncompress: Int!
+}
+
+type BundleLoadTime {
+  threeG: Int!
+  highSpeed: Int!
+}
+
+type BundleData {
+  loadTime: BundleLoadTime!
+  size: BundleSize!
+}
+
+type BundleModule {
+  name: String!
+  extension: String!
+  bundleData: BundleData!
+}
+
+type BundleAsset {
+  name: String!
+  extension: String!
+  normalizedName: String!
+  moduleExtensions: [String!]!
+  modules: [BundleModule]!
+  bundleData: BundleData!
+}
+
+type BundleReport {
+  name: String!
+  sizeTotal: Int!
+  loadTimeTotal: Float!
+  moduleExtensions: [String!]!
+  moduleCount: Int!
+  assets(filters: BundleAnalysisReportFilters): [BundleAsset]!
+  asset(name: String!): BundleAsset
+  bundleData: BundleData!
+}

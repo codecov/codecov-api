@@ -51,7 +51,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    "core.middleware.AppMetricsBeforeMiddlewareWithUA",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -64,7 +64,7 @@ MIDDLEWARE = [
     "core.middleware.ServiceMiddleware",
     "codecov_auth.middleware.CurrentOwnerMiddleware",
     "codecov_auth.middleware.ImpersonationMiddleware",
-    "django_prometheus.middleware.PrometheusAfterMiddleware",
+    "core.middleware.AppMetricsAfterMiddlewareWithUA",
 ]
 
 ROOT_URLCONF = "codecov.urls"
@@ -476,7 +476,9 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
 )
 
 
-CORS_ALLOWED_ORIGIN_REGEXES = []
+CORS_ALLOWED_ORIGIN_REGEXES = get_config(
+    "setup", "api_cors_allowed_origin_regexes", default=[]
+)
 CORS_ALLOWED_ORIGINS = []
 
 GRAPHQL_PLAYGROUND = True

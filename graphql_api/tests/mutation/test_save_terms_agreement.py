@@ -1,5 +1,7 @@
+import pytest
 from django.test import TransactionTestCase
 
+from codecov.commands.exceptions import ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
@@ -17,11 +19,18 @@ query = """
 """
 
 
-class SaveSaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
+class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
     def _request(self, owner=None):
         return self.gql_request(
             query,
-            variables={"input": {"termsAgreement": True}},
+            variables={"input": {"termsAgreement": True, "customerIntent": "Business"}},
+            owner=owner,
+        )
+
+    def _request_invalid_customer_intent(self, owner=None):
+        return self.gql_request(
+            query,
+            variables={"input": {"termsAgreement": True, "customerIntent": "invalid"}},
             owner=owner,
         )
 
@@ -38,3 +47,14 @@ class SaveSaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase)
     def test_authenticated(self):
         owner = OwnerFactory()
         assert self._request(owner=owner) == {"saveTermsAgreement": None}
+
+    def test_invalid_customer_intent(self):
+        owner = OwnerFactory()
+        assert self._request_invalid_customer_intent(owner=owner) == {
+            "saveTermsAgreement": {
+                "error": {
+                    "__typename": "ValidationError",
+                    "message": "Invalid customer intent provided",
+                }
+            }
+        }

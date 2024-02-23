@@ -19,7 +19,12 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
 
     @async_to_sync
     def execute(
-        self, current_user, input={"businessEmail": None, "termsAgreement": False}
+        self,
+        current_user,
+        input={
+            "businessEmail": None,
+            "termsAgreement": False,
+        },
     ):
         return SaveTermsAgreementInteractor(None, "github", current_user).execute(
             input=input,
@@ -27,7 +32,10 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
 
     @freeze_time("2022-01-01T00:00:00")
     def test_update_user_when_agreement_is_false(self):
-        self.execute(current_user=self.current_user, input={"termsAgreement": False})
+        self.execute(
+            current_user=self.current_user,
+            input={"termsAgreement": False, "customerIntent": "Business"},
+        )
         before_refresh_business_email = self.current_user.email
 
         assert self.current_user.terms_agreement == False
@@ -38,7 +46,10 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
 
     @freeze_time("2022-01-01T00:00:00")
     def test_update_user_when_agreement_is_true(self):
-        self.execute(current_user=self.current_user, input={"termsAgreement": True})
+        self.execute(
+            current_user=self.current_user,
+            input={"termsAgreement": True, "customerIntent": "Business"},
+        )
         before_refresh_business_email = self.current_user.email
 
         assert self.current_user.terms_agreement == True
@@ -51,7 +62,11 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
     def test_update_owner_and_user_when_email_is_not_empty(self):
         self.execute(
             current_user=self.current_user,
-            input={"businessEmail": "something@email.com", "termsAgreement": True},
+            input={
+                "businessEmail": "something@email.com",
+                "termsAgreement": True,
+                "customerIntent": "Business",
+            },
         )
 
         assert self.current_user.terms_agreement == True
@@ -62,11 +77,25 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
 
     def test_validation_error_when_terms_is_none(self):
         with pytest.raises(ValidationError):
-            self.execute(current_user=self.current_user, input={"termsAgreement": None})
+            self.execute(
+                current_user=self.current_user,
+                input={"termsAgreement": None, "customerIntent": "Business"},
+            )
+
+    def test_validation_error_when_customer_intent_invalid(self):
+        with pytest.raises(ValidationError):
+            self.execute(
+                current_user=self.current_user,
+                input={"termsAgreement": None, "customerIntent": "invalid"},
+            )
 
     def test_user_is_not_authenticated(self):
         with pytest.raises(Unauthenticated) as e:
             self.execute(
                 current_user=AnonymousUser(),
-                input={"businessEmail": "something@email.com", "termsAgreement": True},
+                input={
+                    "businessEmail": "something@email.com",
+                    "termsAgreement": True,
+                    "customerIntent": "Business",
+                },
             )
