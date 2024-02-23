@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django_prometheus",
     "user_measurements",
     "psqlextra",
+    "shared.django_apps.rollouts"
 ]
 
 MIDDLEWARE = [
