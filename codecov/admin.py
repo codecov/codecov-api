@@ -1,5 +1,7 @@
 from django.contrib import admin
 from shared.django_apps.rollouts.models import FeatureFlag, FeatureFlagVariant
+
+
 class AdminMixin(object):
     def save_model(self, request, new_obj, form, change) -> None:
         if change:
