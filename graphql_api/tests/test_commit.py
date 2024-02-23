@@ -1119,6 +1119,118 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "bundle": None,
         }
 
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_asset(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/bundle_with_assets_and_modules.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name: "b5") {
+                                            asset(name: "assets/LazyComponent-*.js") {
+                                                name
+                                                normalizedName
+                                                extension
+                                                moduleExtensions
+                                                bundleData {
+                                                    loadTime {
+                                                        threeG
+                                                        highSpeed
+                                                    }
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
+                                                }
+                                                modules {
+                                                    name
+                                                    bundleData {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "asset": {
+                    "name": "assets/LazyComponent-*.js",
+                    "normalizedName": "assets/LazyComponent-fcbb0922.js",
+                    "extension": "js",
+                    "moduleExtensions": ["tsx"],
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 320,
+                            "highSpeed": 8,
+                        },
+                        "size": {
+                            "gzip": 30,
+                            "uncompress": 30000,
+                        },
+                    },
+                    "modules": [
+                        {
+                            "name": "./src/LazyComponent/LazyComponent.tsx",
+                            "bundleData": {
+                                "loadTime": {
+                                    "threeG": 53,
+                                    "highSpeed": 1,
+                                },
+                                "size": {
+                                    "gzip": 4,
+                                    "uncompress": 4970,
+                                },
+                            },
+                        }
+                    ],
+                }
+            },
+        }
+
     def test_compare_with_parent_missing_change_coverage(self):
         CommitComparisonFactory(
             base_commit=self.parent_commit,
