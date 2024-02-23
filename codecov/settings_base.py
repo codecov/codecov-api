@@ -223,7 +223,7 @@ if DATABASE_READ_REPLICA_ENABLED:
 
 if TIMESERIES_ENABLED:
     DATABASES["timeseries"] = {
-        "ENGINE": "psqlextra.backend",
+        "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": TIMESERIES_DATABASE_NAME,
         "USER": TIMESERIES_DATABASE_USER,
         "PASSWORD": TIMESERIES_DATABASE_PASSWORD,
@@ -234,7 +234,7 @@ if TIMESERIES_ENABLED:
 
     if TIMESERIES_DATABASE_READ_REPLICA_ENABLED:
         DATABASES["timeseries_read"] = {
-            "ENGINE": "psqlextra.backend",
+            "ENGINE": "django_prometheus.db.backends.postgresql",
             "NAME": TIMESERIES_DATABASE_READ_NAME,
             "USER": TIMESERIES_DATABASE_READ_USER,
             "PASSWORD": TIMESERIES_DATABASE_READ_PASSWORD,

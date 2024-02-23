@@ -8,16 +8,18 @@ from psqlextra.partitioning import (
 from psqlextra.partitioning.config import PostgresPartitioningConfig
 from user_measurements.models import UserMeasurement
 
+# Overlapping partitions will cause errors - https://www.postgresql.org/docs/current/ddl-partitioning.html#DDL-PARTITIONING-DECLARATIVE -> "create partitions"
 manager = PostgresPartitioningManager([
-    # 3 partitions ahead, each partition is one month
-    # delete partitions older than 6 months
-    # partitions will be named `[table_name]_[year]_[3-letter month name]`.
+    # 6 partitions ahead, each partition is two month
+    # Partitions can be deleted after 12 months of their starting date, not their creation, via the pgpartition command.
+    # They won't be automatically deleted though.
+    # Partitions will be named `[table_name]_[year]_[3-letter month name]`.
     PostgresPartitioningConfig(
         model=UserMeasurement,
         strategy=PostgresCurrentTimePartitioningStrategy(
-            size=PostgresTimePartitionSize(months=1),
-            count=3,
-            max_age=relativedelta(months=6),
+            size=PostgresTimePartitionSize(months=2),
+            count=6,
+            max_age=relativedelta(months=12),
         ),
     ),
 ])

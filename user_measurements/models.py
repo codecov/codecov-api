@@ -2,9 +2,8 @@ from django.db import models
 from psqlextra.types import PostgresPartitioningMethod
 from psqlextra.models import PostgresPartitionedModel
 
-from django.utils import timezone
 from codecov_auth.models import Owner
-from core.models import Commit, DateTimeWithoutTZField, Repository
+from core.models import Commit, Repository
 from reports.models import ReportSession, ReportType
 
 
@@ -34,7 +33,7 @@ class UserMeasurement(PostgresPartitionedModel):
         on_delete=models.CASCADE,
         related_name="user_measurements",
     )
-    created_at = DateTimeWithoutTZField(default=timezone.now, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     uploader_used = models.CharField()
     private_repo = models.BooleanField()
     report_type = models.CharField(
