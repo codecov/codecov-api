@@ -1194,40 +1194,64 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
-            "__typename": "BundleAnalysisReport",
-            "bundle": {
-                "asset": {
-                    "name": "assets/LazyComponent-*.js",
-                    "normalizedName": "assets/LazyComponent-fcbb0922.js",
-                    "extension": "js",
-                    "moduleExtensions": ["tsx"],
-                    "bundleData": {
-                        "loadTime": {
-                            "threeG": 320,
-                            "highSpeed": 8,
-                        },
-                        "size": {
-                            "gzip": 30,
-                            "uncompress": 30000,
-                        },
-                    },
-                    "modules": [
-                        {
-                            "name": "./src/LazyComponent/LazyComponent.tsx",
-                            "bundleData": {
-                                "loadTime": {
-                                    "threeG": 53,
-                                    "highSpeed": 1,
-                                },
-                                "size": {
-                                    "gzip": 4,
-                                    "uncompress": 4970,
-                                },
-                            },
-                        }
-                    ],
-                }
+        asset_report = commit["bundleAnalysisReport"]["bundle"]["asset"]
+
+        assert asset_report is not None
+        assert asset_report["name"] == "assets/LazyComponent-*.js"
+        assert asset_report["normalizedName"] == "assets/LazyComponent-fcbb0922.js"
+        assert asset_report["extension"] == "js"
+        assert set(asset_report["moduleExtensions"]) == set(["", "tsx"])
+        assert asset_report["bundleData"] == {
+            "loadTime": {
+                "threeG": 320,
+                "highSpeed": 8,
+            },
+            "size": {
+                "gzip": 30,
+                "uncompress": 30000,
+            },
+        }
+
+        modules = sorted(asset_report["modules"], key=lambda m: m["name"])
+
+        assert modules and len(modules) == 3
+        assert modules[0] == {
+            "name": "./src/LazyComponent/LazyComponent",
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 64,
+                    "highSpeed": 1,
+                },
+                "size": {
+                    "gzip": 6,
+                    "uncompress": 6000,
+                },
+            },
+        }
+        assert modules[1] == {
+            "name": "./src/LazyComponent/LazyComponent.tsx",
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 53,
+                    "highSpeed": 1,
+                },
+                "size": {
+                    "gzip": 5,
+                    "uncompress": 5000,
+                },
+            },
+        }
+        assert modules[2] == {
+            "name": "./src/LazyComponent/LazyComponent.tsx?module",
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 53,
+                    "highSpeed": 1,
+                },
+                "size": {
+                    "gzip": 4,
+                    "uncompress": 4970,
+                },
             },
         }
 
