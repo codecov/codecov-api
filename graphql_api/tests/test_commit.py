@@ -1011,7 +1011,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "loadTimeTotal": 0.0,
                     "moduleExtensions": [],
                     "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"name": "assets/react-*.svg"},
+                        {"name": "assets/index-*.css"},
+                        {"name": "assets/LazyComponent-*.js"},
+                        {"name": "assets/index-*.js"},
+                        {"name": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {
@@ -1030,7 +1036,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "loadTimeTotal": 0.0,
                     "moduleExtensions": [],
                     "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"name": "assets/react-*.svg"},
+                        {"name": "assets/index-*.css"},
+                        {"name": "assets/LazyComponent-*.js"},
+                        {"name": "assets/index-*.js"},
+                        {"name": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {
@@ -1049,7 +1061,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "loadTimeTotal": 0.0,
                     "moduleExtensions": [],
                     "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"name": "assets/react-*.svg"},
+                        {"name": "assets/index-*.css"},
+                        {"name": "assets/LazyComponent-*.js"},
+                        {"name": "assets/index-*.js"},
+                        {"name": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {
@@ -1068,7 +1086,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "loadTimeTotal": 0.5,
                     "moduleExtensions": [],
                     "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"name": "assets/react-*.svg"},
+                        {"name": "assets/index-*.css"},
+                        {"name": "assets/LazyComponent-*.js"},
+                        {"name": "assets/index-*.js"},
+                        {"name": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {

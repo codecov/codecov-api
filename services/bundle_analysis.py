@@ -213,7 +213,9 @@ class BundleAnalysisReport(object):
             self.report.db_session.close()
 
     def bundle(self, name):
-        return BundleReport(self.report.bundle_report(name))
+        bundle_report = self.report.bundle_report(name)
+        if bundle_report:
+            return BundleReport(bundle_report)
 
     @cached_property
     def bundles(self):
