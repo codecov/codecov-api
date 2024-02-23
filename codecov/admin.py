@@ -1,3 +1,5 @@
+from django.contrib import admin
+from shared.django_apps.rollouts.models import FeatureFlag, FeatureFlagVariant
 class AdminMixin(object):
     def save_model(self, request, new_obj, form, change) -> None:
         if change:
@@ -16,3 +18,7 @@ class AdminMixin(object):
     def log_change(self, request, object, message):
         message.append(object.changed_fields)
         return super().log_change(request, object, message)
+
+
+admin.site.register(FeatureFlag)
+admin.site.register(FeatureFlagVariant)
