@@ -42,7 +42,8 @@ RUN apk -U upgrade binutils busybox expat libretls && \
 # Our postgres driver psycopg2 requires libpq-dev as a runtime dependency
 RUN apt-get update
 RUN apt-get install -y \
-    libpq-dev
+    libpq-dev \
+    make
 
 WORKDIR /pip-packages/
 COPY --from=build /pip-packages/ /pip-packages/
