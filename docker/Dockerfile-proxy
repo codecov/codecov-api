@@ -4,6 +4,8 @@ FROM python:3.9.18-slim-bookworm
 ENV FRP_VERSION=v0.51.3
 
 # RUN apk add --no-cache curl
+RUN apt-get update
+RUN apt-get install -y curl
 
 RUN addgroup -S frp \
 && adduser -D -S -h /var/frp -s /sbin/nologin -G frp frp \

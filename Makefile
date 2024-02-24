@@ -188,7 +188,7 @@ test_env.install_cli:
 	pip install codecov-cli==$(CODECOV_CLI_VERSION)
 
 test_env.container_prepare:
-	apk add -U curl git build-base jq
+	apt-get -y install git build-essential netcat-traditional
 	make test_env.install_cli
 	git config --global --add safe.directory /app
 
