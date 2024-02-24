@@ -950,10 +950,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                             moduleExtensions
                                             moduleCount
                                             assets(filters: $filters) {
-                                                name
+                                                normalizedName
                                             }
                                             asset(name: "not_exist") {
-                                                name
+                                                normalizedName
                                             }
                                             bundleData {
                                                 loadTime {
@@ -1012,11 +1012,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "moduleExtensions": [],
                     "moduleCount": 0,
                     "assets": [
-                        {"name": "assets/react-*.svg"},
-                        {"name": "assets/index-*.css"},
-                        {"name": "assets/LazyComponent-*.js"},
-                        {"name": "assets/index-*.js"},
-                        {"name": "assets/index-*.js"},
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1037,11 +1037,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "moduleExtensions": [],
                     "moduleCount": 0,
                     "assets": [
-                        {"name": "assets/react-*.svg"},
-                        {"name": "assets/index-*.css"},
-                        {"name": "assets/LazyComponent-*.js"},
-                        {"name": "assets/index-*.js"},
-                        {"name": "assets/index-*.js"},
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1062,11 +1062,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "moduleExtensions": [],
                     "moduleCount": 0,
                     "assets": [
-                        {"name": "assets/react-*.svg"},
-                        {"name": "assets/index-*.css"},
-                        {"name": "assets/LazyComponent-*.js"},
-                        {"name": "assets/index-*.js"},
-                        {"name": "assets/index-*.js"},
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1087,11 +1087,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "moduleExtensions": [],
                     "moduleCount": 0,
                     "assets": [
-                        {"name": "assets/react-*.svg"},
-                        {"name": "assets/index-*.css"},
-                        {"name": "assets/LazyComponent-*.js"},
-                        {"name": "assets/index-*.js"},
-                        {"name": "assets/index-*.js"},
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1147,7 +1147,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                     __typename
                                     ... on BundleAnalysisReport {
                                         bundle(name: "b5") {
-                                            asset(name: "assets/LazyComponent-*.js") {
+                                            asset(name: "assets/LazyComponent-fcbb0922.js") {
                                                 name
                                                 normalizedName
                                                 extension
