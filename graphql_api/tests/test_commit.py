@@ -1197,8 +1197,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         asset_report = commit["bundleAnalysisReport"]["bundle"]["asset"]
 
         assert asset_report is not None
-        assert asset_report["name"] == "assets/LazyComponent-*.js"
-        assert asset_report["normalizedName"] == "assets/LazyComponent-fcbb0922.js"
+        assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
+        assert asset_report["normalizedName"] == "assets/LazyComponent-*.js"
         assert asset_report["extension"] == "js"
         assert set(asset_report["moduleExtensions"]) == set(["", "tsx"])
         assert asset_report["bundleData"] == {

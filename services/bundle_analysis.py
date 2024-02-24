@@ -142,11 +142,11 @@ class AssetReport(object):
 
     @cached_property
     def name(self) -> str:
-        return self.asset.name
+        return self.asset.hashed_name
 
     @cached_property
     def normalized_name(self) -> str:
-        return self.asset.hashed_name
+        return self.asset.name
 
     @cached_property
     def extension(self) -> str:
