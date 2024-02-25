@@ -243,55 +243,43 @@ class BundleAnalysisComparison(object):
             base_report_key,
             head_report_key,
         )
-        self.bundle_comparisons = []
-        self.total_size_delta = 0
-        self.total_size = sum(
-            [
-                report.total_size()
-                for report in self.comparison.head_report.bundle_reports()
-            ]
-        )
-
-        for bundle_change in self.comparison.bundle_changes():
-            self.total_size_delta += bundle_change.size_delta
-            head_bundle_report = self.comparison.head_report.bundle_report(
-                bundle_change.bundle_name
-            )
-            if self.comparison.head_report and head_bundle_report:
-                head_bundle_report_size = head_bundle_report.total_size()
-            else:
-                head_bundle_report_size = 0
-            self.bundle_comparisons.append(
-                BundleComparison(bundle_change, head_bundle_report_size)
-            )
-
+        self.head_report = self.comparison.head_report
         self.cleanup()
 
     def cleanup(self) -> None:
-        if self.comparison.head_report:
-            self.comparison.head_report.cleanup()
-        if self.comparison.base_report:
-            self.comparison.base_report.cleanup()
+        if self.comparison.head_report and self.comparison.head_report.db_session:
+            self.comparison.head_report.db_session.close()
+        if self.comparison.base_report and self.comparison.base_report.db_session:
+            self.comparison.base_report.db_session.close()
 
     @cached_property
     def bundles(self):
-        return self.bundle_comparisons
+        bundle_comparisons = []
+        for bundle_change in self.comparison.bundle_changes():
+            head_bundle_report = self.comparison.head_report.bundle_report(
+                bundle_change.bundle_name
+            )
+            head_size = head_bundle_report.total_size() if head_bundle_report else 0
+            bundle_comparisons.append(BundleComparison(bundle_change, head_size))
+        return bundle_comparisons
 
     @cached_property
     def size_delta(self):
-        return self.total_size_delta
-
-    @cached_property
-    def size_total(self):
-        return self.total_size
+        return sum([change.size_delta for change in self.comparison.bundle_changes()])
 
     @cached_property
     def load_time_delta(self):
-        return load_time_conversion(self.total_size_delta)
+        return load_time_conversion(self.size_delta)
+
+    @cached_property
+    def size_total(self):
+        if self.head_report is None:
+            return 0
+        return BundleAnalysisReport(self.head_report).size_total
 
     @cached_property
     def load_time_total(self):
-        return load_time_conversion(self.total_size)
+        return load_time_conversion(self.size_total)
 
 
 @dataclass
