@@ -13,6 +13,9 @@ class GetFileContentInteractor(BaseInteractor):
                 owner=self.current_owner, repo=commit.repository
             )
             content = await repository_service.get_source(path, commit.commitid)
+            # Sometimes the content may be of type str, so don't decode it
+            if type(content.get("content")) == str:
+                return content.get("content")
             return content.get("content").decode("utf-8")
         # TODO raise this to the API so we can handle it.
         except Exception:
