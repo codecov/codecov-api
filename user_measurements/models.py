@@ -1,6 +1,6 @@
 from django.db import models
-from psqlextra.types import PostgresPartitioningMethod
 from psqlextra.models import PostgresPartitionedModel
+from psqlextra.types import PostgresPartitioningMethod
 
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
@@ -44,9 +44,7 @@ class UserMeasurement(PostgresPartitionedModel):
         db_table = "user_measurements"
         indexes = [
             models.Index(fields=["owner"], name="i_owner"),
-            models.Index(
-                fields=["owner", "repo"], name="owner_repo"
-            ),
+            models.Index(fields=["owner", "repo"], name="owner_repo"),
             models.Index(
                 fields=["owner", "private_repo"],
                 name="owner_private_repo",

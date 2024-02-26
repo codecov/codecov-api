@@ -247,7 +247,7 @@ if TIMESERIES_ENABLED:
 POSTGRES_EXTRA_DB_BACKEND_BASE: "django_prometheus.db.backends.postgresql"
 
 # Allows to use the pgpartition command
-PSQLEXTRA_PARTITIONING_MANAGER = 'user_measurements.partitioning.manager'
+PSQLEXTRA_PARTITIONING_MANAGER = "user_measurements.partitioning.manager"
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
