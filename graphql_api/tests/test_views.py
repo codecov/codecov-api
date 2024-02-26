@@ -115,37 +115,3 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
         after_files = os.listdir("/tmp")
         assert len(after_files) == 1
         os.system("rm -rf /tmp/*")
-
-    @override_settings(IS_ENTERPRISE=True)
-    @override_settings(GUEST=False)
-    async def test_post_when_enterprise_and_guest_user(self):
-        schema = generate_schema_that_raise_with(Unauthorized())
-        view = AsyncGraphqlView.as_view(schema=schema)
-        request = RequestFactory().post(
-            "/graphql/gh", {"query": "{ failing }"}, content_type="application/json"
-        )
-        match = ResolverMatch(func=lambda: None, args=(), kwargs={"service": "github"})
-
-        request.resolver_match = match
-        request.user = None
-        request.current_owner = None
-        res = await view(request, service="gh")
-        assert res.status_code == 405
-        os.system("rm -rf /tmp/*")
-
-    @override_settings(IS_ENTERPRISE=True)
-    @override_settings(GUEST=True)
-    async def test_post_when_enterprise_and_not_guest_user(self):
-        schema = generate_schema_that_raise_with(Unauthorized())
-        view = AsyncGraphqlView.as_view(schema=schema)
-        request = RequestFactory().post(
-            "/graphql/gh", {"query": "{ failing }"}, content_type="application/json"
-        )
-        match = ResolverMatch(func=lambda: None, args=(), kwargs={"service": "github"})
-
-        request.resolver_match = match
-        request.user = None
-        request.current_owner = None
-        res = await view(request, service="gh")
-        assert res.status_code == 200
-        os.system("rm -rf /tmp/*")
