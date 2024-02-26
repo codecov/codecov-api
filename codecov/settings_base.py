@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     "user_measurements",
     "psqlextra",
     "shared.django_apps.rollouts",
-    'django_better_admin_arrayfield',
+    "django_better_admin_arrayfield",
 ]
 
 MIDDLEWARE = [
