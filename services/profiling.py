@@ -1,6 +1,6 @@
 import json
 import logging
-import re
+import re2
 from typing import List, Optional
 
 from django.utils.functional import cached_property
@@ -85,7 +85,7 @@ class ProfilingSummary:
         if report is None:
             return []
         critical_files_paths = repo_yaml["profiling"]["critical_files_paths"]
-        compiled_files_paths = [re.compile(path) for path in critical_files_paths]
+        compiled_files_paths = [re2.compile(path) for path in critical_files_paths]
         user_defined_critical_files = [
             file
             for file in report.files

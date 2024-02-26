@@ -1,6 +1,6 @@
 import fnmatch
 import logging
-import re
+import re2
 
 from asgiref.sync import async_to_sync
 from rest_framework import serializers, status
@@ -106,7 +106,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             fnmatch.translate(path) for path in GLOB_NON_TESTABLE_FILES
         ]
         compiled_files_to_ignore = [
-            re.compile(path) for path in (regex_non_testable_files + ignored_files)
+            re2.compile(path) for path in (regex_non_testable_files + ignored_files)
         ]
         ignored_changed_files = [
             file
