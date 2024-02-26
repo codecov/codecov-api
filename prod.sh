@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Starts the production gunicorn server (no --reload)
 echo "Starting gunicorn in production mode"

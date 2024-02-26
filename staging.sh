@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # starts the development server using gunicorn
 # NEVER run production with the --reload option command
