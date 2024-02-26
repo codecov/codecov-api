@@ -828,6 +828,26 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         sizeTotal
                         loadTimeDelta
                         loadTimeTotal
+                        bundleData {
+                            size {
+                                uncompress
+                            }
+                        }
+                        bundleChange {
+                            size {
+                                uncompress
+                            }
+                        }
+                    }
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
+                    bundleChange {
+                        size {
+                            uncompress
+                        }
                     }
                 }
             }
@@ -855,6 +875,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 20,
                     "loadTimeDelta": 0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 20}},
+                    "bundleChange": {"size": {"uncompress": 5}},
                 },
                 {
                     "name": "b2",
@@ -863,6 +885,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 200,
                     "loadTimeDelta": 0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 200}},
+                    "bundleChange": {"size": {"uncompress": 50}},
                 },
                 {
                     "name": "b3",
@@ -871,6 +895,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 1500,
                     "loadTimeDelta": 0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 1500}},
+                    "bundleChange": {"size": {"uncompress": 1500}},
                 },
                 {
                     "name": "b5",
@@ -879,6 +905,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 200000,
                     "loadTimeDelta": 0.1,
                     "loadTimeTotal": 0.5,
+                    "bundleData": {"size": {"uncompress": 200000}},
+                    "bundleChange": {"size": {"uncompress": 50000}},
                 },
                 {
                     "name": "b4",
@@ -887,8 +915,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 0,
                     "loadTimeDelta": -0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 0}},
+                    "bundleChange": {"size": {"uncompress": -15000}},
                 },
             ],
+            "bundleData": {"size": {"uncompress": 201720}},
+            "bundleChange": {"size": {"uncompress": 36555}},
         }
 
     def test_bundle_analysis_missing_report(self):
