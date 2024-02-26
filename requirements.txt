@@ -95,6 +95,7 @@ django==4.2.7
     # via
     #   -r requirements.in
     #   ariadne-django
+    #   django-autocomplete-light
     #   django-cors-headers
     #   django-filter
     #   django-model-utils
@@ -103,6 +104,8 @@ django==4.2.7
     #   drf-spectacular
     #   drf-spectacular-sidecar
     #   shared
+django-autocomplete-light==3.11.0
+    # via -r requirements.in
 django-cors-headers==3.7.0
     # via -r requirements.in
 django-cursor-pagination @ https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz

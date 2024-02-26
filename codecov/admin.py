@@ -1,6 +1,8 @@
 from django.contrib import admin
 from shared.django_apps.rollouts.models import FeatureFlag, FeatureFlagVariant
 
+from codecov.forms import AutocompleteSearchForm
+
 
 class AdminMixin(object):
     def save_model(self, request, new_obj, form, change) -> None:
@@ -22,5 +24,28 @@ class AdminMixin(object):
         return super().log_change(request, object, message)
 
 
-admin.site.register(FeatureFlag)
-admin.site.register(FeatureFlagVariant)
+class FeatureFlagVariantInline(admin.StackedInline):
+    model = FeatureFlagVariant
+    form = AutocompleteSearchForm
+    extra = 0
+
+
+class FeatureFlagAdmin(admin.ModelAdmin):
+    list_display = ["name", "number_of_variants"]
+    search_fields = ["name"]
+    inlines = [FeatureFlagVariantInline]
+
+    def number_of_variants(self, obj):
+        return obj.variants.count()
+
+    number_of_variants.short_description = "# of Variants"
+
+
+class FeatureFlagVariantAdmin(admin.ModelAdmin):
+    list_display = ["variant_id", "name", "feature_flag"]
+    search_fields = ["variant_id", "name", "feature_flag__name"]
+    form = AutocompleteSearchForm
+
+
+admin.site.register(FeatureFlag, FeatureFlagAdmin)
+admin.site.register(FeatureFlagVariant, FeatureFlagVariantAdmin)

@@ -48,3 +48,4 @@ stripe
 urllib3>=1.26.17
 vcrpy
 whitenoise
+django-autocomplete-light

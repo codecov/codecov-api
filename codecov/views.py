@@ -1,8 +1,10 @@
+from dal import autocomplete
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 
-from core.models import Constants
+from codecov_auth.models import Owner
+from core.models import Constants, Repository
 
 _version = None
 
@@ -28,3 +30,31 @@ def redirect_app(request):
     """
     app_domain = settings.CODECOV_DASHBOARD_URL
     return HttpResponseRedirect(app_domain + request.path.replace("/redirect_app", ""))
+
+
+class RepositoryAutoCompleteSearch(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        # User must be authenticated to see the list
+        if not self.request.user.is_authenticated:
+            return Repository.objects.none()
+
+        repos = Repository.objects.all()
+
+        if self.q:
+            repos = repos.filter(name__istartswith=self.q)
+
+        return repos
+
+
+class OwnerAutoCompleteSearch(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        # User must be authenticated to see the list
+        if not self.request.user.is_authenticated:
+            return Owner.objects.none()
+
+        owners = Owner.objects.all()
+
+        if self.q:
+            owners = owners.filter(username__istartswith=self.q)
+
+        return owners

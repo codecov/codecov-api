@@ -21,6 +21,8 @@ AUTH_USER_MODEL = "codecov_auth.User"
 
 INSTALLED_APPS = [
     "legacy_migrations",
+    "dal",
+    "dal_select2",  # needs to be ahead of django.contrib.admin
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -48,7 +50,7 @@ INSTALLED_APPS = [
     "django_prometheus",
     "user_measurements",
     "psqlextra",
-    "shared.django_apps.rollouts"
+    "shared.django_apps.rollouts",
 ]
 
 MIDDLEWARE = [
