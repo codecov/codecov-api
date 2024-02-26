@@ -64,14 +64,22 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         commit = self.get_commit(repository)
         report = self.get_report(commit)
 
+        sentry_tags = generate_upload_sentry_metrics_tags(
+            action="coverage",
+            request=self.request,
+            repository=repository,
+            is_shelter_request=self.is_shelter_request(),
+        )
+
         sentry_metrics.incr(
             "upload",
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-            ),
+            tags=sentry_tags,
+        )
+
+        sentry_metrics.set(
+            "upload_set",
+            repository.author.ownerid,
+            tags=sentry_tags,
         )
 
         version = (

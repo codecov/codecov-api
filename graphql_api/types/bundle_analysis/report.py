@@ -42,8 +42,7 @@ def resolve_bundles(
 def resolve_bundle(
     bundles_analysis_report: BundleAnalysisReport, info, name: str
 ) -> BundleReport:
-    # TODO: Unimplemented
-    return None
+    return bundles_analysis_report.bundle(name)
 
 
 @bundle_analysis_report_bindable.field("bundleData")

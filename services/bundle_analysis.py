@@ -1,13 +1,17 @@
+import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 from django.utils.functional import cached_property
+from shared.bundle_analysis import AssetReport as SharedAssetReport
 from shared.bundle_analysis import (
     BundleAnalysisComparison as SharedBundleAnalysisComparison,
 )
 from shared.bundle_analysis import BundleAnalysisReport as SharedBundleAnalysisReport
 from shared.bundle_analysis import BundleAnalysisReportLoader
 from shared.bundle_analysis import BundleChange as SharedBundleChange
+from shared.bundle_analysis import BundleReport as SharedBundleReport
+from shared.bundle_analysis import ModuleReport as SharedModuleReport
 from shared.storage import get_appropriate_storage_service
 
 from core.models import Commit
@@ -40,6 +44,26 @@ def load_time_conversion(size):
     Converts total size in bytes to approximate time (in seconds) to download using a 3G internet (3 Mbps)
     """
     return round((8 * size) / (1024 * 1024 * 3), 1)
+
+
+def get_extension(filename: str) -> str:
+    """
+    Gets the file extension of the file without the dot
+    """
+    # At times file can be something like './index.js + 12 modules', only keep the real filepath
+    filename = filename.split(" ")[0]
+    # Retrieve the file extension with the dot
+    _, file_extension = os.path.splitext(filename)
+    # Return empty string if file has no extension
+    if not file_extension or file_extension[0] != ".":
+        return file_extension
+    # Remove the dot in the extension
+    file_extension = file_extension[1:]
+    # At times file can be something like './index.js?module', remove the ?
+    if "?" in file_extension:
+        file_extension = file_extension[: file_extension.rfind("?")]
+
+    return file_extension
 
 
 @dataclass
@@ -96,33 +120,127 @@ class BundleData:
 
 
 @dataclass
+class ModuleReport(object):
+    def __init__(self, module: SharedModuleReport):
+        self.module = module
+
+    @cached_property
+    def name(self) -> str:
+        return self.module.name
+
+    @cached_property
+    def size_total(self) -> int:
+        return self.module.size
+
+    @cached_property
+    def extension(self) -> str:
+        return get_extension(self.name)
+
+
+@dataclass
+class AssetReport(object):
+    def __init__(self, asset: SharedAssetReport):
+        self.asset = asset
+        self.all_modules = None
+
+    @cached_property
+    def name(self) -> str:
+        return self.asset.hashed_name
+
+    @cached_property
+    def normalized_name(self) -> str:
+        return self.asset.name
+
+    @cached_property
+    def extension(self) -> str:
+        return get_extension(self.name)
+
+    @cached_property
+    def size_total(self) -> int:
+        return self.asset.size
+
+    @cached_property
+    def modules(self) -> ModuleReport:
+        return [ModuleReport(module) for module in self.asset.modules()]
+
+    @cached_property
+    def module_extensions(self) -> List[str]:
+        return list(set([module.extension for module in self.modules]))
+
+
+@dataclass
+class BundleReport(object):
+    def __init__(self, report: SharedBundleReport):
+        self.report = report
+
+    @cached_property
+    def name(self) -> str:
+        return self.report.name
+
+    @cached_property
+    def all_assets(self) -> List[AssetReport]:
+        return [AssetReport(asset) for asset in self.report.asset_reports()]
+
+    def assets(self, extensions: Optional[List[str]] = None) -> List[AssetReport]:
+        all_assets = self.all_assets
+
+        # TODO: Unimplemented #1192 - Filter by extensions
+        filtered_assets = all_assets
+
+        return filtered_assets
+
+    def asset(self, name: str) -> AssetReport:
+        for asset_report in self.all_assets:
+            if asset_report.name == name:
+                return asset_report
+
+    @cached_property
+    def size_total(self) -> int:
+        return self.report.total_size()
+
+    # To be deprecated after FE uses BundleData
+    @cached_property
+    def load_time_total(self) -> float:
+        return load_time_conversion(self.report.total_size())
+
+    @cached_property
+    def module_extensions(self) -> List[str]:
+        extensions = set()
+        for asset in self.assets():
+            extensions.update(asset.module_extensions)
+        return list(extensions)
+
+    @cached_property
+    def module_count(self) -> int:
+        return len(self.module_extensions)
+
+
+@dataclass
 class BundleAnalysisReport(object):
     def __init__(self, report: SharedBundleAnalysisReport):
         self.report = report
-        self.report_bundles = []
-        self.total_size = 0
-        for bundle in self.report.bundle_reports():
-            total_size = bundle.total_size()
-            self.report_bundles.append(BundleReport(bundle.name, total_size))
-            self.total_size += total_size
-
         self.cleanup()
 
     def cleanup(self) -> None:
         if self.report and self.report.db_session:
             self.report.db_session.close()
 
-    @cached_property
-    def bundles(self):
-        return self.report_bundles
+    def bundle(self, name: str) -> BundleReport:
+        bundle_report = self.report.bundle_report(name)
+        if bundle_report:
+            return BundleReport(bundle_report)
 
     @cached_property
-    def size_total(self):
-        return self.total_size
+    def bundles(self) -> List[BundleReport]:
+        return [BundleReport(bundle) for bundle in self.report.bundle_reports()]
 
     @cached_property
-    def load_time_total(self):
-        return load_time_conversion(self.total_size)
+    def size_total(self) -> int:
+        return sum([bundle.size_total for bundle in self.bundles])
+
+    @cached_property
+    def load_time_total(self) -> int:
+        return load_time_conversion(self.size_total)
 
 
 @dataclass
@@ -138,55 +256,41 @@ class BundleAnalysisComparison(object):
             base_report_key,
             head_report_key,
         )
-        self.bundle_comparisons = []
-        self.total_size_delta = 0
-        self.total_size = sum(
-            [
-                report.total_size()
-                for report in self.comparison.head_report.bundle_reports()
-            ]
-        )
-
-        for bundle_change in self.comparison.bundle_changes():
-            self.total_size_delta += bundle_change.size_delta
-            head_bundle_report = self.comparison.head_report.bundle_report(
-                bundle_change.bundle_name
-            )
-            if self.comparison.head_report and head_bundle_report:
-                head_bundle_report_size = head_bundle_report.total_size()
-            else:
-                head_bundle_report_size = 0
-            self.bundle_comparisons.append(
-                BundleComparison(bundle_change, head_bundle_report_size)
-            )
-
+        self.head_report = self.comparison.head_report
         self.cleanup()
 
     def cleanup(self) -> None:
-        if self.comparison.head_report:
-            self.comparison.head_report.cleanup()
-        if self.comparison.base_report:
-            self.comparison.base_report.cleanup()
+        if self.comparison.head_report and self.comparison.head_report.db_session:
+            self.comparison.head_report.db_session.close()
+        if self.comparison.base_report and self.comparison.base_report.db_session:
+            self.comparison.base_report.db_session.close()
 
     @cached_property
     def bundles(self):
-        return self.bundle_comparisons
+        bundle_comparisons = []
+        for bundle_change in self.comparison.bundle_changes():
+            head_bundle_report = self.comparison.head_report.bundle_report(
+                bundle_change.bundle_name
+            )
+            head_size = head_bundle_report.total_size() if head_bundle_report else 0
+            bundle_comparisons.append(BundleComparison(bundle_change, head_size))
+        return bundle_comparisons
 
     @cached_property
     def size_delta(self):
-        return self.total_size_delta
-
-    @cached_property
-    def size_total(self):
-        return self.total_size
+        return sum([change.size_delta for change in self.comparison.bundle_changes()])
 
     @cached_property
     def load_time_delta(self):
-        return load_time_conversion(self.total_size_delta)
+        return load_time_conversion(self.size_delta)
+
+    @cached_property
+    def size_total(self):
+        return BundleAnalysisReport(self.head_report).size_total
 
     @cached_property
     def load_time_total(self):
-        return load_time_conversion(self.total_size)
+        return load_time_conversion(self.size_total)
 
 
 @dataclass
@@ -218,11 +322,3 @@ class BundleComparison(object):
     @cached_property
     def load_time_total(self):
         return load_time_conversion(self.head_bundle_report_size)
-
-
-@dataclass
-class BundleReport(object):
-    def __init__(self, name, report_size: int):
-        self.bundle_name = name
-        self.size_total = report_size
-        self.load_time_total = load_time_conversion(report_size)
