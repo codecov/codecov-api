@@ -76,7 +76,7 @@ class GetFileContentInteractorTest(TransactionTestCase):
         assert (
             file_content
             == """
-        def function_1
+        def function_1:
             pass
         """
         )
