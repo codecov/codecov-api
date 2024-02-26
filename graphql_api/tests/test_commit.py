@@ -828,6 +828,26 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         sizeTotal
                         loadTimeDelta
                         loadTimeTotal
+                        bundleData {
+                            size {
+                                uncompress
+                            }
+                        }
+                        bundleChange {
+                            size {
+                                uncompress
+                            }
+                        }
+                    }
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
+                    bundleChange {
+                        size {
+                            uncompress
+                        }
                     }
                 }
             }
@@ -855,6 +875,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 20,
                     "loadTimeDelta": 0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 20}},
+                    "bundleChange": {"size": {"uncompress": 5}},
                 },
                 {
                     "name": "b2",
@@ -863,6 +885,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 200,
                     "loadTimeDelta": 0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 200}},
+                    "bundleChange": {"size": {"uncompress": 50}},
                 },
                 {
                     "name": "b3",
@@ -871,6 +895,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 1500,
                     "loadTimeDelta": 0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 1500}},
+                    "bundleChange": {"size": {"uncompress": 1500}},
                 },
                 {
                     "name": "b5",
@@ -879,6 +905,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 200000,
                     "loadTimeDelta": 0.1,
                     "loadTimeTotal": 0.5,
+                    "bundleData": {"size": {"uncompress": 200000}},
+                    "bundleChange": {"size": {"uncompress": 50000}},
                 },
                 {
                     "name": "b4",
@@ -887,8 +915,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "sizeTotal": 0,
                     "loadTimeDelta": -0.0,
                     "loadTimeTotal": 0.0,
+                    "bundleData": {"size": {"uncompress": 0}},
+                    "bundleChange": {"size": {"uncompress": -15000}},
                 },
             ],
+            "bundleData": {"size": {"uncompress": 201720}},
+            "bundleChange": {"size": {"uncompress": 36555}},
         }
 
     def test_bundle_analysis_missing_report(self):
@@ -947,13 +979,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                             name
                                             sizeTotal
                                             loadTimeTotal
-                                            moduleExtensions
-                                            moduleCount
                                             assets(filters: $filters) {
-                                                name
+                                                normalizedName
                                             }
                                             asset(name: "not_exist") {
-                                                name
+                                                normalizedName
                                             }
                                             bundleData {
                                                 loadTime {
@@ -1009,9 +1039,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b1",
                     "sizeTotal": 20,
                     "loadTimeTotal": 0.0,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {
@@ -1028,9 +1062,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b2",
                     "sizeTotal": 200,
                     "loadTimeTotal": 0.0,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {
@@ -1047,9 +1085,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b3",
                     "sizeTotal": 1500,
                     "loadTimeTotal": 0.0,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {
@@ -1066,9 +1108,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b5",
                     "sizeTotal": 200000,
                     "loadTimeTotal": 0.5,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
-                    "assets": [],
+                    "assets": [
+                        {"normalizedName": "assets/react-*.svg"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                    ],
                     "asset": None,
                     "bundleData": {
                         "loadTime": {
@@ -1093,6 +1139,157 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
             },
             "bundle": None,
+        }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_asset(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/bundle_with_assets_and_modules.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name: "b5") {
+                                            moduleExtensions
+                                            moduleCount
+                                            asset(name: "assets/LazyComponent-fcbb0922.js") {
+                                                name
+                                                normalizedName
+                                                extension
+                                                moduleExtensions
+                                                bundleData {
+                                                    loadTime {
+                                                        threeG
+                                                        highSpeed
+                                                    }
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
+                                                }
+                                                modules {
+                                                    name
+                                                    bundleData {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        bundle_report = commit["bundleAnalysisReport"]["bundle"]
+        asset_report = bundle_report["asset"]
+
+        assert bundle_report is not None
+        assert sorted(bundle_report["moduleExtensions"]) == [
+            "",
+            "css",
+            "html",
+            "js",
+            "svg",
+            "ts",
+            "tsx",
+        ]
+        assert bundle_report["moduleCount"] == 7
+
+        assert asset_report is not None
+        assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
+        assert asset_report["normalizedName"] == "assets/LazyComponent-*.js"
+        assert asset_report["extension"] == "js"
+        assert set(asset_report["moduleExtensions"]) == set(["", "tsx"])
+        assert asset_report["bundleData"] == {
+            "loadTime": {
+                "threeG": 320,
+                "highSpeed": 8,
+            },
+            "size": {
+                "gzip": 30,
+                "uncompress": 30000,
+            },
+        }
+
+        modules = sorted(asset_report["modules"], key=lambda m: m["name"])
+
+        assert modules and len(modules) == 3
+        assert modules[0] == {
+            "name": "./src/LazyComponent/LazyComponent",
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 64,
+                    "highSpeed": 1,
+                },
+                "size": {
+                    "gzip": 6,
+                    "uncompress": 6000,
+                },
+            },
+        }
+        assert modules[1] == {
+            "name": "./src/LazyComponent/LazyComponent.tsx",
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 53,
+                    "highSpeed": 1,
+                },
+                "size": {
+                    "gzip": 5,
+                    "uncompress": 5000,
+                },
+            },
+        }
+        assert modules[2] == {
+            "name": "./src/LazyComponent/LazyComponent.tsx?module",
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 53,
+                    "highSpeed": 1,
+                },
+                "size": {
+                    "gzip": 4,
+                    "uncompress": 4970,
+                },
+            },
         }
 
     def test_compare_with_parent_missing_change_coverage(self):
