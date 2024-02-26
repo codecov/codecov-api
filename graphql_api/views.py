@@ -93,6 +93,10 @@ class AsyncGraphqlView(GraphQLAsyncView):
         log.info("GraphQL Request", extra=log_data)
 
         # request.user = await get_user(request) or AnonymousUser()
+        if settings.IS_ENTERPRISE and settings.GUEST is False:
+            if not request.user or not request.user.is_authenticated:
+                return HttpResponseNotAllowed(["POST"])  # Sends a 401 to client
+
         with RequestFinalizer():
             return await super().post(request, *args, **kwargs)
 

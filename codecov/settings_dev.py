@@ -28,6 +28,8 @@ STRIPE_PLAN_IDS = {
 
 CORS_ALLOW_CREDENTIALS = True
 
+GUEST = True  # Set this in config?
+
 CODECOV_URL = "localhost"
 CODECOV_DASHBOARD_URL = "http://localhost:3000"
 
