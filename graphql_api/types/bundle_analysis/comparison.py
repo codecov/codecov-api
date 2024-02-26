@@ -66,14 +66,14 @@ def resolve_bundles(bundles_analysis_comparison: BundleAnalysisComparison, info)
 @bundle_analysis_comparison_bindable.field("bundleData")
 def resolve_bundle_data(
     bundles_analysis_comparison: BundleAnalysisComparison, info
-) -> int:
+) -> BundleData:
     return BundleData(bundles_analysis_comparison.size_total)
 
 
 @bundle_analysis_comparison_bindable.field("bundleChange")
 def resolve_bundle_delta(
     bundles_analysis_comparison: BundleAnalysisComparison, info
-) -> int:
+) -> BundleData:
     return BundleData(bundles_analysis_comparison.size_delta)
 
 
@@ -108,10 +108,10 @@ def resolve_load_time_total(bundle_comparison: BundleComparison, info):
 
 
 @bundle_comparison_bindable.field("bundleData")
-def resolve_bundle_data(bundle_comparison: BundleComparison, info) -> int:
+def resolve_bundle_data(bundle_comparison: BundleComparison, info) -> BundleData:
     return BundleData(bundle_comparison.size_total)
 
 
 @bundle_comparison_bindable.field("bundleChange")
-def resolve_bundle_delta(bundle_comparison: BundleComparison, info) -> int:
+def resolve_bundle_delta(bundle_comparison: BundleComparison, info) -> BundleData:
     return BundleData(bundle_comparison.size_delta)

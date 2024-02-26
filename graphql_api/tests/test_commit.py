@@ -979,8 +979,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                             name
                                             sizeTotal
                                             loadTimeTotal
-                                            moduleExtensions
-                                            moduleCount
                                             assets(filters: $filters) {
                                                 normalizedName
                                             }
@@ -1041,8 +1039,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b1",
                     "sizeTotal": 20,
                     "loadTimeTotal": 0.0,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1066,8 +1062,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b2",
                     "sizeTotal": 200,
                     "loadTimeTotal": 0.0,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1091,8 +1085,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b3",
                     "sizeTotal": 1500,
                     "loadTimeTotal": 0.0,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1116,8 +1108,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     "name": "b5",
                     "sizeTotal": 200000,
                     "loadTimeTotal": 0.5,
-                    "moduleExtensions": [],
-                    "moduleCount": 0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1179,6 +1169,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                     __typename
                                     ... on BundleAnalysisReport {
                                         bundle(name: "b5") {
+                                            moduleExtensions
+                                            moduleCount
                                             asset(name: "assets/LazyComponent-fcbb0922.js") {
                                                 name
                                                 normalizedName
@@ -1226,7 +1218,20 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        asset_report = commit["bundleAnalysisReport"]["bundle"]["asset"]
+        bundle_report = commit["bundleAnalysisReport"]["bundle"]
+        asset_report = bundle_report["asset"]
+
+        assert bundle_report is not None
+        assert sorted(bundle_report["moduleExtensions"]) == [
+            "",
+            "css",
+            "html",
+            "js",
+            "svg",
+            "ts",
+            "tsx",
+        ]
+        assert bundle_report["moduleCount"] == 7
 
         assert asset_report is not None
         assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"

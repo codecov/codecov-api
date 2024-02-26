@@ -178,11 +178,10 @@ class BundleReport(object):
     def all_assets(self) -> List[AssetReport]:
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
-    def assets(self, extensions: Optional[List[str]]) -> List[AssetReport]:
+    def assets(self, extensions: Optional[List[str]] = None) -> List[AssetReport]:
         all_assets = self.all_assets
 
-        # TODO: Unimplemented
-        print("filtered by", extensions)
+        # TODO: Unimplemented #1192 - Filter by extensions
         filtered_assets = all_assets
 
         return filtered_assets
@@ -201,6 +200,17 @@ class BundleReport(object):
     def load_time_total(self) -> float:
         return load_time_conversion(self.report.total_size())
 
+    @cached_property
+    def module_extensions(self) -> List[str]:
+        extensions = set()
+        for asset in self.assets():
+            extensions.update(asset.module_extensions)
+        return list(extensions)
+
+    @cached_property
+    def module_count(self) -> int:
+        return len(self.module_extensions)
+
 
 @dataclass
 class BundleAnalysisReport(object):
@@ -212,21 +222,21 @@ class BundleAnalysisReport(object):
         if self.report and self.report.db_session:
             self.report.db_session.close()
 
-    def bundle(self, name):
+    def bundle(self, name: str) -> BundleReport:
         bundle_report = self.report.bundle_report(name)
         if bundle_report:
             return BundleReport(bundle_report)
 
     @cached_property
-    def bundles(self):
+    def bundles(self) -> List[BundleReport]:
         return [BundleReport(bundle) for bundle in self.report.bundle_reports()]
 
     @cached_property
-    def size_total(self):
+    def size_total(self) -> int:
         return sum([bundle.size_total for bundle in self.bundles])
 
     @cached_property
-    def load_time_total(self):
+    def load_time_total(self) -> int:
         return load_time_conversion(self.size_total)
 
 
@@ -273,8 +283,6 @@ class BundleAnalysisComparison(object):
 
     @cached_property
     def size_total(self):
-        if self.head_report is None:
-            return 0
         return BundleAnalysisReport(self.head_report).size_total
 
     @cached_property

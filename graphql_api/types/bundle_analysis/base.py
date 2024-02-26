@@ -98,14 +98,12 @@ def resolve_load_time_total(bundle_report: BundleReport, info) -> float:
 
 @bundle_report_bindable.field("moduleExtensions")
 def resolve_module_extensions(bundle_report: BundleReport, info) -> List[str]:
-    # TODO: Unimplemented
-    return []
+    return bundle_report.module_extensions
 
 
 @bundle_report_bindable.field("moduleCount")
 def resolve_module_count(bundle_report: BundleReport, info) -> int:
-    # TODO: Unimplemented
-    return 0
+    return bundle_report.module_count
 
 
 @bundle_report_bindable.field("assets")
