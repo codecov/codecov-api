@@ -33,7 +33,7 @@ from graphql_api.types.comparison.comparison import (
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
-from services.bundle_analysis import BundleAnalysisReport
+from services.bundle_analysis import BundleAnalysisComparison, BundleAnalysisReport
 from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
@@ -161,7 +161,23 @@ def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
     if not base_commit:
         return MissingBaseCommit()
 
-    return load_bundle_analysis_comparison(base_commit, commit)
+    bundle_analysis_comparison = load_bundle_analysis_comparison(base_commit, commit)
+
+    # Store the created SQLite DB path in info.context
+    # when the request is fully handled, have the file deleted
+    if isinstance(bundle_analysis_comparison, BundleAnalysisComparison):
+        info.context[
+            "request"
+        ].bundle_analysis_base_report_db_path = (
+            bundle_analysis_comparison.comparison.base_report.db_path
+        )
+        info.context[
+            "request"
+        ].bundle_analysis_head_report_db_path = (
+            bundle_analysis_comparison.comparison.head_report.db_path
+        )
+
+    return bundle_analysis_comparison
 
 
 @commit_bindable.field("bundleAnalysisReport")
@@ -169,7 +185,16 @@ def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
 def resolve_bundle_analysis_report(
     commit: Commit, info, **kwargs
 ) -> BundleAnalysisReport:
-    return load_bundle_analysis_report(commit)
+    bundle_analysis_report = load_bundle_analysis_report(commit)
+
+    # Store the created SQLite DB path in info.context
+    # when the request is fully handled, have the file deleted
+    if isinstance(bundle_analysis_report, BundleAnalysisReport):
+        info.context[
+            "request"
+        ].bundle_analysis_head_report_db_path = bundle_analysis_report.report.db_path
+
+    return bundle_analysis_report
 
 
 @commit_bindable.field("flagNames")
