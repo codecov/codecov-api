@@ -9,7 +9,7 @@ from corsheaders.middleware import (
 )
 from corsheaders.middleware import CorsMiddleware as BaseCorsMiddleware
 from django.conf import settings
-from django.http import HttpRequest, HttpResponseNotAllowed
+from django.http import HttpRequest, JsonResponse
 from django.urls import resolve
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework import exceptions
@@ -156,4 +156,4 @@ class GuestAccessMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if settings.IS_ENTERPRISE and settings.GUEST is False:
             if not request.user or not request.user.is_authenticated:
-                return HttpResponseNotAllowed(["POST"])
+                return JsonResponse({"error": "Unauthorized guest access"}, status=401)
