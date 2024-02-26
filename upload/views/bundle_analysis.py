@@ -37,6 +37,7 @@ class UploadSerializer(serializers.Serializer):
     job = serializers.CharField(required=False, allow_null=True)
     pr = serializers.CharField(required=False, allow_null=True)
     service = serializers.CharField(required=False, allow_null=True)
+    branch = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView):

@@ -109,8 +109,8 @@ class BundleAnalysisReport(object):
         self.cleanup()
 
     def cleanup(self) -> None:
-        if self.report:
-            self.report.cleanup()
+        if self.report and self.report.db_session:
+            self.report.db_session.close()
 
     @cached_property
     def bundles(self):

@@ -15,11 +15,13 @@ type BundleData {
 
 type BundleModule {
   name: String!
+  extension: String!
   bundleData: BundleData!
 }
 
 type BundleAsset {
   name: String!
+  extension: String!
   normalizedName: String!
   moduleExtensions: [String!]!
   modules: [BundleModule]!
