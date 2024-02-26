@@ -1,7 +1,14 @@
+import os
+
 from datetime import datetime, timedelta
 
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from unittest.mock import patch
+from shared.storage.memory import MemoryStorageService
+from shared.bundle_analysis import StoragePaths
+from shared.bundle_analysis.storage import get_bucket_name
+from services.archive import ArchiveService
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
@@ -397,6 +404,55 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         assert pull == {
             "bundleAnalysisCompareWithBase": {"__typename": "MissingBaseReport"}
         }
+
+    @patch("graphql_api.types.pull.pull.load_bundle_analysis_comparison")
+    def test_bundle_analysis_sqlite_file_deleted(self, mock_loader):
+        mock_loader.return_value = BundleAnalysisComparison()
+
+        os.system("rm -rf /tmp/bundle_analysis_*")
+
+        query = """
+            bundleAnalysisCompareWithBase {
+                __typename
+                ... on BundleAnalysisComparison {
+                    sizeDelta
+                }
+            }
+        """
+
+        head = CommitFactory(
+            repository=self.repository,
+            author=self.owner,
+            commitid="5672734ij1n234918231290j12nasdfioasud0f9",
+            totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
+        )
+        report = CommitReportFactory(commit=head)
+        ReportLevelTotalsFactory(report=report, coverage=78.38)
+        compared_to = CommitFactory(
+            repository=self.repository,
+            author=self.owner,
+            commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s",
+        )
+        CommitComparisonFactory(
+            base_commit=compared_to,
+            compare_commit=head,
+            patch_totals={"coverage": 0.8739},
+        )
+        my_pull = PullFactory(
+            repository=self.repository,
+            title="test-pull-request",
+            author=self.owner,
+            head=head.commitid,
+            compared_to=compared_to.commitid,
+            behind_by=23,
+            behind_by_commit="1089nf898as-jdf09hahs09fgh",
+        )
+        pull = self.fetch_one_pull_request(my_pull.pullid, query)
+        assert pull == {
+            "title": "test-pull-request",
+        }
+
+        
 
     @freeze_time("2021-02-02")
     def test_pull_no_patch_totals(self):
