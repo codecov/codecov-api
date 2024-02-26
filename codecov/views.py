@@ -34,27 +34,27 @@ def redirect_app(request):
 
 class RepositoryAutoCompleteSearch(autocomplete.Select2QuerySetView):
     def get_queryset(self):
-        # User must be authenticated to see the list
+        # must be authenticated to query
         if not self.request.user.is_authenticated:
             return Repository.objects.none()
 
         repos = Repository.objects.all()
 
         if self.q:
-            repos = repos.filter(name__istartswith=self.q)
+            repos = repos.filter(name__icontains=self.q)
 
         return repos
 
 
 class OwnerAutoCompleteSearch(autocomplete.Select2QuerySetView):
     def get_queryset(self):
-        # User must be authenticated to see the list
+        # must be authenticated to query
         if not self.request.user.is_authenticated:
             return Owner.objects.none()
 
         owners = Owner.objects.all()
 
         if self.q:
-            owners = owners.filter(username__istartswith=self.q)
+            owners = owners.filter(username__icontains=self.q)
 
         return owners

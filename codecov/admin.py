@@ -2,7 +2,9 @@ from django.contrib import admin
 from shared.django_apps.rollouts.models import FeatureFlag, FeatureFlagVariant
 
 from codecov.forms import AutocompleteSearchForm
-
+from django_better_admin_arrayfield.admin.mixins import DynamicArrayMixin
+from django.urls import reverse
+from django.utils.html import format_html
 
 class AdminMixin(object):
     def save_model(self, request, new_obj, form, change) -> None:
@@ -26,8 +28,16 @@ class AdminMixin(object):
 
 class FeatureFlagVariantInline(admin.StackedInline):
     model = FeatureFlagVariant
-    form = AutocompleteSearchForm
+    exclude = ["override_repo_ids", "override_owner_ids"]
+    fields = ["name", "proportion", "value", "view_link"]
+    readonly_fields = ('view_link',)
     extra = 0
+
+    def view_link(self, obj):
+        link = reverse("admin:rollouts_featureflagvariant_change", args=[obj.variant_id])
+        return format_html('<a href="{}">View</a>', link)
+
+    view_link.short_description = "More Details"
 
 
 class FeatureFlagAdmin(admin.ModelAdmin):
@@ -41,7 +51,7 @@ class FeatureFlagAdmin(admin.ModelAdmin):
     number_of_variants.short_description = "# of Variants"
 
 
-class FeatureFlagVariantAdmin(admin.ModelAdmin):
+class FeatureFlagVariantAdmin(admin.ModelAdmin, DynamicArrayMixin):
     list_display = ["variant_id", "name", "feature_flag"]
     search_fields = ["variant_id", "name", "feature_flag__name"]
     form = AutocompleteSearchForm
