@@ -69,9 +69,9 @@ class UploadHandler(APIView, ShelterMixin):
         response["Accept"] = "text/*"
         response["Access-Control-Allow-Origin"] = "*"
         response["Access-Control-Allow-Method"] = "POST"
-        response[
-            "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        response["Access-Control-Allow-Headers"] = (
+            "Origin, Content-Type, Accept, X-User-Agent"
+        )
 
         return response
 
@@ -91,9 +91,9 @@ class UploadHandler(APIView, ShelterMixin):
         # Set response headers
         response = HttpResponse()
         response["Access-Control-Allow-Origin"] = "*"
-        response[
-            "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        response["Access-Control-Allow-Headers"] = (
+            "Origin, Content-Type, Accept, X-User-Agent"
+        )
 
         # Parse request parameters
         request_params = {
@@ -146,16 +146,6 @@ class UploadHandler(APIView, ShelterMixin):
             metrics.incr("uploads.rejected", 1)
             return response
 
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-            ),
-        )
-
         log.info(
             "Found repository for upload request",
             extra=dict(
@@ -165,6 +155,24 @@ class UploadHandler(APIView, ShelterMixin):
                 owner_username=owner.username,
                 commit=upload_params.get("commit"),
             ),
+        )
+
+        sentry_tags = generate_upload_sentry_metrics_tags(
+            action="coverage",
+            request=self.request,
+            repository=repository,
+            is_shelter_request=self.is_shelter_request(),
+        )
+
+        sentry_metrics.incr(
+            "upload",
+            tags=sentry_tags,
+        )
+
+        sentry_metrics.set(
+            "upload_set",
+            repository.author.ownerid,
+            tags=sentry_tags,
         )
 
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
