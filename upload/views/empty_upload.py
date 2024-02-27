@@ -1,7 +1,7 @@
 import fnmatch
 import logging
-import re2
 
+import re2
 from asgiref.sync import async_to_sync
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound

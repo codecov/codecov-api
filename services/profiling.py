@@ -1,8 +1,8 @@
 import json
 import logging
-import re2
 from typing import List, Optional
 
+import re2
 from django.utils.functional import cached_property
 from shared.profiling import ProfilingSummaryDataAnalyzer
 from shared.yaml import UserYaml
