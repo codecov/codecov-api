@@ -69,9 +69,9 @@ class UploadHandler(APIView, ShelterMixin):
         response["Accept"] = "text/*"
         response["Access-Control-Allow-Origin"] = "*"
         response["Access-Control-Allow-Method"] = "POST"
-        response["Access-Control-Allow-Headers"] = (
-            "Origin, Content-Type, Accept, X-User-Agent"
-        )
+        response[
+            "Access-Control-Allow-Headers"
+        ] = "Origin, Content-Type, Accept, X-User-Agent"
 
         return response
 
@@ -91,9 +91,9 @@ class UploadHandler(APIView, ShelterMixin):
         # Set response headers
         response = HttpResponse()
         response["Access-Control-Allow-Origin"] = "*"
-        response["Access-Control-Allow-Headers"] = (
-            "Origin, Content-Type, Accept, X-User-Agent"
-        )
+        response[
+            "Access-Control-Allow-Headers"
+        ] = "Origin, Content-Type, Accept, X-User-Agent"
 
         # Parse request parameters
         request_params = {
