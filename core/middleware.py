@@ -16,7 +16,6 @@ USER_AGENT_METRICS = [
     "django_http_requests_unknown_latency_including_middlewares_total",
     "django_http_requests_latency_seconds_by_view_method",
     "django_http_requests_unknown_latency_total",
-    "django_http_ajax_requests_total",
     "django_http_requests_total_by_method",
     "django_http_requests_total_by_transport",
     "django_http_requests_total_by_view_transport_method",
