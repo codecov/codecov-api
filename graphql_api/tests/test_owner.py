@@ -7,7 +7,7 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
-from codecov.commands.exceptions import MissingService, Unauthorized, Unauthenticated
+from codecov.commands.exceptions import MissingService, Unauthenticated, Unauthorized
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
@@ -412,7 +412,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         self.client.force_login(user=UserFactory())
         data = self.gql_request(query, owner=None, with_errors=True)
         assert data["errors"][0]["message"] == Unauthenticated.message
-        assert data["data"]["owner"]["isCurrentUserActivated"] is None        
+        assert data["data"]["owner"]["isCurrentUserActivated"] is None
 
     def test_is_current_user_activated(self):
         user = OwnerFactory(username="sample-user")
@@ -463,7 +463,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data["data"]["owner"]["isCurrentUserActivated"] is None
 
     def test_admin_is_current_user_activated_authorized(self):
-        owner = OwnerFactory(username="sample-owner-authorized", admins=[self.owner.ownerid])
+        owner = OwnerFactory(
+            username="sample-owner-authorized", admins=[self.owner.ownerid]
+        )
         self.owner.organizations = [owner.ownerid]
         self.owner.save()
         query = """{
@@ -478,7 +480,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["isCurrentUserActivated"] == True
 
     def test_admin_is_current_user_activated_not_authorized(self):
-        owner = OwnerFactory(username="sample-owner-not-authorized", admins=[self.owner.ownerid])
+        owner = OwnerFactory(
+            username="sample-owner-not-authorized", admins=[self.owner.ownerid]
+        )
         query = """{
             owner(username: "%s") {
                 isCurrentUserActivated
