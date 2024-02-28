@@ -13,8 +13,6 @@ if [[ "$STATSD_HOST" ]]; then
   suffix="--statsd-host ${STATSD_HOST}:${STATSD_PORT}"
 fi
 
-sh ./migrate.sh
-
 export PROMETHEUS_MULTIPROC_DIR="${PROMETHEUS_MULTIPROC_DIR:-$HOME/.prometheus}"
 rm -r ${PROMETHEUS_MULTIPROC_DIR?}/* 2> /dev/null
 mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
