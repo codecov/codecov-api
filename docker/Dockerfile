@@ -29,6 +29,7 @@ RUN rm /app/codecov/settings_dev.py && \
     rm /app/codecov/settings_test.py && \
     rm /app/codecov/settings_staging.py && \
     rm /app/dev.sh && \
+    rm /app/migrate.sh && \
     rm /app/prod.sh && \
     rm /app/staging.sh && \
     rm /app/production.yml && \
