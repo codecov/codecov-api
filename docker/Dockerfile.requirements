@@ -21,7 +21,7 @@ RUN apk add --update --no-cache \
     abseil-cpp-dev \
     py3-pybind11-dev \
     re2-dev \
-    && pip install --upgrade pip
+    && pip install --upgrade pip setuptools
 
 COPY requirements.txt /
 WORKDIR /pip-packages/
@@ -36,6 +36,9 @@ RUN apk -U upgrade binutils busybox expat libretls && \
     apk add --no-cache --virtual .build-deps gcc \
     libxslt-dev \
     libffi-dev \
+    abseil-cpp-dev \
+    py3-pybind11-dev \
+    re2-dev \
     make \
     curl
 

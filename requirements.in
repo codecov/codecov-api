@@ -29,6 +29,7 @@ opentelemetry-sdk>=1.20.0
 opentracing
 pre-commit
 psycopg2
+pybind11
 PyJWT
 pytest>=7.2.0
 pytest-cov
@@ -39,6 +40,7 @@ python-dateutil
 python-json-logger
 python-redis-lock
 pytz
+re2
 redis
 requests
 sentry-sdk>=1.40.0
