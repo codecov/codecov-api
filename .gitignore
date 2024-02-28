@@ -89,6 +89,7 @@ celerybeat-schedule
 
 # Environments
 .env
+.env.*
 .venv
 env/
 venv/
@@ -124,3 +125,6 @@ dmypy.json
 *.swp
 *.swo
 .vscode/
+
+# PyCharm stuff
+.idea
