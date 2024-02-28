@@ -16,6 +16,7 @@ from graphql_api.types.comparison.comparison import (
     MissingHeadCommit,
 )
 from graphql_api.types.enums import OrderingDirection, PullRequestState
+from services.bundle_analysis import BundleAnalysisComparison
 from services.comparison import ComparisonReport, PullRequestComparison
 
 pull_bindable = ObjectType("Pull")
@@ -92,10 +93,26 @@ def resolve_bundle_analysis_compare_with_base(pull, info, **kwargs):
     if not pull.head:
         return MissingHeadCommit()
 
-    return load_bundle_analysis_comparison(
+    bundle_analysis_comparison = load_bundle_analysis_comparison(
         Commit.objects.filter(commitid=pull.compared_to).first(),
         Commit.objects.filter(commitid=pull.head).first(),
     )
+
+    # Store the created SQLite DB path in info.context
+    # when the request is fully handled, have the file deleted
+    if isinstance(bundle_analysis_comparison, BundleAnalysisComparison):
+        info.context[
+            "request"
+        ].bundle_analysis_base_report_db_path = (
+            bundle_analysis_comparison.comparison.base_report.db_path
+        )
+        info.context[
+            "request"
+        ].bundle_analysis_head_report_db_path = (
+            bundle_analysis_comparison.comparison.head_report.db_path
+        )
+
+    return bundle_analysis_comparison
 
 
 @pull_bindable.field("commits")
