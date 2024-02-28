@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from unittest.mock import PropertyMock, patch
 
 from django.test import TestCase
 from freezegun import freeze_time
@@ -97,3 +98,52 @@ class CoverageMeasurement(TestCase):
             plan_service=plan_service
         )
         assert monthly_measurements == 5
+
+    def test_query_monthly_coverage_measurements_excluding_uploads_during_trial(self):
+        freezer = freeze_time("2024-02-01T00:00:00")
+        freezer.start()
+        owner = OwnerFactory(
+            trial_status="expired",
+            trial_start_date=datetime.utcnow(),
+            trial_end_date=datetime.utcnow() + timedelta(days=14),
+        )
+        freezer.stop()
+
+        freezer = freeze_time("2024-02-05T00:00:00")
+        freezer.start()
+        self.add_upload_measurements_records(owner=owner, quantity=3)
+        freezer.stop()
+
+        # Now
+        freezer = freeze_time("2024-02-20T00:00:00")
+        freezer.start()
+        self.add_upload_measurements_records(owner=owner, quantity=6)
+        freezer.stop()
+
+        all_measurements = UserMeasurement.objects.all()
+        assert len(all_measurements) == 9
+
+        plan_service = PlanService(current_org=owner)
+        monthly_measurements = query_monthly_coverage_measurements(
+            plan_service=plan_service
+        )
+        assert monthly_measurements == 6
+
+    @patch("plan.service.PlanService.monthly_uploads_limit", new_callable=PropertyMock)
+    def test_query_monthly_coverage_measurements_beyond_monthly_limit(
+        self, monthly_uploads_mock
+    ):
+        owner = OwnerFactory(
+            trial_status="expired",
+            trial_start_date=datetime.utcnow(),
+            trial_end_date=datetime.utcnow() + timedelta(days=14),
+        )
+        self.add_upload_measurements_records(owner=owner, quantity=10)
+
+        plan_service = PlanService(current_org=owner)
+        monthly_uploads_mock.return_value = 3
+        monthly_measurements = query_monthly_coverage_measurements(
+            plan_service=plan_service
+        )
+        # 10 uploads total, max 3 returned
+        assert monthly_measurements == 3
