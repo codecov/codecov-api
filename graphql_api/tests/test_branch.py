@@ -719,7 +719,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\z"],
                 }
             ),
         ]
@@ -778,7 +778,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\z"],
                 }
             ),
         ]
@@ -848,7 +848,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\z"],
                     "flag_regexes": "flag-a",
                 }
             ),
@@ -945,7 +945,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\z"],
                     "flag_regexes": "flag-a",
                 }
             ),
@@ -1042,7 +1042,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\z"],
                     "flag_regexes": "flag-a",
                 }
             ),
