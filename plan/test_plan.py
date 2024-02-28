@@ -247,6 +247,7 @@ class PlanServiceTests(TestCase):
         plan_service = PlanService(current_org=current_org)
 
         basic_plan = FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
+        assert plan_service.current_org == current_org
         assert plan_service.trial_status == TrialStatus.NOT_STARTED.value
         assert plan_service.marketing_name == basic_plan.marketing_name
         assert plan_service.plan_name == basic_plan.value
