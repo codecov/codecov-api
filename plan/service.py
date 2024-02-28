@@ -51,6 +51,9 @@ class PlanService:
         self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
         self.current_org.save()
 
+    def current_org(self) -> Owner:
+        return self.current_org
+
     def set_default_plan_data(self) -> None:
         log.info(f"Setting plan to users-basic for owner {self.current_org.ownerid}")
         self.current_org.plan = PlanName.BASIC_PLAN_NAME.value
