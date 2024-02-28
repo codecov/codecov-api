@@ -4,6 +4,8 @@
 #
 #    pip-compile requirements.in
 #
+absl-py==2.1.0
+    # via -r requirements.in
 aiodataloader==0.2.0
     # via -r requirements.in
 amqp==5.1.0
