@@ -59,7 +59,6 @@ def resolve_is_current_user_part_of_org(owner, info):
 
 
 @owner_bindable.field("yaml")
-@require_part_of_org
 def resolve_yaml(owner, info):
     if owner.yaml is None:
         return
