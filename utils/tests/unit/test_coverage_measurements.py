@@ -133,11 +133,7 @@ class CoverageMeasurement(TestCase):
     def test_query_monthly_coverage_measurements_beyond_monthly_limit(
         self, monthly_uploads_mock
     ):
-        owner = OwnerFactory(
-            trial_status="expired",
-            trial_start_date=datetime.utcnow(),
-            trial_end_date=datetime.utcnow() + timedelta(days=14),
-        )
+        owner = OwnerFactory()
         self.add_upload_measurements_records(owner=owner, quantity=10)
 
         plan_service = PlanService(current_org=owner)
