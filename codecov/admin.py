@@ -31,7 +31,9 @@ class FeatureFlagVariantInline(admin.StackedInline):
     model = FeatureFlagVariant
     exclude = ["override_repo_ids", "override_owner_ids"]
     fields = ["name", "proportion", "value", "view_link"]
-    readonly_fields = ["view_link",]
+    readonly_fields = [
+        "view_link",
+    ]
     extra = 0
 
     def view_link(self, obj):
