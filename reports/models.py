@@ -18,6 +18,12 @@ from utils.services import get_short_service_name
 log = logging.getLogger(__name__)
 
 
+class ReportType(models.TextChoices):
+    COVERAGE = "coverage"
+    TEST_RESULTS = "test_results"
+    BUNDLE_ANALYSIS = "bundle_analysis"
+
+
 class AbstractTotals(
     ExportModelOperationsMixin("reports.abstract_totals"), BaseCodecovModel
 ):
