@@ -18,6 +18,9 @@ RUN apk add --update --no-cache \
     build-base \
     cargo \
     curl-dev \
+    abseil-cpp-dev \
+    py3-pybind11-dev \
+    re2-dev \
     && pip install --upgrade pip
 
 COPY requirements.txt /
