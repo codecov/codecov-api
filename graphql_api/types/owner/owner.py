@@ -213,7 +213,6 @@ def resolve_measurements(
 
 @owner_bindable.field("isCurrentUserActivated")
 @sync_to_async
-@require_part_of_org
 def resolve_is_current_user_activated(owner, info):
     current_user = info.context["request"].user
     if not current_user.is_authenticated:

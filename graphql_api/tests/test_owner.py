@@ -399,8 +399,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_is_current_user_not_activated_no_current_owner(self):
         owner = OwnerFactory(username="sample-owner", service="github")
-        self.owner.organizations = [owner.ownerid]
-        self.owner.save()
         query = """{
             owner(username: "%s") {
                 isCurrentUserActivated
@@ -410,9 +408,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             owner.username
         )
         self.client.force_login(user=UserFactory())
-        data = self.gql_request(query, owner=None, with_errors=True)
-        assert data["errors"][0]["message"] == Unauthenticated.message
-        assert data["data"]["owner"]["isCurrentUserActivated"] is None
+        data = self.gql_request(query, owner=None)
+        assert data["owner"]["isCurrentUserActivated"] == False
 
     def test_is_current_user_activated(self):
         user = OwnerFactory(username="sample-user")
@@ -458,9 +455,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (
             owner.username
         )
-        data = self.gql_request(query, with_errors=True)
-        assert data["errors"][0]["message"] == Unauthenticated.message
-        assert data["data"]["owner"]["isCurrentUserActivated"] is None
+        data = self.gql_request(query)
+        assert data["owner"]["isCurrentUserActivated"] == False
 
     def test_admin_is_current_user_activated_authorized(self):
         owner = OwnerFactory(
@@ -478,23 +474,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["isCurrentUserActivated"] == True
-
-    def test_admin_is_current_user_activated_not_authorized(self):
-        owner = OwnerFactory(
-            username="sample-owner-not-authorized", admins=[self.owner.ownerid]
-        )
-        query = """{
-            owner(username: "%s") {
-                isCurrentUserActivated
-            }
-        }
-        """ % (
-            owner.username
-        )
-        res = self.gql_request(query, owner=self.owner, with_errors=True)
-
-        assert res["errors"][0]["message"] == Unauthorized.message
-        assert res["data"]["owner"]["isCurrentUserActivated"] is None
 
     def test_owner_is_current_user_activated(self):
         query = """{
@@ -656,3 +635,19 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["hasPrivateRepos"] == False
+
+    def test_owner_hash_owner_id(self):
+        user = OwnerFactory(username="sample-user")
+        owner = OwnerFactory(username="sample-owner", plan_activated_users=None)
+        user.organizations = [owner.ownerid]
+        user.save()
+        query = """{
+            owner(username: "%s") {
+                hashOwnerid
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["hashOwnerid"] is not None
