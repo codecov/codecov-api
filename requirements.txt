@@ -4,8 +4,6 @@
 #
 #    pip-compile requirements.in
 #
-absl-py==2.1.0
-    # via -r requirements.in
 aiodataloader==0.2.0
     # via -r requirements.in
 amqp==5.1.0
@@ -298,8 +296,6 @@ pyasn1==0.4.8
     #   rsa
 pyasn1-modules==0.2.8
     # via google-auth
-pybind11==2.11.1
-    # via -r requirements.in
 pycparser==2.20
     # via cffi
 pyjwt==2.8.0
@@ -349,8 +345,6 @@ pyyaml==6.0.1
     #   drf-spectacular
     #   pre-commit
     #   vcrpy
-re2==0.2.24
-    # via -r requirements.in
 redis==4.4.4
     # via
     #   -r requirements.in
