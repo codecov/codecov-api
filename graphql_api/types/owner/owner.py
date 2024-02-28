@@ -17,6 +17,7 @@ from graphql_api.helpers.connection import (
     build_connection_graphql,
     queryset_to_connection,
 )
+from graphql_api.helpers.mutation import require_part_of_org
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
@@ -58,6 +59,7 @@ def resolve_is_current_user_part_of_org(owner, info):
 
 
 @owner_bindable.field("yaml")
+@require_part_of_org
 def resolve_yaml(owner, info):
     if owner.yaml is None:
         return
@@ -68,12 +70,14 @@ def resolve_yaml(owner, info):
 
 
 @owner_bindable.field("plan")
+@require_part_of_org
 def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
 
 
 @owner_bindable.field("pretrialPlan")
 @convert_kwargs_to_snake_case
+@require_part_of_org
 def resolve_plan_representation(owner: Owner, info) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
     return FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
@@ -81,6 +85,7 @@ def resolve_plan_representation(owner: Owner, info) -> PlanData:
 
 @owner_bindable.field("availablePlans")
 @convert_kwargs_to_snake_case
+@require_part_of_org
 def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
     plan_service = PlanService(current_org=owner)
     info.context["plan_service"] = plan_service
@@ -90,6 +95,7 @@ def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
 
 @owner_bindable.field("hasPrivateRepos")
 @sync_to_async
+@require_part_of_org
 def resolve_has_private_repos(owner: Owner, info) -> List[PlanData]:
     return owner.has_private_repos
 
@@ -132,12 +138,14 @@ async def resolve_repository_deprecated(owner, info, name):
 
 
 @owner_bindable.field("numberOfUploads")
+@require_part_of_org
 async def resolve_number_of_uploads(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return await command.get_uploads_number_per_user(owner)
 
 
 @owner_bindable.field("isAdmin")
+@require_part_of_org
 def resolve_is_current_user_an_admin(owner, info):
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
@@ -145,12 +153,14 @@ def resolve_is_current_user_an_admin(owner, info):
 
 
 @owner_bindable.field("hashOwnerid")
+@require_part_of_org
 def resolve_hash_ownerid(owner, info):
     hash_ownerid = sha1(str(owner.ownerid).encode())
     return hash_ownerid.hexdigest()
 
 
 @owner_bindable.field("orgUploadToken")
+@require_part_of_org
 def resolve_org_upload_token(owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return command.get_org_upload_token(owner)
@@ -158,6 +168,7 @@ def resolve_org_upload_token(owner, info, **kwargs):
 
 @owner_bindable.field("defaultOrgUsername")
 @sync_to_async
+@require_part_of_org
 def resolve_org_default_org_username(owner: Owner, info, **kwargs) -> int:
     return None if owner.default_org is None else owner.default_org.username
 
@@ -202,6 +213,7 @@ def resolve_measurements(
 
 @owner_bindable.field("isCurrentUserActivated")
 @sync_to_async
+@require_part_of_org
 def resolve_is_current_user_activated(owner, info):
     current_user = info.context["request"].user
     if not current_user.is_authenticated:
