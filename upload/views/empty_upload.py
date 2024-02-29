@@ -1,7 +1,9 @@
 import fnmatch
 import logging
 
-import re2
+import regex
+
+from typing import List
 from asgiref.sync import async_to_sync
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
@@ -37,11 +39,11 @@ GLOB_NON_TESTABLE_FILES = [
     "*.html",
     "*.htmlypertext",
     "*.ini",
-    # "*.jar*",
+    "*.jar*",
     "*.jpeg",
     "*.jpg",
     "*.jsonipt",
-    # "*.mak*",
+    "*.mak*",
     "*.md",
     "*.pdf",
     "*.png",
@@ -99,25 +101,29 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         if pull_id is None:
             pull_id = self.get_pull_request_id(commit, provider, pull_id)
 
-        changed_files = self.get_changed_files_from_provider(commit, provider, pull_id)
+        changed_files: List[str] = self.get_changed_files_from_provider(
+            commit, provider, pull_id
+        )
 
         ignored_files = yaml.get("ignore", [])
 
-        regex_non_testable_files = []
-
-        for path in GLOB_NON_TESTABLE_FILES:
-            # regex_non_testable_files.append(fnmatch.translate(path))
-            translated = fnmatch.translate(path)
-            regex_non_testable_files.append(translated[:-1] + "z")
-
-        print(regex_non_testable_files, ignored_files)
-        compiled_files_to_ignore = [
-            re2.compile(path) for path in (regex_non_testable_files + ignored_files)
+        regex_non_testable_files = [
+            fnmatch.translate(path) for path in GLOB_NON_TESTABLE_FILES
         ]
+
+        compiled_files_to_ignore = [
+            regex.compile(path) for path in (regex_non_testable_files + ignored_files)
+        ]
+
         ignored_changed_files = [
             file
             for file in changed_files
-            if any(map(lambda regex: regex.match(file), compiled_files_to_ignore))
+            if any(
+                map(
+                    lambda regex_patt: regex.match(regex_patt, file, timeout=5),
+                    compiled_files_to_ignore,
+                )
+            )
         ]
 
         if set(changed_files) == set(ignored_changed_files):
