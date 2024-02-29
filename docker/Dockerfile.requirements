@@ -12,6 +12,8 @@ RUN apk add --update --no-cache \
     python3-dev \
     libffi-dev \
     gcc \
+    g++ \
+    libc-dev \
     libcurl \
     bash \
     rust \
