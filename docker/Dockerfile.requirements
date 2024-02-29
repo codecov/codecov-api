@@ -12,15 +12,13 @@ RUN apk add --update --no-cache \
     python3-dev \
     libffi-dev \
     gcc \
-    g++ \
-    libc-dev \
     libcurl \
     bash \
     rust \
     build-base \
     cargo \
     curl-dev \
-    && pip install --upgrade pip setuptools
+    && pip install --upgrade pip
 
 COPY requirements.txt /
 WORKDIR /pip-packages/
