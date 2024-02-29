@@ -3,7 +3,6 @@ import logging
 from typing import List, Optional
 
 import regex
-
 from django.utils.functional import cached_property
 from shared.profiling import ProfilingSummaryDataAnalyzer
 from shared.yaml import UserYaml

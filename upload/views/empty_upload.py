@@ -1,9 +1,8 @@
 import fnmatch
 import logging
+from typing import List
 
 import regex
-
-from typing import List
 from asgiref.sync import async_to_sync
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
