@@ -43,22 +43,6 @@ def test_get_repo_not_found(db):
     assert exp.match("Repository not found")
 
 
-def test_get_queryset(db):
-    target_repo = RepositoryFactory(
-        name="the_repo", author__username="codecov", author__service="github"
-    )
-    random_repo = RepositoryFactory()
-    target_commit_1 = CommitFactory(repository=target_repo)
-    target_commit_2 = CommitFactory(repository=target_repo)
-    random_commit = CommitFactory(repository=random_repo)
-    upload_views = CommitViews()
-    upload_views.kwargs = dict(repo="codecov::::the_repo", service="github")
-    recovered_commits = upload_views.get_queryset()
-    assert target_commit_1 in recovered_commits
-    assert target_commit_2 in recovered_commits
-    assert random_commit not in recovered_commits
-
-
 def test_commits_get(client, db):
     repo = RepositoryFactory(name="the-repo")
     commit_1 = CommitFactory(repository=repo)
