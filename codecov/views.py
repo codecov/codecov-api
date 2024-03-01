@@ -3,7 +3,7 @@ from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Service
 from core.models import Constants, Repository
 
 _version = None
@@ -40,8 +40,33 @@ class RepositoryAutoCompleteSearch(autocomplete.Select2QuerySetView):
 
         repos = Repository.objects.all()
 
-        if self.q:
-            repos = repos.filter(name__icontains=self.q)
+        terms = self.q.split("/") if self.q else []
+
+        if len(terms) >= 3:
+            service = terms[0]
+            owner = terms[1]
+            repo = "/".join(terms[2:])
+            repos = repos.filter(
+                author__service=service, author__username=owner, name__startswith=repo
+            )
+        elif len(terms) == 2:
+            if terms[0] in dict(Service.choices):
+                service = terms[0]
+                owner = terms[1]
+                repos = repos.filter(
+                    author__service=service, author__username__startswith=owner
+                )
+            else:
+                owner = terms[0]
+                repo = terms[1]
+                repos = repos.filter(author__username=owner, name__startswith=repo)
+        elif len(terms) == 1:
+            if terms[0] in dict(Service.choices):
+                service = terms[0]
+                repos = repos.filter(author__service=service)
+            else:
+                repo = terms[0]
+                repos = repos.filter(name__startswith=repo)
 
         return repos
 
@@ -54,7 +79,18 @@ class OwnerAutoCompleteSearch(autocomplete.Select2QuerySetView):
 
         owners = Owner.objects.all()
 
-        if self.q:
-            owners = owners.filter(username__icontains=self.q)
+        terms = self.q.split("/") if self.q else []
+
+        if len(terms) >= 2:
+            service = terms[0]
+            username = "/".join(terms[1:])
+            owners = owners.filter(service=service, username__startswith=username)
+        elif len(terms) == 1:
+            if terms[0] in dict(Service.choices):
+                service = terms[0]
+                owners = owners.filter(service=service)
+            else:
+                username = terms[0]
+                owners = owners.filter(username__startswith=username)
 
         return owners
