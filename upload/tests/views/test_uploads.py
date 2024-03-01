@@ -1,4 +1,3 @@
-import uuid
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
@@ -10,7 +9,7 @@ from rest_framework.test import APIClient
 
 from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import (
     CommitReport,

@@ -6,7 +6,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
 from sentry_sdk import metrics as sentry_metrics
-from shared.config import get_config
 from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
