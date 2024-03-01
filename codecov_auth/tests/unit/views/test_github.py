@@ -22,6 +22,7 @@ def _get_state_from_redis(mock_redis):
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect(client, mocker, mock_redis, settings):
     settings.IS_ENTERPRISE = False
 
@@ -36,6 +37,7 @@ def test_get_github_redirect(client, mocker, mock_redis, settings):
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect_host_override(client, mocker, mock_redis, settings):
     settings.IS_ENTERPRISE = False
     config = ConfigHelper()
@@ -67,6 +69,7 @@ def test_get_github_redirect_host_override(client, mocker, mock_redis, settings)
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect_with_ghpr_cookie(client, mocker, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
@@ -87,6 +90,7 @@ def test_get_github_redirect_with_ghpr_cookie(client, mocker, mock_redis, settin
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect_with_private_url(client, mocker, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"

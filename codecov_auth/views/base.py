@@ -62,6 +62,9 @@ class StateMixin(object):
         self.redis = get_redis_connection()
         return super().__init__(*args, **kwargs)
 
+    def _session_key(self) -> str:
+        return f"{self.service}_oauth_state"
+
     def _get_key_redis(self, state: str) -> str:
         return f"oauth-state-{state}"
 
@@ -100,11 +103,21 @@ class StateMixin(object):
         state = uuid.uuid4().hex
         redirection_url = self._generate_redirection_url()
         self.redis.setex(self._get_key_redis(state), 500, redirection_url)
+
+        # By saving the state in a session cookie, we can ensure that the user
+        # following the redirection URL after OAuth authorization is the same
+        # as the user who initiated it. Otherwise, a trickster could generate
+        # a final redirect URL to log into their account, send it to some
+        # victim, and trick the victim into linking their account with the
+        # trickster's.
+        self.request.session[self._session_key()] = state
+
         return state
 
     def get_redirection_url_from_state(self, state) -> (str, bool):
-        data = self.redis.get(self._get_key_redis(state))
-        if not data:
+        cached_url = self.redis.get(self._get_key_redis(state))
+
+        if not cached_url:
             # we come here after an installation event if the setup url is not set correctly, in that case we usually don't
             # have the state set, because that only happens when users try to login, therefore we should just ignore
             # this case and redirect them to what the setup url should be
@@ -112,7 +125,24 @@ class StateMixin(object):
                 f"{settings.CODECOV_DASHBOARD_URL}/{get_short_service_name(self.service)}",
                 False,
             )
-        return (data.decode("utf-8"), True)
+
+        # At this point the git provider has redirected the user back to our
+        # site. If the state that the git provider relayed in that redirect
+        # matches the state that we have saved in our session cookie, everything
+        # is fine and we should return the final redirect URL to complete the
+        # login. If we're missing that cookie, or if its state doesn't match up,
+        # we want don't to allow the login.
+        state_from_session = self.request.session.get(self._session_key(), None)
+        state_matches_session = state_from_session and state == state_from_session
+        if not state_matches_session:
+            log.warning("Warning: ")
+            return (
+                f"{settings.CODECOV_DASHBOARD_URL}",
+                False,
+            )
+
+        # Return the final redirect URL to complete the login.
+        return (cached_url.decode("utf-8"), True)
 
     def remove_state(self, state, delay=0) -> None:
         redirection_url, _ = self.get_redirection_url_from_state(state)
@@ -120,6 +150,10 @@ class StateMixin(object):
             self.redis.delete(self._get_key_redis(state))
         else:
             self.redis.setex(self._get_key_redis(state), delay, redirection_url)
+
+        session_state = self.request.session.get(self._session_key(), None)
+        if session_state and session_state == state:
+            self.request.session.pop(self._session_key(), None)
 
 
 class LoginMixin(object):
