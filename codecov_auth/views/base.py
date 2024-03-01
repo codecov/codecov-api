@@ -135,7 +135,9 @@ class StateMixin(object):
         state_from_session = self.request.session.get(self._session_key(), None)
         state_matches_session = state_from_session and state == state_from_session
         if not state_matches_session:
-            log.warning("Warning: ")
+            log.warning(
+                "Warning: login request is missing state or has disagreeing state"
+            )
             return (
                 f"{settings.CODECOV_DASHBOARD_URL}",
                 False,
