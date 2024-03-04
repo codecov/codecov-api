@@ -1,8 +1,8 @@
 import json
 import logging
-import re
 from typing import List, Optional
 
+import regex
 from django.utils.functional import cached_property
 from shared.profiling import ProfilingSummaryDataAnalyzer
 from shared.yaml import UserYaml
@@ -85,11 +85,16 @@ class ProfilingSummary:
         if report is None:
             return []
         critical_files_paths = repo_yaml["profiling"]["critical_files_paths"]
-        compiled_files_paths = [re.compile(path) for path in critical_files_paths]
+        compiled_files_paths = [regex.compile(path) for path in critical_files_paths]
         user_defined_critical_files = [
             file
             for file in report.files
-            if any(map(lambda regex: regex.match(file), compiled_files_paths))
+            if any(
+                map(
+                    lambda regex_patt: regex.match(regex_patt, file, timeout=5),
+                    compiled_files_paths,
+                )
+            )
         ]
         return user_defined_critical_files
 
