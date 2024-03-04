@@ -34,7 +34,7 @@ class OwnerAutocompleteSearchTest(TestCase):
 
     def test_search_by_one_term_service(self):
         self.client.force_login(self.user)
-        response = self.client.get("/admin-owner-autocomplete/", {"q": Service.GITHUB})
+        response = self.client.get("/admin-owner-autocomplete/", {"q": "github"})
         json_string = response._container[0].decode("utf-8")
         data = loads(json_string)
 
