@@ -87,6 +87,17 @@ class RepositoryAutocompleteSearchTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(data["results"]) == 2)
 
+    def test_search_by_three_terms_invalid_service(self):
+        self.client.force_login(self.user)
+        response = self.client.get(
+            "/admin-repository-autocomplete/", {"q": "geehub/user1/repo"}
+        )
+        json_string = response._container[0].decode("utf-8")
+        data = loads(json_string)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(data["results"]) == 0)
+
     def test_search_by_two_terms_service(self):
         self.client.force_login(self.user)
         response = self.client.get(
@@ -107,7 +118,7 @@ class RepositoryAutocompleteSearchTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(data["results"]) == 1)
 
-    def test_search_by_one_term(self):
+    def test_search_by_one_term_repo(self):
         self.client.force_login(self.user)
         response = self.client.get("/admin-repository-autocomplete/", {"q": "repo4"})
         json_string = response._container[0].decode("utf-8")
@@ -115,3 +126,12 @@ class RepositoryAutocompleteSearchTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(data["results"]) == 1)
+
+    def test_search_by_one_term_service(self):
+        self.client.force_login(self.user)
+        response = self.client.get("/admin-repository-autocomplete/", {"q": "github"})
+        json_string = response._container[0].decode("utf-8")
+        data = loads(json_string)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(data["results"]) == 3)
