@@ -40,6 +40,7 @@ python-json-logger
 python-redis-lock
 pytz
 redis
+regex
 requests
 sentry-sdk>=1.40.0
 setproctitle
