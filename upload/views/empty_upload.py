@@ -119,7 +119,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             for file in changed_files
             if any(
                 map(
-                    lambda regex_patt: regex.match(regex_patt, file, timeout=5),
+                    lambda regex_patt: regex.match(regex_patt, file, timeout=2),
                     compiled_files_to_ignore,
                 )
             )
