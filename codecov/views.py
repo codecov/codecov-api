@@ -32,6 +32,9 @@ def redirect_app(request):
     return HttpResponseRedirect(app_domain + request.path.replace("/redirect_app", ""))
 
 
+SERVICE_CHOICES = dict(Service.choices)
+
+
 class RepositoryAutoCompleteSearch(autocomplete.Select2QuerySetView):
     def get_queryset(self):
         # must be authorized to query
@@ -43,32 +46,51 @@ class RepositoryAutoCompleteSearch(autocomplete.Select2QuerySetView):
         terms = self.q.split("/") if self.q else []
 
         if len(terms) >= 3:
-            service = terms[0]
-            owner = terms[1]
-            repo = "/".join(terms[2:])
-            repos = repos.filter(
-                author__service=service, author__username=owner, name__startswith=repo
-            )
+            repos = self.filter_repos_with_three_terms(terms, repos)
         elif len(terms) == 2:
-            if terms[0] in dict(Service.choices):
-                service = terms[0]
-                owner = terms[1]
-                repos = repos.filter(
-                    author__service=service, author__username__startswith=owner
-                )
-            else:
-                owner = terms[0]
-                repo = terms[1]
-                repos = repos.filter(author__username=owner, name__startswith=repo)
+            repos = self.filter_repos_with_two_terms(terms, repos)
         elif len(terms) == 1:
-            if terms[0] in dict(Service.choices):
-                service = terms[0]
-                repos = repos.filter(author__service=service)
-            else:
-                repo = terms[0]
-                repos = repos.filter(name__startswith=repo)
+            repos = self.filter_repos_with_one_terms(terms, repos)
 
         return repos
+
+    def filter_repos_with_three_terms(self, terms, repos):
+        assert len(terms) >= 3
+
+        service = terms[0]
+
+        if service not in SERVICE_CHOICES:
+            return Repository.objects.none()
+
+        owner = terms[1]
+        repo = "/".join(terms[2:])
+        return repos.filter(
+            author__service=service, author__username=owner, name__startswith=repo
+        )
+
+    def filter_repos_with_two_terms(self, terms, repos):
+        assert len(terms) == 2
+
+        if terms[0] in SERVICE_CHOICES:
+            service = terms[0]
+            owner = terms[1]
+            return repos.filter(
+                author__service=service, author__username__startswith=owner
+            )
+        else:
+            owner = terms[0]
+            repo = terms[1]
+            return repos.filter(author__username=owner, name__startswith=repo)
+
+    def filter_repos_with_one_terms(self, terms, repos):
+        assert len(terms) == 1
+
+        if terms[0] in SERVICE_CHOICES:
+            service = terms[0]
+            return repos.filter(author__service=service)
+        else:
+            repo = terms[0]
+            return repos.filter(name__startswith=repo)
 
 
 class OwnerAutoCompleteSearch(autocomplete.Select2QuerySetView):
@@ -82,15 +104,25 @@ class OwnerAutoCompleteSearch(autocomplete.Select2QuerySetView):
         terms = self.q.split("/") if self.q else []
 
         if len(terms) >= 2:
-            service = terms[0]
-            username = "/".join(terms[1:])
-            owners = owners.filter(service=service, username__startswith=username)
+            owners = self.filter_owners_with_two_terms(terms, owners)
         elif len(terms) == 1:
-            if terms[0] in dict(Service.choices):
-                service = terms[0]
-                owners = owners.filter(service=service)
-            else:
-                username = terms[0]
-                owners = owners.filter(username__startswith=username)
+            owners = self.filter_owners_with_one_term(terms, owners)
 
         return owners
+
+    def filter_owners_with_two_terms(self, terms, owners):
+        assert len(terms) >= 2
+
+        service = terms[0]
+        username = "/".join(terms[1:])
+        return owners.filter(service=service, username__startswith=username)
+
+    def filter_owners_with_one_term(self, terms, owners):
+        assert len(terms) == 1
+
+        if terms[0] in SERVICE_CHOICES:
+            service = terms[0]
+            return owners.filter(service=service)
+        else:
+            username = terms[0]
+            return owners.filter(username__startswith=username)
