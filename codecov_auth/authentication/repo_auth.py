@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import List
 from uuid import UUID
 
@@ -8,7 +9,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
 from django.utils import timezone
 from rest_framework import authentication, exceptions
-from shared.torngit.exceptions import TorngitObjectNotFoundError
+from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import metrics
+from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
 from codecov_auth.models import (
@@ -245,6 +248,15 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
             return await repository_service.get_pull_request(fork_pr)
         except TorngitObjectNotFoundError:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        except TorngitRateLimitError as e:
+            metrics.incr("auth.get_pr_info.rate_limit_hit")
+            sentry_metrics.incr("auth.get_pr_info.rate_limit_hit")
+            if e.reset:
+                now_timestamp = datetime.now().timestamp()
+                retry_after = int(e.reset) - int(now_timestamp)
+            elif e.retry_after:
+                retry_after = int(e.retry_after)
+            raise exceptions.Throttled(retry_after)
 
     def authenticate(self, request):
         fork_slug = request.headers.get("X-Tokenless", None)
