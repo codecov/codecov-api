@@ -91,7 +91,7 @@ class ProfilingSummary:
             for file in report.files
             if any(
                 map(
-                    lambda regex_patt: regex.match(regex_patt, file, timeout=5),
+                    lambda regex_patt: regex.match(regex_patt, file, timeout=2),
                     compiled_files_paths,
                 )
             )
