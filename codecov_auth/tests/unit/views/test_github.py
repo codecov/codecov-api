@@ -22,6 +22,7 @@ def _get_state_from_redis(mock_redis):
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect(client, mocker, mock_redis, settings):
     settings.IS_ENTERPRISE = False
 
@@ -36,6 +37,7 @@ def test_get_github_redirect(client, mocker, mock_redis, settings):
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect_host_override(client, mocker, mock_redis, settings):
     settings.IS_ENTERPRISE = False
     config = ConfigHelper()
@@ -67,6 +69,7 @@ def test_get_github_redirect_host_override(client, mocker, mock_redis, settings)
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect_with_ghpr_cookie(client, mocker, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
@@ -87,6 +90,7 @@ def test_get_github_redirect_with_ghpr_cookie(client, mocker, mock_redis, settin
 
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
+@pytest.mark.django_db
 def test_get_github_redirect_with_private_url(client, mocker, mock_redis, settings):
     settings.COOKIES_DOMAIN = ".simple.site"
     settings.COOKIE_SECRET = "secret"
@@ -173,6 +177,10 @@ def test_get_github_already_with_code(client, mocker, db, mock_redis, settings):
         ),
     )
 
+    session = client.session
+    session["github_oauth_state"] = "abc"
+    session.save()
+
     url = reverse("github-login")
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
@@ -230,6 +238,9 @@ def test_get_github_already_with_code_github_error(
     async def helper_func(*args, **kwargs):
         raise TorngitClientGeneralError(403, "response", "message")
 
+    session = client.session
+    session["github_oauth_state"] = "abc"
+    session.save()
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
 
     mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
@@ -286,6 +297,10 @@ def test_get_github_already_with_code_with_email(
             as_tuple=mocker.MagicMock(return_value=("a", "b"))
         ),
     )
+
+    session = client.session
+    session["github_oauth_state"] = "abc"
+    session.save()
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
@@ -340,6 +355,10 @@ def test_get_github_already_with_code_is_student(
             as_tuple=mocker.MagicMock(return_value=("a", "b"))
         ),
     )
+
+    session = client.session
+    session["github_oauth_state"] = "abc"
+    session.save()
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
@@ -401,6 +420,11 @@ def test_get_github_already_owner_already_exist(
             as_tuple=mocker.MagicMock(return_value=("a", "b"))
         ),
     )
+
+    session = client.session
+    session["github_oauth_state"] = "abc"
+    session.save()
+
     url = reverse("github-login")
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
@@ -472,6 +496,9 @@ def test_get_github_missing_access_token(client, mocker, db, mock_redis, setting
 
     mocker.patch.object(Github, "get_authenticated_user", side_effect=helper_func)
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
+    session = client.session
+    session["github_oauth_state"] = "abc"
+    session.save()
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
     assert res.status_code == 302
