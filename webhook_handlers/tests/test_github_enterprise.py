@@ -476,6 +476,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": 4,
                     "repository_selection": "selected",
                     "account": {"id": service_id, "login": username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -517,6 +518,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": 4,
                     "repository_selection": "all",
                     "account": {"id": service_id, "login": username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -558,6 +560,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": 4,
                     "repository_selection": "all",
                     "account": {"id": service_id, "login": username},
+                    "app_id": 15,
                 },
                 "repository_selection": "all",
                 "sender": {"type": "User"},
@@ -614,6 +617,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": 25,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -671,6 +675,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": 12,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories_added": [{"id": repo2.service_id, "node_id": "R_repo2"}],
                 "repositories_removed": [
@@ -720,6 +725,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": 12,
                     "repository_selection": "all",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories_added": [{"id": repo2.service_id, "node_id": "R_repo2"}],
                 "repositories_removed": [],
@@ -753,6 +759,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": installation_id,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_12321CAT"},
@@ -795,6 +802,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": installation_id,
                     "repository_selection": "all",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repository_selection": "all",
                 "action": "added",
@@ -825,6 +833,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                     "id": 11,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "action": "added",
                 "sender": {"type": "User"},
