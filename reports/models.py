@@ -18,6 +18,12 @@ from utils.services import get_short_service_name
 log = logging.getLogger(__name__)
 
 
+class ReportType(models.TextChoices):
+    COVERAGE = "coverage"
+    TEST_RESULTS = "test_results"
+    BUNDLE_ANALYSIS = "bundle_analysis"
+
+
 class AbstractTotals(
     ExportModelOperationsMixin("reports.abstract_totals"), BaseCodecovModel
 ):
@@ -281,3 +287,14 @@ class TestInstance(BaseCodecovModel):
 
     class Meta:
         db_table = "reports_testinstance"
+
+
+class TestResultReportTotals(BaseCodecovModel):
+    passed = models.IntegerField()
+    skipped = models.IntegerField()
+    failed = models.IntegerField()
+
+    report = models.OneToOneField(CommitReport, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "reports_testresultreporttotals"

@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import os
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, PropertyMock, patch
 
@@ -922,6 +923,116 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "bundleData": {"size": {"uncompress": 201720}},
             "bundleChange": {"size": {"uncompress": 36555}},
         }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_sqlite_file_deleted(self, get_storage_service):
+        os.system("rm -rf /tmp/bundle_analysis_*")
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        base_commit_report = CommitReportFactory(
+            commit=self.parent_commit,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open("./services/tests/samples/base_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=base_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = (
+            query_commit
+            % """
+            bundleAnalysisCompareWithParent {
+                __typename
+                ... on BundleAnalysisComparison {
+                    sizeTotal
+                }
+            }
+            """
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        self.gql_request(query, variables=variables)
+
+        for file in os.listdir("/tmp"):
+            assert not file.startswith("bundle_analysis_")
+        os.system("rm -rf /tmp/bundle_analysis_*")
+
+    @patch("graphql_api.views.os.unlink")
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_sqlite_file_not_deleted(
+        self, get_storage_service, os_unlink_mock
+    ):
+        os.system("rm -rf /tmp/bundle_analysis_*")
+        os_unlink_mock.side_effect = Exception("something went wrong")
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        base_commit_report = CommitReportFactory(
+            commit=self.parent_commit,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open("./services/tests/samples/base_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=base_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = (
+            query_commit
+            % """
+            bundleAnalysisCompareWithParent {
+                __typename
+                ... on BundleAnalysisComparison {
+                    sizeTotal
+                }
+            }
+            """
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        self.gql_request(query, variables=variables)
+
+        found = False
+        for file in os.listdir("/tmp"):
+            if file.startswith("bundle_analysis_"):
+                found = True
+                break
+        assert found
+        os.system("rm -rf /tmp/bundle_analysis_*")
 
     def test_bundle_analysis_missing_report(self):
         query = (

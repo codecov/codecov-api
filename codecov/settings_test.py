@@ -7,7 +7,7 @@ STRIPE_API_KEY = ""
 CORS_ALLOWED_ORIGINS = ["http://localhost:9000", "http://localhost"]
 CORS_ALLOW_CREDENTIALS = True
 CODECOV_URL = "localhost"
-DATABASE_HOST = "localhost"
+DATABASE_HOST = "postgres"
 
 DATABASES = {
     "default": {
