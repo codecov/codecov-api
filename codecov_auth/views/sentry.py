@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from django.views import View
 
 from codecov_auth.models import SentryUser, User
-from codecov_auth.views.base import LoginMixin
+from codecov_auth.views.base import LoginMixin, StateMixin
 from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
@@ -23,8 +23,10 @@ OAUTH_TOKEN_URL = (
 )
 
 
-class SentryLoginView(LoginMixin, View):
-    def _fetch_user_data(self, code: str) -> Optional[Dict]:
+class SentryLoginView(LoginMixin, StateMixin, View):
+    service = "sentry"
+
+    def _fetch_user_data(self, code: str, state: str) -> Optional[Dict]:
         res = requests.post(
             OAUTH_TOKEN_URL,
             data={
@@ -32,6 +34,7 @@ class SentryLoginView(LoginMixin, View):
                 "client_id": settings.SENTRY_OAUTH_CLIENT_ID,
                 "client_secret": settings.SENTRY_OAUTH_CLIENT_SECRET,
                 "code": code,
+                "state": state,
             },
         )
 
@@ -40,11 +43,13 @@ class SentryLoginView(LoginMixin, View):
         return res.json()
 
     def _redirect_to_consent(self) -> HttpResponse:
+        state = self.generate_state()
         qs = urlencode(
             dict(
                 response_type="code",
                 client_id=settings.SENTRY_OAUTH_CLIENT_ID,
                 scope="openid email profile",
+                state=state,
             )
         )
         redirect_url = f"{OAUTH_AUTHORIZE_URL}?{qs}"
@@ -85,7 +90,13 @@ class SentryLoginView(LoginMixin, View):
 
     def _perform_login(self, request: HttpRequest) -> HttpResponse:
         code = request.GET.get("code")
-        user_data = self._fetch_user_data(code)
+        state = request.GET.get("state")
+
+        if not self.verify_state(state):
+            log.warning("Invalid state during Sentry OAuth")
+            return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
+
+        user_data = self._fetch_user_data(code, state)
         if user_data is None:
             log.warning("Unable to log in due to problem on Sentry", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
