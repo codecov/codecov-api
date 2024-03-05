@@ -24,6 +24,7 @@ def mocked_okta_token_request(mocker):
                     "access_token": "test-access-token",
                     "refresh_token": "test-refresh-token",
                     "id_token": "test-id-token",
+                    "state": "test-state",
                 }
             ),
         ),
@@ -144,17 +145,21 @@ def test_validate_id_token(mocker):
     OKTA_OAUTH_CLIENT_ID="test-client-id",
     OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
 )
-def test_okta_redirect_to_authorize(client):
+def test_okta_redirect_to_authorize(client, db):
     res = client.get(
         reverse("okta-login"),
         data={
             "iss": "https://example.okta.com",
         },
     )
+    state = client.session["okta_oauth_state"]
+
     assert res.status_code == 302
     assert (
         res.url
-        == "https://example.okta.com/oauth2/v1/authorize?response_type=code&client_id=test-client-id&scope=openid+email+profile&redirect_uri=https%3A%2F%2Flocalhost%3A8000%2Flogin%2Fokta&state=https%3A%2F%2Fexample.okta.com"
+        == "https://example.okta.com/oauth2/v1/authorize?response_type=code&client_id=test-client-id&scope=openid+email+profile&redirect_uri=https%3A%2F%2Flocalhost%3A8000%2Flogin%2Fokta&state={}".format(
+            state
+        )
     )
 
 
@@ -187,10 +192,17 @@ def test_okta_perform_login(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -201,6 +213,7 @@ def test_okta_perform_login(
             "grant_type": "authorization_code",
             "code": "test-code",
             "redirect_uri": "https://localhost:8000/login/okta",
+            "state": state,
         },
     )
 
@@ -255,10 +268,17 @@ def test_okta_perform_login_authenticated(
     user = UserFactory()
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
     client.force_login(user=user)
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -288,10 +308,17 @@ def test_okta_perform_login_existing_okta_user(
     okta_user = OktaUserFactory(okta_id="test-id")
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -316,10 +343,17 @@ def test_okta_perform_login_authenticated_existing_okta_user(
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
     client.force_login(user=other_okta_user.user)
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -343,10 +377,17 @@ def test_okta_perform_login_existing_okta_user_existing_owner(
     OwnerFactory(service="github", user=okta_user.user)
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
