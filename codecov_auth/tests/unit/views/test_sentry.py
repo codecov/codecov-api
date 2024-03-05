@@ -261,10 +261,16 @@ def test_sentry_perform_login_error(client, mocker, db):
     SENTRY_OIDC_SHARED_SECRET="invalid-oidc-shared-secret",
 )
 def test_sentry_perform_login_invalid_id_token(client, mocked_sentry_request, db):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
