@@ -40,6 +40,11 @@ class SentryLoginView(LoginMixin, StateMixin, View):
 
         if res.status_code >= 400:
             return None
+
+        if not self.verify_state(state):
+            log.warning("Invalid state during Sentry OAuth")
+            return None
+
         return res.json()
 
     def _redirect_to_consent(self) -> HttpResponse:
