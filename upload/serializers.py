@@ -22,6 +22,7 @@ class UploadSerializer(serializers.ModelSerializer):
     version = serializers.CharField(write_only=True, required=False)
     url = serializers.SerializerMethodField()
     storage_path = serializers.CharField(write_only=True, required=False)
+    ci_service = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         read_only_fields = (
