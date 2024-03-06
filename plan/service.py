@@ -12,6 +12,7 @@ from plan.constants import (
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     TEAM_PLAN_MAX_USERS,
     TEAM_PLAN_REPRESENTATIONS,
+    TRIAL_PLAN_REPRESENTATION,
     TRIAL_PLAN_SEATS,
     USER_PLAN_REPRESENTATIONS,
     PlanData,
@@ -184,7 +185,10 @@ class PlanService:
         Returns:
             No value
         """
-        if self.plan_name not in FREE_PLAN_REPRESENTATIONS:
+        if (
+            self.plan_name not in FREE_PLAN_REPRESENTATIONS
+            and self.plan_name not in TRIAL_PLAN_REPRESENTATION
+        ):
             raise ValidationError("Cannot trial from a paid plan")
 
         self._start_trial_helper(current_owner, end_date)
