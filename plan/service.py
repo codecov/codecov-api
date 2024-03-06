@@ -140,21 +140,28 @@ class PlanService:
         return available_plans
 
     def _start_trial_helper(
-        self, current_owner: Owner, end_date: datetime = None
+        self,
+        current_owner: Owner,
+        end_date: datetime = None,
+        is_extension: bool = False,
     ) -> None:
         start_date = datetime.utcnow()
-        self.current_org.trial_start_date = start_date
+
+        # When they are not extending a trial, have to setup all the default values
+        if not is_extension:
+            self.current_org.trial_start_date = start_date
+            self.current_org.trial_status = TrialStatus.ONGOING.value
+            self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
+            self.current_org.pretrial_users_count = self.current_org.plan_user_count
+            self.current_org.plan_user_count = TRIAL_PLAN_SEATS
+            self.current_org.plan_auto_activate = True
+
         if end_date is None:
             self.current_org.trial_end_date = start_date + timedelta(
                 days=TrialDaysAmount.CODECOV_SENTRY.value
             )
         else:
             self.current_org.trial_end_date = end_date
-        self.current_org.trial_status = TrialStatus.ONGOING.value
-        self.current_org.plan = PlanName.TRIAL_PLAN_NAME.value
-        self.current_org.pretrial_users_count = self.current_org.plan_user_count
-        self.current_org.plan_user_count = TRIAL_PLAN_SEATS
-        self.current_org.plan_auto_activate = True
         self.current_org.trial_fired_by = current_owner.ownerid
         self.current_org.save()
 
@@ -185,13 +192,15 @@ class PlanService:
         Returns:
             No value
         """
-        if (
-            self.plan_name not in FREE_PLAN_REPRESENTATIONS
-            and self.plan_name not in TRIAL_PLAN_REPRESENTATION
-        ):
+        # Start a new trial plan for free users currently not on trial
+        if self.plan_name in FREE_PLAN_REPRESENTATIONS:
+            self._start_trial_helper(current_owner, end_date, is_extension=False)
+        # Extend an existing trial plan for users currently on trial
+        elif self.plan_name in TRIAL_PLAN_REPRESENTATION:
+            self._start_trial_helper(current_owner, end_date, is_extension=True)
+        # Paying users cannot start a trial
+        else:
             raise ValidationError("Cannot trial from a paid plan")
-
-        self._start_trial_helper(current_owner, end_date)
 
     def cancel_trial(self) -> None:
         if not self.is_org_trialing:
