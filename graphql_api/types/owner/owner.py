@@ -99,6 +99,12 @@ def resolve_has_private_repos(owner: Owner, info) -> List[PlanData]:
     return owner.has_private_repos
 
 
+@owner_bindable.field("ownerid")
+@require_part_of_org
+def resolve_ownerid(owner, info) -> int:
+    return owner.ownerid
+
+
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
