@@ -69,12 +69,14 @@ def resolve_yaml(owner, info):
 
 
 @owner_bindable.field("plan")
+@require_part_of_org
 def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
 
 
 @owner_bindable.field("pretrialPlan")
 @convert_kwargs_to_snake_case
+@require_part_of_org
 def resolve_plan_representation(owner: Owner, info) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
     return FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
@@ -92,6 +94,7 @@ def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
 
 @owner_bindable.field("hasPrivateRepos")
 @sync_to_async
+@require_part_of_org
 def resolve_has_private_repos(owner: Owner, info) -> List[PlanData]:
     return owner.has_private_repos
 
