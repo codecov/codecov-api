@@ -73,6 +73,10 @@ class UploadSerializer(serializers.ModelSerializer):
             if "version" in validated_data.keys()
             else None
         )
+
+        if "ci_service" in validated_data.keys():
+            validated_data.pop("ci_service")
+
         upload = ReportSession.objects.create(**validated_data)
         flags = []
 
