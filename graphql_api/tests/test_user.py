@@ -48,3 +48,20 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
             "studentUpdatedAt": "2023-06-20T00:00:00",
             "customerIntent": "Business",
         }
+
+    def test_query_null_user_customer_intent_resolver(self):
+        query = """{
+            me {
+                user {
+                    customerIntent
+                }
+            }
+        }
+        """
+        self.null_owner = OwnerFactory(
+            user = None
+        )
+        data = self.gql_request(query, owner=self.null_owner)
+        assert data["me"]["user"] == {
+            "customerIntent": None,
+        }
