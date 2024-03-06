@@ -312,10 +312,16 @@ def test_sentry_perform_login_invalid_id_token_issuer(client, mocker, db):
         ),
     )
 
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 

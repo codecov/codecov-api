@@ -243,10 +243,16 @@ def test_okta_perform_login(
 def test_okta_perform_login_missing_cookie(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -414,12 +420,41 @@ def test_okta_perform_login_error(client, mocker, db):
     )
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
     assert res.status_code == 302
     assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+
+@override_settings(
+    OKTA_OAUTH_CLIENT_ID="test-client-id",
+    OKTA_OAUTH_CLIENT_SECRE="test-client-secret",
+    OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+)
+def test_okta_perform_login_state_mismatch(client, mocker, db):
+    res = client.get(
+        reverse("okta-login"),
+        data={
+            "code": "test-code",
+            "state": "invalid-state",
+        },
+    )
+
+    assert res.status_code == 302
+    assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+    # does not login user
+    current_user = auth.get_user(client)
+    assert current_user.is_anonymous
