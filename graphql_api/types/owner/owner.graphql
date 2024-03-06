@@ -18,7 +18,7 @@ type Owner {
   hasPrivateRepos: Boolean
   isAdmin: Boolean
   hashOwnerid: String
-  ownerid: Int!
+  ownerid: Int
   plan: Plan
   pretrialPlan: PlanRepresentation
   availablePlans: [PlanRepresentation!]

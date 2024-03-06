@@ -60,9 +60,9 @@ def require_authenticated(resolver):
 
 def require_part_of_org(resolver):
     def authenticated_resolver(queried_owner, info, *args, **kwargs):
-        current_user = info.context["request"].get("user", None)
-        current_owner = info.context["request"].get("current_owner", None)
-        if not current_owner or not current_user.is_authenticated:
+        current_user = info.context["request"].user
+        current_owner = info.context["request"].current_owner
+        if not current_user or not current_user.is_authenticated or not current_owner:
             raise exceptions.Unauthenticated()
 
         if not current_user_part_of_org(current_owner, queried_owner):
