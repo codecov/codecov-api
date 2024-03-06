@@ -136,13 +136,12 @@ class CommitSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        commit = Commit.objects.filter(
-            repository=validated_data.get("repository"),
-            commitid=validated_data.get("commitid"),
-        ).first()
-        if commit:
-            return commit
-        return super().create(validated_data)
+        repo = validated_data.pop("repository", None)
+        commitid = validated_data.pop("commitid", None)
+        commit, _ = Commit.objects.get_or_create(
+            repository=repo, commitid=commitid, defaults=validated_data
+        )
+        return commit
 
 
 class CommitReportSerializer(serializers.ModelSerializer):
