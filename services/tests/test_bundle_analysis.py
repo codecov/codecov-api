@@ -131,12 +131,20 @@ class TestBundleAnalysisComparison(TestCase):
 
 class TestBundleReport(TestCase):
     def test_bundle_comparison(self):
-        bundle_comparison = BundleReport(
-            "bundle1",
-            7654321,
-        )
+        class MockSharedBundleReport:
+            def __init__(self, db_path, bundle_name):
+                self.bundle_name = bundle_name
 
-        assert bundle_comparison.bundle_name == "bundle1"
+            def total_size(self):
+                return 7654321
+
+            @property
+            def name(self):
+                return self.bundle_name
+
+        bundle_comparison = BundleReport(MockSharedBundleReport("123abc", "bundle1"))
+
+        assert bundle_comparison.name == "bundle1"
         assert bundle_comparison.size_total == 7654321
         assert bundle_comparison.load_time_total == 19.5
 

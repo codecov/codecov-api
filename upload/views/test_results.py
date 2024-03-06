@@ -7,6 +7,7 @@ from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from sentry_sdk import metrics
 
 from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
@@ -18,11 +19,10 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
-from upload.helpers import dispatch_upload_task
+from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
 from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
-from utils.rollouts import TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG, owner_slug
 
 log = logging.getLogger(__name__)
 
@@ -70,23 +70,14 @@ class TestResultsView(
         else:
             raise NotAuthenticated()
 
-        log.info(
-            "Checking to see if user is in test results feature rollout",
-            extra=dict(repoid=repo.repoid, author=repo.author),
-        )
-
-        if not TEST_RESULTS_UPLOAD_FEATURE_BY_OWNER_SLUG.check_value(
-            owner_slug(repo.author), default=False
-        ):
-            log.warning(
-                "User is not included in rollout, exiting",
-                extra=dict(repoid=repo.repoid, author=repo.author),
-            )
-            raise PermissionDenied()
-
-        log.info(
-            "User is included in rollout, continuing",
-            extra=dict(repoid=repo.repoid, author=repo.author),
+        metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="test_results",
+                request=request,
+                repository=repo,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
 
         commit, _ = Commit.objects.get_or_create(

@@ -9,6 +9,7 @@ django-cors-headers
 django-dynamic-fixture
 django-filter
 django-model-utils
+django-postgres-extra>=2.0.8
 django-prometheus
 djangorestframework
 drf-spectacular
@@ -18,7 +19,7 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/8e3e4462c3d8e60e257b6725310c1c653f692a90.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/6dfe609b556f6bdfc2c4e4bb8d5b557233c2da71.tar.gz#egg=shared
 google-cloud-pubsub
 gunicorn
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
@@ -39,11 +40,14 @@ python-json-logger
 python-redis-lock
 pytz
 redis
+regex
 requests
-sentry-sdk
+sentry-sdk>=1.40.0
 setproctitle
 simplejson
 stripe
 urllib3>=1.26.17
 vcrpy
 whitenoise
+django-autocomplete-light
+django-better-admin-arrayfield

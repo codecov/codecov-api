@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import shutil
 import socket
 from asyncio import iscoroutine
 
@@ -17,6 +19,45 @@ from services import ServiceException
 from .schema import schema
 
 log = logging.getLogger(__name__)
+
+
+class RequestFinalizer:
+    """
+    A context manager class used as a teardown step after the GraphQL request is fully handled.
+    """
+
+    # List of keys representing files to be deleted during cleanup
+    TO_BE_DELETED_FILES = [
+        "bundle_analysis_head_report_db_path",
+        "bundle_analysis_base_report_db_path",
+    ]
+
+    def __init__(self, request):
+        self.request = request
+
+    def _remove_temp_files(self):
+        """
+        Some requests causes temporary files to be created in /tmp (eg BundleAnalysis)
+        This cleanup step clears all contents of the /tmp directory after each request
+        """
+        for key in RequestFinalizer.TO_BE_DELETED_FILES:
+            if hasattr(self.request, key):
+                file_path = getattr(self.request, key)
+                if file_path:
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                    except Exception as e:
+                        log.info(
+                            "Failed to delete temp file",
+                            extra={"file_path": file_path, "exc": e},
+                        )
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self._remove_temp_files()
 
 
 class AsyncGraphqlView(GraphQLAsyncView):
@@ -50,7 +91,8 @@ class AsyncGraphqlView(GraphQLAsyncView):
         log.info("GraphQL Request", extra=log_data)
 
         # request.user = await get_user(request) or AnonymousUser()
-        return await super().post(request, *args, **kwargs)
+        with RequestFinalizer(request):
+            return await super().post(request, *args, **kwargs)
 
     def context_value(self, request):
         return {

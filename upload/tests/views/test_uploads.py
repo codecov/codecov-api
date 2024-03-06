@@ -433,6 +433,8 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
     upload_task_mock = mocker.patch(
         "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
+    mock_sentry_metrics = mocker.patch("upload.views.uploads.sentry_metrics.incr")
+    mock_sentry_metrics_set = mocker.patch("upload.views.uploads.sentry_metrics.set")
 
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
@@ -464,8 +466,33 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
         },
         headers={
             "X-Shelter-Token": "shelter-shared-secret",
+            "User-Agent": "codecov-cli/0.4.7",
         },
     )
+
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "repo_visibility": "private",
+            "is_using_shelter": "yes",
+        },
+    )
+
+    mock_sentry_metrics_set.assert_called_with(
+        "upload_set",
+        owner.ownerid,
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "repo_visibility": "private",
+            "is_using_shelter": "yes",
+        },
+    )
+
     upload = ReportSession.objects.filter(
         report_id=commit_report.id, upload_extras={"format_version": "v1"}
     ).first()

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+import pytest
 from django.urls import reverse
 from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitClientGeneralError
@@ -13,6 +14,7 @@ def _get_state_from_redis(mock_redis):
     return key_redis.replace("oauth-state-", "")
 
 
+@pytest.mark.django_db
 def test_get_gitlab_redirect(client, settings, mock_redis, mocker):
     mocker.patch(
         "codecov_auth.views.gitlab.uuid4",
