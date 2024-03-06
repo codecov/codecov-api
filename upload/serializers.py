@@ -70,11 +70,10 @@ class UploadSerializer(serializers.ModelSerializer):
             validated_data.pop("flags") if "flags" in validated_data.keys() else []
         )
 
-        if "version" in validated_data.keys():
-            validated_data.pop("version")
-
-        if "ci_service" in validated_data.keys():
-            validated_data.pop("ci_service")
+        # default is necessary here, or else if the key is not in the dict
+        # the below will throw a KeyError
+        validated_data.pop("version", None)
+        validated_data.pop("ci_service", None)
 
         upload = ReportSession.objects.create(**validated_data)
         flags = []
