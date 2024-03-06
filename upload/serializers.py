@@ -68,11 +68,9 @@ class UploadSerializer(serializers.ModelSerializer):
         flag_names = (
             validated_data.pop("flags") if "flags" in validated_data.keys() else []
         )
-        _ = (
+
+        if "version" in validated_data.keys():
             validated_data.pop("version")
-            if "version" in validated_data.keys()
-            else None
-        )
 
         if "ci_service" in validated_data.keys():
             validated_data.pop("ci_service")
