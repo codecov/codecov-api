@@ -42,6 +42,7 @@ class UploadSerializer(serializers.ModelSerializer):
             "job_code",
             "version",
             "storage_path",
+            "ci_service",
         )
         model = ReportSession
 
