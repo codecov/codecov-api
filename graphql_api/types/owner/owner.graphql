@@ -15,21 +15,21 @@ type Owner {
   repository(name: String!): RepositoryResult!
   repositoryDeprecated(name: String!): Repository
   numberOfUploads: Int
-  hasPrivateRepos: Boolean!
-  isAdmin: Boolean!
-  hashOwnerid: String!
-  ownerid: Int!
+  hasPrivateRepos: Boolean
+  isAdmin: Boolean
+  hashOwnerid: String
+  ownerid: Int
   plan: Plan
   pretrialPlan: PlanRepresentation
-  availablePlans: [PlanRepresentation!]!
+  availablePlans: [PlanRepresentation!]
   orgUploadToken: String
   defaultOrgUsername: String
-  isCurrentUserActivated: Boolean!
+  isCurrentUserActivated: Boolean
   measurements(
     interval: MeasurementInterval!
     after: DateTime
     before: DateTime
     repos: [String!]
     isPublic: Boolean
-  ): [Measurement!]!
+  ): [Measurement!]
 }
