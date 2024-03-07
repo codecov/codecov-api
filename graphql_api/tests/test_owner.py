@@ -7,7 +7,7 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
-from codecov.commands.exceptions import MissingService
+from codecov.commands.exceptions import MissingService, Unauthenticated, Unauthorized
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
@@ -279,8 +279,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         user = OwnerFactory(username="random_org_user", service="github")
         owner = OwnerFactory(username="random_org_test", service="github")
         query = query_current_user_is_admin % (owner.username)
-        data = self.gql_request(query, owner=user)
-        assert data["owner"]["isAdmin"] is False
+        data = self.gql_request(query, owner=user, with_errors=True)
+        assert data["errors"][0]["message"] == Unauthorized.message
+        assert data["data"]["owner"]["isAdmin"] is None
 
     @patch(
         "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
@@ -296,6 +297,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         owner = OwnerFactory(
             username="random_org_test", service="github", admins=[user.ownerid]
         )
+        user.organizations = [owner.ownerid]
+        user.save()
         mocked_get_adapter.return_value = GetAdminProviderAdapter()
         query = query_current_user_is_admin % (owner.username)
         data = self.gql_request(query, owner=user)
@@ -381,6 +384,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_is_current_user_not_activated(self):
         owner = OwnerFactory(username="sample-owner", service="github")
+        self.owner.organizations = [owner.ownerid]
+        self.owner.save()
         query = """{
             owner(username: "%s") {
                 isCurrentUserActivated
@@ -411,6 +416,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         owner = OwnerFactory(
             username="sample-owner", plan_activated_users=[user.ownerid]
         )
+        user.organizations = [owner.ownerid]
+        user.save()
         query = """{
             owner(username: "%s") {
                 isCurrentUserActivated
@@ -425,6 +432,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def test_is_current_user_activated_when_plan_activated_users_is_none(self):
         user = OwnerFactory(username="sample-user")
         owner = OwnerFactory(username="sample-owner", plan_activated_users=None)
+        user.organizations = [owner.ownerid]
+        user.save()
         query = """{
             owner(username: "%s") {
                 isCurrentUserActivated
@@ -449,8 +458,12 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query)
         assert data["owner"]["isCurrentUserActivated"] == False
 
-    def test_admin_is_current_user_activated(self):
-        owner = OwnerFactory(username="sample-owner", admins=[self.owner.ownerid])
+    def test_admin_is_current_user_activated_authorized(self):
+        owner = OwnerFactory(
+            username="sample-owner-authorized", admins=[self.owner.ownerid]
+        )
+        self.owner.organizations = [owner.ownerid]
+        self.owner.save()
         query = """{
             owner(username: "%s") {
                 isCurrentUserActivated
@@ -622,3 +635,19 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["hasPrivateRepos"] == False
+
+    def test_owner_hash_owner_id(self):
+        user = OwnerFactory(username="sample-user")
+        owner = OwnerFactory(username="sample-owner", plan_activated_users=None)
+        user.organizations = [owner.ownerid]
+        user.save()
+        query = """{
+            owner(username: "%s") {
+                hashOwnerid
+            }
+        }
+        """ % (
+            owner.username
+        )
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["hashOwnerid"] is not None
