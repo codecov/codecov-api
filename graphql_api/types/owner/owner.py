@@ -69,7 +69,6 @@ def resolve_yaml(owner, info):
 
 
 @owner_bindable.field("plan")
-@require_part_of_org
 def resolve_plan(owner: Owner, info) -> PlanService:
     return PlanService(current_org=owner)
 
