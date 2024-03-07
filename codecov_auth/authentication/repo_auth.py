@@ -214,7 +214,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     """
 
     auth_failed_message = "Not valid tokenless upload"
-    rate_limit_failed_message = "Tokenless has reached GitHub rate limit. Please consider uploading using a token: https://docs.codecov.com/docs/adding-the-codecov-token."
+    rate_limit_failed_message = "Tokenless has reached GitHub rate limit. Please upload using a token: https://docs.codecov.com/docs/adding-the-codecov-token."
 
     def _get_repo_info_from_request_path(self, request) -> Repository:
         path_info = request.get_full_path_info()
