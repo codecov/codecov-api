@@ -142,7 +142,7 @@ class PlanService:
     def _start_trial_helper(
         self,
         current_owner: Owner,
-        end_date: datetime = None,
+        end_date: Optional[datetime] = None,
         is_extension: bool = False,
     ) -> None:
         start_date = datetime.utcnow()
