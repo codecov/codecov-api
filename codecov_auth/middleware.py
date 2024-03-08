@@ -154,6 +154,6 @@ class CorsMiddleware(BaseCorsMiddleware):
 
 class GuestAccessMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        if settings.IS_ENTERPRISE and settings.GUEST is False:
+        if settings.IS_ENTERPRISE and settings.GUEST_ACCESS is False:
             if not request.user or not request.user.is_authenticated:
                 return JsonResponse({"error": "Unauthorized guest access"}, status=401)
