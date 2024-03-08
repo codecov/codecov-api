@@ -1,5 +1,7 @@
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
+from codecov_auth.tests.factories import OwnerFactory
 from utils.test_utils import Client
 
 
@@ -32,3 +34,12 @@ class GuestAccessMiddlewareTest(TestCase):
 
         assert res.status_code == 401
         assert res.json() == {"error": "Unauthorized guest access"}
+
+    def test_guest_access_user_authenticated(self):
+        owner = OwnerFactory()
+        self.client.force_login_owner(owner)
+        kwargs = {"service": owner.service, "owner_username": owner.username}
+        res = self.client.get("/health", kwargs=kwargs)
+
+        assert res.status_code == 301
+        assert res.headers["Content-Type"] == "text/html; charset=utf-8"
