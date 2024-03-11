@@ -94,9 +94,12 @@ class CoverageMeasurement(TestCase):
         assert len(all_measurements) == 8
 
         plan_service = PlanService(current_org=owner)
+        freezer = freeze_time("2024-03-05T00:00:00")
+        freezer.start()
         monthly_measurements = query_monthly_coverage_measurements(
             plan_service=plan_service
         )
+        freezer.stop()
         assert monthly_measurements == 5
 
     def test_query_monthly_coverage_measurements_excluding_uploads_during_trial(self):
