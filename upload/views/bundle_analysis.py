@@ -96,7 +96,6 @@ class BundleAnalysisView(APIView):
 
         task_arguments = {
             # these are used in the upload task when saving an upload record
-            # and use some unfortunately named and confusing keys
             "reportid": upload_external_id,  # external_id
             "build": data.get("build"),  # build_code
             "build_url": data.get("buildURL"),  # build_url
