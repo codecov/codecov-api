@@ -84,7 +84,7 @@ class CoverageMeasurement(TestCase):
         self.add_upload_measurements_records(owner=owner, quantity=3)
         freezer.stop()
 
-        # Now
+        # Uploads within the last 30 days
         freezer = freeze_time("2024-02-10T00:00:00")
         freezer.start()
         self.add_upload_measurements_records(owner=owner, quantity=5)
@@ -94,6 +94,7 @@ class CoverageMeasurement(TestCase):
         assert len(all_measurements) == 8
 
         plan_service = PlanService(current_org=owner)
+        # Now
         freezer = freeze_time("2024-03-05T00:00:00")
         freezer.start()
         monthly_measurements = query_monthly_coverage_measurements(
