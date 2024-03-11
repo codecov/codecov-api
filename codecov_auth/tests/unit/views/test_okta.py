@@ -1,4 +1,5 @@
 from http.cookies import SimpleCookie
+from unittest.mock import MagicMock, patch
 
 import jwt
 import pytest
@@ -9,6 +10,7 @@ from django.urls import reverse
 
 from codecov_auth.models import OktaUser
 from codecov_auth.tests.factories import OktaUserFactory, OwnerFactory, UserFactory
+from codecov_auth.views.okta import OktaLoginView
 from codecov_auth.views.okta import auth as okta_basic_auth
 from codecov_auth.views.okta import validate_id_token
 
@@ -458,3 +460,25 @@ def test_okta_perform_login_state_mismatch(client, mocker, db):
     # does not login user
     current_user = auth.get_user(client)
     assert current_user.is_anonymous
+
+
+@override_settings(
+    OKTA_OAUTH_CLIENT_ID="test-client-id",
+    OKTA_OAUTH_CLIENT_SECRE="test-client-secret",
+    OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+)
+def test_okta_fetch_user_data_invalid_state(client, db):
+    with patch("codecov_auth.views.okta.requests.post") as mock_post:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        with patch.object(OktaLoginView, "verify_state", return_value=False):
+            view = OktaLoginView()
+            res = view._fetch_user_data(
+                "https://example.okta.com",
+                "test-code",
+                "invalid-state",
+            )
+
+    assert res is None
