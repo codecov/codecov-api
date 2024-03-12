@@ -34,30 +34,6 @@ def resolve_bundle_analysis_comparison_result_type(obj, *_):
         return "MissingBaseReport"
 
 
-@bundle_analysis_comparison_bindable.field("sizeDelta")
-def resolve_size_delta(bundles_analysis_comparison: BundleAnalysisComparison, info):
-    return bundles_analysis_comparison.size_delta
-
-
-@bundle_analysis_comparison_bindable.field("sizeTotal")
-def resolve_size_total(bundles_analysis_comparison: BundleAnalysisComparison, info):
-    return bundles_analysis_comparison.size_total
-
-
-@bundle_analysis_comparison_bindable.field("loadTimeDelta")
-def resolve_load_time_delta(
-    bundles_analysis_comparison: BundleAnalysisComparison, info
-):
-    return bundles_analysis_comparison.load_time_delta
-
-
-@bundle_analysis_comparison_bindable.field("loadTimeTotal")
-def resolve_load_time_total(
-    bundles_analysis_comparison: BundleAnalysisComparison, info
-):
-    return bundles_analysis_comparison.load_time_total
-
-
 @bundle_analysis_comparison_bindable.field("bundles")
 def resolve_bundles(bundles_analysis_comparison: BundleAnalysisComparison, info):
     return bundles_analysis_comparison.bundles
@@ -85,26 +61,6 @@ def resolve_name(bundle_comparison: BundleComparison, info):
 @bundle_comparison_bindable.field("changeType")
 def resolve_change_type(bundle_comparison: BundleComparison, info):
     return bundle_comparison.change_type
-
-
-@bundle_comparison_bindable.field("sizeDelta")
-def resolve_size_delta(bundle_comparison: BundleComparison, info):
-    return bundle_comparison.size_delta
-
-
-@bundle_comparison_bindable.field("sizeTotal")
-def resolve_size_total(bundle_comparison: BundleComparison, info):
-    return bundle_comparison.size_total
-
-
-@bundle_comparison_bindable.field("loadTimeDelta")
-def resolve_load_time_delta(bundle_comparison: BundleComparison, info):
-    return bundle_comparison.load_time_delta
-
-
-@bundle_comparison_bindable.field("loadTimeTotal")
-def resolve_load_time_total(bundle_comparison: BundleComparison, info):
-    return bundle_comparison.load_time_total
 
 
 @bundle_comparison_bindable.field("bundleData")
