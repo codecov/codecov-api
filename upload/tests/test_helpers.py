@@ -7,13 +7,11 @@ from django.conf import settings
 from django.test import TransactionTestCase
 from rest_framework.exceptions import Throttled, ValidationError
 from shared.config import get_config
-from shared.github import InvalidInstallationError
 
 from codecov_auth.models import GithubAppInstallation, Service
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
-from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     check_commit_upload_constraints,
     determine_repo_for_upload,
@@ -105,6 +103,8 @@ def test_try_to_get_best_possible_bot_token_using_integration(
 def test_try_to_get_best_possible_bot_token_using_invalid_integration(
     get_github_integration_token,
 ):
+    from shared.github import InvalidInstallationError  # circular imports
+
     get_github_integration_token.side_effect = InvalidInstallationError()
     bot = OwnerFactory.create(unencrypted_oauth_token="bornana")
     bot.save()

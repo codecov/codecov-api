@@ -1,13 +1,10 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import jwt
 from django.urls import reverse
 from rest_framework.test import APIClient
-from shared.config import get_config
 from shared.yaml.user_yaml import UserYaml
 
 from core.tests.factories import CommitFactory, RepositoryFactory
-from upload.tests.test_helpers import private_key
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 
@@ -356,25 +353,12 @@ def test_empty_upload_no_changed_files_in_pr_github_oidc_auth(
         name="the_repo", author__username="codecov", author__service="github"
     )
     commit = CommitFactory(repository=repository)
-    mock_jwks_client.return_value = MagicMock()
     mock_jwt_decode.return_value = {
         "repository": f"url/{repository.name}",
         "repository_owner": repository.author.username,
         "iss": "https://token.actions.githubusercontent.com",
     }
-    token = jwt.encode(
-        {
-            "iss": "https://token.actions.githubusercontent.com",
-            "aud": get_config("setup", "codecov_url"),
-            "repository": f"{repository.author.username}/{repository.name}",
-            "repository_owner": repository.author.username,
-        },
-        private_key,
-        algorithm="RS256",
-        headers={
-            "kid": "78167F727DEC5D801DD1C8784C704A1C880EC0E1"
-        },  # from the JWKS response
-    )
+    token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
     mock_final_yaml.return_value = UserYaml(
         {
             "ignore": [
@@ -396,7 +380,7 @@ def test_empty_upload_no_changed_files_in_pr_github_oidc_auth(
     )
     response = client.post(
         url,
-        headers={"Authorization": f"Token {token}"},
+        headers={"Authorization": f"token {token}"},
     )
     response_json = response.json()
     assert response.status_code == 200
