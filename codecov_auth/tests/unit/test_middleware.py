@@ -30,7 +30,7 @@ class GuestAccessMiddlewareTest(TestCase):
         self.client = Client()
 
     def test_guest_access_disabled(self):
-        res = self.client.get("/health")
+        res = self.client.get("/health/")
 
         assert res.status_code == 401
         assert res.json() == {"error": "Unauthorized guest access"}
@@ -39,7 +39,13 @@ class GuestAccessMiddlewareTest(TestCase):
         owner = OwnerFactory()
         self.client.force_login_owner(owner)
         kwargs = {"service": owner.service, "owner_username": owner.username}
-        res = self.client.get("/health", kwargs=kwargs)
+        res = self.client.get("/health/", kwargs=kwargs)
 
-        assert res.status_code == 301
+        assert res.status_code == 200
+        assert res.headers["Content-Type"] == "text/html; charset=utf-8"
+
+    def test_guest_user_login(self):
+        res = self.client.get(reverse("gh-login"))
+
+        assert res.status_code == 302
         assert res.headers["Content-Type"] == "text/html; charset=utf-8"
