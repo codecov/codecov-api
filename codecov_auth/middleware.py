@@ -158,7 +158,7 @@ class GuestAccessMiddleware(MiddlewareMixin):
             resolver_match = resolve(request.path_info)
             if resolver_match.route.startswith("login"):
                 return
-                
+
             if not request.user or not request.user.is_authenticated:
                 log.warning(
                     "Unauthorized guest access",
