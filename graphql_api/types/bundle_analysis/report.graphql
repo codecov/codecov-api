@@ -3,8 +3,6 @@ union BundleAnalysisReportResult =
   | MissingHeadReport
 
 type BundleAnalysisReport {
-  sizeTotal: Int!
-  loadTimeTotal: Float!
   bundles: [BundleReport]!
   bundleData: BundleData!
   bundle(name: String!): BundleReport
