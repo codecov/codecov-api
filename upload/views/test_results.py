@@ -3,13 +3,14 @@ import uuid
 
 from django.utils import timezone
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotAuthenticated, PermissionDenied
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from sentry_sdk import metrics
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
@@ -51,6 +52,7 @@ class TestResultsView(
     permission_classes = [UploadTestResultsPermission]
     authentication_classes = [
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
 
