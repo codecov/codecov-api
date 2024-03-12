@@ -1,7 +1,12 @@
+import os
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from shared.bundle_analysis import StoragePaths
+from shared.bundle_analysis.storage import get_bucket_name
+from shared.storage.memory import MemoryStorageService
 
 from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
@@ -9,6 +14,7 @@ from core.models import Commit
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from reports.models import CommitReport
 from reports.tests.factories import CommitReportFactory, ReportLevelTotalsFactory
+from services.archive import ArchiveService
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -88,7 +94,11 @@ pull_request_detail_query_with_bundle_analysis = """
     bundleAnalysisCompareWithBase {
         __typename
         ... on BundleAnalysisComparison {
-            sizeDelta
+            bundleChange {
+                size {
+                    uncompress
+                }
+            }
         }
     }
     behindBy
@@ -99,7 +109,11 @@ pull_request_bundle_analysis_missing_reports = """
     bundleAnalysisCompareWithBase {
         __typename
         ... on BundleAnalysisComparison {
-            sizeDelta
+            bundleChange {
+                size {
+                    uncompress
+                }
+            }
         }
     }
 """
@@ -397,6 +411,82 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         assert pull == {
             "bundleAnalysisCompareWithBase": {"__typename": "MissingBaseReport"}
         }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_sqlite_file_deleted(self, get_storage_service):
+        os.system("rm -rf /tmp/bundle_analysis_*")
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        parent_commit = CommitFactory(repository=self.repository)
+        commit = CommitFactory(
+            repository=self.repository,
+            totals={"c": "12", "diff": [0, 0, 0, 0, 0, "14"]},
+            parent_commit_id=parent_commit.commitid,
+        )
+
+        base_commit_report = CommitReportFactory(
+            commit=parent_commit,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+        head_commit_report = CommitReportFactory(
+            commit=commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        my_pull = PullFactory(
+            repository=self.repository,
+            title="test-pull-request",
+            author=self.owner,
+            head=head_commit_report.commit.commitid,
+            compared_to=base_commit_report.commit.commitid,
+            behind_by=23,
+            behind_by_commit="1089nf898as-jdf09hahs09fgh",
+        )
+
+        with open("./services/tests/samples/base_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repository),
+                report_key=base_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repository),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            bundleAnalysisCompareWithBase {
+                __typename
+                ... on BundleAnalysisComparison {
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
+                }
+            }
+        """
+
+        pull = self.fetch_one_pull_request(my_pull.pullid, query)
+
+        assert pull == {
+            "bundleAnalysisCompareWithBase": {
+                "__typename": "BundleAnalysisComparison",
+                "bundleData": {
+                    "size": {
+                        "uncompress": 201720,
+                    }
+                },
+            }
+        }
+
+        for file in os.listdir("/tmp"):
+            assert not file.startswith("bundle_analysis_")
+
+        os.system("rm -rf /tmp/bundle_analysis_*")
 
     @freeze_time("2021-02-02")
     def test_pull_no_patch_totals(self):

@@ -638,6 +638,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 4,
                     "repository_selection": "selected",
                     "account": {"id": service_id, "login": username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -661,6 +662,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert ghapp_installations_set.count() == 1
         installation = ghapp_installations_set.first()
         assert installation.installation_id == 4
+        assert installation.app_id == 15
         assert installation.repository_service_ids == ["12321", "12343"]
 
         assert mock_refresh.call_count == 1
@@ -691,6 +693,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 4,
                     "repository_selection": "all",
                     "account": {"id": service_id, "login": username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -730,6 +733,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 4,
                     "repository_selection": "all",
                     "account": {"id": service_id, "login": username},
+                    "app_id": 15,
                 },
                 "repository_selection": "all",
                 "sender": {"type": "User"},
@@ -772,6 +776,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 4,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "repo1", "node_id": "R_node1"},
@@ -824,6 +829,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 25,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -883,6 +889,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": installation.installation_id,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories_added": [
                     {"id": repo2.service_id, "node_id": "R_xDOGxCAT"}
@@ -935,6 +942,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 12,
                     "repository_selection": "all",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories_added": [{"id": repo2.service_id}],
                 "repositories_removed": [],
@@ -968,6 +976,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": installation_id,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -1010,6 +1019,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": installation_id,
                     "repository_selection": "all",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "repository_selection": "all",
                 "action": "added",
@@ -1040,6 +1050,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": 11,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
+                    "app_id": 15,
                 },
                 "action": "added",
                 "sender": {"type": "User"},

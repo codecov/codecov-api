@@ -8,17 +8,13 @@ union BundleAnalysisComparisonResult =
 
 type BundleAnalysisComparison {
   bundles: [BundleComparison]!
-  sizeDelta: Int!
-  sizeTotal: Int!
-  loadTimeDelta: Float!
-  loadTimeTotal: Float!
+  bundleData: BundleData!
+  bundleChange: BundleData!
 }
 
 type BundleComparison {
   name: String!
   changeType: String!
-  sizeDelta: Int!
-  sizeTotal: Int!
-  loadTimeDelta: Float!
-  loadTimeTotal: Float!
+  bundleData: BundleData!
+  bundleChange: BundleData!
 }

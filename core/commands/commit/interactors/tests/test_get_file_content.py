@@ -23,6 +23,16 @@ class MockedProviderAdapter:
         }
 
 
+class MockedStringProviderAdapter:
+    async def get_source(self, commit, path):
+        return {
+            "content": """
+        def function_1:
+            pass
+        """
+        }
+
+
 class GetFileContentInteractorTest(TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
@@ -56,3 +66,17 @@ class GetFileContentInteractorTest(TransactionTestCase):
         )
         file_content = await self.execute(None, self.commit, "path")
         assert file_content == None
+
+    @patch("services.repo_providers.RepoProviderService.async_get_adapter")
+    @pytest.mark.asyncio
+    async def test_when_path_has_file_string_response(self, mock_provider_adapter):
+        mock_provider_adapter.return_value = MockedStringProviderAdapter()
+
+        file_content = await self.execute(None, self.commit, "path/to/file")
+        assert (
+            file_content
+            == """
+        def function_1:
+            pass
+        """
+        )

@@ -62,6 +62,7 @@ build.requirements:
 	# if docker pull succeeds, we have already build this version of
 	# requirements.txt.  Otherwise, build and push a version tagged
 	# with the hash of this requirements.txt
+	touch .testenv
 	docker pull ${AR_REPO}:${REQUIREMENTS_TAG} || docker build \
 		-f docker/Dockerfile.requirements . \
 		-t ${AR_REPO}:${REQUIREMENTS_TAG} \

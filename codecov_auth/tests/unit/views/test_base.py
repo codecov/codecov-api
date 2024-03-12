@@ -19,6 +19,7 @@ def set_up_mixin(to=None):
     query_string = {"to": to} if to else None
     mixin = StateMixin()
     mixin.request = RequestFactory().get("", query_string)
+    mixin.request.session = SessionStore()
     mixin.service = "github"
     return mixin
 
@@ -83,7 +84,7 @@ def test_generate_state_when_wrong_url(mock_redis):
     )
 
 
-def test_get_redirection_url_from_state_no_state(mock_redis):
+def test_get_redirection_url_from_state_without_redis_state(mock_redis):
     mixin = set_up_mixin()
     assert mixin.get_redirection_url_from_state("not exist") == (
         "http://localhost:3000/gh",
@@ -91,9 +92,34 @@ def test_get_redirection_url_from_state_no_state(mock_redis):
     )
 
 
+def test_get_redirection_url_from_state_without_session_state(mock_redis):
+    mixin = set_up_mixin()
+    state = "abc"
+    mock_redis.set(mixin._get_key_redis(state), "http://localhost/gh/codecov")
+    assert mixin.get_redirection_url_from_state(state) == (
+        "http://localhost:3000",
+        False,
+    )
+
+
+def test_get_redirection_url_from_state_with_session_state_mismatch(mock_redis):
+    mixin = set_up_mixin()
+    state = "abc"
+    mock_redis.set(mixin._get_key_redis(state), "http://localhost/gh/codecov")
+    mixin.request.session[mixin._session_key()] = "def"
+
+    assert mixin.get_redirection_url_from_state(state) == (
+        "http://localhost:3000",
+        False,
+    )
+
+
 def test_get_redirection_url_from_state_give_url(mock_redis):
     mixin = set_up_mixin()
-    mock_redis.set(f"oauth-state-abc", "http://localhost/gh/codecov")
+    state = "abc"
+    mock_redis.set(mixin._get_key_redis(state), "http://localhost/gh/codecov")
+    mixin.request.session[mixin._session_key()] = state
+
     assert mixin.get_redirection_url_from_state("abc") == (
         "http://localhost/gh/codecov",
         True,

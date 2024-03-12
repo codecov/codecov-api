@@ -14,7 +14,11 @@ from codecov_auth.tests.factories import (
     SentryUserFactory,
     UserFactory,
 )
-from plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS, TrialStatus
+from plan.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    PlanName,
+    TrialStatus,
+)
 from utils.test_utils import APIClient
 
 
@@ -292,6 +296,26 @@ class OwnerAdminTest(TestCase):
         )
         assert res.status_code == 302
         assert mock_start_trial_service.called
+
+    @patch("plan.service.PlanService._start_trial_helper")
+    def test_extend_trial_action(self, mock_start_trial_service):
+        mock_start_trial_service.return_value = None
+        org_to_be_trialed = OwnerFactory()
+        org_to_be_trialed.plan = PlanName.TRIAL_PLAN_NAME.value
+        org_to_be_trialed.save()
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_owner_changelist"),
+            {
+                "action": "extend_trial",
+                ACTION_CHECKBOX_NAME: [org_to_be_trialed.pk],
+                "end_date": "2024-01-01 01:02:03",
+                "extend_trial": True,
+            },
+        )
+        assert res.status_code == 302
+        assert mock_start_trial_service.called
+        assert mock_start_trial_service.call_args.kwargs == {"is_extension": True}
 
     @patch("plan.service.PlanService.start_trial_manually")
     def test_start_trial_paid_plan(self, mock_start_trial_service):
