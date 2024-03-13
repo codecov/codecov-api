@@ -29,8 +29,13 @@ class GuestAccessMiddlewareTest(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_guest_access_disabled(self):
+    def test_guest_access_disabled_health_endpoint(self):
         res = self.client.get("/health/")
+
+        assert res.status_code == 200
+
+    def test_guest_access_disabled_other_endpoints(self):
+        res = self.client.get(reverse("admin-repository-autocomplete"))
 
         assert res.status_code == 401
         assert res.json() == {"error": "Unauthorized guest access"}
@@ -39,10 +44,10 @@ class GuestAccessMiddlewareTest(TestCase):
         owner = OwnerFactory()
         self.client.force_login_owner(owner)
         kwargs = {"service": owner.service, "owner_username": owner.username}
-        res = self.client.get("/health/", kwargs=kwargs)
+        res = self.client.get(reverse("account_details-detail", kwargs=kwargs))
 
         assert res.status_code == 200
-        assert res.headers["Content-Type"] == "text/html; charset=utf-8"
+        assert res.headers["Content-Type"] == "application/json"
 
     def test_guest_user_login(self):
         res = self.client.get(reverse("gh-login"))
