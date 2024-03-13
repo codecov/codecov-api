@@ -42,3 +42,5 @@ SESSION_COOKIE_DOMAIN = "localhost"
 
 # add for shelter
 # SHELTER_SHARED_SECRET = "test-supertoken"
+
+GUEST_ACCESS = True

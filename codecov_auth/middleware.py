@@ -8,7 +8,8 @@ from corsheaders.middleware import (
     ACCESS_CONTROL_ALLOW_ORIGIN,
 )
 from corsheaders.middleware import CorsMiddleware as BaseCorsMiddleware
-from django.http import HttpRequest
+from django.conf import settings
+from django.http import HttpRequest, JsonResponse
 from django.urls import resolve
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework import exceptions
@@ -149,3 +150,21 @@ class CorsMiddleware(BaseCorsMiddleware):
             del response.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS]
 
         return response
+
+
+class GuestAccessMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        if settings.IS_ENTERPRISE and settings.GUEST_ACCESS is False:
+            resolver_match = resolve(request.path_info)
+            if resolver_match.route.startswith("login"):
+                return
+
+            if not request.user or not request.user.is_authenticated:
+                log.warning(
+                    "Unauthorized guest access",
+                    extra=dict(
+                        request_path=request.path_info,
+                        request_user=request.user,
+                    ),
+                )
+                return JsonResponse({"error": "Unauthorized guest access"}, status=401)
