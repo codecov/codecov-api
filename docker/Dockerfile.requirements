@@ -28,8 +28,9 @@ RUN rm -rf /pip-packages/src
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM $PYTHON_IMAGE
 
-RUN apk -U upgrade binutils busybox expat=2.6.0-r0 libretls sqlite && \
+RUN apk -U upgrade binutils busybox libretls sqlite && \
     apk add --no-cache postgresql-libs && \
+    apk add --no-cache expat=2.6.0-r0 && \
     apk add --no-cache --virtual .build-deps gcc \
     libxslt-dev \
     libffi-dev \
