@@ -156,7 +156,9 @@ class GuestAccessMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if settings.IS_ENTERPRISE and settings.GUEST_ACCESS is False:
             resolver_match = resolve(request.path_info)
-            if resolver_match.route.startswith("login"):
+            if resolver_match.route.startswith(
+                "login"
+            ) or resolver_match.route.startswith("health"):
                 return
 
             if not request.user or not request.user.is_authenticated:
