@@ -114,6 +114,8 @@ class SentryLoginView(LoginMixin, StateMixin, View):
         # TEMPORARY: we're assuming a single owner for the time being since there's
         # no supporting UI to select which owner you'd like to view
         owner = current_user.owners.first()
+        self.remove_state(state)
+
         if owner is not None:
             service = get_short_service_name(owner.service)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/{service}")
