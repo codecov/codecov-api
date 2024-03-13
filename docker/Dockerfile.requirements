@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-ARG PYTHON_IMAGE=python:3.9.16-alpine3.18
+ARG PYTHON_IMAGE=python:3.9-alpine3.18
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
 FROM $PYTHON_IMAGE as build
 
@@ -28,14 +28,13 @@ RUN rm -rf /pip-packages/src
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM $PYTHON_IMAGE
 
-RUN apk -U upgrade binutils busybox expat libretls && \
+RUN apk -U upgrade binutils busybox expat libretls sqlite && \
     apk add --no-cache postgresql-libs && \
     apk add --no-cache --virtual .build-deps gcc \
     libxslt-dev \
     libffi-dev \
     make \
     curl
-
 
 WORKDIR /pip-packages/
 COPY --from=build /pip-packages/ /pip-packages/
