@@ -114,6 +114,10 @@ class StateMixin(object):
 
         return state
 
+    def verify_state(self, state) -> bool:
+        state_from_session = self.request.session.get(self._session_key(), None)
+        return state_from_session and state == state_from_session
+
     def get_redirection_url_from_state(self, state) -> (str, bool):
         cached_url = self.redis.get(self._get_key_redis(state))
 
@@ -132,9 +136,7 @@ class StateMixin(object):
         # is fine and we should return the final redirect URL to complete the
         # login. If we're missing that cookie, or if its state doesn't match up,
         # we want don't to allow the login.
-        state_from_session = self.request.session.get(self._session_key(), None)
-        state_matches_session = state_from_session and state == state_from_session
-        if not state_matches_session:
+        if not self.verify_state(state):
             log.warning(
                 "Warning: login request is missing state or has disagreeing state"
             )

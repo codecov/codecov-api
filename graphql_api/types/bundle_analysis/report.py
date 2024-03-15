@@ -17,6 +17,20 @@ def resolve_bundle_analysis_report_result_type(obj, *_):
         return "MissingHeadReport"
 
 
+# TODO: depreacted with Issue 1199
+@bundle_analysis_report_bindable.field("sizeTotal")
+def resolve_size_total(bundles_analysis_report: BundleAnalysisReport, info) -> int:
+    return bundles_analysis_report.size_total
+
+
+# TODO: depreacted with Issue 1199
+@bundle_analysis_report_bindable.field("loadTimeTotal")
+def resolve_load_time_total(
+    bundles_analysis_report: BundleAnalysisReport, info
+) -> float:
+    return bundles_analysis_report.load_time_total
+
+
 @bundle_analysis_report_bindable.field("bundles")
 def resolve_bundles(
     bundles_analysis_report: BundleAnalysisReport, info

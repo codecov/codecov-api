@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import jwt
 import pytest
 from django.conf import settings
@@ -7,6 +9,7 @@ from django.urls import reverse
 
 from codecov_auth.models import SentryUser
 from codecov_auth.tests.factories import OwnerFactory, SentryUserFactory, UserFactory
+from codecov_auth.views.sentry import SentryLoginView
 
 
 @pytest.fixture
@@ -38,12 +41,15 @@ def mocked_sentry_request(mocker):
 
 
 @override_settings(SENTRY_OAUTH_CLIENT_ID="test-client-id")
-def test_sentry_redirect_to_consent(client):
+def test_sentry_redirect_to_consent(client, db):
     res = client.get(reverse("sentry-login"))
+    state_from_session = client.session["sentry_oauth_state"]
     assert res.status_code == 302
     assert (
         res.url
-        == "https://sentry.io/oauth/authorize?response_type=code&client_id=test-client-id&scope=openid+email+profile"
+        == "https://sentry.io/oauth/authorize?response_type=code&client_id=test-client-id&scope=openid+email+profile&state={}".format(
+            state_from_session
+        )
     )
 
 
@@ -52,10 +58,16 @@ def test_sentry_redirect_to_consent(client):
     SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
 )
 def test_sentry_perform_login(client, mocked_sentry_request, db):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -66,6 +78,7 @@ def test_sentry_perform_login(client, mocked_sentry_request, db):
             "client_id": settings.SENTRY_OAUTH_CLIENT_ID,
             "client_secret": settings.SENTRY_OAUTH_CLIENT_SECRET,
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -93,6 +106,11 @@ def test_sentry_perform_login(client, mocked_sentry_request, db):
     SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
 )
 def test_sentry_perform_login_authenticated(client, mocked_sentry_request, db):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     user = UserFactory()
     client.force_login(user=user)
 
@@ -100,6 +118,7 @@ def test_sentry_perform_login_authenticated(client, mocked_sentry_request, db):
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -124,12 +143,18 @@ def test_sentry_perform_login_authenticated(client, mocked_sentry_request, db):
     SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
 )
 def test_sentry_perform_login_existing_sentry_user(client, mocked_sentry_request, db):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     sentry_user = SentryUserFactory(sentry_id="test-id")
 
     res = client.get(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -148,6 +173,11 @@ def test_sentry_perform_login_existing_sentry_user(client, mocked_sentry_request
 def test_sentry_perform_login_authenticated_existing_sentry_user(
     client, mocked_sentry_request, db
 ):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     sentry_user = SentryUserFactory(sentry_id="test-id")
     other_sentry_user = SentryUserFactory()
     client.force_login(user=other_sentry_user.user)
@@ -156,6 +186,7 @@ def test_sentry_perform_login_authenticated_existing_sentry_user(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -174,6 +205,11 @@ def test_sentry_perform_login_authenticated_existing_sentry_user(
 def test_sentry_perform_login_existing_sentry_user_existing_owner(
     client, mocked_sentry_request, db
 ):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     sentry_user = SentryUserFactory(sentry_id="test-id")
     OwnerFactory(service="github", user=sentry_user.user)
 
@@ -181,6 +217,7 @@ def test_sentry_perform_login_existing_sentry_user_existing_owner(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -197,7 +234,12 @@ def test_sentry_perform_login_existing_sentry_user_existing_owner(
     SENTRY_OAUTH_CLIENT_ID="test-client-id",
     SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
 )
-def test_sentry_perform_login_error(client, mocker):
+def test_sentry_perform_login_error(client, mocker, db):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     mocker.patch(
         "codecov_auth.views.sentry.requests.post",
         return_value=mocker.MagicMock(
@@ -209,6 +251,7 @@ def test_sentry_perform_login_error(client, mocker):
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -221,10 +264,16 @@ def test_sentry_perform_login_error(client, mocker):
     SENTRY_OIDC_SHARED_SECRET="invalid-oidc-shared-secret",
 )
 def test_sentry_perform_login_invalid_id_token(client, mocked_sentry_request, db):
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -266,10 +315,16 @@ def test_sentry_perform_login_invalid_id_token_issuer(client, mocker, db):
         ),
     )
 
+    state = "test-state"
+    session = client.session
+    session["sentry_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("sentry-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -279,3 +334,45 @@ def test_sentry_perform_login_invalid_id_token_issuer(client, mocker, db):
     # does not login user
     current_user = auth.get_user(client)
     assert current_user.is_anonymous
+
+
+@override_settings(
+    SENTRY_OAUTH_CLIENT_ID="test-client-id",
+    SENTRY_OIDC_SHARED_SECRET="test-oidc-shared-secret",
+)
+def test_sentry_perform_login_state_mismatch(client, mocked_sentry_request, db):
+    res = client.get(
+        reverse("sentry-login"),
+        data={
+            "code": "test-code",
+            "state": "invalid-state",
+        },
+    )
+
+    assert res.status_code == 302
+    assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+    # does not login user
+    current_user = auth.get_user(client)
+    assert current_user.is_anonymous
+
+
+@override_settings(
+    OKTA_OAUTH_CLIENT_ID="test-client-id",
+    OKTA_OAUTH_CLIENT_SECRE="test-client-secret",
+    OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+)
+def test_sentry_fetch_user_data_invalid_state(client, db):
+    with patch("codecov_auth.views.sentry.requests.post") as mock_post:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        with patch.object(SentryLoginView, "verify_state", return_value=False):
+            view = SentryLoginView()
+            res = view._fetch_user_data(
+                "test-code",
+                "invalid-state",
+            )
+
+    assert res is None
