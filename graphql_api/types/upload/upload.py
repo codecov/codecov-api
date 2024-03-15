@@ -10,7 +10,7 @@ from graphql_api.types.enums import (
     UploadState,
     UploadType,
 )
-from reports.models import ReportSession
+from reports.models import ProxyReportSession, ReportSession
 
 upload_bindable = ObjectType("Upload")
 upload_bindable.set_alias("flags", "flag_names")
@@ -64,9 +64,12 @@ def resolve_ci_url(upload, info):
 
 @upload_bindable.field("downloadUrl")
 @sync_to_async
-def resolve_download_url(upload, info) -> str:
+def resolve_download_url(upload: ReportSession, info) -> str:
     request = info.context["request"]
-    download_absolute_uri = request.build_absolute_uri(upload.download_url)
+    proxy_upload: ProxyReportSession = ProxyReportSession.objects.filter(
+        report_id=upload.report_id
+    ).first()
+    download_absolute_uri = request.build_absolute_uri(proxy_upload.download_url)
     return download_absolute_uri.replace("http", "https", 1)
 
 

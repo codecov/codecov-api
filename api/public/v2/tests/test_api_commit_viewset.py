@@ -246,7 +246,7 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
         # allows access to public repos
         assert response.status_code == 200
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_commit_detail_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):
