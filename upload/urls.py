@@ -57,6 +57,6 @@ urlpatterns = [
         CommitViews.as_view(),
         name="new_upload.commits",
     ),
-    # This was getting in the way of the new endpoints, so I moved to the end
+    # This was getting in the way of the new endpoints, so I moved to the endsdfdsfds
     re_path("(?P<version>\w+)/?", UploadHandler.as_view(), name="upload-handler"),
 ]
