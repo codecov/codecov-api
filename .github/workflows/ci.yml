@@ -64,8 +64,8 @@ jobs:
   staging:
     name: Push Staging Image
     needs: [build, test]
-    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.12
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/test-prodvana' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.16
     secrets: inherit
     with:
       environment: staging
