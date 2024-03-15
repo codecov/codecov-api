@@ -1,4 +1,5 @@
 from http.cookies import SimpleCookie
+from unittest.mock import MagicMock, patch
 
 import jwt
 import pytest
@@ -9,6 +10,7 @@ from django.urls import reverse
 
 from codecov_auth.models import OktaUser
 from codecov_auth.tests.factories import OktaUserFactory, OwnerFactory, UserFactory
+from codecov_auth.views.okta import OktaLoginView
 from codecov_auth.views.okta import auth as okta_basic_auth
 from codecov_auth.views.okta import validate_id_token
 
@@ -24,6 +26,7 @@ def mocked_okta_token_request(mocker):
                     "access_token": "test-access-token",
                     "refresh_token": "test-refresh-token",
                     "id_token": "test-id-token",
+                    "state": "test-state",
                 }
             ),
         ),
@@ -144,17 +147,21 @@ def test_validate_id_token(mocker):
     OKTA_OAUTH_CLIENT_ID="test-client-id",
     OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
 )
-def test_okta_redirect_to_authorize(client):
+def test_okta_redirect_to_authorize(client, db):
     res = client.get(
         reverse("okta-login"),
         data={
             "iss": "https://example.okta.com",
         },
     )
+    state = client.session["okta_oauth_state"]
+
     assert res.status_code == 302
     assert (
         res.url
-        == "https://example.okta.com/oauth2/v1/authorize?response_type=code&client_id=test-client-id&scope=openid+email+profile&redirect_uri=https%3A%2F%2Flocalhost%3A8000%2Flogin%2Fokta&state=https%3A%2F%2Fexample.okta.com"
+        == "https://example.okta.com/oauth2/v1/authorize?response_type=code&client_id=test-client-id&scope=openid+email+profile&redirect_uri=https%3A%2F%2Flocalhost%3A8000%2Flogin%2Fokta&state={}".format(
+            state
+        )
     )
 
 
@@ -187,10 +194,17 @@ def test_okta_perform_login(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -201,6 +215,7 @@ def test_okta_perform_login(
             "grant_type": "authorization_code",
             "code": "test-code",
             "redirect_uri": "https://localhost:8000/login/okta",
+            "state": state,
         },
     )
 
@@ -230,10 +245,16 @@ def test_okta_perform_login(
 def test_okta_perform_login_missing_cookie(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -255,10 +276,17 @@ def test_okta_perform_login_authenticated(
     user = UserFactory()
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
     client.force_login(user=user)
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -288,10 +316,17 @@ def test_okta_perform_login_existing_okta_user(
     okta_user = OktaUserFactory(okta_id="test-id")
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -316,10 +351,17 @@ def test_okta_perform_login_authenticated_existing_okta_user(
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
     client.force_login(user=other_okta_user.user)
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -343,10 +385,17 @@ def test_okta_perform_login_existing_okta_user_existing_owner(
     OwnerFactory(service="github", user=okta_user.user)
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
@@ -373,12 +422,63 @@ def test_okta_perform_login_error(client, mocker, db):
     )
 
     client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
+
+    state = "test-state"
+    session = client.session
+    session["okta_oauth_state"] = state
+    session.save()
+
     res = client.get(
         reverse("okta-login"),
         data={
             "code": "test-code",
+            "state": state,
         },
     )
 
     assert res.status_code == 302
     assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+
+@override_settings(
+    OKTA_OAUTH_CLIENT_ID="test-client-id",
+    OKTA_OAUTH_CLIENT_SECRE="test-client-secret",
+    OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+)
+def test_okta_perform_login_state_mismatch(client, mocker, db):
+    res = client.get(
+        reverse("okta-login"),
+        data={
+            "code": "test-code",
+            "state": "invalid-state",
+        },
+    )
+
+    assert res.status_code == 302
+    assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
+
+    # does not login user
+    current_user = auth.get_user(client)
+    assert current_user.is_anonymous
+
+
+@override_settings(
+    OKTA_OAUTH_CLIENT_ID="test-client-id",
+    OKTA_OAUTH_CLIENT_SECRE="test-client-secret",
+    OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+)
+def test_okta_fetch_user_data_invalid_state(client, db):
+    with patch("codecov_auth.views.okta.requests.post") as mock_post:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        with patch.object(OktaLoginView, "verify_state", return_value=False):
+            view = OktaLoginView()
+            res = view._fetch_user_data(
+                "https://example.okta.com",
+                "test-code",
+                "invalid-state",
+            )
+
+    assert res is None

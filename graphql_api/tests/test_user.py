@@ -5,6 +5,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
+from graphql_api.types.user.user import resolve_customer_intent
 
 from .helper import GraphQLTestHelper
 
@@ -48,3 +49,8 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
             "studentUpdatedAt": "2023-06-20T00:00:00",
             "customerIntent": "Business",
         }
+
+    def test_query_null_user_customer_intent_resolver(self):
+        null_user = OwnerFactory(user=None, service_id=4)
+        data = resolve_customer_intent(null_user, None)
+        assert data == None

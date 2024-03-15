@@ -94,11 +94,7 @@ pull_request_detail_query_with_bundle_analysis = """
     bundleAnalysisCompareWithBase {
         __typename
         ... on BundleAnalysisComparison {
-            bundleChange {
-                size {
-                    uncompress
-                }
-            }
+            sizeDelta
         }
     }
     behindBy
@@ -109,11 +105,7 @@ pull_request_bundle_analysis_missing_reports = """
     bundleAnalysisCompareWithBase {
         __typename
         ... on BundleAnalysisComparison {
-            bundleChange {
-                size {
-                    uncompress
-                }
-            }
+            sizeDelta
         }
     }
 """
@@ -461,11 +453,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             bundleAnalysisCompareWithBase {
                 __typename
                 ... on BundleAnalysisComparison {
-                    bundleData {
-                        size {
-                            uncompress
-                        }
-                    }
+                    sizeTotal
                 }
             }
         """
@@ -475,11 +463,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         assert pull == {
             "bundleAnalysisCompareWithBase": {
                 "__typename": "BundleAnalysisComparison",
-                "bundleData": {
-                    "size": {
-                        "uncompress": 201720,
-                    }
-                },
+                "sizeTotal": 201720,
             }
         }
 

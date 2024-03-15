@@ -44,4 +44,6 @@ def resolve_student_updated_at(user: Owner, info) -> Optional[datetime]:
 @user_bindable.field("customerIntent")
 def resolve_customer_intent(user: Owner, info) -> str:
     owner = user
+    if not owner.user:
+        return None
     return owner.user.customer_intent
