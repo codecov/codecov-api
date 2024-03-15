@@ -35,16 +35,16 @@ jobs:
     uses: codecov/gha-workflows/.github/workflows/codecov-startup.yml@v1.2.12
     secrets: inherit
 
-  ats:
-    name: ATS
-    needs: [build]
-    if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/run-ats.yml@v1.2.12
-    secrets: inherit
-    with:
-      repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
-      codecov_cli_upload_args: '--plugin pycoverage --plugin compress-pycoverage --flag smart-labels'
-      app_container_name: api
+  # ats:
+  #   name: ATS
+  #   needs: [build]
+  #   if: ${{ !github.event.pull_request.head.repo.fork && github.repository_owner == 'codecov' }}
+  #   uses: codecov/gha-workflows/.github/workflows/run-ats.yml@v1.2.12
+  #   secrets: inherit
+  #   with:
+  #     repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+  #     codecov_cli_upload_args: '--plugin pycoverage --plugin compress-pycoverage --flag smart-labels'
+  #     app_container_name: api
   test:
     name: Test
     needs: [build]
