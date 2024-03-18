@@ -1,17 +1,16 @@
 from typing import Optional
 
 from ariadne import ObjectType
-from graphql import GraphQLResolveInfo
-from sentry_sdk import configure_scope
-from graphql import GraphQLError
 from django.conf import settings
+from graphql import GraphQLError, GraphQLResolveInfo
+from sentry_sdk import configure_scope
 
+from codecov.commands.exceptions import UnauthorizedGuestAccess
 from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from graphql_api.actions.owner import get_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from utils.services import get_long_service_name
-from codecov.commands.exceptions import UnauthorizedGuestAccess
 
 query = ariadne_load_local_graphql(__file__, "query.graphql")
 query_bindable = ObjectType("Query")
