@@ -86,20 +86,7 @@ class OktaLoginView(LoginMixin, StateMixin, View):
         response = redirect(redirect_url)
         self.store_to_cookie_utm_tags(response)
 
-        if settings.OKTA_ISS is None:
-            # ISS was passed to us from Okta
-            self._store_iss_cookie(iss, response)
-
         return response
-
-    def _store_iss_cookie(self, iss: str, response: HttpResponse):
-        response.set_cookie(
-            "_okta_iss",
-            iss,
-            max_age=86400,  # Same as state validatiy
-            httponly=True,
-            domain=settings.COOKIES_DOMAIN,
-        )
 
     def _perform_login(self, request: HttpRequest) -> HttpResponse:
         code = request.GET.get("code")
@@ -109,7 +96,7 @@ class OktaLoginView(LoginMixin, StateMixin, View):
             log.warning("Invalid state during Okta login")
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
-        iss = settings.OKTA_ISS or request.COOKIES.get("_okta_iss")
+        iss = settings.OKTA_ISS
         if iss is None:
             log.warning("Unable to log in due to missing Okta issuer", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
@@ -132,7 +119,6 @@ class OktaLoginView(LoginMixin, StateMixin, View):
             # user has not connected any owners yet
             response = redirect(f"{settings.CODECOV_DASHBOARD_URL}/sync")
 
-        response.delete_cookie("_okta_iss")
         return response
 
     def _login_user(self, request: HttpRequest, iss: str, user_data: dict):
@@ -197,7 +183,7 @@ class OktaLoginView(LoginMixin, StateMixin, View):
         if request.GET.get("code"):
             return self._perform_login(request)
         else:
-            iss = settings.OKTA_ISS or request.GET.get("iss")
+            iss = settings.OKTA_ISS
             if not iss:
                 log.warning("Missing Okta issuer")
                 return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")

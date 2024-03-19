@@ -168,6 +168,7 @@ def test_okta_redirect_to_authorize(client, db):
 @override_settings(
     OKTA_OAUTH_CLIENT_ID="test-client-id",
     OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+    OKTA_ISS=None,
 )
 def test_okta_redirect_to_authorize_no_iss(client):
     res = client.get(reverse("okta-login"))
@@ -178,9 +179,10 @@ def test_okta_redirect_to_authorize_no_iss(client):
 @override_settings(
     OKTA_OAUTH_CLIENT_ID="test-client-id",
     OKTA_OAUTH_REDIRECT_URL="https://localhost:8000/login/okta",
+    OKTA_ISS="https://non.okta.domain",
 )
 def test_okta_redirect_to_authorize_invalid_iss(client):
-    res = client.get(reverse("okta-login"), data={"iss": "https://non.okta.domain"})
+    res = client.get(reverse("okta-login"))
     assert res.status_code == 302
     assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
 
@@ -193,7 +195,6 @@ def test_okta_redirect_to_authorize_invalid_iss(client):
 def test_okta_perform_login(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
-    client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
 
     state = "test-state"
     session = client.session
@@ -242,29 +243,6 @@ def test_okta_perform_login(
     assert user == current_user
 
 
-def test_okta_perform_login_missing_cookie(
-    client, mocked_okta_token_request, mocked_validate_id_token, db
-):
-    state = "test-state"
-    session = client.session
-    session["okta_oauth_state"] = state
-    session.save()
-
-    res = client.get(
-        reverse("okta-login"),
-        data={
-            "code": "test-code",
-            "state": state,
-        },
-    )
-
-    assert res.status_code == 302
-    assert res.url == f"{settings.CODECOV_DASHBOARD_URL}/login"
-
-    # does not login user
-    assert auth.get_user(client).is_anonymous
-
-
 @override_settings(
     OKTA_OAUTH_CLIENT_ID="test-client-id",
     OKTA_OAUTH_CLIENT_SECRE="test-client-secret",
@@ -274,7 +252,6 @@ def test_okta_perform_login_authenticated(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
     user = UserFactory()
-    client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
     client.force_login(user=user)
 
     state = "test-state"
@@ -315,8 +292,6 @@ def test_okta_perform_login_existing_okta_user(
 ):
     okta_user = OktaUserFactory(okta_id="test-id")
 
-    client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
-
     state = "test-state"
     session = client.session
     session["okta_oauth_state"] = state
@@ -349,7 +324,6 @@ def test_okta_perform_login_authenticated_existing_okta_user(
     okta_user = OktaUserFactory(okta_id="test-id")
     other_okta_user = OktaUserFactory()
 
-    client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
     client.force_login(user=other_okta_user.user)
 
     state = "test-state"
@@ -383,8 +357,6 @@ def test_okta_perform_login_existing_okta_user_existing_owner(
 ):
     okta_user = OktaUserFactory(okta_id="test-id")
     OwnerFactory(service="github", user=okta_user.user)
-
-    client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
 
     state = "test-state"
     session = client.session
@@ -420,9 +392,6 @@ def test_okta_perform_login_error(client, mocker, db):
             status_code=401,
         ),
     )
-
-    client.cookies = SimpleCookie({"_okta_iss": "https://example.okta.com"})
-
     state = "test-state"
     session = client.session
     session["okta_oauth_state"] = state
