@@ -265,6 +265,9 @@ def get_repo_with_github_actions_oidc_token(token):
     log.warning(
         msg="get_repo_with_github_actions_oidc_token_4", extra=dict(detail=f"{data}")
     )
+    log.warning(
+        msg="get_repo_with_github_actions_oidc_token_4", extra=dict(detail=f"{data}")
+    )
     repo = str(data.get("repository")).split("/")[-1]
     repository = Repository.objects.get(
         author__service=service,
