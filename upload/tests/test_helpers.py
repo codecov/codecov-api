@@ -299,7 +299,8 @@ def test_determine_repo_for_upload_github_actions(codecov_vcr):
     token = jwt.encode(
         {
             "iss": "https://token.actions.githubusercontent.com",
-            "aud": get_config("setup", "codecov_url"),
+            # "aud": get_config("setup", "codecov_url"),
+            "aud": "https://stage-api.codecov.dev",
             "repository": f"{repository.author.username}/{repository.name}",
             "repository_owner": repository.author.username,
         },
