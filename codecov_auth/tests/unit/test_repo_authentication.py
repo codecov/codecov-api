@@ -8,7 +8,7 @@ from django.test import override_settings
 from django.utils import timezone
 from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
-from shared.torngit.exceptions import TorngitObjectNotFoundError
+from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
@@ -531,4 +531,45 @@ class TestTokenlessAuth(object):
         repo_as_user, auth_class = res
         assert repo_as_user.is_authenticated()
         assert isinstance(auth_class, TokenlessAuth)
+        mock_adapter.get_pull_request.assert_called_with("15")
+
+    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
+    def test_tokenless_rate_limit(self, mock_repo_provider, db, mocker):
+        repo = RepositoryFactory(private=False)
+        err = TorngitRateLimitError(
+            "error", "err msg", int(datetime.now().timestamp()) + 20, None
+        )
+        mock_adapter = MagicMock(
+            name="mock_provider_adapter",
+            get_pull_request=AsyncMock(name="mock_get_pr", side_effect=err),
+        )
+        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
+
+        request = APIRequestFactory().post(
+            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
+            headers={"X-Tokenless": f"some-user/{repo.name}", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+
+        with pytest.raises(exceptions.Throttled):
+            res = authentication.authenticate(request)
+        mock_adapter.get_pull_request.assert_called_with("15")
+
+    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
+    def test_tokenless_rate_limit_retry_after(self, mock_repo_provider, db, mocker):
+        repo = RepositoryFactory(private=False)
+        err = TorngitRateLimitError("error", "err msg", None, 20)
+        mock_adapter = MagicMock(
+            name="mock_provider_adapter",
+            get_pull_request=AsyncMock(name="mock_get_pr", side_effect=err),
+        )
+        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
+
+        request = APIRequestFactory().post(
+            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
+            headers={"X-Tokenless": f"some-user/{repo.name}", "X-Tokenless-PR": "15"},
+        )
+        authentication = TokenlessAuthentication()
+        with pytest.raises(exceptions.Throttled):
+            res = authentication.authenticate(request)
         mock_adapter.get_pull_request.assert_called_with("15")

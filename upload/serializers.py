@@ -22,6 +22,7 @@ class UploadSerializer(serializers.ModelSerializer):
     version = serializers.CharField(write_only=True, required=False)
     url = serializers.SerializerMethodField()
     storage_path = serializers.CharField(write_only=True, required=False)
+    ci_service = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         read_only_fields = (
@@ -41,6 +42,7 @@ class UploadSerializer(serializers.ModelSerializer):
             "job_code",
             "version",
             "storage_path",
+            "ci_service",
         )
         model = ReportSession
 
@@ -67,11 +69,12 @@ class UploadSerializer(serializers.ModelSerializer):
         flag_names = (
             validated_data.pop("flags") if "flags" in validated_data.keys() else []
         )
-        _ = (
-            validated_data.pop("version")
-            if "version" in validated_data.keys()
-            else None
-        )
+
+        # default is necessary here, or else if the key is not in the dict
+        # the below will throw a KeyError
+        validated_data.pop("version", None)
+        validated_data.pop("ci_service", None)
+
         upload = ReportSession.objects.create(**validated_data)
         flags = []
 
@@ -133,13 +136,12 @@ class CommitSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        commit = Commit.objects.filter(
-            repository=validated_data.get("repository"),
-            commitid=validated_data.get("commitid"),
-        ).first()
-        if commit:
-            return commit
-        return super().create(validated_data)
+        repo = validated_data.pop("repository", None)
+        commitid = validated_data.pop("commitid", None)
+        commit, _ = Commit.objects.get_or_create(
+            repository=repo, commitid=commitid, defaults=validated_data
+        )
+        return commit
 
 
 class CommitReportSerializer(serializers.ModelSerializer):

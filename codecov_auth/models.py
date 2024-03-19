@@ -508,6 +508,13 @@ class GithubAppInstallation(
         related_name="github_app_installations",
     )
 
+    def is_configured(self) -> bool:
+        """Returns whether this installation is properly configured and can be used"""
+        if self.name == GITHUB_APP_INSTALLATION_DEFAULT_NAME:
+            # The default app is configured in the installation YAML
+            return True
+        return self.app_id is not None and self.pem_path is not None
+
     def repository_queryset(self) -> BaseManager[Repository]:
         """Returns a QuerySet of repositories covered by this installation"""
         if self.repository_service_ids is None:
@@ -525,6 +532,28 @@ class GithubAppInstallation(
         if self.covers_all_repos():
             return repo.author.ownerid == self.owner.ownerid
         return repo.service_id in self.repository_service_ids
+
+
+class OwnerInstallationNameToUseForTask(
+    ExportModelOperationsMixin("codecov_auth.github_app_installation"), BaseCodecovModel
+):
+    owner = models.ForeignKey(
+        Owner,
+        null=False,
+        on_delete=models.CASCADE,
+        blank=False,
+        related_name="installation_name_to_use_for_tasks",
+    )
+    installation_name = models.TextField(null=False, blank=False)
+    task_name = models.TextField(null=False, blank=False)
+
+    class Meta:
+        constraints = [
+            # Only 1 app name per task per owner_id
+            models.UniqueConstraint(
+                "owner_id", "task_name", name="single_task_name_per_owner"
+            )
+        ]
 
 
 class SentryUser(

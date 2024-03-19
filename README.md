@@ -40,7 +40,7 @@ This service will startup when you run codecov.io normally. It is under that `ap
 The easiest way to run tests (that doesn't require installing postgres and other dependencies) is to run inside of docker:
 
     docker-compose up
-    docker exec -it codecov-api_api_1 pytest -rf
+    docker exec -it codecov-api_api_1 pytest -rf --no-migrations
 
 ### Testing standalone
 

@@ -422,6 +422,10 @@ class GithubWebhookHandler(APIView):
         ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
             installation_id=installation_id, owner=owner
         )
+        app_id = request.data["installation"]["app_id"]
+        # Either update or set
+        # But this value shouldn't change for the installation, so doesn't matter
+        ghapp_installation.app_id = app_id
 
         all_repos_affected = request.data.get("repository_selection") == "all"
         if all_repos_affected:
@@ -481,6 +485,10 @@ class GithubWebhookHandler(APIView):
                 ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
                     installation_id=installation_id, owner=owner
                 )
+                app_id = request.data["installation"]["app_id"]
+                # Either update or set
+                # But this value shouldn't change for the installation, so doesn't matter
+                ghapp_installation.app_id = app_id
                 affects_all_repositories = (
                     request.data["installation"]["repository_selection"] == "all"
                 )

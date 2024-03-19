@@ -515,3 +515,30 @@ class TestGithubAppInstallationModel(TransactionTestCase):
         assert list(owner.github_app_installations.all()) == [installation_obj]
         assert installation_obj.repository_queryset().exists()
         assert list(installation_obj.repository_queryset().all()) == [repo]
+
+    def test_is_configured(self):
+        owner = OwnerFactory()
+        installation_default = GithubAppInstallation(
+            owner=owner, repository_service_ids=None, installation_id=100
+        )
+        installation_configured = GithubAppInstallation(
+            owner=owner,
+            repository_service_ids=None,
+            name="my_installation",
+            installation_id=100,
+            app_id=123,
+            pem_path="some_path",
+        )
+        installation_not_configured = GithubAppInstallation(
+            owner=owner,
+            repository_service_ids=None,
+            installation_id=100,
+            name="my_other_installation",
+            app_id=1234,
+        )
+        installation_default.save()
+        installation_configured.save()
+        installation_not_configured.save()
+        assert installation_default.is_configured() == True
+        assert installation_configured.is_configured() == True
+        assert installation_not_configured.is_configured() == False
