@@ -29,6 +29,7 @@ STRIPE_PLAN_IDS = {
 CORS_ALLOW_CREDENTIALS = True
 
 CODECOV_URL = "localhost"
+CODECOV_API_URL = get_config("setup", "codecov_api_url", default=CODECOV_URL)
 CODECOV_DASHBOARD_URL = "http://localhost:3000"
 
 CORS_ALLOWED_ORIGINS = [

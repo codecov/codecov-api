@@ -1,12 +1,10 @@
 import logging
 import re
-from datetime import timedelta
 from json import dumps
 from typing import Optional
 
 import jwt
 from asgiref.sync import async_to_sync
-from celery import chain, signature
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -25,7 +23,7 @@ from codecov_auth.models import (
     GithubAppInstallation,
     Owner,
 )
-from core.models import Commit, CommitNotification, Pull, Repository
+from core.models import Commit, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from reports.models import CommitReport, ReportSession
@@ -225,10 +223,6 @@ def parse_params(data):
 
 
 def get_repo_with_github_actions_oidc_token(token):
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_0",
-        extra=dict(detail=f"{token}"),
-    )
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     log.warning(
         msg="get_repo_with_github_actions_oidc_token_1",
@@ -253,14 +247,13 @@ def get_repo_with_github_actions_oidc_token(token):
     signing_key = jwks_client.get_signing_key_from_jwt(token)
     log.warning(
         msg="get_repo_with_github_actions_oidc_token_3.5",
-        extra=dict(detail=f'audience={get_config("setup", "codecov_url")}'),
+        extra=dict(detail=f"audience=[{settings.CODECOV_API_URL}]"),
     )
     data = jwt.decode(
         token,
         signing_key.key,
         algorithms=["RS256"],
-        # audience=get_config("setup", "codecov_url"),
-        audience="https://stage-api.codecov.dev",
+        audience=[settings.CODECOV_API_URL],
     )
     log.warning(
         msg="get_repo_with_github_actions_oidc_token_4", extra=dict(detail=f"{data}")
