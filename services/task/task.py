@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import os
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional, Tuple
@@ -19,7 +19,6 @@ from timeseries.models import Dataset
 celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
 
-log = logging.getLogger(__name__)
 
 if settings.SENTRY_ENV:
     celery.group.apply_async = _wrap_apply_async(celery.group.apply_async)
@@ -101,7 +100,7 @@ class TaskService(object):
             ]
             for comparison_id in comparison_ids:
                 # log each separately so it can be filtered easily in the logs
-                log.info(
+                logger.info(
                     "Triggering compute comparison task",
                     extra=dict(comparison_id=comparison_id),
                 )
@@ -245,7 +244,7 @@ class TaskService(object):
         ).apply_async()
 
     def delete_owner(self, ownerid):
-        log.info(f"Triggering delete_owner task for owner: {ownerid}")
+        logger.info(f"Triggering delete_owner task for owner: {ownerid}")
         self._create_signature(
             "app.tasks.delete_owner.DeleteOwner", kwargs=dict(ownerid=ownerid)
         ).apply_async()
@@ -257,7 +256,7 @@ class TaskService(object):
         end_date: datetime,
         dataset_names: Iterable[str] = None,
     ):
-        log.info(
+        logger.info(
             f"Triggering timeseries backfill tasks for repo",
             extra=dict(
                 repoid=repository.pk,
@@ -306,7 +305,7 @@ class TaskService(object):
         start_date: datetime,
         end_date: datetime,
     ):
-        log.info(
+        logger.info(
             f"Triggering dataset backfill",
             extra=dict(
                 dataset_id=dataset.pk,
@@ -325,7 +324,7 @@ class TaskService(object):
         ).apply_async()
 
     def delete_timeseries(self, repository_id: int):
-        log.info(
+        logger.info(
             f"Delete repository timeseries data",
             extra=dict(repository_id=repository_id),
         )

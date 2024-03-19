@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from asgiref.sync import async_to_sync
 from django.conf import settings
@@ -12,8 +12,6 @@ from api.shared.repo.repository_accessors import RepoAccessors
 from services.activation import try_auto_activate
 from services.decorators import torngit_safe
 from services.repo_providers import get_generic_adapter_params, get_provider
-
-log = logging.getLogger(__name__)
 
 
 class RepositoryPermissionsService:
@@ -116,7 +114,7 @@ class ChartPermissions(BasePermission):
     permissions_service = RepositoryPermissionsService()
 
     def has_permission(self, request, view):
-        log.info(
+        logger.info(
             f"Coverage chart has repositories {view.repositories}",
             extra=dict(user=request.current_owner),
         )

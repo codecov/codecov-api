@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -15,8 +15,6 @@ from rest_framework import exceptions
 
 from codecov_auth.models import Owner, Service
 from utils.services import get_long_service_name
-
-log = logging.getLogger(__name__)
 
 
 def get_service(request: HttpRequest) -> Optional[str]:
@@ -80,7 +78,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
             if impersonating_ownerid is None:
                 return
 
-            log.info(
+            logger.info(
                 "Impersonation attempted",
                 extra=dict(
                     current_user_id=current_user.pk,
@@ -88,7 +86,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
                 ),
             )
             if not current_user.is_staff:
-                log.warning(
+                logger.warning(
                     "Impersonation unsuccessful",
                     extra=dict(
                         reason="must be a staff user",
@@ -104,7 +102,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
                 .first()
             )
             if request.current_owner is None:
-                log.warning(
+                logger.warning(
                     "Impersonation unsuccessful",
                     extra=dict(
                         reason="no such owner",
@@ -114,7 +112,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
                 )
                 raise exceptions.AuthenticationFailed()
 
-            log.info(
+            logger.info(
                 "Impersonation successful",
                 extra=dict(
                     current_user_id=current_user.pk,

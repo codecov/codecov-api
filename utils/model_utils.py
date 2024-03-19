@@ -1,13 +1,11 @@
 import json
-import logging
+from loguru import logger
 from typing import Any, Callable, Optional
 
 from shared.storage.exceptions import FileNotInStorageError
 from shared.utils.ReportEncoder import ReportEncoder
 
 from services.archive import ArchiveService
-
-log = logging.getLogger(__name__)
 
 
 class ArchiveFieldInterfaceMeta(type):
@@ -93,7 +91,7 @@ class ArchiveField:
                 file_str = archive_service.read_file(archive_field)
                 return self.rehydrate_fn(obj, json.loads(file_str))
             except FileNotInStorageError:
-                log.error(
+                logger.error(
                     "Archive enabled field not in storage",
                     extra=dict(
                         storage_path=archive_field,
@@ -102,7 +100,7 @@ class ArchiveField:
                     ),
                 )
         else:
-            log.debug(
+            logger.debug(
                 "Both db_field and archive_field are None",
                 extra=dict(
                     object_id=obj.id,

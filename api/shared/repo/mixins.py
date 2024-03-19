@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.http import Http404
 from rest_framework import viewsets
@@ -11,8 +11,6 @@ from core.models import Repository
 from services.decorators import torngit_safe
 
 from .repository_accessors import RepoAccessors
-
-log = logging.getLogger(__name__)
 
 
 class RepositoryViewSetMixin(
@@ -54,7 +52,7 @@ class RepositoryViewSetMixin(
         if repo.private and not RepositoryPermissionsService().user_is_activated(
             self.request.current_owner, self.owner
         ):
-            log.info(
+            logger.info(
                 "An inactive user attempted to access a repo page",
                 extra=dict(
                     user=self.request.current_owner.username,

@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import uuid
 from secrets import token_bytes
 
@@ -8,8 +8,6 @@ from django.forms import ValidationError
 
 from codecov_auth.models import OrganizationLevelToken, Owner
 from plan.constants import USER_PLAN_REPRESENTATIONS
-
-log = logging.getLogger(__name__)
 
 
 class OrgLevelTokenService(object):
@@ -31,7 +29,7 @@ class OrgLevelTokenService(object):
             )
         token, created = OrganizationLevelToken.objects.get_or_create(owner=org)
         if created:
-            log.info(
+            logger.info(
                 "New OrgLevelToken created",
                 extra=dict(
                     ownerid=org.ownerid,

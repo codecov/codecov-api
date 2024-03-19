@@ -1,5 +1,5 @@
 import fnmatch
-import logging
+from loguru import logger
 from typing import List
 
 import regex
@@ -23,7 +23,6 @@ from upload.helpers import try_to_get_best_possible_bot_token
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
-log = logging.getLogger(__name__)
 
 GLOB_NON_TESTABLE_FILES = [
     "*.cfg",
@@ -153,7 +152,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         try:
             changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
         except TorngitClientError:
-            log.warning(
+            logger.warning(
                 f"Request client error",
                 extra=dict(
                     commit=commit.commitid,
@@ -171,7 +170,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                     commit=commit.commitid
                 )
         except TorngitClientGeneralError:
-            log.warning(
+            logger.warning(
                 f"Request client error",
                 extra=dict(
                     commit=commit.commitid,

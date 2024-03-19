@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import uuid
 
 from rest_framework import serializers, status
@@ -20,8 +20,6 @@ from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from upload.helpers import dispatch_upload_task
 from upload.views.helpers import get_repository_from_string
-
-log = logging.getLogger(__name__)
 
 
 class UploadBundleAnalysisPermission(BasePermission):
@@ -109,7 +107,7 @@ class BundleAnalysisView(APIView):
             "report_code": None,
         }
 
-        log.info(
+        logger.info(
             "Dispatching bundle analysis upload to worker",
             extra=dict(
                 commit=commit.commitid,

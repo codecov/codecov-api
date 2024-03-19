@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
@@ -15,8 +15,6 @@ from services.task import TaskService
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
-
-log = logging.getLogger(__name__)
 
 
 class CommitViews(ListCreateAPIView, GetterMixin):
@@ -64,7 +62,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     def perform_create(self, serializer):
         repository = self.get_repo()
         commit = serializer.save(repository=repository)
-        log.info(
+        logger.info(
             "Request to create new commit",
             extra=dict(repo=repository.name, commit=commit.commitid),
         )

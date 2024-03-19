@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import re
 from abc import ABC, abstractmethod
 
@@ -16,7 +16,6 @@ from plan.constants import (
 )
 from plan.service import PlanService
 
-log = logging.getLogger(__name__)
 
 SCHEDULE_RELEASE_OFFSET = 10
 
@@ -29,7 +28,7 @@ def _log_stripe_error(method):
         try:
             return method(*args, **kwargs)
         except stripe.error.StripeError as e:
-            log.warning(e.user_message)
+            logger.warning(e.user_message)
             raise
 
     return catch_and_raise
@@ -80,7 +79,7 @@ class AbstractPaymentService(ABC):
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
         if settings.STRIPE_API_KEY is None:
-            log.critical(
+            logger.critical(
                 "Missing stripe API key configuration -- communication with stripe won't be possible."
             )
         if not isinstance(requesting_user, Owner):
@@ -102,16 +101,16 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def get_invoice(self, owner, invoice_id):
-        log.info(
+        logger.info(
             f"Fetching invoice {invoice_id} from Stripe for ownerid {owner.ownerid}"
         )
         try:
             invoice = stripe.Invoice.retrieve(invoice_id)
         except stripe.error.InvalidRequestError as e:
-            log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
+            logger.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:
-            log.info(
+            logger.info(
                 f"customer id ({invoice['customer']}) on invoice does not match the owner customer id ({owner.stripe_customer_id})"
             )
             return None
@@ -127,9 +126,9 @@ class StripeService(AbstractPaymentService):
 
     @_log_stripe_error
     def list_filtered_invoices(self, owner, limit=10):
-        log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
+        logger.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
-            log.info("stripe_customer_id is None, not fetching invoices")
+            logger.info("stripe_customer_id is None, not fetching invoices")
             return []
         invoices = stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
             "data"
@@ -145,12 +144,12 @@ class StripeService(AbstractPaymentService):
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         subscription_schedule_id = subscription.schedule
 
-        log.info(
+        logger.info(
             f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
             extra=dict(ownerid=owner.ownerid),
         )
         if subscription_schedule_id:
-            log.info(
+            logger.info(
                 f"Releasing subscription from schedule for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
                 extra=dict(ownerid=owner.ownerid),
             )
@@ -209,11 +208,11 @@ class StripeService(AbstractPaymentService):
 
         if is_upgrading:
             if subscription_schedule_id:
-                log.info(
+                logger.info(
                     f"Releasing Stripe schedule for owner {owner.ownerid} to {desired_plan['value']} with {desired_plan['quantity']} seats by user #{self.requesting_user.ownerid}"
                 )
                 stripe.SubscriptionSchedule.release(subscription_schedule_id)
-            log.info(
+            logger.info(
                 f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
             )
             stripe.Subscription.modify(
@@ -235,7 +234,7 @@ class StripeService(AbstractPaymentService):
                 name=desired_plan["value"], user_count=desired_plan["quantity"]
             )
 
-            log.info(
+            logger.info(
                 f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
         else:
@@ -358,7 +357,7 @@ class StripeService(AbstractPaymentService):
     @_log_stripe_error
     def create_checkout_session(self, owner: Owner, desired_plan):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
-        log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
+        logger.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
 
         if not owner.stripe_customer_id:
             customer_email = owner.email
@@ -387,16 +386,16 @@ class StripeService(AbstractPaymentService):
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
         )
-        log.info(
+        logger.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
         return session["id"]
 
     @_log_stripe_error
     def update_payment_method(self, owner, payment_method):
-        log.info(f"Stripe update payment method for owner {owner.ownerid}")
+        logger.info(f"Stripe update payment method for owner {owner.ownerid}")
         if owner.stripe_subscription_id is None:
-            log.info(
+            logger.info(
                 f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}"
             )
             return None
@@ -406,7 +405,7 @@ class StripeService(AbstractPaymentService):
             owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method},
         )
-        log.info(
+        logger.info(
             f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
 
@@ -415,21 +414,21 @@ class StripeService(AbstractPaymentService):
         if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
             return None
 
-        log.info(f"Stripe update email address for owner {owner.ownerid}")
+        logger.info(f"Stripe update email address for owner {owner.ownerid}")
         if owner.stripe_subscription_id is None:
-            log.info(
+            logger.info(
                 f"stripe_subscription_id is None, not updating stripe email for owner {owner.ownerid}"
             )
             return None
         stripe.Customer.modify(owner.stripe_customer_id, email=email_address)
-        log.info(
+        logger.info(
             f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
 
     @_log_stripe_error
     def apply_cancellation_discount(self, owner: Owner):
         if owner.stripe_subscription_id is None:
-            log.info(
+            logger.info(
                 f"stripe_subscription_id is None, not applying cancellation coupon for owner {owner.ownerid}"
             )
             return
@@ -437,7 +436,9 @@ class StripeService(AbstractPaymentService):
         billing_rate = plan_service.billing_rate
 
         if billing_rate == PlanBillingRate.MONTHLY.value and not owner.stripe_coupon_id:
-            log.info(f"Creating Stripe cancellation coupon for owner {owner.ownerid}")
+            logger.info(
+                f"Creating Stripe cancellation coupon for owner {owner.ownerid}"
+            )
             coupon = stripe.Coupon.create(
                 percent_off=30.0,
                 duration="repeating",
@@ -455,7 +456,7 @@ class StripeService(AbstractPaymentService):
             owner.stripe_coupon_id = coupon.id
             owner.save()
 
-            log.info(
+            logger.info(
                 f"Applying cancellation coupon to Stripe subscription for owner {owner.ownerid}"
             )
             stripe.Customer.modify(
@@ -545,7 +546,7 @@ class BillingService:
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
         else:
-            log.warning(
+            logger.warning(
                 f"Attempted to transition to non-existent or legacy plan: "
                 f"owner {owner.ownerid}, plan: {desired_plan}"
             )

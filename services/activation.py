@@ -1,12 +1,10 @@
 import abc
-import logging
+from loguru import logger
 
 from django.conf import settings
 
 import services.self_hosted as self_hosted
 from codecov_auth.models import Owner
-
-log = logging.getLogger(__name__)
 
 
 class BaseActivator(abc.ABC):
@@ -76,12 +74,24 @@ def try_auto_activate(org: Owner, owner: Owner) -> bool:
     activator = _get_activator(org, owner)
 
     if activator.is_autoactivation_enabled():
-        log.info(f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}")
+        logger.info(f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}")
+        logger.debug(
+            f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}"
+        )
+        logger.warning(
+            f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}"
+        )
+        logger.critical(
+            f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}"
+        )
+        logger.error(
+            f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}"
+        )
         if activator.can_activate_user():
             activator.activate_user()
             return True
         else:
-            log.info("Auto-activation failed -- not enough seats remaining")
+            logger.info("Auto-activation failed -- not enough seats remaining")
     return False
 
 

@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger
 import re
 from typing import Dict, Optional
 from urllib.parse import urlencode
@@ -17,7 +17,7 @@ from codecov_auth.models import OktaUser, User
 from codecov_auth.views.base import LoginMixin
 from utils.services import get_short_service_name
 
-log = logging.getLogger(__name__)
+
 iss_regex = re.compile(r"https://[\w\d\-\_]+.okta.com/?")
 
 
@@ -98,12 +98,12 @@ class OktaLoginView(LoginMixin, View):
         code = request.GET.get("code")
         iss = settings.OKTA_ISS or request.COOKIES.get("_okta_iss")
         if iss is None:
-            log.warning("Unable to log in due to missing Okta issuer", exc_info=True)
+            logger.warning("Unable to log in due to missing Okta issuer", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
         user_data = self._fetch_user_data(iss, code)
         if user_data is None:
-            log.warning("Unable to log in due to problem on Okta", exc_info=True)
+            logger.warning("Unable to log in due to problem on Okta", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
         current_user = self._login_user(request, iss, user_data)
@@ -139,7 +139,7 @@ class OktaLoginView(LoginMixin, View):
             current_user = request.user
 
             if okta_user and okta_user.user != request.user:
-                log.warning(
+                logger.warning(
                     "Okta account already linked to another user",
                     extra=dict(
                         current_user_id=request.user.pk, okta_user_id=okta_user.pk
@@ -152,7 +152,7 @@ class OktaLoginView(LoginMixin, View):
         else:
             # we're not authenticated
             if okta_user:
-                log.info(
+                logger.info(
                     "Existing Okta user logging in",
                     extra=dict(okta_user_id=okta_user.pk),
                 )
@@ -171,7 +171,7 @@ class OktaLoginView(LoginMixin, View):
                 email=user_email,
                 access_token=user_data["access_token"],
             )
-            log.info(
+            logger.info(
                 "Created Okta user",
                 extra=dict(okta_user_id=okta_user.pk),
             )
@@ -185,9 +185,9 @@ class OktaLoginView(LoginMixin, View):
         else:
             iss = settings.OKTA_ISS or request.GET.get("iss")
             if not iss:
-                log.warning("Missing Okta issuer")
+                logger.warning("Missing Okta issuer")
                 return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
             if not iss_regex.match(iss):
-                log.warning("Invalid Okta issuer")
+                logger.warning("Invalid Okta issuer")
                 return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
             return self._redirect_to_consent(iss=iss)

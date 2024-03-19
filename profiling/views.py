@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from uuid import uuid4
 
 from rest_framework.generics import CreateAPIView
@@ -9,8 +9,6 @@ from profiling.models import ProfilingCommit
 from profiling.serializers import ProfilingCommitSerializer, ProfilingUploadSerializer
 from services.archive import ArchiveService, MinioEndpoints
 from services.task import TaskService
-
-log = logging.getLogger(__name__)
 
 
 class CanDoProfilingUploadsPermission(BasePermission):
@@ -37,7 +35,7 @@ class ProfilingUploadCreateView(CreateAPIView):
         )
         instance = serializer.save(raw_upload_location=path)
         task = TaskService().normalize_profiling_upload(instance.id)
-        log.info("Spun normalization task", extra=dict(task_id=task.id))
+        logger.info("Spun normalization task", extra=dict(task_id=task.id))
         return instance
 
 
@@ -54,7 +52,7 @@ class ProfilingCommitCreateView(CreateAPIView):
         )
         serializer.instance = instance
         if was_created:
-            log.info(
+            logger.info(
                 "Creating new profiling commit", extra=dict(repoid=repository.repoid)
             )
         return serializer.save()

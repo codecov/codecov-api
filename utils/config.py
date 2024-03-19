@@ -1,4 +1,3 @@
-import logging
 import os
 from enum import Enum
 
@@ -34,9 +33,6 @@ def get_settings_module():
 
 class MissingConfigException(Exception):
     pass
-
-
-log = logging.getLogger(__name__)
 
 
 def get_config(*path, default=None):

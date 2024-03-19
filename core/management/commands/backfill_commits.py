@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from redis import Redis
@@ -6,8 +6,6 @@ from shared.config import get_config
 
 from core.models import Commit
 from services.task import TaskService
-
-log = logging.getLogger(__name__)
 
 
 def get_storage_redis():
@@ -33,7 +31,7 @@ class Command(BaseCommand):
         queue_length = celery_redis.llen(queue_name)
 
         if queue_length > 0:
-            log.warning(
+            logger.warning(
                 "Backfill commits queue not drained",
                 extra=dict(
                     queue_length=queue_length,
@@ -56,7 +54,7 @@ class Command(BaseCommand):
                 commit_id = commit.id
 
         if len(commits) == 0:
-            log.warning(
+            logger.warning(
                 "Backfill commits finished", extra=dict(backfill_commits_id=commit_id)
             )
         else:

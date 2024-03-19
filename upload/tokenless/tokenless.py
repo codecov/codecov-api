@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import os
 from datetime import datetime, timedelta
 from json import load
@@ -15,8 +15,6 @@ from upload.tokenless.circleci import TokenlessCircleciHandler
 from upload.tokenless.cirrus import TokenlessCirrusHandler
 from upload.tokenless.github_actions import TokenlessGithubActionsHandler
 from upload.tokenless.travis import TokenlessTravisHandler
-
-log = logging.getLogger(__name__)
 
 
 class TokenlessUploadHandler(object):
@@ -36,7 +34,7 @@ class TokenlessUploadHandler(object):
         self.ci_type = ci_type
 
     def verify_upload(self):
-        log.info(
+        logger.info(
             f"Started {self.ci_type} tokenless upload",
             extra=dict(
                 commit=self.upload_params.get("commit"),

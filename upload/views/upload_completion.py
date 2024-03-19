@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
@@ -13,8 +13,6 @@ from reports.models import ReportSession
 from services.task import TaskService
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
-
-log = logging.getLogger(__name__)
 
 
 class UploadCompletionView(CreateAPIView, GetterMixin):
@@ -34,7 +32,7 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
         )
         uploads_count = uploads_queryset.count()
         if not uploads_queryset or uploads_count == 0:
-            log.info(
+            logger.info(
                 "Cannot trigger notifications as we didn't find any uploads for the provided commit",
                 extra=dict(
                     repo=repo.name, commit=commit.commitid, pullid=commit.pullid

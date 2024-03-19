@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger
 from typing import List, Optional
 
 import regex
@@ -11,8 +11,6 @@ import services.report as report_service
 from core.models import Commit, Repository
 from profiling.models import ProfilingCommit
 from services.archive import ArchiveService
-
-log = logging.getLogger(__name__)
 
 
 class CriticalFile:
@@ -54,7 +52,7 @@ class ProfilingSummary:
             data = archive_service.read_file(profiling_commit.summarized_location)
             return ProfilingSummaryDataAnalyzer(json.loads(data))
         except:
-            log.error(
+            logger.error(
                 "failed to read summarized profiling data from storage", exc_info=True
             )
             return None

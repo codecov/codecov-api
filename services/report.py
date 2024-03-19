@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from typing import List, Optional
 
 import sentry_sdk
@@ -16,8 +16,6 @@ from core.models import Commit
 from reports.models import AbstractTotals, CommitReport, ReportDetails, ReportSession
 from services.archive import ArchiveService
 from utils.config import RUN_ENV
-
-log = logging.getLogger(__name__)
 
 
 class ReportMixin:
@@ -99,7 +97,7 @@ def build_report_from_commit(commit: Commit, report_class=None):
             chunks = ArchiveService(commit.repository).read_chunks(commit.commitid)
         return build_report(chunks, files, sessions, totals, report_class=report_class)
     except FileNotInStorageError:
-        log.warning(
+        logger.warning(
             "File for chunks not found in storage",
             extra=dict(
                 commit=commit.commitid,

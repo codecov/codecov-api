@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.db.models import OuterRef, Subquery
 from django.shortcuts import get_object_or_404
@@ -12,8 +12,6 @@ from services.task import TaskService
 
 from .permissions import PullUpdatePermission
 from .serializers import PullSerializer
-
-log = logging.getLogger(__name__)
 
 
 class PullViewSet(

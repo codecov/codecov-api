@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 import stripe
 from django.conf import settings
@@ -17,20 +17,18 @@ from .constants import StripeHTTPHeaders, StripeWebhookEvents
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
 
-log = logging.getLogger(__name__)
-
 
 class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
 
     def _log_updated(self, updated):
         if updated >= 1:
-            log.info(f"Successfully updated info for {updated} customer(s)")
+            logger.info(f"Successfully updated info for {updated} customer(s)")
         else:
-            log.warning(f"Could not find customer")
+            logger.warning(f"Could not find customer")
 
     def invoice_payment_succeeded(self, invoice):
-        log.info(
+        logger.info(
             "Setting delinquency status False",
             extra=dict(
                 stripe_customer_id=invoice.customer,
@@ -48,7 +46,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(1)
 
     def invoice_payment_failed(self, invoice):
-        log.info(
+        logger.info(
             "Setting delinquency status True",
             extra=dict(
                 stripe_customer_id=invoice.customer,
@@ -62,7 +60,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(updated)
 
     def customer_subscription_deleted(self, subscription):
-        log.info(
+        logger.info(
             "Setting free plan and deactivating repos for stripe customer",
             extra=dict(
                 stripe_subscription_id=subscription.id,
@@ -81,7 +79,7 @@ class StripeWebhookHandler(APIView):
 
     def subscription_schedule_created(self, schedule):
         subscription = stripe.Subscription.retrieve(schedule["subscription"])
-        log.info(
+        logger.info(
             f"Schedule created for customer "
             f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}",
             extra=dict(
@@ -102,7 +100,7 @@ class StripeWebhookHandler(APIView):
                 list(stripe_plan_dict.values()).index(plan_id)
             ]
             quantity = scheduled_plan["quantity"]
-            log.info(
+            logger.info(
                 f"Schedule updated for customer "
                 f"with -- plan: {plan_name}, quantity {quantity}",
                 extra=dict(
@@ -124,7 +122,7 @@ class StripeWebhookHandler(APIView):
             name=subscription.plan.name, user_count=subscription.quantity
         )
 
-        log.info(
+        logger.info(
             f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}",
             extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id),
         )
@@ -134,11 +132,11 @@ class StripeWebhookHandler(APIView):
         # in this event we cannot reliably create a customer,
         # so we're just logging that we created the event and
         # relying on customer.subscription.created to handle sub creation
-        log.info("Customer created", extra=dict(stripe_customer_id=customer.id))
+        logger.info("Customer created", extra=dict(stripe_customer_id=customer.id))
 
     def customer_subscription_created(self, subscription):
         if not subscription.plan.id:
-            log.warning(
+            logger.warning(
                 "Subscription created missing plan id, exiting",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
@@ -148,7 +146,7 @@ class StripeWebhookHandler(APIView):
             return
 
         if subscription.plan.name not in PAID_PLANS:
-            log.warning(
+            logger.warning(
                 f"Subscription creation requested for invalid plan "
                 f"'{subscription.plan.name}' -- doing nothing",
                 extra=dict(
@@ -158,7 +156,7 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        log.info(
+        logger.info(
             f"Subscription created for customer "
             f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}",
             extra=dict(
@@ -200,7 +198,7 @@ class StripeWebhookHandler(APIView):
         # Only update if there isn't a scheduled subscription
         if not subscription_schedule_id:
             if subscription.status == "incomplete_expired":
-                log.info(
+                logger.info(
                     f"Subscription updated with status change "
                     f"to 'incomplete_expired' -- cancelling to free",
                     extra=dict(stripe_subscription_id=subscription.id),
@@ -212,14 +210,14 @@ class StripeWebhookHandler(APIView):
                 return
             # TODO: we can delete this if statement if we confirm there aren't any PAID_PLANS out there
             if subscription.plan.name not in PAID_PLANS:
-                log.warning(
+                logger.warning(
                     f"Subscription update requested with invalid plan "
                     f"{subscription.plan.name} -- doing nothing",
                     extra=dict(stripe_subscription_id=subscription.id),
                 )
                 return
 
-            log.info(
+            logger.info(
                 f"Subscription updated with -- "
                 f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
                 extra=dict(stripe_subscription_id=subscription.id),
@@ -228,7 +226,7 @@ class StripeWebhookHandler(APIView):
             plan_service.update_plan(
                 name=subscription.plan.name, user_count=subscription.quantity
             )
-            log.info("Successfully updated info for 1 customer")
+            logger.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
         new_default_payment_method = customer["invoice_settings"][
@@ -237,7 +235,7 @@ class StripeWebhookHandler(APIView):
         for subscription in customer.get("subscriptions", {}).get("data", []):
             if new_default_payment_method == subscription["default_payment_method"]:
                 continue
-            log.info(
+            logger.info(
                 "Customer updated their payment method, updating the subscription payment as well",
                 extra=dict(
                     customer_id=customer["id"], subscription_id=subscription["id"]
@@ -248,7 +246,7 @@ class StripeWebhookHandler(APIView):
             )
 
     def checkout_session_completed(self, checkout_session):
-        log.info(
+        logger.info(
             "Checkout session completed",
             extra=dict(ownerid=checkout_session.client_reference_id),
         )
@@ -263,7 +261,7 @@ class StripeWebhookHandler(APIView):
                 0
             ]["plan"]["name"]
         except:
-            log.warning(
+            logger.warning(
                 "Could not find plan in checkout.session.completed event",
                 extra=dict(ownerid=checkout_session.client_reference_id),
             )
@@ -272,7 +270,7 @@ class StripeWebhookHandler(APIView):
 
     def post(self, request, *args, **kwargs):
         if settings.STRIPE_ENDPOINT_SECRET is None:
-            log.critical(
+            logger.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."
             )
         try:
@@ -282,16 +280,18 @@ class StripeWebhookHandler(APIView):
                 settings.STRIPE_ENDPOINT_SECRET,
             )
         except stripe.error.SignatureVerificationError as e:
-            log.warning(f"Stripe webhook event received with invalid signature -- {e}")
+            logger.warning(
+                f"Stripe webhook event received with invalid signature -- {e}"
+            )
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
         if self.event.type not in StripeWebhookEvents.subscribed_events:
-            log.warning(
+            logger.warning(
                 f"Unsupported Stripe webhook event received, exiting",
                 extra=dict(stripe_webhook_event=self.event.type),
             )
             return Response("Unsupported event type", status=204)
 
-        log.info(
+        logger.info(
             f"Stripe webhook event received",
             extra=dict(stripe_webhook_event=self.event.type),
         )

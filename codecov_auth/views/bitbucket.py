@@ -1,6 +1,6 @@
 import asyncio
 import base64
-import logging
+from loguru import logger
 from urllib.parse import urlencode
 
 from asgiref.sync import async_to_sync
@@ -13,8 +13,6 @@ from shared.torngit.exceptions import TorngitServerFailureError
 
 from codecov_auth.views.base import LoginMixin
 from utils.encryption import encryptor
-
-log = logging.getLogger(__name__)
 
 
 class BitbucketLoginView(View, LoginMixin):
@@ -82,7 +80,7 @@ class BitbucketLoginView(View, LoginMixin):
         oauth_verifier = request.GET.get("oauth_verifier")
         request_cookie = request.get_signed_cookie("_oauth_request_token", default=None)
         if not request_cookie:
-            log.warning(
+            logger.warning(
                 "Request arrived with proper url params but not the proper cookies"
             )
             return redirect(reverse("bitbucket-login"))
@@ -102,7 +100,7 @@ class BitbucketLoginView(View, LoginMixin):
         response = redirect(redirection_url)
         response.delete_cookie("_oauth_request_token", domain=settings.COOKIES_DOMAIN)
         self.login_owner(user, request, response)
-        log.info("User successfully logged in", extra=dict(ownerid=user.ownerid))
+        logger.info("User successfully logged in", extra=dict(ownerid=user.ownerid))
         return response
 
     def get(self, request):
@@ -111,11 +109,11 @@ class BitbucketLoginView(View, LoginMixin):
 
         try:
             if request.GET.get("oauth_verifier"):
-                log.info("Logging into bitbucket after authorization")
+                logger.info("Logging into bitbucket after authorization")
                 return self.actual_login_step(request)
             else:
-                log.info("Redirecting user to bitbucket for authorization")
+                logger.info("Redirecting user to bitbucket for authorization")
                 return self.redirect_to_bitbucket_step(request)
         except TorngitServerFailureError:
-            log.warning("Bitbucket not available for login")
+            logger.warning("Bitbucket not available for login")
             return redirect(reverse("bitbucket-login"))

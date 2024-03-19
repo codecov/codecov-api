@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from os import getenv
 from typing import Callable, Dict, Optional
 
@@ -16,8 +16,6 @@ from codecov_auth.models import (
 from core.models import Repository
 from utils.config import get_config
 from utils.encryption import encryptor
-
-log = logging.getLogger(__name__)
 
 
 class TorngitInitializationFailed(Exception):
@@ -42,7 +40,7 @@ def get_token_refresh_callback(
 
     @sync_to_async
     def callback(new_token: Dict) -> None:
-        log.info(
+        logger.info(
             "Saving new token after refresh",
             extra=dict(owner=owner.username, ownerid=owner.ownerid),
         )

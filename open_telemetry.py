@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger
 import os
 import re
 from datetime import datetime
@@ -20,8 +20,6 @@ from opentelemetry.sdk.trace.export import (
 )
 
 from utils.version import get_current_version
-
-log = logging.getLogger(__name__)
 
 
 class CodecovExporter(SpanExporter):
@@ -167,7 +165,7 @@ class CodecovExporter(SpanExporter):
 def instrument():
     provider = TracerProvider()
     trace.set_tracer_provider(provider)
-    log.info("Configuring opentelemetry exporter")
+    logger.info("Configuring opentelemetry exporter")
     current_version = get_current_version()
     current_env = "production"
     try:
@@ -190,5 +188,5 @@ def instrument():
         provider.add_span_processor(generator)
         provider.add_span_processor(BatchSpanProcessor(exporter))
     except UnableToStartProcessorException:
-        log.warning("Unable to start codecov open telemetry")
+        logger.warning("Unable to start codecov open telemetry")
     DjangoInstrumentor().instrument()

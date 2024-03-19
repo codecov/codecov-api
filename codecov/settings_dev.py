@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from .settings_base import *
 

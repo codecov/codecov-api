@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.conf import settings
 from django.utils import timezone
@@ -11,8 +11,6 @@ from codecov_auth.authentication.types import (
     SuperUser,
 )
 from codecov_auth.models import UserToken
-
-log = logging.getLogger(__name__)
 
 
 class UserTokenAuthentication(authentication.TokenAuthentication):

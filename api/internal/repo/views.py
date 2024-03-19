@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import uuid
 
 from django.utils import timezone
@@ -23,8 +23,6 @@ from .serializers import (
     SecretStringPayloadSerializer,
 )
 from .utils import encode_secret_string
-
-log = logging.getLogger(__name__)
 
 
 class RepositoryViewSet(

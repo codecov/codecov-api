@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import re
 import uuid
 from functools import reduce
@@ -20,8 +20,6 @@ from services.refresh import RefreshService
 from utils.config import get_config
 from utils.encryption import encryptor
 from utils.services import get_long_service_name, get_short_service_name
-
-log = logging.getLogger(__name__)
 
 
 class StateMixin(object):
@@ -135,7 +133,7 @@ class StateMixin(object):
         state_from_session = self.request.session.get(self._session_key(), None)
         state_matches_session = state_from_session and state == state_from_session
         if not state_matches_session:
-            log.warning(
+            logger.warning(
                 "Warning: login request is missing state or has disagreeing state"
             )
             return (
@@ -209,12 +207,12 @@ class LoginMixin(object):
                     # assign the owner to the currently authenticated user
                     owner.user = request.user
                     owner.save()
-                    log.info(
+                    logger.info(
                         "User claimed owner",
                         extra=dict(user_id=request.user.pk, ownerid=owner.ownerid),
                     )
             elif request.user != owner.user:
-                log.warning(
+                logger.warning(
                     "Owner already linked to another user",
                     extra=dict(user_id=request.user.pk, ownerid=owner.ownerid),
                 )
@@ -241,7 +239,7 @@ class LoginMixin(object):
                 owner.save()
 
             login(request, current_user)
-            log.info(
+            logger.info(
                 "User logged in",
                 extra=dict(user_id=request.user.pk, ownerid=owner.ownerid),
             )
@@ -282,7 +280,7 @@ class LoginMixin(object):
             fields_to_update.extend(["organizations"])
 
         if owner.bot is not None:
-            log.info(
+            logger.info(
                 "Clearing user bot field",
                 extra=dict(ownerid=owner.ownerid, old_bot=owner.bot),
             )

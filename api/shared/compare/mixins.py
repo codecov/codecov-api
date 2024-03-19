@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from typing import Optional
 
 from rest_framework import mixins, viewsets
@@ -26,8 +26,6 @@ from .serializers import (
     ImpactedFilesComparisonSerializer,
     ImpactedFileSegmentsSerializer,
 )
-
-log = logging.getLogger(__name__)
 
 
 class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
@@ -78,7 +76,7 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
             )
             new_comparison.save()
             TaskService().compute_comparison(new_comparison.pk)
-            log.info(
+            logger.info(
                 "CommitComparison not found, creating and request to compute new entry"
             )
             return new_comparison

@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger
 from typing import Optional
 
 import jwt
@@ -8,8 +8,6 @@ from django.db.utils import IntegrityError
 
 from codecov_auth.models import Owner
 from services.task import TaskService
-
-log = logging.getLogger(__name__)
 
 
 class SentryError(Exception):
@@ -52,14 +50,14 @@ def decode_state(state: str) -> Optional[SentryState]:
         return SentryState(data)
     except jwt.exceptions.InvalidSignatureError:
         # signed with a different secret
-        log.error(
+        logger.error(
             "Sentry state has invalid signature",
             extra=dict(sentry_state=state),
         )
         return None
     except jwt.exceptions.DecodeError:
         # malformed JWT
-        log.error(
+        logger.error(
             "Sentry state is malformed",
             extra=dict(sentry_state=state),
         )
@@ -72,7 +70,7 @@ def save_sentry_state(owner: Owner, encoded_state: str):
     """
     decoded_state = decode_state(encoded_state)
     if decoded_state is None:
-        log.error(
+        logger.error(
             "Invalid Sentry state",
             extra=dict(owner_id=owner.pk, sentry_state=encoded_state),
         )
@@ -85,7 +83,7 @@ def save_sentry_state(owner: Owner, encoded_state: str):
     try:
         owner.save()
     except IntegrityError:
-        log.error(
+        logger.error(
             "Sentry user already exists",
             extra=dict(
                 owner_id=owner.pk,
@@ -111,7 +109,7 @@ def send_user_webhook(user: Owner, org: Owner):
 
     webhook_url = settings.SENTRY_USER_WEBHOOK_URL
     if webhook_url is None:
-        log.warning("No Sentry webhook URL is configured")
+        logger.warning("No Sentry webhook URL is configured")
         return
 
     state = {

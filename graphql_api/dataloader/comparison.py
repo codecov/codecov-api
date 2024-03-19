@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from codecov.db import sync_to_async
 from compare.models import CommitComparison
@@ -9,7 +9,6 @@ from services.task import TaskService
 from .commit import CommitLoader
 from .loader import BaseLoader
 
-log = logging.getLogger(__name__)
 
 comparison_table = CommitComparison._meta.db_table
 commit_table = Commit._meta.db_table
@@ -98,7 +97,7 @@ class ComparisonLoader(BaseLoader):
             # We've been seeing some instances of commit comparisons being created but no
             # corresponding compute comparisons task being enqueued.
             # Not sure why this would happen but curious to see if we see this line in the logs
-            log.warning(
+            logger.warning(
                 "Failed to refetch all commit comparisons",
                 extra=dict(
                     created_count=len(comparisons),

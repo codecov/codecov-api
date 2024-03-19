@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 
 import requests
@@ -6,8 +6,6 @@ from requests.exceptions import ConnectionError, HTTPError
 from rest_framework.exceptions import NotFound
 
 from upload.tokenless.base import BaseTokenlessUploadHandler
-
-log = logging.getLogger(__name__)
 
 
 class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
@@ -20,7 +18,7 @@ class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
                 headers={"Accept": "application/json", "User-Agent": "Codecov"},
             )
         except (ConnectionError, HTTPError) as e:
-            log.warning(
+            logger.warning(
                 f"HTTP error {e}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),

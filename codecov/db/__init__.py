@@ -1,11 +1,9 @@
-import logging
+from loguru import logger
 
 from asgiref.sync import SyncToAsync
 from django.conf import settings
 from django.db import close_old_connections
 from django.db.models import Field, Lookup
-
-log = logging.getLogger(__name__)
 
 
 class DatabaseRouter:
@@ -36,10 +34,10 @@ class DatabaseRouter:
         if (
             db == "timeseries" or db == "timeseries_read"
         ) and not settings.TIMESERIES_ENABLED:
-            log.warning("Skipping timeseries migration")
+            logger.warning("Skipping timeseries migration")
             return False
         if db == "default_read" or db == "timeseries_read":
-            log.warning("Skipping migration of read-only database")
+            logger.warning("Skipping migration of read-only database")
             return False
         if app_label == "timeseries":
             return db == "timeseries"

@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 from json import load
 
@@ -8,8 +8,6 @@ from rest_framework.exceptions import NotFound
 
 from upload.constants import errors
 from upload.tokenless.base import BaseTokenlessUploadHandler
-
-log = logging.getLogger(__name__)
 
 
 class TokenlessTravisHandler(BaseTokenlessUploadHandler):
@@ -26,7 +24,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                 == f"{self.upload_params['owner']}/{self.upload_params['repo']}"
             )
         except (ConnectionError, HTTPError) as e:
-            log.warning(
+            logger.warning(
                 f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params["commit"],
@@ -37,7 +35,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             )
             pass
         except Exception as e:
-            log.warning(
+            logger.warning(
                 f"Error {e}",
                 extra=dict(
                     commit=self.upload_params["commit"],
@@ -49,7 +47,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
 
         # if job not found in travis.com try travis.org
         if not travis_dot_com:
-            log.info(
+            logger.info(
                 f"Unable to verify using travis.com, trying travis.org",
                 extra=dict(
                     commit=self.upload_params["commit"],
@@ -66,7 +64,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                     headers={"Travis-API-Version": "3", "User-Agent": "Codecov"},
                 )
             except (ConnectionError, HTTPError) as e:
-                log.warning(
+                logger.warning(
                     f"Request error {e}",
                     extra=dict(
                         commit=self.upload_params["commit"],
@@ -104,7 +102,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             or job["commit"]["sha"] != self.upload_params["commit"]
             and job["build"]["event_type"] != "pull_request"
         ):
-            log.warning(
+            logger.warning(
                 f"Repository slug: {slug} or commit sha: {self.upload_params['commit']} do not match travis arguments",
                 extra=dict(
                     commit=self.upload_params["commit"],
@@ -124,7 +122,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)
             now = datetime.utcnow()
             if not now <= finishTimeWithBuffer:
-                log.warning(
+                logger.warning(
                     f"Cancelling upload: 4 mins since build",
                     extra=dict(
                         commit=self.upload_params["commit"],
@@ -137,7 +135,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
         else:
             # check if current state is correct (i.e not finished)
             if job["state"] != "started":
-                log.warning(
+                logger.warning(
                     f"Cancelling upload: job state does not indicate that build is in progress",
                     extra=dict(
                         commit=self.upload_params["commit"],
@@ -148,7 +146,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                 )
                 raise NotFound(errors["travis"]["tokenless-bad-status"])
 
-        log.info(
+        logger.info(
             f"Finished travis tokenless upload",
             extra=dict(
                 commit=self.upload_params["commit"],

@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import uuid
 
 from django.utils import timezone
@@ -23,8 +23,6 @@ from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_
 from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
-
-log = logging.getLogger(__name__)
 
 
 class UploadTestResultsPermission(BasePermission):
@@ -122,7 +120,7 @@ class TestResultsView(
             "report_code": None,
         }
 
-        log.info(
+        logger.info(
             "Dispatching test results upload to worker",
             extra=dict(
                 commit=commit.commitid,

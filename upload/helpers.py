@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import re
 from datetime import timedelta
 from json import dumps
@@ -44,7 +44,7 @@ from .constants import ci, global_upload_token_providers
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 
-log = logging.getLogger(__name__)
+
 redis = get_redis_connection()
 
 
@@ -175,9 +175,7 @@ def parse_params(data):
                     else (
                         value[7:]
                         if value[:7] == "origin/"
-                        else value[11:]
-                        if value[:11] == "refs/heads/"
-                        else value
+                        else value[11:] if value[:11] == "refs/heads/" else value
                     )
                 ),
             ),
@@ -372,7 +370,7 @@ def try_to_get_best_possible_bot_token(repository):
             )
             return dict(key=github_token)
         except InvalidInstallationError:
-            log.warning(
+            logger.warning(
                 "Invalid installation error",
                 extra=dict(
                     service=repository.author.service,
@@ -382,7 +380,7 @@ def try_to_get_best_possible_bot_token(repository):
             # now we'll fallback to trying an OAuth token
     service = repository.author.service
     if repository.bot is not None and repository.bot.oauth_token is not None:
-        log.info(
+        logger.info(
             "Repo has specific bot",
             extra=dict(repoid=repository.repoid, botid=repository.bot.ownerid),
         )
@@ -391,7 +389,7 @@ def try_to_get_best_possible_bot_token(repository):
         repository.author.bot is not None
         and repository.author.bot.oauth_token is not None
     ):
-        log.info(
+        logger.info(
             "Repo Owner has specific bot",
             extra=dict(
                 repoid=repository.repoid,
@@ -401,13 +399,13 @@ def try_to_get_best_possible_bot_token(repository):
         )
         return encryptor.decrypt_token(repository.author.bot.oauth_token)
     if repository.author.oauth_token is not None:
-        log.info(
+        logger.info(
             "Using repository owner as bot fallback",
             extra=dict(repoid=repository.repoid, ownerid=repository.author.ownerid),
         )
         return encryptor.decrypt_token(repository.author.oauth_token)
     if not repository.private:
-        log.info(
+        logger.info(
             "Using tokenless bot as bot fallback",
             extra=dict(repoid=repository.repoid, ownerid=repository.author.ownerid),
         )
@@ -444,13 +442,13 @@ def determine_upload_commit_to_use(upload_params, repository):
                 adapter, upload_params.get("commit"), token
             )
         except TorngitObjectNotFoundError as e:
-            log.warning(
+            logger.warning(
                 "Unable to fetch commit. Not found",
                 extra=dict(commit=upload_params.get("commit")),
             )
             return upload_params.get("commit")
         except TorngitClientError as e:
-            log.warning(
+            logger.warning(
                 "Unable to fetch commit", extra=dict(commit=upload_params.get("commit"))
             )
             return upload_params.get("commit")
@@ -461,7 +459,7 @@ def determine_upload_commit_to_use(upload_params, repository):
         if is_merge_commit:
             # If the commit message says "Merge A into B", we'll extract A and use that as the commitid for this upload
             new_commit_id = git_commit_message.split(" ")[1]
-            log.info(
+            logger.info(
                 "Upload is for a merge commit, updating commit id for upload",
                 extra=dict(
                     commit=upload_params.get("commit"),
@@ -529,7 +527,7 @@ def check_commit_upload_constraints(commit: Commit):
             ).exists()
             if not did_commit_uploads_start_already:
                 if get_uploads_used(redis, plan_service, limit, owner) >= limit:
-                    log.warning(
+                    logger.warning(
                         "User exceeded its limits for usage",
                         extra=dict(ownerid=owner.ownerid, repoid=commit.repository_id),
                     )
@@ -563,7 +561,7 @@ def validate_upload(upload_params, repository, redis):
         current_upload_limit = get_config("setup", "max_sessions") or 150
         if new_session_count > current_upload_limit:
             if session_count <= current_upload_limit:
-                log.info(
+                logger.info(
                     "Old session count would not have blocked this upload",
                     extra=dict(
                         commit=upload_params.get("commit"),
@@ -573,7 +571,7 @@ def validate_upload(upload_params, repository, redis):
                         new_session_count=new_session_count,
                     ),
                 )
-            log.warning(
+            logger.warning(
                 "Too many uploads to this commit",
                 extra=dict(
                     commit=upload_params.get("commit"),
@@ -583,7 +581,7 @@ def validate_upload(upload_params, repository, redis):
             )
             raise ValidationError("Too many uploads to this commit.")
         elif session_count > current_upload_limit:
-            log.info(
+            logger.info(
                 "Old session count would block this upload",
                 extra=dict(
                     commit=upload_params.get("commit"),
@@ -758,7 +756,7 @@ def get_agent_from_headers(headers):
     try:
         return headers["User-Agent"].split("/")[0].split("-")[1]
     except Exception as e:
-        log.warning(
+        logger.warning(
             "Error getting agent from user agent header",
             extra=dict(
                 err=str(e),
@@ -772,7 +770,7 @@ def get_version_from_headers(headers):
     try:
         return headers["User-Agent"].split("/")[1]
     except Exception as e:
-        log.warning(
+        logger.warning(
             "Error getting version from user agent header",
             extra=dict(
                 err=str(e),

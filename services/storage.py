@@ -1,11 +1,9 @@
-import logging
+from loguru import logger
 from datetime import timedelta
 
 from shared.storage.minio import MinioStorageService
 
 from utils.config import get_config
-
-log = logging.getLogger(__name__)
 
 
 MINIO_CLIENT = None
@@ -41,7 +39,7 @@ class StorageService(MinioStorageService):
                 self.minio_config["iam_auth"],
                 self.minio_config["iam_endpoint"],
             )
-            log.info("----- created minio_client: ---- ")
+            logger.info("----- created minio_client: ---- ")
         self.minio_client = MINIO_CLIENT
 
     def create_presigned_put(self, bucket, path, expires):

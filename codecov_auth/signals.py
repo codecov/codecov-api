@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger
 from datetime import datetime
 
 from django.conf import settings

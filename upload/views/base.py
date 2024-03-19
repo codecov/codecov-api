@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
@@ -7,8 +7,6 @@ from codecov_auth.models import Service
 from core.models import Commit, Repository
 from reports.models import CommitReport
 from upload.views.helpers import get_repository_from_string
-
-log = logging.getLogger(__name__)
 
 
 class ShelterMixin:
@@ -30,7 +28,7 @@ class GetterMixin(ShelterMixin):
         try:
             service_enum = Service(service)
         except ValueError:
-            log.warning(
+            logger.warning(
                 f"Service not found: {service}", extra=dict(repo_slug=repo_slug)
             )
             raise ValidationError(f"Service not found: {service}")
@@ -38,7 +36,7 @@ class GetterMixin(ShelterMixin):
         repository = get_repository_from_string(service_enum, repo_slug)
 
         if not repository:
-            log.warning(
+            logger.warning(
                 "Repository not found",
                 extra=dict(repo_slug=repo_slug),
             )
@@ -53,7 +51,7 @@ class GetterMixin(ShelterMixin):
             )
             return commit
         except Commit.DoesNotExist:
-            log.warning(
+            logger.warning(
                 "Commit SHA not found",
                 extra=dict(repo=repo.name, commit_sha=commit_sha),
             )
@@ -72,7 +70,7 @@ class GetterMixin(ShelterMixin):
             queryset = queryset.filter(report_type=report_type)
         report = queryset.first()
         if report is None:
-            log.warning(
+            logger.warning(
                 "Report not found",
                 extra=dict(commit_sha=commit.commitid, report_code=report_code),
             )

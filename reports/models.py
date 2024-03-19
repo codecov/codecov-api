@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import uuid
 
 from django.contrib.postgres.fields import ArrayField
@@ -14,8 +14,6 @@ from upload.constants import ci
 from utils.config import should_write_data_to_storage_config_check
 from utils.model_utils import ArchiveField
 from utils.services import get_short_service_name
-
-log = logging.getLogger(__name__)
 
 
 class ReportType(models.TextChoices):

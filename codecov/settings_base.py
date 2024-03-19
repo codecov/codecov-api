@@ -1,5 +1,9 @@
 import os
 from urllib.parse import urlparse
+import sys
+from loguru import logger
+import logging
+from logging import __file__, Handler, LogRecord, currentframe
 
 import asgiref.sync as sync
 import sentry_sdk
@@ -329,6 +333,26 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(PROJECT_ROOT, "static")
 
+
+class InterceptHandler(Handler):
+    def emit(self, record: LogRecord):
+        # Get corresponding Loguru level if it exists
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # Find caller from where originated the logged message
+        frame, depth = logging.currentframe(), 2
+        while frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -354,9 +378,11 @@ LOGGING = {
     "handlers": {
         "default": {
             "level": "INFO",
-            "formatter": "standard"
-            if get_settings_module() == SettingsModule.DEV.value
-            else "json",
+            "formatter": (
+                "standard"
+                if get_settings_module() == SettingsModule.DEV.value
+                else "json"
+            ),
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
         },
@@ -367,14 +393,29 @@ LOGGING = {
             "stream": "ext://sys.stdout",  # Default is stderr
             "filters": ["health_check_filter"],
         },
+        "intercept": {
+            "()": InterceptHandler,
+            "level": 0,
+        },
     },
     "loggers": {
+        "": {
+            "handlers": ["intercept"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
         "gunicorn.access": {
             "level": "INFO",
             "handlers": ["json-gunicorn-console"],
-        }
+        },
     },
 }
+
+logger.remove()
+logger.add(sys.stdout, level="DEBUG", backtrace=True, colorize=True)
+logger.add(
+    "debug.log", level="DEBUG", rotation="30 MB", backtrace=True, retention="7 days"
+)
 
 MINIO_ACCESS_KEY = get_config("services", "minio", "access_key_id")
 MINIO_SECRET_KEY = get_config("services", "minio", "secret_access_key")

@@ -1,6 +1,6 @@
 import dataclasses
 import hashlib
-import logging
+from loguru import logger
 from typing import List
 
 from rest_framework import serializers
@@ -15,8 +15,6 @@ from services.comparison import (
     ImpactedFile,
     Segment,
 )
-
-log = logging.getLogger(__name__)
 
 
 class TotalsComparisonSerializer(serializers.Serializer):

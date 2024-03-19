@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 import re
 from contextlib import suppress
 from datetime import datetime
@@ -46,8 +46,6 @@ from upload.views.base import ShelterMixin
 from utils.config import get_config
 from utils.services import get_long_service_name
 
-log = logging.getLogger(__name__)
-
 
 class PlainTextRenderer(renderers.BaseRenderer):
     media_type = "text/plain"
@@ -69,9 +67,9 @@ class UploadHandler(APIView, ShelterMixin):
         response["Accept"] = "text/*"
         response["Access-Control-Allow-Origin"] = "*"
         response["Access-Control-Allow-Method"] = "POST"
-        response[
-            "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        response["Access-Control-Allow-Headers"] = (
+            "Origin, Content-Type, Accept, X-User-Agent"
+        )
 
         return response
 
@@ -79,7 +77,7 @@ class UploadHandler(APIView, ShelterMixin):
         # Extract the version
         version = self.kwargs["version"]
 
-        log.info(
+        logger.info(
             f"Received upload request {version}",
             extra=dict(
                 version=version,
@@ -91,9 +89,9 @@ class UploadHandler(APIView, ShelterMixin):
         # Set response headers
         response = HttpResponse()
         response["Access-Control-Allow-Origin"] = "*"
-        response[
-            "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        response["Access-Control-Allow-Headers"] = (
+            "Origin, Content-Type, Accept, X-User-Agent"
+        )
 
         # Parse request parameters
         request_params = {
@@ -114,7 +112,7 @@ class UploadHandler(APIView, ShelterMixin):
                 else:  # Matches (.+-)?uploader-
                     metrics.incr(f"upload.uploader.{match.group(5)}")
             else:
-                log.warning(
+                logger.warning(
                     "Package query parameter failed to match CLI or uploader format",
                     extra=dict(package=package),
                 )
@@ -122,7 +120,7 @@ class UploadHandler(APIView, ShelterMixin):
             # note: try to avoid mutating upload_params past this point, to make it easier to reason about the state of this variable
             upload_params = parse_params(request_params)
         except ValidationError as e:
-            log.warning(
+            logger.warning(
                 "Failed to parse upload request params",
                 extra=dict(request_params=request_params, errors=str(e)),
             )
@@ -146,7 +144,7 @@ class UploadHandler(APIView, ShelterMixin):
             metrics.incr("uploads.rejected", 1)
             return response
 
-        log.info(
+        logger.info(
             "Found repository for upload request",
             extra=dict(
                 version=version,
@@ -178,7 +176,7 @@ class UploadHandler(APIView, ShelterMixin):
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
         redis = get_redis_connection()
         validate_upload(upload_params, repository, redis)
-        log.info(
+        logger.info(
             "Upload was determined to be valid", extra=dict(repoid=repository.repoid)
         )
         # Do some processing to handle special cases for branch, pr, and commit values, and determine which values to use
@@ -188,7 +186,7 @@ class UploadHandler(APIView, ShelterMixin):
         commitid = determine_upload_commit_to_use(upload_params, repository)
 
         # Save (or update, if it exists already) the commit in the database
-        log.info(
+        logger.info(
             "Saving commit in database",
             extra=dict(
                 commit=commitid,
@@ -214,7 +212,7 @@ class UploadHandler(APIView, ShelterMixin):
 
         # v2 - store request body in redis
         if version == "v2":
-            log.info(
+            logger.info(
                 "Started V2 upload",
                 extra=dict(
                     commit=commitid,
@@ -226,7 +224,7 @@ class UploadHandler(APIView, ShelterMixin):
             )
             redis_key = store_report_in_redis(request, commitid, reportid, redis)
 
-            log.info(
+            logger.info(
                 "Stored coverage report in redis",
                 extra=dict(
                     commit=commitid,
@@ -252,7 +250,7 @@ class UploadHandler(APIView, ShelterMixin):
         # v4 - generate presigned PUT url
         minio = get_config("services", "minio") or {}
         if minio and version == "v4":
-            log.info(
+            logger.info(
                 "Started V4 upload",
                 extra=dict(
                     commit=commitid,
@@ -284,7 +282,7 @@ class UploadHandler(APIView, ShelterMixin):
                     commit_sha=commitid, filename="{}.txt".format(reportid)
                 )
             except Exception as e:
-                log.warning(
+                logger.warning(
                     f"Error generating minio presign put {e}",
                     extra=dict(
                         commit=commitid,
@@ -296,7 +294,7 @@ class UploadHandler(APIView, ShelterMixin):
                 )
                 metrics.incr("uploads.rejected", 1)
                 return HttpResponseServerError("Unknown error, please try again later")
-            log.info(
+            logger.info(
                 "Returning presign put",
                 extra=dict(
                     commit=commitid, repoid=repository.repoid, upload_url=upload_url
@@ -335,7 +333,7 @@ class UploadHandler(APIView, ShelterMixin):
             "pr": pr,
         }
 
-        log.info(
+        logger.info(
             "Dispatching upload to worker (new upload)",
             extra=dict(
                 commit=commitid, task_arguments=task_arguments, repoid=repository.repoid

@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 
 from asgiref.sync import async_to_sync
 from django.conf import settings
@@ -10,8 +10,6 @@ from webhook_handlers.constants import (
     GitHubWebhookEvents,
     GitLabWebhookEvents,
 )
-
-log = logging.getLogger(__name__)
 
 
 WEBHOOK_EVENTS = {
@@ -47,7 +45,7 @@ def create_webhook_on_provider(repository_service, repo):
 
     webhook_url = settings.WEBHOOK_URL
 
-    log.info(
+    logger.info(
         "Resetting webhook with webhook url: %s"
         % f"{webhook_url}/webhooks/{repository_service.service}"
     )

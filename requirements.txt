@@ -231,6 +231,8 @@ jsonschema==4.14.0
     # via drf-spectacular
 kombu==5.2.4
     # via celery
+loguru==0.7.2
+    # via -r requirements.in
 minio==7.1.13
     # via
     #   -r requirements.in

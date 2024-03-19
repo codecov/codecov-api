@@ -1,9 +1,7 @@
-import logging
+from loguru import logger
 
 from codecov.commands.base import BaseInteractor
 from services.repo_providers import RepoProviderService
-
-log = logging.getLogger(__name__)
 
 
 class GetFileContentInteractor(BaseInteractor):
@@ -21,7 +19,7 @@ class GetFileContentInteractor(BaseInteractor):
             return content.get("content").decode("utf-8")
         # TODO raise this to the API so we can handle it.
         except Exception:
-            log.exception(
+            logger.exception(
                 "GetFileContentInteractor - exception raised",
                 extra=dict(commitid=commit.commitid),
             )

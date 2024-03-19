@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 from urllib.parse import urlencode, urljoin
 from uuid import uuid4
 
@@ -12,8 +12,6 @@ from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitError
 
 from codecov_auth.views.base import LoginMixin, StateMixin
-
-log = logging.getLogger(__name__)
 
 
 class GitlabLoginView(LoginMixin, StateMixin, View):
@@ -67,7 +65,7 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         try:
             user_dict = self.fetch_user_data(request, code)
         except TorngitError:
-            log.warning("Unable to log in due to problem on Gitlab", exc_info=True)
+            logger.warning("Unable to log in due to problem on Gitlab", exc_info=True)
             return redirect(self.error_redirection_page)
         user = self.get_and_modify_owner(user_dict, request)
         redirection_url, is_valid = self.get_redirection_url_from_state(state)

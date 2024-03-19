@@ -1,4 +1,5 @@
-import logging
+import sys
+from loguru import logger
 import time
 
 import redis_lock
@@ -9,8 +10,6 @@ from django.db import connections
 from django.db.utils import IntegrityError, ProgrammingError
 
 from services.redis_configuration import get_redis_connection
-
-log = logging.getLogger(__name__)
 
 MIGRATION_LOCK_NAME = "djang-migrations-lock"
 
@@ -74,7 +73,7 @@ class Command(MigrateCommand):
         lock = redis_lock.Lock(
             redis_connection, MIGRATION_LOCK_NAME, expire=180, auto_renewal=True
         )
-        log.info("Trying to acquire migrations lock...")
+        logger.info("Trying to acquire migrations lock...")
         acquired = lock.acquire(timeout=180)
 
         if not acquired:
@@ -83,7 +82,7 @@ class Command(MigrateCommand):
         return lock
 
     def handle(self, *args, **options):
-        log.info("Codecov is starting migrations...")
+        logger.info("Codecov is starting migrations...")
         database = options["database"]
         db_connection = connections[database]
         options["run_syncdb"] = False
@@ -92,7 +91,7 @@ class Command(MigrateCommand):
 
         # Failed to acquire lock due to timeout
         if not lock:
-            log.error("Potential deadlock detected in api migrations.")
+            logger.error("Potential deadlock detected in api migrations.")
             raise Exception("Failed to obtain lock for api migration.")
 
         try:
@@ -101,9 +100,9 @@ class Command(MigrateCommand):
 
             super().handle(*args, **options)
         except:
-            log.info("Codecov migrations failed.")
+            logger.error("Codecov migrations failed.")
             raise
         else:
-            log.info("Codecov migrations succeeded.")
+            logger.debug("Codecov migrations succeeded.")
         finally:
             lock.release()

@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 
 from django.conf import settings
@@ -13,7 +13,7 @@ from reports.models import ReportSession, ReportType
 from user_measurements.models import UserMeasurement
 from utils.config import get_config
 
-log = logging.getLogger(__name__)
+
 # default 6 hours for now
 cache_time = get_config("setup", "upload_usage_cache_time", default=21600)
 
@@ -31,7 +31,7 @@ def get_uploads_used(redis, plan_service, limit, owner):
             uploads_used = int(uploads_used)
 
     except OSError as e:
-        log.warning(
+        logger.warning(
             f"Error connecting to redis for rate limit check: {e}",
             extra=dict(owner=owner.ownerid),
         )
@@ -44,7 +44,7 @@ def set_uploads_used(redis, owner, uploads_used):
         cache_key = f"monthly_upload_usage_{owner.ownerid}"
         redis.set(cache_key, uploads_used, ex=cache_time)
     except OSError as e:
-        log.warning(
+        logger.warning(
             f"Error connecting to redis for rate limit check: {e}",
             extra=dict(owner=owner.ownerid),
         )
@@ -58,7 +58,7 @@ def increment_uploads_used(redis, owner):
             redis.set(cache_key, int(uploads_used) + 1, ex=cache_time)
             # If cache is not already set, we could query here but I would rather defer that to the next request
     except OSError as e:
-        log.warning(
+        logger.warning(
             f"Error connecting to redis for rate limit check: {e}",
             extra=dict(owner=owner.ownerid),
         )

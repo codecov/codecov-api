@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from dataclasses import asdict
 
 from django.db.models import F
@@ -22,8 +22,6 @@ from .serializers import (
     StripeInvoiceSerializer,
     UserSerializer,
 )
-
-log = logging.getLogger(__name__)
 
 
 class OwnerViewSet(OwnerViewSetMixin, mixins.RetrieveModelMixin):

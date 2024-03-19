@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger
 import os
 import shutil
 import socket
@@ -17,8 +17,6 @@ from codecov.db import sync_to_async
 from services import ServiceException
 
 from .schema import schema
-
-log = logging.getLogger(__name__)
 
 
 class RequestFinalizer:
@@ -48,7 +46,7 @@ class RequestFinalizer:
                         if os.path.isfile(file_path) or os.path.islink(file_path):
                             os.unlink(file_path)
                     except Exception as e:
-                        log.info(
+                        logger.info(
                             "Failed to delete temp file",
                             extra={"file_path": file_path, "exc": e},
                         )
@@ -88,7 +86,11 @@ class AsyncGraphqlView(GraphQLAsyncView):
             "request_path": request.get_full_path(),
             "request_body": req_body,
         }
-        log.info("GraphQL Request", extra=log_data)
+        logger.info("GraphQL Request", extra=log_data)
+        logger.warning("GraphQL Request", extra=log_data)
+        logger.debug("GraphQL Request", extra=log_data)
+        logger.error("GraphQL Request", extra=log_data)
+        logger.critical("GraphQL Request", extra=log_data)
 
         # request.user = await get_user(request) or AnonymousUser()
         with RequestFinalizer(request):
@@ -118,7 +120,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             formatted["type"] = type(original_error).__name__
         else:
             # otherwise it's not supposed to happen, so we log it
-            log.error("GraphQL internal server error", exc_info=original_error)
+            logger.error("GraphQL internal server error", exc_info=original_error)
             capture_exception(original_error)
         return formatted
 

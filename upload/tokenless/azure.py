@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 
 import requests
@@ -7,8 +7,6 @@ from rest_framework.exceptions import NotFound
 from simplejson import JSONDecodeError
 
 from upload.tokenless.base import BaseTokenlessUploadHandler
-
-log = logging.getLogger(__name__)
 
 
 class TokenlessAzureHandler(BaseTokenlessUploadHandler):
@@ -19,7 +17,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 headers={"Accept": "application/json", "User-Agent": "Codecov"},
             )
         except (ConnectionError, HTTPError) as e:
-            log.warning(
+            logger.warning(
                 f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
@@ -38,8 +36,8 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             )
         try:
             build = response.json()
-        except (JSONDecodeError) as e:
-            log.warning(
+        except JSONDecodeError as e:
+            logger.warning(
                 f"Expected JSON in Azure response, got error {e} instead",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
@@ -98,7 +96,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
         build["buildNumber"] = build["buildNumber"].replace("+", " ")
         self.upload_params["build"] = self.upload_params.get("build").replace("+", " ")
         if build["buildNumber"] != self.upload_params.get("build"):
-            log.warning(
+            logger.warning(
                 f"Azure build numbers do not match. Upload build number: {self.upload_params.get('build')}, Azure build number: {self.upload_params.get('buildNumber')}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
@@ -116,7 +114,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             build.get("triggerInfo", {}).get("pr.sourceSha")
             != self.upload_params.get("commit")
         ):
-            log.warning(
+            logger.warning(
                 "Commit sha does not match Azure build",
                 extra=dict(
                     commit=self.upload_params.get("commit"),

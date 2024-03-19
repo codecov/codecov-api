@@ -23,6 +23,7 @@ https://github.com/codecov/shared/archive/6dfe609b556f6bdfc2c4e4bb8d5b557233c2da
 google-cloud-pubsub
 gunicorn
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
+loguru
 minio
 opentelemetry-instrumentation-django>=0.41b0
 opentelemetry-sdk>=1.20.0

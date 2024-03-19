@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from typing import Dict, Optional
 from urllib.parse import urlencode
 
@@ -13,8 +13,6 @@ from django.views import View
 from codecov_auth.models import SentryUser, User
 from codecov_auth.views.base import LoginMixin
 from utils.services import get_short_service_name
-
-log = logging.getLogger(__name__)
 
 
 OAUTH_AUTHORIZE_URL = "https://sentry.io/oauth/authorize"
@@ -62,7 +60,7 @@ class SentryLoginView(LoginMixin, View):
             )
 
             if id_payload["iss"] != "https://sentry.io":
-                log.warning(
+                logger.warning(
                     "Invalid issuer of OIDC ID token",
                     exc_info=True,
                     extra=dict(
@@ -74,7 +72,7 @@ class SentryLoginView(LoginMixin, View):
             return True
         except jwt.exceptions.InvalidSignatureError:
             id_payload = jwt.decode(id_token, options={"verify_signature": False})
-            log.warning(
+            logger.warning(
                 "Unable to verify signature of OIDC ID token",
                 exc_info=True,
                 extra=dict(
@@ -87,7 +85,7 @@ class SentryLoginView(LoginMixin, View):
         code = request.GET.get("code")
         user_data = self._fetch_user_data(code)
         if user_data is None:
-            log.warning("Unable to log in due to problem on Sentry", exc_info=True)
+            logger.warning("Unable to log in due to problem on Sentry", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
         if not self._verify_id_token(user_data["id_token"]):
@@ -118,7 +116,7 @@ class SentryLoginView(LoginMixin, View):
             current_user = request.user
 
             if sentry_user and sentry_user.user != request.user:
-                log.warning(
+                logger.warning(
                     "Sentry account already linked to another user",
                     extra=dict(
                         current_user_id=request.user.pk, sentry_user_id=sentry_user.pk
@@ -131,7 +129,7 @@ class SentryLoginView(LoginMixin, View):
         else:
             # we're not authenticated
             if sentry_user:
-                log.info(
+                logger.info(
                     "Existing Sentry user logging in",
                     extra=dict(sentry_user_id=sentry_user.pk),
                 )
@@ -151,7 +149,7 @@ class SentryLoginView(LoginMixin, View):
                 access_token=user_data["access_token"],
                 refresh_token=user_data["refresh_token"],
             )
-            log.info(
+            logger.info(
                 "Created Sentry user",
                 extra=dict(sentry_user_id=sentry_user.pk),
             )

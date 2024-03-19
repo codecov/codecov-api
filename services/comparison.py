@@ -2,7 +2,7 @@ import asyncio
 import copy
 import functools
 import json
-import logging
+from loguru import logger
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -27,8 +27,6 @@ from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
 from utils.config import get_config
-
-log = logging.getLogger(__name__)
 
 
 redis = get_redis_connection()
@@ -333,12 +331,16 @@ class LineComparison:
     @property
     def coverage(self):
         return {
-            "base": None
-            if self.added or not self.base_line
-            else line_type(self.base_line[0]),
-            "head": None
-            if self.removed or not self.head_line
-            else line_type(self.head_line[0]),
+            "base": (
+                None
+                if self.added or not self.base_line
+                else line_type(self.base_line[0])
+            ),
+            "head": (
+                None
+                if self.removed or not self.head_line
+                else line_type(self.head_line[0])
+            ),
         }
 
     @cached_property
@@ -363,7 +365,7 @@ class LineComparison:
             return None
 
         hit_count = 0
-        for (id, coverage, *rest) in self.head_line_sessions:
+        for id, coverage, *rest in self.head_line_sessions:
             if line_type(coverage) == LineType.hit:
                 hit_count += 1
         if hit_count > 0:
@@ -375,7 +377,7 @@ class LineComparison:
             return None
 
         ids = []
-        for (id, coverage, *rest) in self.head_line_sessions:
+        for id, coverage, *rest in self.head_line_sessions:
             if line_type(coverage) == LineType.hit:
                 ids.append(id)
         if len(ids) > 0:
@@ -604,9 +606,11 @@ class FileComparison:
             FileComparisonTraverseManager(
                 head_file_eof=self.head_file.eof if self.head_file is not None else 0,
                 base_file_eof=self.base_file.eof if self.base_file is not None else 0,
-                segments=self.diff_data["segments"]
-                if self.diff_data and "segments" in self.diff_data
-                else [],
+                segments=(
+                    self.diff_data["segments"]
+                    if self.diff_data and "segments" in self.diff_data
+                    else []
+                ),
                 src=self.src,
             ).apply([change_summary_visitor, create_lines_visitor])
 
@@ -857,12 +861,12 @@ class ImpactedFile:
         head_coverage = kwargs.pop("head_coverage")
         return cls(
             **kwargs,
-            base_coverage=ImpactedFile.Totals(**base_coverage)
-            if base_coverage
-            else None,
-            head_coverage=ImpactedFile.Totals(**head_coverage)
-            if head_coverage
-            else None,
+            base_coverage=(
+                ImpactedFile.Totals(**base_coverage) if base_coverage else None
+            ),
+            head_coverage=(
+                ImpactedFile.Totals(**head_coverage) if head_coverage else None
+            ),
         )
 
     @cached_property
@@ -1010,7 +1014,7 @@ class ComparisonReport(object):
             data = archive_service.read_file(self.commit_comparison.report_storage_path)
             return json.loads(data)
         except:
-            log.error(
+            logger.error(
                 "ComparisonReport - couldn't fetch data from storage", exc_info=True
             )
             return {}
@@ -1039,9 +1043,11 @@ class PullRequestComparison(Comparison):
         try:
             return Commit.objects.defer("_report").get(
                 repository=self.pull.repository,
-                commitid=self.pull.compared_to
-                if self.is_pseudo_comparison
-                else self.pull.base,
+                commitid=(
+                    self.pull.compared_to
+                    if self.is_pseudo_comparison
+                    else self.pull.base
+                ),
             )
         except Commit.DoesNotExist:
             raise MissingComparisonCommit("Missing base commit")
@@ -1072,13 +1078,13 @@ class PullRequestComparison(Comparison):
         try:
             key = self._files_with_changes_hash_key
             changes = json.loads(redis.get(key) or json.dumps(None))
-            log.info(
+            logger.info(
                 f"Found {len(changes) if changes else 0} files with changes in cache.",
                 extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid),
             )
             return changes
         except OSError as e:
-            log.warning(
+            logger.warning(
                 f"Error connecting to redis: {e}",
                 extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid),
             )
@@ -1089,7 +1095,7 @@ class PullRequestComparison(Comparison):
             json.dumps(files_with_changes),
             ex=86400,  # 1 day in seconds
         )
-        log.info(
+        logger.info(
             f"Stored {len(files_with_changes)} files with changes in cache",
             extra=dict(repoid=self.pull.repository.repoid, pullid=self.pull.pullid),
         )

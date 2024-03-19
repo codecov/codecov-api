@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -19,8 +19,6 @@ from webhook_handlers.constants import (
     WebhookHandlerErrorMessages,
 )
 
-log = logging.getLogger(__name__)
-
 
 class GitLabWebhookHandler(APIView):
     permission_classes = [AllowAny]
@@ -30,7 +28,7 @@ class GitLabWebhookHandler(APIView):
         event = self.request.META.get(GitLabHTTPHeaders.EVENT)
         repo = None
 
-        log.info("GitLab webhook message received", extra=dict(event=event))
+        logger.info("GitLab webhook message received", extra=dict(event=event))
 
         project_id = request.data.get("project_id") or request.data.get(
             "object_attributes", {}
@@ -122,7 +120,7 @@ class GitLabWebhookHandler(APIView):
             message = "Pull request synchronize queued"
 
         else:
-            log.warning(
+            logger.warning(
                 "Unhandled Gitlab webhook merge_request action",
                 extra=dict(action=action),
             )

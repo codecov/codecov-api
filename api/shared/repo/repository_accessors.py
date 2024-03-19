@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,8 +10,6 @@ from codecov_auth.models import Owner
 from core.models import Repository
 from services.decorators import torngit_safe
 from services.repo_providers import RepoProviderService
-
-log = logging.getLogger(__name__)
 
 
 class RepoAccessors:

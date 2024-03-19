@@ -1,11 +1,9 @@
-import logging
+from loguru import logger
 
 from django.conf import settings
 from shared.torngit import GitlabEnterprise
 
 from .gitlab import GitlabLoginView
-
-log = logging.getLogger(__name__)
 
 
 class GitlabEnterpriseLoginView(GitlabLoginView):

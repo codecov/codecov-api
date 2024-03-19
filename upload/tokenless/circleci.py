@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 
 import requests
@@ -7,8 +7,6 @@ from requests.exceptions import ConnectionError, HTTPError
 from rest_framework.exceptions import NotFound
 
 from upload.tokenless.base import BaseTokenlessUploadHandler
-
-log = logging.getLogger(__name__)
 
 
 class TokenlessCircleciHandler(BaseTokenlessUploadHandler):
@@ -24,7 +22,7 @@ class TokenlessCircleciHandler(BaseTokenlessUploadHandler):
             )
             return build.json()
         except (ConnectionError, HTTPError) as e:
-            log.warning(
+            logger.warning(
                 f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
@@ -59,7 +57,7 @@ class TokenlessCircleciHandler(BaseTokenlessUploadHandler):
         build = self.get_build()
 
         if build.get("vcs_revision", "") != self.upload_params.get("commit"):
-            log.warning(
+            logger.warning(
                 f"Failed to fetch commit from CircleCI",
                 extra=dict(
                     commit=self.upload_params.get("commit"),

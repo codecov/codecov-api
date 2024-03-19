@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
@@ -31,8 +31,6 @@ from upload.helpers import (
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 from upload.views.base import GetterMixin
-
-log = logging.getLogger(__name__)
 
 
 class CanDoCoverageUploadsPermission(BasePermission):
@@ -87,7 +85,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             if "version" in serializer.validated_data
             else None
         )
-        log.info(
+        logger.info(
             "Request to create new upload",
             extra=dict(
                 repo=repository.name,
@@ -132,7 +130,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def trigger_upload_task(self, repository, commit_sha, upload, report):
-        log.info(
+        logger.info(
             "Triggering upload task",
             extra=dict(
                 repo=repository.name,

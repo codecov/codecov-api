@@ -1,5 +1,5 @@
 import binascii
-import logging
+from loguru import logger
 import os
 import uuid
 from dataclasses import asdict
@@ -40,9 +40,6 @@ SERVICE_CODECOV_ENTERPRISE = "enterprise"
 
 
 DEFAULT_AVATAR_SIZE = 55
-
-
-log = logging.getLogger(__name__)
 
 
 # TODO use this to refactor avatar_url
@@ -440,7 +437,7 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
         )
 
     def activate_user(self, user):
-        log.info(f"Activating user {user.ownerid} in ownerid {self.ownerid}")
+        logger.info(f"Activating user {user.ownerid} in ownerid {self.ownerid}")
         if isinstance(self.plan_activated_users, list):
             if user.ownerid not in self.plan_activated_users:
                 self.plan_activated_users.append(user.ownerid)
@@ -449,7 +446,7 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
         self.save()
 
     def deactivate_user(self, user):
-        log.info(f"Deactivating user {user.ownerid} in ownerid {self.ownerid}")
+        logger.info(f"Deactivating user {user.ownerid} in ownerid {self.ownerid}")
         if isinstance(self.plan_activated_users, list):
             try:
                 self.plan_activated_users.remove(user.ownerid)
@@ -458,7 +455,7 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
         self.save()
 
     def add_admin(self, user):
-        log.info(
+        logger.info(
             f"Granting admin permissions to user {user.ownerid} within owner {self.ownerid}"
         )
         if isinstance(self.admins, list):
@@ -469,7 +466,7 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
         self.save()
 
     def remove_admin(self, user):
-        log.info(
+        logger.info(
             f"Revoking admin permissions for user {user.ownerid} within owner {self.ownerid}"
         )
         if isinstance(self.admins, list):

@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.http import HttpResponse
 from rest_framework import mixins, viewsets
@@ -11,8 +11,6 @@ from codecov_auth.permissions import SpecificScopePermission
 from services.task import TaskService
 from staticanalysis.models import StaticAnalysisSuite
 from staticanalysis.serializers import StaticAnalysisSuiteSerializer
-
-log = logging.getLogger(__name__)
 
 
 class StaticAnalysisSuiteViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

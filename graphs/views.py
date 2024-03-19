@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
@@ -19,8 +19,6 @@ from .helpers.badge import format_coverage_precision, get_badge
 from .helpers.graphs import icicle, sunburst, tree
 from .mixins import GraphBadgeAPIMixin
 
-log = logging.getLogger(__name__)
-
 
 class IgnoreClientContentNegotiation(DefaultContentNegotiation):
     def select_parser(self, request, parsers):
@@ -36,7 +34,7 @@ class IgnoreClientContentNegotiation(DefaultContentNegotiation):
         try:
             return super().select_renderer(request, renderers, format_suffix)
         except exceptions.NotAcceptable:
-            log.info(
+            logger.info(
                 f"Recieved unsupported HTTP_ACCEPT header: {request.META.get('HTTP_ACCEPT')}"
             )
             return (renderers[0], renderers[0].media_type)
@@ -79,11 +77,13 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         try:
             repo = self.repo
         except Http404:
-            log.warning("Repo not found", extra=dict(repo=self.kwargs.get("repo_name")))
+            logger.warning(
+                "Repo not found", extra=dict(repo=self.kwargs.get("repo_name"))
+            )
             return None, coverage_range
 
         if repo.private and repo.image_token != self.request.query_params.get("token"):
-            log.warning(
+            logger.warning(
                 "Token provided does not match repo's image token",
                 extra=dict(repo=repo),
             )
@@ -95,7 +95,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         ).first()
 
         if branch is None:
-            log.warning(
+            logger.warning(
                 "Branch not found", extra=dict(branch_name=branch_name, repo=repo)
             )
             return None, coverage_range
@@ -103,7 +103,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             commit = repo.commits.filter(commitid=branch.head).first()
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
-            log.warning("Commit not found", extra=dict(commit=branch.head))
+            logger.warning("Commit not found", extra=dict(commit=branch.head))
             return None, coverage_range
 
         if repo.yaml and repo.yaml.get("coverage", {}).get("range") is not None:
@@ -130,7 +130,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         commit (obj): commit object containing report
         """
         if commit.full_report is None:
-            log.warning(
+            logger.warning(
                 "Commit's report not found", extra=dict(commit=commit, flag=flag_name)
             )
             return None

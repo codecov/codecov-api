@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger
 from base64 import b16encode
 from enum import Enum
 from hashlib import md5
@@ -12,8 +12,6 @@ from shared.utils.ReportEncoder import ReportEncoder
 
 from services.storage import StorageService
 from utils.config import get_config
-
-log = logging.getLogger(__name__)
 
 
 class MinioEndpoints(Enum):
@@ -51,7 +49,6 @@ def get_minio_client():
 # Service class for performing archive operations. Meant to work against the
 # underlying StorageService
 class ArchiveService(object):
-
     """
     The root level of the archive. In s3 terms,
     this would be the name of the bucket
@@ -243,7 +240,7 @@ class ArchiveService(object):
         path = MinioEndpoints.chunks.get_path(
             version="v4", repo_hash=self.storage_hash, commitid=commit_sha
         )
-        log.info("Downloading chunks from path %s for commit %s", path, commit_sha)
+        logger.info("Downloading chunks from path %s for commit %s", path, commit_sha)
         return self.read_file(path)
 
     """

@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -15,8 +15,6 @@ from webhook_handlers.constants import (
     BitbucketServerWebhookEvents,
     WebhookHandlerErrorMessages,
 )
-
-log = logging.getLogger(__name__)
 
 
 class BitbucketServerWebhookHandler(APIView):
@@ -41,7 +39,7 @@ class BitbucketServerWebhookHandler(APIView):
         if not repo.active:
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
-        log.info(
+        logger.info(
             "BitbucketServer webhook message received",
             extra=dict(event=self.event, hookid=event_hook_id, repoid=repo.repoid),
         )

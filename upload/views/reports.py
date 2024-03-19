@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.http import HttpRequest, HttpResponseNotAllowed
 from rest_framework.exceptions import ValidationError
@@ -16,8 +16,6 @@ from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
-log = logging.getLogger(__name__)
-
 
 class ReportViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitReportSerializer
@@ -32,7 +30,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
     def perform_create(self, serializer):
         repository = self.get_repo()
         commit = self.get_commit(repository)
-        log.info(
+        logger.info(
             "Request to create new report",
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
@@ -91,7 +89,7 @@ class ReportResultsView(
         try:
             report_results = ReportResults.objects.get(report=report)
         except ReportResults.DoesNotExist:
-            log.info(
+            logger.info(
                 "Report Results not found",
                 extra=dict(
                     commit_sha=commit.commitid,

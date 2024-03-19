@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -12,7 +12,6 @@ from services.redis_configuration import get_redis_connection
 from upload.helpers import _determine_responsible_owner
 from utils.uploads_used import get_uploads_used
 
-log = logging.getLogger(__name__)
 
 redis = get_redis_connection()
 
@@ -29,7 +28,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
             ).count()
             max_upload_limit = repository.author.max_upload_limit or 150
             if new_session_count > max_upload_limit:
-                log.warning(
+                logger.warning(
                     "Too many uploads to this commit",
                     extra=dict(
                         commit=commit.commitid,
@@ -59,7 +58,7 @@ class UploadsPerWindowThrottle(BaseThrottle):
                     if not did_commit_uploads_start_already:
 
                         if get_uploads_used(redis, plan_service, limit, owner) >= limit:
-                            log.warning(
+                            logger.warning(
                                 "User exceeded its limits for usage",
                                 extra=dict(
                                     ownerid=owner.ownerid, repoid=commit.repository_id

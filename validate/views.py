@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from json import dumps
 
 from django.conf import settings
@@ -10,8 +10,6 @@ from rest_framework.views import APIView
 from shared.validation.exceptions import InvalidYamlException
 from shared.yaml.validation import validate_yaml
 from yaml import YAMLError, safe_load
-
-log = logging.getLogger(__name__)
 
 
 class V1ValidateYamlHandler(APIView):
@@ -37,7 +35,7 @@ class V1ValidateYamlHandler(APIView):
             yaml_dict = safe_load(self.request.body)
 
             if not isinstance(yaml_dict, dict):
-                log.warning(
+                logger.warning(
                     f"yaml_dict result from loading validate request body is not a dict",
                     extra=dict(
                         yaml_dict=yaml_dict, request_body=str(self.request.body)
@@ -90,7 +88,7 @@ class V2ValidateYamlHandler(V1ValidateYamlHandler):
         try:
             yaml_dict = safe_load(self.request.body)
             if not isinstance(yaml_dict, dict):
-                log.warning(
+                logger.warning(
                     f"yaml_dict result from loading validate request body is not a dict",
                     extra=dict(
                         yaml_dict=yaml_dict, request_body=str(self.request.body)

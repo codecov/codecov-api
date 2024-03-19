@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 
 from asgiref.sync import async_to_sync
@@ -8,8 +8,6 @@ from shared.torngit import get
 from shared.torngit.exceptions import TorngitClientError
 
 from upload.tokenless.base import BaseTokenlessUploadHandler
-
-log = logging.getLogger(__name__)
 
 
 class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
@@ -32,7 +30,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 self.upload_params.get("build")
             )
         except TorngitClientError as e:
-            log.warning(
+            logger.warning(
                 f"Request client error {e}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
@@ -45,7 +43,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
             )
         except Exception as e:
-            log.warning(
+            logger.warning(
                 f"Request error {e}",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
@@ -83,7 +81,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 and self.upload_params.get("pr") == None
             )
         ):
-            log.warning(
+            logger.warning(
                 f"Repository slug or commit sha do not match Github actions arguments",
                 extra=dict(
                     commit=self.upload_params.get("commit"),
@@ -111,7 +109,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=10)
             now = datetime.utcnow()
             if not now <= finish_time_with_buffer:
-                log.warning(
+                logger.warning(
                     "Actions workflow run is stale",
                     extra=dict(
                         build=build,
@@ -124,7 +122,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                         time_diff=now - finish_time_with_buffer,
                     ),
                 )
-                log.warning(
+                logger.warning(
                     "Actions workflow run is stale",
                     extra=dict(
                         build=build,

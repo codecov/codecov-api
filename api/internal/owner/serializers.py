@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from dataclasses import asdict
 from datetime import datetime
 
@@ -17,8 +17,6 @@ from plan.constants import (
 from plan.service import PlanService
 from services.billing import BillingService
 from services.sentry import send_user_webhook as send_sentry_webhook
-
-log = logging.getLogger(__name__)
 
 
 class OwnerSerializer(serializers.ModelSerializer):
@@ -133,7 +131,7 @@ class PlanSerializer(serializers.Serializer):
         plan_values = [plan["value"] for plan in available_plans]
         if value not in plan_values:
             if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
-                log.warning(
+                logger.warning(
                     f"Non-Sentry user attempted to transition to Sentry plan",
                     extra=dict(owner_id=current_owner.pk, plan=value),
                 )
@@ -221,7 +219,7 @@ class ScheduleDetailSerializer(serializers.Serializer):
         else:
             # This error represents the phases object not having 2 phases; we are interested in the 2nd entry within phases
             # since it represents the scheduled phase
-            log.error(
+            logger.error(
                 "Expecting schedule object to have 2 phases, returning None",
                 extra=dict(
                     ownerid=schedule.metadata.obo_organization,

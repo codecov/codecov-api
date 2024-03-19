@@ -1,11 +1,9 @@
-import logging
+from loguru import logger
 import re
 
 from django.conf import settings
 from shared.analytics_tracking import analytics_manager
 from shared.analytics_tracking.events import Events
-
-log = logging.getLogger(__name__)
 
 
 def inject_analytics_owner(method):

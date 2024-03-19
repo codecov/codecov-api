@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import math
 
 from rest_framework import exceptions, serializers
@@ -12,8 +12,6 @@ from staticanalysis.models import (
     StaticAnalysisSuite,
     StaticAnalysisSuiteFilepath,
 )
-
-log = logging.getLogger(__name__)
 
 
 class CommitFromShaSerializerField(serializers.Field):
@@ -64,7 +62,7 @@ def _dict_to_suite_filepath(
             ),
         )
     if was_created:
-        log.debug(
+        logger.debug(
             "Created new snapshot for repository",
             extra=dict(repoid=repository.repoid, snapshot_id=db_element.id),
         )
@@ -148,7 +146,7 @@ class StaticAnalysisSuiteSerializer(serializers.ModelSerializer):
             for file_dict in file_metadata_array
         ]
         StaticAnalysisSuiteFilepath.objects.bulk_create(created_filepaths)
-        log.info(
+        logger.info(
             "Created static analysis filepaths",
             extra=dict(
                 created_ids=[f.id for f in created_filepaths], repoid=repository.repoid

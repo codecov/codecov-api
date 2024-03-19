@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -21,8 +21,6 @@ from plan.constants import (
     TrialStatus,
 )
 from services import sentry
-
-log = logging.getLogger(__name__)
 
 
 # TODO: Consider moving some of these methods to the billing directory as they overlap billing functionality
@@ -56,7 +54,7 @@ class PlanService:
         return self.current_org
 
     def set_default_plan_data(self) -> None:
-        log.info(f"Setting plan to users-basic for owner {self.current_org.ownerid}")
+        logger.info(f"Setting plan to users-basic for owner {self.current_org.ownerid}")
         self.current_org.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_org.plan_activated_users = None
         self.current_org.plan_user_count = 1

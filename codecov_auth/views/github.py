@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from loguru import logger
 from datetime import datetime, timedelta
 from typing import Optional
 from urllib.parse import urlencode, urljoin
@@ -13,8 +13,6 @@ from shared.torngit.exceptions import TorngitError
 
 from codecov_auth.views.base import LoginMixin, StateMixin
 from utils.config import get_config
-
-log = logging.getLogger(__name__)
 
 
 class GithubLoginView(LoginMixin, StateMixin, View):
@@ -68,7 +66,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
                         if len(curr_teams) == 0:
                             break
                 except TorngitError as exp:
-                    log.error(f"Failed to get GitHub teams information: {exp}")
+                    logger.error(f"Failed to get GitHub teams information: {exp}")
         return teams
 
     @async_to_sync
@@ -78,7 +76,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         repo_service = self.repo_service_instance
         authenticated_user = await repo_service.get_authenticated_user(code)
         if "access_token" not in authenticated_user:
-            log.warning(
+            logger.warning(
                 "Missing access_token during GitHub OAuth",
                 extra=dict(
                     user_info=authenticated_user,
@@ -116,7 +114,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
             if user_dict is None:
                 return redirect(self.error_redirection_page)
         except TorngitError:
-            log.warning("Unable to log in due to problem on Github", exc_info=True)
+            logger.warning("Unable to log in due to problem on Github", exc_info=True)
             return redirect(self.error_redirection_page)
         owner = self.get_and_modify_owner(user_dict, request)
         redirection_url = self.modify_redirection_url_based_on_default_user_org(
@@ -141,7 +139,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
                 or request.COOKIES.get("ghpr") == "true"
                 or request.GET.get("private")
             ):
-                log.info("Appending repo to scope")
+                logger.info("Appending repo to scope")
                 scope.append("repo")
                 url_to_redirect_to = self.get_url_to_redirect_to(scope)
                 response = redirect(url_to_redirect_to)
