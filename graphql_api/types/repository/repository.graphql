@@ -55,6 +55,7 @@ type Repository {
   flagsCount: Int!
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
+  componentsMeasurementsActive: Boolean!
   measurements(
     interval: MeasurementInterval!
     after: DateTime

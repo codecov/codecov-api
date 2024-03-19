@@ -348,6 +348,22 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert data["me"]["owner"]["repository"]["flagsMeasurementsActive"] == False
         assert data["me"]["owner"]["repository"]["flagsMeasurementsBackfilled"] == False
 
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_repository_components_metadata(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user)
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsMeasurementsActive
+            """,
+            owner=user,
+            variables={"name": repo.name},
+        )
+        assert (
+            data["me"]["owner"]["repository"]["componentsMeasurementsActive"] == False
+        )
+
     @patch("shared.yaml.user_yaml.UserYaml.get_final_yaml")
     def test_repository_repository_config_indication_range(self, mocked_useryaml):
         mocked_useryaml.return_value = {"coverage": {"range": [60, 80]}}
