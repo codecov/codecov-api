@@ -451,6 +451,7 @@ def test_uploads_post_github_oidc_auth(
         "repository": f"url/{repository.name}",
         "repository_owner": repository.author.username,
         "iss": "https://token.actions.githubusercontent.com",
+        "audience": [settings.CODECOV_API_URL],
     }
     token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
 
