@@ -25,7 +25,9 @@ query = """
 
 
 class DeleteComponentMeasurementsTest(GraphQLTestHelper, TransactionTestCase):
-    @patch("core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute")
+    @patch(
+        "core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute"
+    )
     def test_delete_component_measurements(self, execute_mock):
         data = self.gql_request(
             query,
@@ -46,7 +48,9 @@ class DeleteComponentMeasurementsTest(GraphQLTestHelper, TransactionTestCase):
             component_id="test-component",
         )
 
-    @patch("core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute")
+    @patch(
+        "core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute"
+    )
     def test_delete_component_measurements_unauthenticated(self, execute_mock):
         execute_mock.side_effect = Unauthenticated()
 
@@ -70,7 +74,9 @@ class DeleteComponentMeasurementsTest(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute")
+    @patch(
+        "core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute"
+    )
     def test_delete_component_measurements_unauthorized(self, execute_mock):
         execute_mock.side_effect = Unauthorized()
 
@@ -94,7 +100,9 @@ class DeleteComponentMeasurementsTest(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute")
+    @patch(
+        "core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute"
+    )
     def test_delete_component_measurements_validation_error(self, execute_mock):
         execute_mock.side_effect = ValidationError("test error")
 
@@ -115,7 +123,9 @@ class DeleteComponentMeasurementsTest(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute")
+    @patch(
+        "core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute"
+    )
     def test_delete_component_measurements_not_found(self, execute_mock):
         execute_mock.side_effect = NotFound()
 
