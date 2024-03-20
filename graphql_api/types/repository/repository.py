@@ -21,6 +21,7 @@ from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.profiling import CriticalFile, ProfilingSummary
+from shared.yaml import UserYaml
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
@@ -310,6 +311,18 @@ def resolve_components_measurements_backfilled(repository: Repository, info) -> 
         return False
 
     return dataset.is_backfilled()
+
+
+@repository_bindable.field("componentsCount")
+@sync_to_async
+def resolve_components_count(repository: Repository, info) -> int:
+    repo_yaml_components = UserYaml.get_final_yaml(
+        owner_yaml=repository.author.yaml,
+        repo_yaml=repository.yaml,
+        ownerid=repository.author.ownerid,
+    ).get_components()
+
+    return len(repo_yaml_components)
 
 
 @repository_bindable.field("isATSConfigured")
