@@ -5,6 +5,7 @@ import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
+from shared.yaml import UserYaml
 
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
@@ -21,7 +22,6 @@ from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.profiling import CriticalFile, ProfilingSummary
-from shared.yaml import UserYaml
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
