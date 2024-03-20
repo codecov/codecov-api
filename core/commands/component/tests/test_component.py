@@ -9,6 +9,11 @@ from core.tests.factories import RepositoryFactory
 from ..component import ComponentCommands
 
 
+class MockSignature:
+    def apply_async(self):
+        pass
+
+
 class ComponentCommandsTest(TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="test-user")
@@ -94,3 +99,16 @@ class ComponentCommandsTest(TransactionTestCase):
                 repo_name=self.repo.name,
                 component_id="component1",
             )
+
+    @patch("services.task.TaskService._create_signature")
+    def test_delete_component_measurements_signature_created(
+        self, mocked_create_signature
+    ):
+        self.command.delete_component_measurements(
+            owner_username=self.org.username,
+            repo_name=self.repo.name,
+            component_id="component1",
+        )
+
+        mocked_create_signature.return_value = MockSignature()
+        mocked_create_signature.assert_called()
