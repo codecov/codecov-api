@@ -77,6 +77,7 @@ query Repo(
         repository(name: $repo) {
             ... on Repository {
                 componentsMeasurementsActive
+                componentsMeasurementsBackfilled
                 commit(id: $sha) {
                         components {
                             id
@@ -720,6 +721,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
             },
         )
         assert data["owner"]["repository"]["componentsMeasurementsActive"] == False
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == False
 
     def test_repository_components_metadata_active(self):
         DatasetFactory(
@@ -736,3 +738,24 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
             },
         )
         assert data["owner"]["repository"]["componentsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == False
+
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_repository_components_metadata_backfilled_true(self, is_backfilled):
+        is_backfilled.return_value = True
+
+        DatasetFactory(
+            name=MeasurementName.COMPONENT_COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        data = self.gql_request(
+            query_repo,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "sha": self.commit.commitid,
+            },
+        )
+        assert data["owner"]["repository"]["componentsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == True

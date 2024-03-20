@@ -295,6 +295,23 @@ def resolve_components_measurements_active(repository: Repository, info) -> bool
     ).exists()
 
 
+@repository_bindable.field("componentsMeasurementsBackfilled")
+@sync_to_async
+def resolve_components_measurements_backfilled(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    dataset = Dataset.objects.filter(
+        name=MeasurementName.COMPONENT_COVERAGE.value,
+        repository_id=repository.pk,
+    ).first()
+
+    if not dataset:
+        return False
+
+    return dataset.is_backfilled()
+
+
 @repository_bindable.field("isATSConfigured")
 def resolve_is_ats_configured(repository: Repository, info) -> bool:
     if not repository.yaml or "flag_management" not in repository.yaml:
