@@ -356,12 +356,17 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             query_repository
             % """
                 componentsMeasurementsActive
+                componentsMeasurementsBackfilled
             """,
             owner=user,
             variables={"name": repo.name},
         )
         assert (
             data["me"]["owner"]["repository"]["componentsMeasurementsActive"] == False
+        )
+        assert (
+            data["me"]["owner"]["repository"]["componentsMeasurementsBackfilled"]
+            == False
         )
 
     @patch("shared.yaml.user_yaml.UserYaml.get_final_yaml")
