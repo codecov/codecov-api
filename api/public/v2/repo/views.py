@@ -50,6 +50,7 @@ class RepositoryViewSet(
             OpenApiParameter(
                 name="names",
                 type={"type": "array", "items": "string"},
+                explode=True,
             )
         ],
     )
