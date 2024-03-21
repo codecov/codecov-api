@@ -51,6 +51,7 @@ class RepositoryViewSet(
                 name="names",
                 type={"type": "array", "items": "string"},
                 explode=True,
+                description="list of repository names",
             )
         ],
     )
