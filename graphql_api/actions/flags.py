@@ -5,9 +5,9 @@ from django.db.models import QuerySet
 
 from compare.models import CommitComparison, FlagComparison
 from core.models import Repository
+from graphql_api.actions.measurements import measurements_by_ids
 from reports.models import RepositoryFlag
 from timeseries.models import Interval, MeasurementName
-from graphql_api.actions.measurements import measurements_by_ids
 
 
 def flags_for_repo(repository: Repository, filters: Mapping = None) -> QuerySet:
