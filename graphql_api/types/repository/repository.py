@@ -5,7 +5,8 @@ import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
-from shared.yaml.user_yaml import UserYaml
+
+from shared.yaml import UserYaml
 
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
@@ -284,6 +285,47 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
         return False
 
     return dataset.is_backfilled()
+
+
+@repository_bindable.field("componentsMeasurementsActive")
+@sync_to_async
+def resolve_components_measurements_active(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    return Dataset.objects.filter(
+        name=MeasurementName.COMPONENT_COVERAGE.value,
+        repository_id=repository.pk,
+    ).exists()
+
+
+@repository_bindable.field("componentsMeasurementsBackfilled")
+@sync_to_async
+def resolve_components_measurements_backfilled(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    dataset = Dataset.objects.filter(
+        name=MeasurementName.COMPONENT_COVERAGE.value,
+        repository_id=repository.pk,
+    ).first()
+
+    if not dataset:
+        return False
+
+    return dataset.is_backfilled()
+
+
+@repository_bindable.field("componentsCount")
+@sync_to_async
+def resolve_components_count(repository: Repository, info) -> int:
+    repo_yaml_components = UserYaml.get_final_yaml(
+        owner_yaml=repository.author.yaml,
+        repo_yaml=repository.yaml,
+        ownerid=repository.author.ownerid,
+    ).get_components()
+
+    return len(repo_yaml_components)
 
 
 @repository_bindable.field("isATSConfigured")

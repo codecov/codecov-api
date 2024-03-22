@@ -11,6 +11,8 @@ from compare.tests.factories import CommitComparisonFactory, ComponentComparison
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.comparison import MissingComparisonReport
 from services.components import Component
+from timeseries.models import MeasurementName
+from timeseries.tests.factories import DatasetFactory
 
 from .helper import GraphQLTestHelper
 
@@ -63,6 +65,35 @@ query_commit_components = """
             }
         }
     }
+"""
+
+query_repo = """
+query Repo(
+    $org: String!
+    $repo: String!
+    $sha: String!
+) {
+    owner(username: $org) {
+        repository(name: $repo) {
+            ... on Repository {
+                componentsMeasurementsActive
+                componentsMeasurementsBackfilled
+                componentsCount
+                commit(id: $sha) {
+                        components {
+                            id
+                            name
+                            totals {
+                                hitsCount
+                                missesCount
+                                percentCovered
+                            }
+                        }
+                    }
+            }
+        }
+    }
+}
 """
 
 
@@ -371,6 +402,8 @@ query_components_comparison = """
 
 
 class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
+    databases = {"default", "timeseries"}
+
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)
@@ -390,6 +423,7 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
             compare_commit=self.head,
             state=CommitComparison.CommitComparisonStates.PROCESSED,
         )
+        self.commit = CommitFactory(repository=self.repo)
 
         # mock reports
         self.head_report_patcher = patch(
@@ -677,3 +711,52 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
+
+    def test_repository_components_metadata_inactive(self):
+        data = self.gql_request(
+            query_repo,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "sha": self.commit.commitid,
+            },
+        )
+        assert data["owner"]["repository"]["componentsMeasurementsActive"] == False
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == False
+
+    def test_repository_components_metadata_active(self):
+        DatasetFactory(
+            name=MeasurementName.COMPONENT_COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        data = self.gql_request(
+            query_repo,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "sha": self.commit.commitid,
+            },
+        )
+        assert data["owner"]["repository"]["componentsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == False
+
+    @patch("timeseries.models.Dataset.is_backfilled")
+    def test_repository_components_metadata_backfilled_true(self, is_backfilled):
+        is_backfilled.return_value = True
+
+        DatasetFactory(
+            name=MeasurementName.COMPONENT_COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        data = self.gql_request(
+            query_repo,
+            variables={
+                "org": self.org.username,
+                "repo": self.repo.name,
+                "sha": self.commit.commitid,
+            },
+        )
+        assert data["owner"]["repository"]["componentsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == True
