@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime
+from typing import Iterable, List
 
 from django.utils.functional import cached_property
 from shared.components import Component
@@ -10,6 +11,8 @@ from codecov_auth.models import Owner
 from core.models import Commit
 from services.comparison import Comparison
 from services.yaml import final_commit_yaml
+from timeseries.helpers import fill_sparse_measurements
+from timeseries.models import Interval
 
 
 def commit_components(commit: Commit, owner: Owner) -> List[Component]:
@@ -72,3 +75,41 @@ class ComponentComparison:
     def patch_totals(self) -> ReportTotals:
         git_comparison = self.comparison.git_comparison
         return self.head_report.apply_diff(git_comparison["diff"])
+
+
+class ComponentMeasurements:
+    def __init__(
+        self,
+        raw_measurements: Iterable[dict],
+        component_id: str,
+        interval: Interval,
+        after: datetime,
+        before: datetime,
+    ):
+        self.raw_measurements = raw_measurements
+        self.component_id = component_id
+        self.interval = interval
+        self.after = after
+        self.before = before
+
+    @cached_property
+    def name(self):
+        return self.component_id
+
+    @cached_property
+    def percent_covered(self):
+        if len(self.raw_measurements) > 1:
+            return self.raw_measurements[-1]["avg"]
+
+    @cached_property
+    def percent_change(self):
+        if len(self.raw_measurements) > 1:
+            return self.raw_measurements[-1]["avg"] - self.raw_measurements[0]["avg"]
+
+    @cached_property
+    def measurements(self):
+        if not self.raw_measurements:
+            return []
+        return fill_sparse_measurements(
+            self.raw_measurements, self.interval, self.after, self.before
+        )
