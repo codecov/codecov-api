@@ -1,3 +1,7 @@
 input ComponentsFilters {
   components: [String!]
 }
+
+input ComponentMeasurementsSetFilters {
+  components: [String]
+}
