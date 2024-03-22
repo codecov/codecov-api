@@ -1,6 +1,9 @@
 from unittest.mock import PropertyMock, patch
 
-from django.test import TransactionTestCase
+import pytest
+from django.conf import settings
+from django.test import TransactionTestCase, override_settings
+from django.utils import timezone
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.reports.types import ReportTotals
 from shared.utils.sessions import Session
@@ -12,7 +15,7 @@ from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.comparison import MissingComparisonReport
 from services.components import Component
 from timeseries.models import MeasurementName
-from timeseries.tests.factories import DatasetFactory
+from timeseries.tests.factories import DatasetFactory, MeasurementFactory
 
 from .helper import GraphQLTestHelper
 
@@ -760,3 +763,487 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["owner"]["repository"]["componentsMeasurementsActive"] == True
         assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == True
+
+
+query_component_measurements = """
+query ComponentMeasurements(
+    $name: String!
+    $repo: String!
+    $interval: MeasurementInterval!
+    $after: DateTime!
+    $before: DateTime!
+    $branch: String
+    $filters: ComponentMeasurementsSetFilters
+    $orderingDirection: OrderingDirection
+) {
+    owner(username: $name) {
+        repository: repositoryDeprecated(name: $repo) {
+            componentMeasurements(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+                __typename
+                ... on ComponentMeasurements {
+                    name
+                    percentCovered
+                    percentChange
+                    measurements {
+                        avg
+                        min
+                        max
+                        timestamp
+                    }
+                }
+            }
+        }
+    }
+}
+"""
+
+
+@pytest.mark.skipif(
+    not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
+)
+class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
+    databases = {"default", "timeseries"}
+
+    def setUp(self):
+        self.org = OwnerFactory()
+        self.repo = RepositoryFactory(
+            author=self.org,
+            private=False,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {
+                            "component_id": "python",
+                            "paths": [".*/*.py"],
+                        },
+                        {
+                            "component_id": "golang",
+                            "paths": [".*/*.go"],
+                        },
+                    ],
+                }
+            },
+        )
+        self.commit = CommitFactory(repository=self.repo)
+
+    def test_component_measurements_with_measurements(self):
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=95.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+
+        variables = {
+            "name": self.org.username,
+            "repo": self.repo.name,
+            "interval": "INTERVAL_1_DAY",
+            "after": timezone.datetime(2022, 6, 20),
+            "before": timezone.datetime(2022, 6, 23),
+        }
+        data = self.gql_request(query_component_measurements, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "componentMeasurements": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "percentCovered": 90.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 85.0,
+                                    "min": 85.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 90.0,
+                                    "min": 85.0,
+                                    "max": 95.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "python",
+                            "percentCovered": 80.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 75.0,
+                                    "min": 75.0,
+                                    "max": 75.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 80.0,
+                                    "min": 75.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                        },
+                    ]
+                }
+            }
+        }
+
+    def test_component_measurements_no_measurements(self):
+        variables = {
+            "name": self.org.username,
+            "repo": self.repo.name,
+            "interval": "INTERVAL_1_DAY",
+            "after": timezone.datetime(2022, 6, 20),
+            "before": timezone.datetime(2022, 6, 23),
+        }
+        data = self.gql_request(query_component_measurements, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "componentMeasurements": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "percentCovered": None,
+                            "percentChange": None,
+                            "measurements": [],
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "python",
+                            "percentCovered": None,
+                            "percentChange": None,
+                            "measurements": [],
+                        },
+                    ]
+                }
+            }
+        }
+
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_component_measurements_timeseries_not_enabled(self):
+        variables = {
+            "name": self.org.username,
+            "repo": self.repo.name,
+            "interval": "INTERVAL_1_DAY",
+            "after": timezone.datetime(2022, 6, 20),
+            "before": timezone.datetime(2022, 6, 23),
+        }
+        data = self.gql_request(query_component_measurements, variables=variables)
+        assert data == {"owner": {"repository": {"componentMeasurements": []}}}
+
+    def test_component_measurements_with_filter(self):
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=95.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+
+        variables = {
+            "name": self.org.username,
+            "repo": self.repo.name,
+            "interval": "INTERVAL_1_DAY",
+            "after": timezone.datetime(2022, 6, 20),
+            "before": timezone.datetime(2022, 6, 23),
+            "filters": {"components": ["python"]},
+        }
+        data = self.gql_request(query_component_measurements, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "componentMeasurements": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "python",
+                            "percentCovered": 80.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 75.0,
+                                    "min": 75.0,
+                                    "max": 75.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 80.0,
+                                    "min": 75.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                        },
+                    ]
+                }
+            }
+        }
+
+    def test_component_measurements_with_branch(self):
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="dev",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="dev",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=95.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="dev",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+
+        variables = {
+            "name": self.org.username,
+            "repo": self.repo.name,
+            "interval": "INTERVAL_1_DAY",
+            "after": timezone.datetime(2022, 6, 20),
+            "before": timezone.datetime(2022, 6, 23),
+            "branch": "dev",
+        }
+        data = self.gql_request(query_component_measurements, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "componentMeasurements": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "percentCovered": 90.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 85.0,
+                                    "min": 85.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 90.0,
+                                    "min": 85.0,
+                                    "max": 95.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "python",
+                            "percentCovered": None,
+                            "percentChange": None,
+                            "measurements": [],
+                        },
+                    ]
+                }
+            }
+        }
