@@ -3,7 +3,7 @@ import logging
 import re
 from contextlib import suppress
 from hashlib import sha1, sha256
-from typing import Optional
+from typing import Optional, Union
 
 from django.utils.crypto import constant_time_compare
 from rest_framework import status
@@ -411,6 +411,29 @@ class GithubWebhookHandler(APIView):
 
         return Response()
 
+    def _decide_app_name(
+        self, ghapp: GithubAppInstallation, app_id: Union[str, int]
+    ) -> str:
+        """Possibly updated the name of a GithubAppInstallation that has been fetched from DB or created.
+        Only the real default installation maybe use the name `GITHUB_APP_INSTALLATION_DEFAULT_NAME`
+        (otherwise we break the app)
+        We check that apps:
+            * already were given a custom name (do nothing);
+            * app_id match the configured default app app_id (use default name);
+            * none of the above (use 'unconfigured_app');
+
+        Returns the app name that should be used
+        """
+        if ghapp.name != GITHUB_APP_INSTALLATION_DEFAULT_NAME:
+            return ghapp.name
+        installation_default_app_id = get_config("github", "integration", "id")
+        # `app_id` and `installation_default_app_id` should both be ints
+        # But just to avoid differences parsing either the YAML or the request data
+        # Casting them to str for the comparison (str has less change of failing)
+        if str(app_id) == str(installation_default_app_id):
+            return GITHUB_APP_INSTALLATION_DEFAULT_NAME
+        return "unconfigured_app"
+
     def _handle_installation_repository_events(self, request, *args, **kwargs):
         # https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
         service_id = request.data["installation"]["account"]["id"]
@@ -419,6 +442,7 @@ class GithubWebhookHandler(APIView):
             service=self.service_name, service_id=service_id, username=username
         )
         installation_id = request.data["installation"]["id"]
+
         ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
             installation_id=installation_id, owner=owner
         )
@@ -426,6 +450,7 @@ class GithubWebhookHandler(APIView):
         # Either update or set
         # But this value shouldn't change for the installation, so doesn't matter
         ghapp_installation.app_id = app_id
+        ghapp_installation.name = self._decide_app_name(ghapp_installation, app_id)
 
         all_repos_affected = request.data.get("repository_selection") == "all"
         if all_repos_affected:
@@ -482,6 +507,7 @@ class GithubWebhookHandler(APIView):
             # GithubWebhookEvents.INSTALLTION_REPOSITORIES also execute this code
             # because of deprecated flow. But the GithubAppInstallation shouldn't be changed
             if event == GitHubWebhookEvents.INSTALLATION:
+
                 ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
                     installation_id=installation_id, owner=owner
                 )
@@ -489,6 +515,10 @@ class GithubWebhookHandler(APIView):
                 # Either update or set
                 # But this value shouldn't change for the installation, so doesn't matter
                 ghapp_installation.app_id = app_id
+                ghapp_installation.name = self._decide_app_name(
+                    ghapp_installation, app_id
+                )
+
                 affects_all_repositories = (
                     request.data["installation"]["repository_selection"] == "all"
                 )
