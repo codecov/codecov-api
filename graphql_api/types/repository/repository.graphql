@@ -68,14 +68,6 @@ type Repository {
   languages: [String!]
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
-  componentMeasurements(
-    interval: MeasurementInterval!
-    before: DateTime!
-    after: DateTime!
-    branch: String
-    filters: ComponentMeasurementsSetFilters
-    orderingDirection: OrderingDirection
-  ): [ComponentMeasurements!]!
 }
 
 type PullConnection {
