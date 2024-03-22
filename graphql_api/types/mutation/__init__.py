@@ -4,6 +4,7 @@ from .activate_measurements import gql_activate_measurements
 from .cancel_trial import gql_cancel_trial
 from .create_api_token import gql_create_api_token
 from .create_user_token import gql_create_user_token
+from .delete_component_measurements import gql_delete_component_measurements
 from .delete_flag import gql_delete_flag
 from .delete_session import gql_delete_session
 from .mutation import mutation_resolvers
@@ -37,3 +38,4 @@ mutation = mutation + gql_save_sentry_state
 mutation = mutation + gql_save_terms_agreement
 mutation = mutation + gql_start_trial
 mutation = mutation + gql_cancel_trial
+mutation = mutation + gql_delete_component_measurements
