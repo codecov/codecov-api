@@ -522,3 +522,49 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_repository(repo.name)
         assert res["languages"] == ["C", "C++"]
+
+    def test_repository_has_components_count(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {"component_id": "blah", "paths": [r".*\.go"]},
+                        {"component_id": "cool_rules"},
+                    ],
+                }
+            },
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsCount
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["componentsCount"] == 2
+
+    def test_repository_no_components_count(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsCount
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["componentsCount"] == 0

@@ -78,6 +78,7 @@ query Repo(
             ... on Repository {
                 componentsMeasurementsActive
                 componentsMeasurementsBackfilled
+                componentsCount
                 commit(id: $sha) {
                         components {
                             id
