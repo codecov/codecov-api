@@ -5,9 +5,9 @@ from django.db.models import QuerySet
 
 from compare.models import CommitComparison, FlagComparison
 from core.models import Repository
-from graphql_api.actions.measurements import measurements_by_ids
 from reports.models import RepositoryFlag
 from timeseries.models import Interval, MeasurementName
+from graphql_api.actions.measurements import measurements_by_ids
 
 
 def flags_for_repo(repository: Repository, filters: Mapping = None) -> QuerySet:
@@ -48,7 +48,7 @@ def flag_measurements(
     after: datetime,
     before: datetime,
 ) -> Mapping[int, Iterable[dict]]:
-    return measurements_by_ids(
+    measurements = measurements_by_ids(
         repository=repository,
         measurable_name=MeasurementName.FLAG_COVERAGE.value,
         measurable_ids=[str(flag_id) for flag_id in flag_ids],
@@ -56,3 +56,10 @@ def flag_measurements(
         after=after,
         before=before,
     )
+
+    # By default the measurable_id is str type,
+    # however for flags we need to convert it to an int
+    return {
+        int(measurable_id): measurement
+        for (measurable_id, measurement) in measurements.items()
+    }
