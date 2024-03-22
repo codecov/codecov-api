@@ -5,7 +5,6 @@ import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
-
 from shared.yaml import UserYaml
 
 import timeseries.helpers as timeseries_helpers
