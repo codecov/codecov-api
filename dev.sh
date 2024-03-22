@@ -18,6 +18,7 @@ _start_gunicorn() {
   if [[ "$RUN_ENV" == "enterprise" ]] || [[ "$RUN_ENV" == "DEV" ]]; then
     python manage.py migrate
     python manage.py migrate --database "timeseries"
+    python manage.py pgpartition --yes --skip-delete
   fi
   gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
 }
