@@ -2,11 +2,13 @@ import asyncio
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+import pytest
+from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
+from graphql import GraphQLError
 
-from codecov.commands.exceptions import MissingService
+from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
@@ -649,3 +651,22 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
         data = self.gql_request(query, owner=user)
         assert data["owner"]["hashOwnerid"] is not None
+
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_owner_on_unauthenticated_enteprise_guest_access(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """{
+            owner(username: "%s") {
+                username
+            }
+        }
+        """ % (
+            owner.username
+        )
+
+        try:
+            self.gql_request(query)
+
+        except GraphQLError as e:
+            assert e.message == UnauthorizedGuestAccess.message
+            assert e.extensions["code"] == UnauthorizedGuestAccess.code
