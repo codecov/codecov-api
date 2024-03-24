@@ -71,7 +71,6 @@ class UploadSerializer(serializers.ModelSerializer):
         )
 
         # default is necessary here, or else if the key is not in the dict
-        # the below will throw a KeyError
         validated_data.pop("version", None)
         validated_data.pop("ci_service", None)
 
