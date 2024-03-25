@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-ARG PYTHON_IMAGE=python:3.9.16-alpine3.18
+ARG PYTHON_IMAGE=python:3.9-alpine3.18
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
 FROM $PYTHON_IMAGE as build
 
@@ -36,8 +36,11 @@ RUN apk -U upgrade binutils busybox expat libretls && \
     make \
     curl
 
-
 WORKDIR /pip-packages/
 COPY --from=build /pip-packages/ /pip-packages/
 
 RUN pip install --no-deps --no-index --find-links=/pip-packages/ /pip-packages/*
+
+# Currently expat will not bump to latest if this upgrade is done earlier
+# https://unix.stackexchange.com/questions/769209/unable-to-install-or-upgrade-to-specific-version-of-alpine-expat-2-6-0-r0-in-alp
+RUN apk add --upgrade expat
