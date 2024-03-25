@@ -367,6 +367,8 @@ class StripeService(AbstractPaymentService):
             customer = owner.stripe_customer_id
             customer_email = None
 
+        new_plan = settings.STRIPE_PLAN_IDS[desired_plan["value"]]
+
         session = stripe.checkout.Session.create(
             billing_address_collection="required",
             payment_method_types=["card"],
@@ -379,7 +381,7 @@ class StripeService(AbstractPaymentService):
             subscription_data={
                 "items": [
                     {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "plan": self.format_plan_value(new_plan),
                         "quantity": desired_plan["quantity"],
                     }
                 ],
@@ -391,6 +393,9 @@ class StripeService(AbstractPaymentService):
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
         return session["id"]
+    
+    def format_plan_value(self, plan_value):
+        return plan_value[:-1] + '-' + plan_value[-1]
 
     @_log_stripe_error
     def update_payment_method(self, owner, payment_method):
