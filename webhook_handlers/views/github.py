@@ -424,14 +424,8 @@ class GithubWebhookHandler(APIView):
 
         Returns the app name that should be used
         """
-        if ghapp.name != GITHUB_APP_INSTALLATION_DEFAULT_NAME:
+        if ghapp.is_configured():
             return ghapp.name
-        installation_default_app_id = get_config("github", "integration", "id")
-        # `app_id` and `installation_default_app_id` should both be ints
-        # But just to avoid differences parsing either the YAML or the request data
-        # Casting them to str for the comparison (str has less change of failing)
-        if str(app_id) == str(installation_default_app_id):
-            return GITHUB_APP_INSTALLATION_DEFAULT_NAME
         return "unconfigured_app"
 
     def _handle_installation_repository_events(self, request, *args, **kwargs):

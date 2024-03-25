@@ -59,7 +59,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @pytest.fixture(autouse=True)
     def mock_default_app_id(self, mocker):
-        mock_config_helper(mocker, configs={"github.integration.id": 1234})
+        mock_config_helper(mocker, configs={"github.integration.id": DEFAULT_APP_ID})
 
     def _post_event_data(self, event, data={}):
         return self.client.post(
@@ -888,7 +888,9 @@ class GithubWebhookHandlerTests(APITestCase):
             owner=owner,
             repository_service_ids=[repo1.service_id],
             installation_id=12,
-            name="custom_app",
+            app_id=2500,
+            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
+            pem_path="some_path",
         )
 
         owner.integration_id = 12
@@ -929,9 +931,10 @@ class GithubWebhookHandlerTests(APITestCase):
 
         installation.refresh_from_db()
         assert installation.installation_id == 12
-        # This app, even if not configured, was given a custom name
-        # So we don't change its name
-        assert installation.name == "custom_app"
+        # This app is not the default app, but it's configured
+        # So it should keep it's name
+        assert installation.app_id != DEFAULT_APP_ID
+        assert installation.name == GITHUB_APP_INSTALLATION_DEFAULT_NAME
         assert installation.repository_service_ids == [repo2.service_id]
         assert installation.is_repo_covered_by_integration(repo2) is True
 
@@ -987,7 +990,7 @@ class GithubWebhookHandlerTests(APITestCase):
         "services.task.TaskService.refresh",
         lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
     )
-    def test_installation_with_other_actions_sets_owner_itegration_id_if_none(
+    def test_installation_with_other_actions_sets_owner_integration_id_if_none(
         self,
     ):
         installation_id = 44
@@ -1003,7 +1006,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "id": installation_id,
                     "repository_selection": "selected",
                     "account": {"id": owner.service_id, "login": owner.username},
-                    "app_id": 15,
+                    "app_id": DEFAULT_APP_ID,
                 },
                 "repositories": [
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
@@ -1024,6 +1027,8 @@ class GithubWebhookHandlerTests(APITestCase):
         assert ghapp_installations_set.count() == 1
         installation = ghapp_installations_set.first()
         assert installation.installation_id == installation_id
+        assert installation.app_id == DEFAULT_APP_ID
+        assert installation.name == GITHUB_APP_INSTALLATION_DEFAULT_NAME
         assert installation.repository_service_ids == ["12321", "12343"]
 
     @patch(
