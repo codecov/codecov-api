@@ -144,7 +144,7 @@ class TotalsViewSetTestCase(TestCase):
             else self.client.post(url)
         )
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = sample_report()
@@ -213,7 +213,7 @@ class TotalsViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit1)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_commit_sha(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = sample_report()
@@ -282,7 +282,7 @@ class TotalsViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit2)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_nonexistent_commit_sha(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -296,7 +296,7 @@ class TotalsViewSetTestCase(TestCase):
             "detail": f"The commit {sha} is not in our records. Please specify valid commit."
         }
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_branch(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = sample_report()
@@ -365,7 +365,7 @@ class TotalsViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit3)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_nonexistent_branch(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -379,7 +379,7 @@ class TotalsViewSetTestCase(TestCase):
             "detail": f"The branch '{branch}' in not in our records. Please provide a valid branch name."
         }
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_path(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = sample_report()
@@ -429,7 +429,7 @@ class TotalsViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit1)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_invalid_path(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = sample_report()
@@ -443,7 +443,7 @@ class TotalsViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit1)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_flag(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.return_value = flags_report()
@@ -594,7 +594,7 @@ class TotalsViewSetTestCase(TestCase):
         )
 
     @patch("api.public.v2.report.views.commit_components")
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_report_component(
         self, build_report_from_commit, commit_components, get_repo_permissions
     ):
