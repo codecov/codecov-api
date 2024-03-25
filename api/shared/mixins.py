@@ -17,7 +17,7 @@ from codecov_auth.authentication import (
     SuperToken,
     SuperUser,
 )
-from codecov_auth.models import Owner, Service
+from codecov_auth.models import Owner, OwnerTierPermission, OwnerTierPlan, Service
 from core.models import Commit, Repository
 from utils.services import get_long_service_name
 
@@ -32,6 +32,19 @@ class OwnerPropertyMixin:
         return get_object_or_404(
             Owner, username=self.kwargs.get("owner_username"), service=service
         )
+
+
+class OwnerPermissionPropertyMixin(OwnerPropertyMixin):
+    def get_owner_permissions(self):
+        tier = OwnerTierPlan.objects.filter(plan=self.owner.plan).first()
+        if tier is None:
+            return None
+
+        perms = OwnerTierPermission.objects.filter(tier=tier.tier)
+        if perms is None:
+            return None
+
+        return [item.permission.name for item in perms]
 
 
 class RepoPropertyMixin(OwnerPropertyMixin):

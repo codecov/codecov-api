@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from api.internal.commit.serializers import CommitSerializer
 from api.shared.commit.serializers import ReportTotalsSerializer
+from api.shared.owner_permissions import check_owner_permissions
 from compare.models import CommitComparison
 from services.comparison import (
     Comparison,
@@ -20,9 +21,17 @@ log = logging.getLogger(__name__)
 
 
 class TotalsComparisonSerializer(serializers.Serializer):
-    base = ReportTotalsSerializer()
-    head = ReportTotalsSerializer()
+    base = serializers.SerializerMethodField()
+    head = serializers.SerializerMethodField()
     patch = ReportTotalsSerializer(source="diff")
+
+    @check_owner_permissions("project_coverage")
+    def get_base(self, comparison):
+        return ReportTotalsSerializer(comparison["base"]).data
+
+    @check_owner_permissions("project_coverage")
+    def get_head(self, comparison):
+        return ReportTotalsSerializer(comparison["head"]).data
 
 
 class LineComparisonSerializer(serializers.Serializer):
@@ -157,10 +166,12 @@ class ImpactedFileSerializer(serializers.Serializer):
     change_coverage = serializers.SerializerMethodField()
     misses_count = serializers.SerializerMethodField()
 
+    @check_owner_permissions("project_coverage")
     def get_base_coverage(self, impacted_file: ImpactedFile) -> serializers.JSONField:
         if impacted_file.base_coverage:
             return dataclasses.asdict(impacted_file.base_coverage)
 
+    @check_owner_permissions("project_coverage")
     def get_head_coverage(self, impacted_file: ImpactedFile) -> serializers.JSONField:
         if impacted_file.head_coverage:
             return dataclasses.asdict(impacted_file.head_coverage)
@@ -218,7 +229,11 @@ class ImpactedFilesComparisonSerializer(ComparisonSerializer):
 
         return [
             ImpactedFileSerializer(
-                impacted_file, context={"comparison": comparison}
+                impacted_file,
+                context={
+                    "comparison": comparison,
+                    "owner_permissions": self.context["owner_permissions"],
+                },
             ).data
             for impacted_file in ComparisonReport(commit_comparison).files
         ]
