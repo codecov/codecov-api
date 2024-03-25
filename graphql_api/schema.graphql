@@ -1,0 +1,1041 @@
+scalar DateTime
+
+type Query {
+  me: Me
+  owner(username: String!): Owner
+  config: Config!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Me {
+  email: String
+  businessEmail: String
+  onboardingCompleted: Boolean!
+  user: User!
+  owner: Owner!
+  sessions(first: Int, after: String, last: Int, before: String): SessionConnection!
+  tokens(first: Int, after: String, last: Int, before: String): UserTokenConnection!
+  viewableRepositories(filters: RepositorySetFilters, ordering: RepositoryOrdering, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): ViewableRepositoryConnection!
+  myOrganizations(filters: OrganizationSetFilters, first: Int, after: String, last: Int, before: String): MyOrganizationConnection!
+  isSyncingWithGitProvider: Boolean!
+  trackingMetadata: trackingMetadata!
+  privateAccess: Boolean
+  termsAgreement: Boolean
+}
+
+type trackingMetadata {
+  ownerid: Int!
+  serviceId: String!
+  plan: String
+  staff: Boolean
+  hasYaml: Boolean!
+  service: String!
+  bot: String
+  delinquent: Boolean
+  didTrial: Boolean
+  planProvider: String
+  planUserCount: Int
+  createstamp: DateTime
+  updatestamp: DateTime
+  profile: Profile
+}
+
+type ViewableRepositoryConnection {
+  edges: [ViewableRepositoryConnectionEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type ViewableRepositoryConnectionEdge {
+  cursor: String!
+  node: Repository
+}
+
+type MyOrganizationConnection {
+  edges: [MyOrganizationConnectionEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type MyOrganizationConnectionEdge {
+  cursor: String!
+  node: Owner
+}
+
+type SessionConnection {
+  edges: [SessionConnectionEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type SessionConnectionEdge {
+  cursor: String!
+  node: Session
+}
+
+type UserTokenConnection {
+  edges: [UserTokenConnectionEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type UserTokenConnectionEdge {
+  cursor: String!
+  node: UserToken
+}
+
+type Branch {
+  name: String!
+  headSha: String!
+  head: Commit
+}
+
+type Commit {
+  state: String
+  message: String
+  createdAt: DateTime
+  commitid: String
+  author: Owner
+  totals: CoverageTotals
+  parent: Commit
+  pullId: Int
+  branchName: String
+  yaml: String
+  yamlState: YamlStates
+  ciPassed: Boolean
+  flagNames: [String]
+  coverageFile(path: String!, flags: [String]): File
+  compareWithParent: ComparisonResult
+  uploads(first: Int, after: String, last: Int, before: String): UploadConnection
+  criticalFiles: [CriticalFile!]!
+  pathContents(path: String, filters: PathContentsFilters): PathContentsResult
+  errors(errorType: CommitErrorType!): CommitErrorsConnection!
+  totalUploads: Int!
+  components: [Component!]!
+}
+
+type CommitErrorsConnection {
+  edges: [CommitErrorEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type CommitErrorEdge {
+  cursor: String!
+  node: CommitError!
+}
+
+type CommitError {
+  errorCode: CommitErrorCode!
+}
+
+type UploadConnection {
+  edges: [UploadEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type UploadEdge {
+  cursor: String!
+  node: Upload!
+}
+
+type Comparison {
+  state: String!
+  impactedFile(path: String!): ImpactedFile
+  impactedFiles(filters: ImpactedFilesFilters): [ImpactedFile]!
+  impactedFilesCount: Int!
+  indirectChangedFilesCount: Int!
+  patchTotals: CoverageTotals
+  directChangedFilesCount: Int!
+  baseTotals: CoverageTotals
+  headTotals: CoverageTotals
+  changeCoverage: Float
+  flagComparisons: [FlagComparison]
+  componentComparisons: [ComponentComparison!]
+  hasDifferentNumberOfHeadAndBaseReports: Boolean!
+  flagComparisonsCount: Int!
+  componentComparisonsCount: Int!
+}
+
+type MissingBaseCommit implements ResolverError {
+  message: String!
+}
+
+type MissingHeadCommit implements ResolverError {
+  message: String!
+}
+
+type MissingComparison implements ResolverError {
+  message: String!
+}
+
+type MissingBaseReport implements ResolverError {
+  message: String!
+}
+
+type MissingHeadReport implements ResolverError {
+  message: String!
+}
+
+type FirstPullRequest {
+  message: String!
+}
+
+union ComparisonResult = Comparison | FirstPullRequest | MissingBaseCommit | MissingHeadCommit | MissingComparison | MissingBaseReport | MissingHeadReport
+
+type Component {
+  id: String!
+  name: String!
+  totals: CoverageTotals
+}
+
+type ComponentComparison {
+  id: String!
+  name: String!
+  baseTotals: CoverageTotals
+  headTotals: CoverageTotals
+  patchTotals: CoverageTotals
+}
+
+type Flag {
+  name: String!
+  percentCovered: Float
+  percentChange: Float
+  measurements(interval: MeasurementInterval!, after: DateTime!, before: DateTime!): [Measurement!]!
+}
+
+type FlagConnection {
+  edges: [FlagConnectionEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type FlagConnectionEdge {
+  cursor: String!
+  node: Flag
+}
+
+type FlagComparison {
+  name: String
+  headTotals: CoverageTotals
+  baseTotals: CoverageTotals
+  patchTotals: CoverageTotals
+}
+
+type SegmentComparison {
+  header: String
+  hasUnintendedChanges: Boolean!
+  lines: [LineComparison!]!
+}
+
+type SegmentComparisons {
+  results: [SegmentComparison!]!
+}
+
+union SegmentsResult = SegmentComparisons | UnknownPath | ProviderError
+
+type CoverageInfo {
+  hitCount: Int
+  hitUploadIds: [Int!]
+}
+
+type LineComparison {
+  baseNumber: String
+  headNumber: String
+  baseCoverage: CoverageLine
+  headCoverage: CoverageLine
+  content: String
+  coverageInfo(ignoredUploadIds: [Int!]): CoverageInfo!
+}
+
+type Measurement {
+  timestamp: DateTime!
+  avg: Float
+  min: Float
+  max: Float
+}
+
+type Pull {
+  behindBy: Int
+  behindByCommit: String
+  title: String
+  state: PullRequestState
+  pullId: Int
+  author: Owner
+  updatestamp: DateTime
+  head: Commit
+  comparedTo: Commit
+  compareWithBase: ComparisonResult
+  commits(first: Int, after: String, last: Int, before: String): CommitConnection
+  firstPull: Boolean!
+}
+
+type User {
+  username: String!
+  name: String
+  avatarUrl: String
+  student: Boolean!
+  studentCreatedAt: DateTime
+  studentUpdatedAt: DateTime
+}
+
+type Owner {
+  avatarUrl: String
+  username: String
+  isCurrentUserPartOfOrg: Boolean!
+  yaml: String
+  repositories(filters: RepositorySetFilters, ordering: RepositoryOrdering, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): RepositoryConnection!
+  repository(name: String!): RepositoryResult!
+  repositoryDeprecated(name: String!): Repository
+  numberOfUploads: Int
+  isAdmin: Boolean!
+  hashOwnerid: String!
+  ownerid: Int!
+  plan: Plan
+  pretrialPlan: PlanRepresentation
+  availablePlans: [PlanRepresentation!]!
+  orgUploadToken: String
+  defaultOrgUsername: String
+  isCurrentUserActivated: Boolean!
+  measurements(interval: MeasurementInterval!, after: DateTime, before: DateTime, repos: [String!]): [Measurement!]!
+}
+
+type RepositoryConnection {
+  edges: [RepositoryConnectionEdge]
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type RepositoryConnectionEdge {
+  cursor: String!
+  node: Repository
+}
+
+type Repository {
+  name: String!
+  active: Boolean!
+  activated: Boolean!
+  private: Boolean!
+  coverage: Float
+  coverageSha: String
+  hits: Int
+  misses: Int
+  lines: Int
+  oldestCommitAt: DateTime
+  latestCommitAt: DateTime
+  updatedAt: DateTime
+  author: Owner!
+  uploadToken: String
+  branch(name: String): Branch
+  commit(id: String!): Commit
+  pull(id: Int!): Pull
+  pulls(filters: PullsSetFilters, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): PullConnection
+  commits(filters: CommitsSetFilters, first: Int, after: String, last: Int, before: String): CommitConnection
+  branches(filters: BranchesSetFilters, first: Int, after: String, last: Int, before: String): BranchConnection
+  flags(filters: FlagSetFilters, orderingDirection: OrderingDirection, first: Int, after: String, last: Int, before: String): FlagConnection!
+  defaultBranch: String
+  profilingToken: String
+  criticalFiles: [CriticalFile!]!
+  graphToken: String
+  yaml: String
+  bot: Owner
+  flagsCount: Int!
+  flagsMeasurementsActive: Boolean!
+  flagsMeasurementsBackfilled: Boolean!
+  measurements(interval: MeasurementInterval!, after: DateTime, before: DateTime, branch: String): [Measurement!]!
+  repositoryConfig: RepositoryConfig
+  staticAnalysisToken: String
+}
+
+type PullConnection {
+  edges: [PullEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type PullEdge {
+  cursor: String!
+  node: Pull!
+}
+
+type CommitConnection {
+  edges: [CommitEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type CommitEdge {
+  cursor: String!
+  node: Commit!
+}
+
+type BranchConnection {
+  edges: [BranchEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type BranchEdge {
+  cursor: String!
+  node: Branch!
+}
+
+union RepositoryResult = Repository | NotFoundError | OwnerNotActivatedError
+
+input ActivateMeasurementsInput {
+  owner: String!
+  repoName: String!
+  measurementType: MeasurementType!
+}
+
+input BranchesSetFilters {
+  searchValue: String
+  mergedBranches: Boolean
+}
+
+input CancelTrialInput {
+  orgUsername: String
+}
+
+input CommitsSetFilters {
+  hideFailedCI: Boolean
+  branchName: String
+  pullId: Int
+  search: String
+  states: [CommitState!]
+}
+
+input CreateApiTokenInput {
+  name: String!
+}
+
+input CreateUserTokenInput {
+  name: String!
+  tokenType: String
+}
+
+input DeleteFlagInput {
+  ownerUsername: String!
+  repoName: String!
+  flagName: String!
+}
+
+input DeleteSessionInput {
+  sessionid: Int!
+}
+
+input FlagSetFilters {
+  term: String
+  flagsNames: [String]
+}
+
+input ImpactedFilesFilters {
+  ordering: ImpactedFilesOrdering
+  hasUnintendedChanges: Boolean
+  flags: [String!]
+}
+
+input ImpactedFilesOrdering {
+  direction: OrderingDirection
+  parameter: ImpactedFileParameter
+}
+
+input MeasurementSetFilters {
+  repoId: Int
+  branch: String
+  flagId: Int
+  after: DateTime!
+  before: DateTime!
+}
+
+input OnboardUserInput {
+  email: String
+  businessEmail: String
+  typeProjects: [TypeProjectOnboarding]!
+  goals: [GoalOnboarding]!
+  otherGoal: String
+}
+
+input OrganizationSetFilters {
+  term: String
+}
+
+input PathContentsFilters {
+  searchValue: String
+  displayType: PathContentDisplayType
+  ordering: PathContentsOrdering
+  flags: [String!]
+}
+
+input PathContentsOrdering {
+  direction: OrderingDirection
+  parameter: OrderingParameter
+}
+
+input PullsSetFilters {
+  state: [PullRequestState]
+}
+
+input RegenerateOrgUploadTokenInput {
+  owner: String!
+}
+
+input RegenerateRepositoryTokenInput {
+  owner: String!
+  repoName: String!
+  tokenType: RepositoryTokenType!
+}
+
+input RepositorySetFilters {
+  term: String
+  repoNames: [String]
+  active: Boolean
+  activated: Boolean
+}
+
+input RevokeUserTokenInput {
+  tokenid: String!
+}
+
+input SaveSentryStateInput {
+  state: String!
+}
+
+input SegmentsFilters {
+  hasUnintendedChanges: Boolean
+}
+
+input SetYamlOnOwnerInput {
+  username: String!
+  yaml: String!
+}
+
+input StartTrialInput {
+  orgUsername: String
+}
+
+type Plan {
+  trialStatus: TrialStatus!
+  trialStartDate: DateTime
+  trialEndDate: DateTime
+  trialTotalDays: Int
+  pretrialUsersCount: Int
+  marketingName: String!
+  planName: String!
+  tierName: String!
+  billingRate: String
+  baseUnitPrice: Int!
+  benefits: [String!]!
+  monthlyUploadLimit: Int
+}
+
+type PlanRepresentation {
+  marketingName: String!
+  planName: String!
+  billingRate: String
+  baseUnitPrice: Int!
+  benefits: [String!]!
+  monthlyUploadLimit: Int
+}
+
+enum CommitErrorCode {
+  repo_bot_invalid
+  invalid_yaml
+  yaml_client_error
+  yaml_unknown_error
+}
+
+enum CommitErrorType {
+  YAML_ERROR
+  BOT_ERROR
+}
+
+enum CommitState {
+  COMPLETE
+  PENDING
+  ERROR
+  SKIPPED
+}
+
+"""
+Possible value for the coverage of a line, using single letter for a more compact response
+"""
+enum CoverageLine {
+  H
+  M
+  P
+}
+
+enum GoalOnboarding {
+  STARTING_WITH_TESTS
+  IMPROVE_COVERAGE
+  MAINTAIN_COVERAGE
+  TEAM_REQUIREMENTS
+  OTHER
+}
+
+"""Possible value for the impacted file list"""
+enum ImpactedFileParameter {
+  FILE_NAME
+  CHANGE_COVERAGE
+  HEAD_COVERAGE
+  MISSES_COUNT
+  PATCH_COVERAGE
+}
+
+enum LoginProvider {
+  GITHUB
+  GITHUB_ENTERPRISE
+  GITLAB
+  GITLAB_ENTERPRISE
+  BITBUCKET
+  BITBUCKET_SERVER
+  OKTA
+}
+
+enum MeasurementInterval {
+  INTERVAL_1_DAY
+  INTERVAL_7_DAY
+  INTERVAL_30_DAY
+}
+
+enum MeasurementType {
+  COVERAGE
+  FLAG_COVERAGE
+  COMPONENT_COVERAGE
+}
+
+enum OrderingDirection {
+  ASC
+  DESC
+}
+
+"""Possible value for the search values for a path tree of a pull request"""
+enum OrderingParameter {
+  NAME
+  COVERAGE
+  HITS
+  MISSES
+  PARTIALS
+  LINES
+}
+
+enum PathContentDisplayType {
+  LIST
+  TREE
+}
+
+"""Possible value for the state of a pull request"""
+enum PullRequestState {
+  OPEN
+  CLOSED
+  MERGED
+}
+
+enum RepositoryOrdering {
+  COMMIT_DATE
+  COVERAGE
+  ID
+  NAME
+}
+
+enum RepositoryTokenType {
+  UPLOAD
+  PROFILING
+  STATIC_ANALYSIS
+}
+
+enum TierName {
+  BASIC
+  TEAM
+  PRO
+  ENTERPRISE
+}
+
+enum TrialStatus {
+  NOT_STARTED
+  ONGOING
+  EXPIRED
+  CANNOT_TRIAL
+}
+
+enum TypeProjectOnboarding {
+  PERSONAL
+  YOUR_ORG
+  OPEN_SOURCE
+  EDUCATIONAL
+}
+
+enum UploadErrorEnum {
+  FILE_NOT_IN_STORAGE
+  REPORT_EXPIRED
+  REPORT_EMPTY
+}
+
+enum UploadState {
+  STARTED
+  UPLOADED
+  PROCESSED
+  ERROR
+  COMPLETE
+}
+
+enum UploadType {
+  UPLOADED
+  CARRIEDFORWARD
+}
+
+enum YamlStates {
+  DEFAULT
+}
+
+type Session {
+  sessionid: Int
+  ip: String
+  lastseen: DateTime
+  useragent: String
+  type: String!
+  name: String
+  lastFour: String
+}
+
+type Mutation {
+  createApiToken(input: CreateApiTokenInput!): CreateApiTokenPayload
+  createUserToken(input: CreateUserTokenInput!): CreateUserTokenPayload
+  revokeUserToken(input: RevokeUserTokenInput!): RevokeUserTokenPayload
+  setYamlOnOwner(input: SetYamlOnOwnerInput!): SetYamlOnOwnerPayload
+  startTrial(input: StartTrialInput!): StartTrialPayload
+  cancelTrial(input: CancelTrialInput!): CancelTrialPayload
+  syncWithGitProvider: SyncWithGitProviderPayload
+  updateProfile(input: UpdateProfileInput!): UpdateProfilePayload
+  updateDefaultOrganization(input: UpdateDefaultOrganizationInput!): UpdateDefaultOrganizationPayload
+  deleteSession(input: DeleteSessionInput!): DeleteSessionPayload
+  onboardUser(input: OnboardUserInput!): OnboardUserPayload
+  regenerateRepositoryToken(input: RegenerateRepositoryTokenInput!): RegenerateRepositoryTokenPayload
+  activateMeasurements(input: ActivateMeasurementsInput!): activateMeasurementsPayload
+  regenerateOrgUploadToken(input: RegenerateOrgUploadTokenInput!): RegenerateOrgUploadTokenPayload
+  deleteFlag(input: DeleteFlagInput!): DeleteFlagPayload
+  saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
+  saveTermsAgreement(input: SaveTermsAgreementInput!): SaveTermsAgreementPayload
+}
+
+union CreateApiTokenError = UnauthenticatedError | ValidationError
+
+type CreateApiTokenPayload {
+  error: CreateApiTokenError
+  session: Session
+  fullToken: String
+}
+
+union SyncWithGitProviderError = UnauthenticatedError
+
+type SyncWithGitProviderPayload {
+  me: Me
+  error: SyncWithGitProviderError
+}
+
+union DeleteSessionError = UnauthenticatedError
+
+type DeleteSessionPayload {
+  error: DeleteSessionError
+}
+
+union SetYamlOnOwnerError = UnauthenticatedError | ValidationError | UnauthorizedError | NotFoundError
+
+type SetYamlOnOwnerPayload {
+  error: SetYamlOnOwnerError
+  owner: Owner
+}
+
+union UpdateProfileError = UnauthenticatedError | ValidationError
+
+type UpdateProfilePayload {
+  error: CreateApiTokenError
+  me: Me
+}
+
+input UpdateProfileInput {
+  email: String
+  name: String
+}
+
+union UpdateDefaultOrganizationError = UnauthenticatedError | ValidationError
+
+type UpdateDefaultOrganizationPayload {
+  error: UpdateDefaultOrganizationError
+  username: String
+}
+
+input UpdateDefaultOrganizationInput {
+  username: String
+}
+
+union OnboardUserError = UnauthenticatedError | UnauthorizedError | ValidationError
+
+type OnboardUserPayload {
+  error: OnboardUserError
+  me: Me
+}
+
+union RegenerateRepositoryTokenError = UnauthenticatedError | ValidationError
+
+type RegenerateRepositoryTokenPayload {
+  token: String
+  error: RegenerateRepositoryTokenError
+}
+
+union ActivateMeasurementsError = UnauthenticatedError | ValidationError
+
+type activateMeasurementsPayload {
+  error: ActivateMeasurementsError
+}
+
+union RegenerateOrgUploadTokenError = UnauthenticatedError | ValidationError | UnauthorizedError
+
+type RegenerateOrgUploadTokenPayload {
+  orgUploadToken: String
+  error: RegenerateOrgUploadTokenError
+}
+
+union CreateUserTokenError = UnauthenticatedError | ValidationError
+
+type CreateUserTokenPayload {
+  error: CreateUserTokenError
+  token: UserToken
+  fullToken: String
+}
+
+union RevokeUserTokenError = UnauthenticatedError
+
+type RevokeUserTokenPayload {
+  error: RevokeUserTokenError
+}
+
+union DeleteFlagError = UnauthenticatedError | UnauthorizedError | ValidationError | NotFoundError
+
+type DeleteFlagPayload {
+  error: DeleteFlagError
+}
+
+union SaveSentryStateError = UnauthenticatedError | ValidationError
+
+type SaveSentryStatePayload {
+  error: SaveSentryStateError
+}
+
+union SaveTermsAgreementError = UnauthenticatedError | ValidationError
+
+type SaveTermsAgreementPayload {
+  error: SaveTermsAgreementError
+}
+
+input SaveTermsAgreementInput {
+  businessEmail: String
+  termsAgreement: Boolean!
+}
+
+union StartTrialError = UnauthenticatedError | ValidationError
+
+type StartTrialPayload {
+  error: StartTrialError
+}
+
+union CancelTrialError = UnauthenticatedError | ValidationError
+
+type CancelTrialPayload {
+  error: CancelTrialError
+}
+
+interface ResolverError {
+  message: String!
+}
+
+type UnauthenticatedError implements ResolverError {
+  message: String!
+}
+
+type UnauthorizedError implements ResolverError {
+  message: String!
+}
+
+type NotFoundError implements ResolverError {
+  message: String!
+}
+
+type ValidationError implements ResolverError {
+  message: String!
+}
+
+type MissingCoverage implements ResolverError {
+  message: String!
+}
+
+type UnknownPath implements ResolverError {
+  message: String!
+}
+
+type UnknownFlags implements ResolverError {
+  message: String!
+}
+
+type ProviderError implements ResolverError {
+  message: String!
+}
+
+type OwnerNotActivatedError implements ResolverError {
+  message: String!
+}
+
+interface PathContent {
+  name: String!
+  path: String
+  hits: Int!
+  misses: Int!
+  partials: Int!
+  lines: Int!
+  percentCovered: Float!
+}
+
+type PathContentFile implements PathContent {
+  name: String!
+  path: String
+  hits: Int!
+  misses: Int!
+  partials: Int!
+  lines: Int!
+  percentCovered: Float!
+  isCriticalFile: Boolean!
+}
+
+type PathContentDir implements PathContent {
+  name: String!
+  path: String
+  hits: Int!
+  misses: Int!
+  partials: Int!
+  lines: Int!
+  percentCovered: Float!
+}
+
+type PathContents {
+  results: [PathContent!]!
+}
+
+union PathContentsResult = PathContents | MissingHeadReport | MissingCoverage | UnknownPath | UnknownFlags
+
+type CoverageTotals {
+  percentCovered: Float
+  fileCount: Int
+  lineCount: Int
+  hitsCount: Int
+  missesCount: Int
+  partialsCount: Int
+  coverage: Float @deprecated(reason: "Use `percentCovered`")
+}
+
+type Upload {
+  state: UploadState!
+  provider: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  flags: [String]
+  downloadUrl: String
+  ciUrl: String
+  uploadType: UploadType
+  jobCode: String
+  buildCode: String
+  errors: UploadErrorsConnection
+  name: String
+  id: Int
+}
+
+type UploadErrorsConnection {
+  edges: [UploadErrorsEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type UploadErrorsEdge {
+  cursor: String!
+  node: UploadError!
+}
+
+type UploadError {
+  errorCode: UploadErrorEnum
+}
+
+type File {
+  content: String
+  coverage: [CoverageAnnotation]
+  totals: CoverageTotals
+  isCriticalFile: Boolean
+  hashedPath: String!
+}
+
+type CoverageAnnotation {
+  line: Int
+  coverage: CoverageLine
+}
+
+type CriticalFile {
+  name: String!
+}
+
+type Profile {
+  otherGoal: String
+  goals: [GoalOnboarding]!
+  typeProjects: [TypeProjectOnboarding]!
+  createdAt: DateTime!
+}
+
+type ImpactedFile {
+  fileName: String
+  baseName: String
+  headName: String
+  isNewFile: Boolean!
+  isRenamedFile: Boolean!
+  isDeletedFile: Boolean!
+  isCriticalFile: Boolean!
+  baseCoverage: CoverageTotals
+  headCoverage: CoverageTotals
+  patchCoverage: CoverageTotals
+  changeCoverage: Float
+  missesCount: Int!
+  hashedPath: String!
+  segments(filters: SegmentsFilters): SegmentsResult!
+}
+
+type Config {
+  loginProviders: [LoginProvider!]!
+  seatsUsed: Int
+  seatsLimit: Int
+  isTimescaleEnabled: Boolean!
+  hasAdmins: Boolean
+  githubEnterpriseURL: String
+  gitlabEnterpriseURL: String
+  bitbucketServerURL: String
+}
+
+type UserToken {
+  id: String!
+  name: String!
+  type: String!
+  lastFour: String!
+  expiration: DateTime
+}
+
+type RepositoryConfig {
+  indicationRange: IndicationRange
+}
+
+type IndicationRange {
+  upperRange: Int!
+  lowerRange: Int!
+}
