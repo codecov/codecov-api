@@ -3,6 +3,8 @@ setup:
   debug: no
   loglvl: INFO
   encryption_secret: "zp^P9*i8aR3"
+  okta:
+    iss: "https://example.okta.com"
   http:
     force_https: yes
     cookie_secret: abc123
