@@ -98,7 +98,7 @@ class ComponentMeasurements:
 
     @cached_property
     def percent_covered(self):
-        if len(self.raw_measurements) > 1:
+        if len(self.raw_measurements) > 0:
             return self.raw_measurements[-1]["avg"]
 
     @cached_property

@@ -8,7 +8,7 @@ from timeseries.models import Interval, MeasurementName
 
 def component_measurements(
     repository: Repository,
-    component_ids: Iterable[int],
+    component_ids: Iterable[str],
     interval: Interval,
     after: datetime,
     before: datetime,

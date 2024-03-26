@@ -409,10 +409,9 @@ def resolve_component_measurements(
     interval: Interval,
     before: datetime,
     after: datetime,
-    filters: Mapping = None,
-    ordering_direction: OrderingDirection = OrderingDirection.ASC,
-    branch: str = None,
-    **kwargs
+    branch: Optional[str] = None,
+    filters: Optional[Mapping] = None,
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
 ):
     components = UserYaml.get_final_yaml(
         owner_yaml=repository.author.yaml,
