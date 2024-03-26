@@ -1,13 +1,13 @@
 from datetime import datetime
 from typing import Iterable, Mapping
 
-from django.db.models import Avg, Max, Min, QuerySet
+from django.db.models import QuerySet
 
 from compare.models import CommitComparison, FlagComparison
 from core.models import Repository
+from graphql_api.actions.measurements import measurements_by_ids
 from reports.models import RepositoryFlag
-from timeseries.helpers import aggregate_measurements, aligned_start_date
-from timeseries.models import Interval, MeasurementName, MeasurementSummary
+from timeseries.models import Interval, MeasurementName
 
 
 def flags_for_repo(repository: Repository, filters: Mapping = None) -> QuerySet:
@@ -48,25 +48,18 @@ def flag_measurements(
     after: datetime,
     before: datetime,
 ) -> Mapping[int, Iterable[dict]]:
-    queryset = MeasurementSummary.agg_by(interval).filter(
-        name=MeasurementName.FLAG_COVERAGE.value,
-        owner_id=repository.author_id,
-        repo_id=repository.pk,
-        measurable_id__in=[str(flag_id) for flag_id in flag_ids],
-        timestamp_bin__gte=aligned_start_date(interval, after),
-        timestamp_bin__lte=before,
+    measurements = measurements_by_ids(
+        repository=repository,
+        measurable_name=MeasurementName.FLAG_COVERAGE.value,
+        measurable_ids=[str(flag_id) for flag_id in flag_ids],
+        interval=interval,
+        after=after,
+        before=before,
     )
 
-    queryset = aggregate_measurements(
-        queryset, ["timestamp_bin", "owner_id", "repo_id", "measurable_id"]
-    )
-
-    # group by flag_id
-    measurements = {}
-    for measurement in queryset:
-        flag_id = int(measurement["measurable_id"])
-        if flag_id not in measurements:
-            measurements[flag_id] = []
-        measurements[flag_id].append(measurement)
-
-    return measurements
+    # By default the measurable_id is str type,
+    # however for flags we need to convert it to an int
+    return {
+        int(measurable_id): measurement
+        for (measurable_id, measurement) in measurements.items()
+    }
