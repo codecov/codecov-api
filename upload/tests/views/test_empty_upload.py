@@ -338,6 +338,65 @@ def test_empty_upload_no_changed_files_in_pr(
 @patch("services.task.TaskService.notify")
 @patch("upload.views.empty_upload.final_commit_yaml")
 @patch("services.repo_providers.RepoProviderService.get_adapter")
+@patch("upload.helpers.jwt.decode")
+@patch("upload.helpers.PyJWKClient")
+def test_empty_upload_no_changed_files_in_pr_github_oidc_auth(
+    mock_jwks_client,
+    mock_jwt_decode,
+    mock_repo_provider_service,
+    mock_final_yaml,
+    notify_mock,
+    db,
+    mocker,
+):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    mock_jwt_decode.return_value = {
+        "repository": f"url/{repository.name}",
+        "repository_owner": repository.author.username,
+        "iss": "https://token.actions.githubusercontent.com",
+    }
+    token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+    mock_final_yaml.return_value = UserYaml(
+        {
+            "ignore": [
+                "file.py",
+                "another_file.py",
+            ]
+        }
+    )
+    mock_repo_provider_service.return_value = MockedProviderAdapter([])
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.empty_upload",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+        ],
+    )
+    response = client.post(
+        url,
+        headers={"Authorization": f"token {token}"},
+    )
+    response_json = response.json()
+    assert response.status_code == 200
+    assert (
+        response_json.get("result")
+        == "All changed files are ignored. Triggering passing notifications."
+    )
+    assert response_json.get("non_ignored_files") == []
+    notify_mock.assert_called_once_with(
+        repoid=repository.repoid, commitid=commit.commitid, empty_upload="pass"
+    )
+
+
+@patch("services.task.TaskService.notify")
+@patch("upload.views.empty_upload.final_commit_yaml")
+@patch("services.repo_providers.RepoProviderService.get_adapter")
 def test_empty_upload_no_commit_pr_id(
     mock_repo_provider_service, mock_final_yaml, notify_mock, db, mocker
 ):
