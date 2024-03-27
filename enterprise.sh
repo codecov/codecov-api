@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Starts the enterprise gunicorn server (no --reload)
 echo "Starting api"
