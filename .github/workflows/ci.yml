@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - staging
+      - trent/fix-pvn
   pull_request:
 
 concurrency:
