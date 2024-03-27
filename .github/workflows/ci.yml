@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - staging
-      - trent/fix-pvn
   pull_request:
 
 concurrency:
@@ -65,8 +64,8 @@ jobs:
   staging:
     name: Push Staging Image
     needs: [build, test]
-    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/trent/fix-pvn' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@trent/fix-pvn
+    if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.17
     secrets: inherit
     with:
       environment: staging
@@ -76,7 +75,7 @@ jobs:
     name: Push Production Image
     needs: [ build, test ]
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.12
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.17
     secrets: inherit
     with:
       environment: production
