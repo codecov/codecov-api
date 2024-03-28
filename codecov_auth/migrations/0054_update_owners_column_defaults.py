@@ -7,29 +7,36 @@ from shared.django_apps.migration_utils import RiskyRunSQL
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('codecov_auth', '0053_ownerinstallationnametousefortask_and_more'),
+        ("codecov_auth", "0053_ownerinstallationnametousefortask_and_more"),
     ]
 
     operations = [
         RiskyRunSQL(
-            "ALTER TABLE owners ALTER COLUMN plan_user_count SET DEFAULT 1;"
+            "ALTER TABLE owners ALTER COLUMN plan_user_count SET DEFAULT 1;",
+            reverse_sql="ALTER TABLE owners ALTER COLUMN plan_user_count SET DEFAULT NULL;",
         ),
         RiskyRunSQL(
-            "ALTER TABLE owners ALTER COLUMN updatestamp SET DEFAULT now();"
+            "ALTER TABLE owners ALTER COLUMN updatestamp SET DEFAULT now();",
+            reverse_sql="ALTER TABLE owners ALTER COLUMN updatestamp SET DEFAULT NULL;",
         ),
         RiskyRunSQL(
-            "ALTER TABLE owners ALTER COLUMN is_superuser SET DEFAULT false;"
+            "ALTER TABLE owners ALTER COLUMN is_superuser SET DEFAULT false;",
+            reverse_sql="ALTER TABLE owners ALTER COLUMN is_superuser SET DEFAULT NULL;",
         ),
         RiskyRunSQL(
-            "ALTER TABLE owners ALTER COLUMN createstamp SET DEFAULT now();"
+            "ALTER TABLE owners ALTER COLUMN createstamp SET DEFAULT now();",
+            reverse_sql="ALTER TABLE owners ALTER COLUMN createstamp SET DEFAULT NULL;",
         ),
         RiskyRunSQL(
-            "UPDATE owners SET plan_user_count=1 WHERE plan_user_count IS NULL;"
+            "UPDATE owners SET plan_user_count=1 WHERE plan_user_count IS NULL;",
+            reverse_sql=migrations.RunSQL.noop,
         ),
         RiskyRunSQL(
-            "UPDATE owners SET updatestamp=now() WHERE updatestamp IS NULL;"
+            "UPDATE owners SET updatestamp=now() WHERE updatestamp IS NULL;",
+            reverse_sql=migrations.RunSQL.noop,
         ),
         RiskyRunSQL(
-            "UPDATE owners SET is_superuser=false WHERE is_superuser IS NULL;"
+            "UPDATE owners SET is_superuser=false WHERE is_superuser IS NULL;",
+            reverse_sql=migrations.RunSQL.noop,
         ),
     ]
