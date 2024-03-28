@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.validation.exceptions import InvalidYamlException
 from shared.yaml.validation import validate_yaml
+from shared.metrics import metrics as sentry_metrics
 from yaml import YAMLError, safe_load
 
 log = logging.getLogger(__name__)
@@ -77,6 +78,10 @@ class V2ValidateYamlHandler(V1ValidateYamlHandler):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
+        source = self.request.query_params.get("source", None)
+        if source is not None:
+            sentry_metrics.set("validate_yaml_source", source)
+
         if not self.request.body:
             return Response(
                 {

@@ -5,7 +5,7 @@ from yaml import YAMLError
 
 
 class TestValidateYamlV2Handler(TestCase):
-    def _post(self, data):
+    def _post(self, data, query_source=""):
         client = Client()
         return client.post(
             reverse("validate-yaml-v2"), data=data, content_type="text/plain"
@@ -56,3 +56,8 @@ class TestValidateYamlV2Handler(TestCase):
                 "comment": True,
             },
         }
+
+    def test_query_source_metric(self, mocker):
+        mock_sentry_metrics = mocker.patch("validate.views.sentry_metrics")
+        res = self._post("comment: true", query_source="vscode_extension")
+        assert mock_sentry_metrics.assert_called_with("validate_yaml_source", "vscode_extension")
