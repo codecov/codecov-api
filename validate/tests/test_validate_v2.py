@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import Client, TestCase
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
@@ -7,8 +9,13 @@ from yaml import YAMLError
 class TestValidateYamlV2Handler(TestCase):
     def _post(self, data, query_source=""):
         client = Client()
+        if query_source:
+            query_source = f"?source={query_source}"
+            print(reverse("validate-yaml-v2") + query_source)
         return client.post(
-            reverse("validate-yaml-v2"), data=data, content_type="text/plain"
+            reverse("validate-yaml-v2") + query_source,
+            data=data,
+            content_type="text/plain",
         )
 
     def test_no_data(self):
@@ -57,7 +64,11 @@ class TestValidateYamlV2Handler(TestCase):
             },
         }
 
-    def test_query_source_metric(self, mocker):
-        mock_sentry_metrics = mocker.patch("validate.views.sentry_metrics")
-        res = self._post("comment: true", query_source="vscode_extension")
-        assert mock_sentry_metrics.assert_called_with("validate_yaml_source", "vscode_extension")
+    @patch("validate.views.sentry_metrics.set")
+    def test_query_source_metric(self, mock_sentry_metrics):
+        self._post("comment: true", query_source="vscode_extension")
+        print(mock_sentry_metrics.mock_calls)
+        mock_sentry_metrics.assert_called()
+        mock_sentry_metrics.assert_called_with(
+            "validate_yaml_source", "vscode_extension"
+        )
