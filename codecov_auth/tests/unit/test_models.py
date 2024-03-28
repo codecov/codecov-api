@@ -567,11 +567,16 @@ class TestGithubAppInstallationModel(TransactionTestCase):
             pem_path="some_path",
         )
         installation_default.save()
+
         installation_configured.save()
         installation_not_configured.save()
         installation_default_name_not_configured.save()
         installation_default_name_not_default_id_configured.save()
+
         assert installation_default.is_configured() == True
+        installation_default.app_id = str(self.DEFAULT_APP_ID)
+        assert installation_default.is_configured() == True
+
         assert installation_configured.is_configured() == True
         assert installation_not_configured.is_configured() == False
         assert installation_default_name_not_configured.app_id != self.DEFAULT_APP_ID
