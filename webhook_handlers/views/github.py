@@ -5,6 +5,7 @@ from contextlib import suppress
 from hashlib import sha1, sha256
 from typing import Optional, Union
 
+from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -433,7 +434,10 @@ class GithubWebhookHandler(APIView):
         service_id = request.data["installation"]["account"]["id"]
         username = request.data["installation"]["account"]["login"]
         owner, _ = Owner.objects.get_or_create(
-            service=self.service_name, service_id=service_id, username=username
+            service=self.service_name,
+            service_id=service_id,
+            username=username,
+            defaults={"createstamp": timezone.now()},
         )
         installation_id = request.data["installation"]["id"]
 
@@ -471,7 +475,10 @@ class GithubWebhookHandler(APIView):
         action = request.data.get("action")
 
         owner, _ = Owner.objects.get_or_create(
-            service=self.service_name, service_id=service_id, username=username
+            service=self.service_name,
+            service_id=service_id,
+            username=username,
+            defaults={"createstamp": timezone.now()},
         )
 
         installation_id = request.data["installation"]["id"]

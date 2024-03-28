@@ -5,6 +5,7 @@ from hashlib import sha1, sha256
 from unittest.mock import call, patch
 
 import pytest
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -637,6 +638,7 @@ class GithubWebhookHandlerTests(APITestCase):
         pull.refresh_from_db()
         assert pull.title == new_title
 
+    @freeze_time("2024-03-28T00:00:00")
     @patch("services.task.TaskService.refresh")
     def test_installation_creates_new_owner_if_dne_default_app(self, mock_refresh):
         username, service_id = "newuser", 123456
@@ -665,6 +667,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert owner_set.exists()
 
         owner = owner_set.first()
+        assert owner.createstamp.isoformat() == "2024-03-28T00:00:00+00:00"
 
         ghapp_installations_set = GithubAppInstallation.objects.filter(
             owner_id=owner.ownerid
