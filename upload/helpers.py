@@ -224,14 +224,7 @@ def parse_params(data):
 
 def get_repo_with_github_actions_oidc_token(token):
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_1",
-        extra=dict(detail=f"{unverified_contents}"),
-    )
     token_issuer = str(unverified_contents.get("iss"))
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_2", extra=dict(detail=token_issuer)
-    )
     if token_issuer == "https://token.actions.githubusercontent.com":
         service = "github"
         jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
@@ -239,37 +232,19 @@ def get_repo_with_github_actions_oidc_token(token):
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_3",
-        extra=dict(detail=f"{service} {jwks_url}"),
-    )
     jwks_client = PyJWKClient(jwks_url)
     signing_key = jwks_client.get_signing_key_from_jwt(token)
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_3.5",
-        extra=dict(detail=f"audience=[{settings.CODECOV_API_URL}]"),
-    )
     data = jwt.decode(
         token,
         signing_key.key,
         algorithms=["RS256"],
         audience=[settings.CODECOV_API_URL],
     )
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_4", extra=dict(detail=f"{data}")
-    )
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_4", extra=dict(detail=f"{data}")
-    )
     repo = str(data.get("repository")).split("/")[-1]
     repository = Repository.objects.get(
         author__service=service,
         name=repo,
         author__username=data.get("repository_owner"),
-    )
-    log.warning(
-        msg="get_repo_with_github_actions_oidc_token_5",
-        extra=dict(detail=f"{repository.repoid}, {repository.name}"),
     )
     return repository
 
