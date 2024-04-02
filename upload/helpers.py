@@ -1,12 +1,10 @@
 import logging
 import re
-from datetime import timedelta
 from json import dumps
 from typing import Optional
 
 import jwt
 from asgiref.sync import async_to_sync
-from celery import chain, signature
 from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -25,7 +23,7 @@ from codecov_auth.models import (
     GithubAppInstallation,
     Owner,
 )
-from core.models import Commit, CommitNotification, Pull, Repository
+from core.models import Commit, Repository
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from reports.models import CommitReport, ReportSession
@@ -240,7 +238,7 @@ def get_repo_with_github_actions_oidc_token(token):
         token,
         signing_key.key,
         algorithms=["RS256"],
-        audience=get_config("setup", "codecov_url"),
+        audience=[settings.CODECOV_API_URL],
     )
     repo = str(data.get("repository")).split("/")[-1]
     repository = Repository.objects.get(
