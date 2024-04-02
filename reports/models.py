@@ -284,6 +284,13 @@ class TestInstance(BaseCodecovModel):
         on_delete=models.CASCADE,
     )
     failure_message = models.TextField(null=True)
+    flake = models.ForeignKey(
+        "Flake",
+        db_column="flake_id",
+        related_name="testinstances",
+        on_delete=models.CASCADE,
+        null=True,
+    )
 
     class Meta:
         db_table = "reports_testinstance"
@@ -298,3 +305,16 @@ class TestResultReportTotals(BaseCodecovModel):
 
     class Meta:
         db_table = "reports_testresultreporttotals"
+
+
+class Flake(BaseCodecovModel):
+    class FlakeSymptomType(models.Choices):
+        FAILED_IN_DEFAULT_BRANCH = "failed_in_default_branch"
+        CONSECUTIVE_DIFF_OUTCOMES = "consecutive_diff_outcomes"
+        UNRELATED_MATCHING_FAILURES = "unrelated_matching_failures"
+
+    test = models.ForeignKey(
+        "Test", db_column="test_id", related_name="flakes", on_delete=models.CASCADE
+    )
+    active = models.BooleanField()
+    flake_symptoms = ArrayField(models.CharField(max_length=100), null=True)
