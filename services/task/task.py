@@ -416,7 +416,7 @@ class TaskService(object):
 
     def delete_component_measurements(self, repoid: int, component_id: str) -> None:
         log.info(
-            f"Delete component mesurements data",
+            f"Delete component measurements data",
             extra=dict(repository_id=repoid, component_id=component_id),
         )
         self._create_signature(
