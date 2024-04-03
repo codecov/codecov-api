@@ -148,8 +148,6 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
     stripe_subscription_id = models.TextField(null=True, blank=True)
     stripe_coupon_id = models.TextField(null=True, blank=True)
 
-    # createstamp seems to be used by legacy to track first login
-    # so we shouldn't touch this outside login
     createstamp = models.DateTimeField(null=True)
 
     service_id = models.TextField(null=False)
