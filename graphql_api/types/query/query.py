@@ -1,11 +1,9 @@
 from typing import Optional
 
 from ariadne import ObjectType
-from django.conf import settings
-from graphql import GraphQLError, GraphQLResolveInfo
+from graphql import GraphQLResolveInfo
 from sentry_sdk import configure_scope
 
-from codecov.commands.exceptions import UnauthorizedGuestAccess
 from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from graphql_api.actions.owner import get_owner
@@ -45,12 +43,6 @@ def resolve_owner(_, info, username):
     configure_sentry_scope(query_name(info))
 
     service = info.context["service"]
-    user = info.context["request"].current_owner
-
-    if settings.IS_ENTERPRISE and settings.GUEST_ACCESS is False:
-        if not user or not user.is_authenticated:
-            raise UnauthorizedGuestAccess()
-
     return get_owner(service, username)
 
 
