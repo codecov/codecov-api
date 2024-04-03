@@ -512,7 +512,7 @@ class GithubAppInstallation(
             return True
         # The default app is configured in the installation YAML
         installation_default_app_id = get_config("github", "integration", "id")
-        return self.app_id == installation_default_app_id
+        return str(self.app_id) == str(installation_default_app_id)
 
     def repository_queryset(self) -> BaseManager[Repository]:
         """Returns a QuerySet of repositories covered by this installation"""

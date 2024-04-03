@@ -5,6 +5,7 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
@@ -22,6 +23,7 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
     authentication_classes = [
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
 
