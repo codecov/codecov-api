@@ -4,9 +4,11 @@ from unittest.mock import patch
 import pytest
 from django.forms import ValidationError
 from django.test import TransactionTestCase
+from shared.utils.test_utils import mock_config_helper
 
 from codecov_auth.models import (
     DEFAULT_AVATAR_SIZE,
+    GITHUB_APP_INSTALLATION_DEFAULT_NAME,
     INFINITY,
     SERVICE_BITBUCKET,
     SERVICE_BITBUCKET_SERVER,
@@ -466,6 +468,15 @@ class TestOrganizationLevelTokenModel(TransactionTestCase):
 
 
 class TestGithubAppInstallationModel(TransactionTestCase):
+
+    DEFAULT_APP_ID = 12345
+
+    @pytest.fixture(autouse=True)
+    def mock_default_app_id(self, mocker):
+        mock_config_helper(
+            mocker, configs={"github.integration.id": self.DEFAULT_APP_ID}
+        )
+
     def test_covers_all_repos(self):
         owner = OwnerFactory()
         repo1 = RepositoryFactory(author=owner)
@@ -519,7 +530,11 @@ class TestGithubAppInstallationModel(TransactionTestCase):
     def test_is_configured(self):
         owner = OwnerFactory()
         installation_default = GithubAppInstallation(
-            owner=owner, repository_service_ids=None, installation_id=100
+            owner=owner,
+            repository_service_ids=None,
+            installation_id=123,
+            app_id=self.DEFAULT_APP_ID,
+            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
         )
         installation_configured = GithubAppInstallation(
             owner=owner,
@@ -536,9 +551,40 @@ class TestGithubAppInstallationModel(TransactionTestCase):
             name="my_other_installation",
             app_id=1234,
         )
+        installation_default_name_not_configured = GithubAppInstallation(
+            owner=owner,
+            repository_service_ids=None,
+            installation_id=100,
+            app_id=121212,
+            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
+        )
+        installation_default_name_not_default_id_configured = GithubAppInstallation(
+            owner=owner,
+            repository_service_ids=None,
+            installation_id=100,
+            app_id=121212,
+            name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
+            pem_path="some_path",
+        )
         installation_default.save()
+
         installation_configured.save()
         installation_not_configured.save()
+        installation_default_name_not_configured.save()
+        installation_default_name_not_default_id_configured.save()
+
         assert installation_default.is_configured() == True
+        installation_default.app_id = str(self.DEFAULT_APP_ID)
+        assert installation_default.is_configured() == True
+
         assert installation_configured.is_configured() == True
         assert installation_not_configured.is_configured() == False
+        assert installation_default_name_not_configured.app_id != self.DEFAULT_APP_ID
+        assert installation_default_name_not_configured.is_configured() == False
+        assert (
+            installation_default_name_not_default_id_configured.app_id
+            != self.DEFAULT_APP_ID
+        )
+        assert (
+            installation_default_name_not_default_id_configured.is_configured() == True
+        )
