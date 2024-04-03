@@ -72,6 +72,4 @@ class TestValidateYamlV2Handler(TestCase):
         self._post("comment: true", query_source="vscode")
         print(mock_metrics.mock_calls)
         mock_metrics.assert_called()
-        mock_metrics.assert_called_with(
-            "validate_v2", tags={"source": "vscode"}
-        )
+        mock_metrics.assert_called_with("validate_v2", tags={"source": "vscode"})
