@@ -1,0 +1,5 @@
+union DeleteComponentMeasurementsError = UnauthenticatedError | UnauthorizedError | ValidationError | NotFoundError
+
+type DeleteComponentMeasurementsPayload {
+    error: DeleteComponentMeasurementsError
+}

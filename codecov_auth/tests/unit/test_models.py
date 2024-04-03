@@ -576,6 +576,9 @@ class TestGithubAppInstallationModel(TransactionTestCase):
         assert installation_default.is_configured() == True
         installation_default.app_id = str(self.DEFAULT_APP_ID)
         assert installation_default.is_configured() == True
+        # Unconfigured apps are not configured
+        installation_default.name = "unconfigured_app"
+        assert installation_default.is_configured() == False
 
         assert installation_configured.is_configured() == True
         assert installation_not_configured.is_configured() == False

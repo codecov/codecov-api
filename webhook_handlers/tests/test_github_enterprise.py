@@ -6,6 +6,7 @@ from hashlib import sha256
 from unittest.mock import call, patch
 
 import pytest
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
@@ -462,6 +463,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         pull.refresh_from_db()
         assert pull.title == new_title
 
+    @freeze_time("2024-03-28T00:00:00")
     @patch(
         "services.task.TaskService.refresh",
         lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
@@ -495,6 +497,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert owner_set.exists()
 
         owner = owner_set.first()
+        assert owner.createstamp.isoformat() == "2024-03-28T00:00:00+00:00"
 
         ghapp_installations_set = GithubAppInstallation.objects.filter(
             owner_id=owner.ownerid
@@ -546,6 +549,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert installation.installation_id == 4
         assert installation.repository_service_ids == None
 
+    @freeze_time("2024-03-28T00:00:00")
     @patch(
         "services.task.TaskService.refresh",
         lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
@@ -576,6 +580,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert owner_set.exists()
 
         owner = owner_set.first()
+        assert owner.createstamp.isoformat() == "2024-03-28T00:00:00+00:00"
 
         ghapp_installations_set = GithubAppInstallation.objects.filter(
             owner_id=owner.ownerid
