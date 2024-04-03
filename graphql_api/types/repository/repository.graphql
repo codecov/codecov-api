@@ -71,7 +71,7 @@ type Repository {
   languages: [String!]
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
-  componentMeasurements(
+  components(
     interval: MeasurementInterval!
     before: DateTime!
     after: DateTime!
