@@ -44,7 +44,17 @@ class RepositoryViewSet(
     def get_queryset(self):
         return super().get_queryset().with_recent_coverage()
 
-    @extend_schema(summary="Repository list")
+    @extend_schema(
+        summary="Repository list",
+        parameters=[
+            OpenApiParameter(
+                name="names",
+                type={"type": "array", "items": "string"},
+                explode=True,
+                description="list of repository names",
+            )
+        ],
+    )
     def list(self, request, *args, **kwargs):
         """
         Returns a paginated list of repositories for the specified provider service and owner username
