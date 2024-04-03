@@ -366,7 +366,7 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_commit_uploads_not_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):
