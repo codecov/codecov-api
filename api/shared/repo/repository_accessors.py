@@ -3,6 +3,7 @@ import logging
 
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from rest_framework.exceptions import APIException, PermissionDenied
 from shared.torngit.exceptions import TorngitClientError
 
@@ -72,6 +73,7 @@ class RepoAccessors:
             service=repo_owner_service,
             username=result["owner"]["username"],
             service_id=result["owner"]["service_id"],
+            defaults={"createstamp": timezone.now()},
         )
 
         return Repository.objects.get_or_create_from_git_repo(

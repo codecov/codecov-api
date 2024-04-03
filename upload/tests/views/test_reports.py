@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -31,6 +31,41 @@ def test_reports_post(client, db, mocker):
     repository.save()
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(url, data={"code": "code1"})
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+    assert response.status_code == 201
+    assert CommitReport.objects.filter(
+        commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
+    ).exists()
+    mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+
+
+@patch("upload.helpers.jwt.decode")
+@patch("upload.helpers.PyJWKClient")
+def test_reports_post_github_oidc_auth(
+    mock_jwks_client, mock_jwt_decode, client, db, mocker
+):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    mock_jwt_decode.return_value = {
+        "repository": f"url/{repository.name}",
+        "repository_owner": repository.author.username,
+        "iss": "https://token.actions.githubusercontent.com",
+    }
+    token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+    commit = CommitFactory(repository=repository)
+    repository.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + token)
     url = reverse(
         "new_upload.reports",
         args=["github", "codecov::::the_repo", commit.commitid],
@@ -161,6 +196,48 @@ def test_reports_results_post_successful(client, db, mocker):
     owner = repository.author
     client = APIClient()
     client.force_authenticate(user=owner)
+    url = reverse(
+        "new_upload.reports_results",
+        args=["github", "codecov::::the_repo", commit.commitid, "code"],
+    )
+    response = client.post(url, content_type="application/json", data={})
+
+    assert (
+        url
+        == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports/code/results"
+    )
+    assert response.status_code == 201
+    assert ReportResults.objects.filter(
+        report_id=commit_report.id,
+    ).exists()
+    mocked_task.assert_called_once()
+
+
+@patch("upload.helpers.jwt.decode")
+@patch("upload.helpers.PyJWKClient")
+def test_reports_results_post_successful_github_oidc_auth(
+    mock_jwks_client, mock_jwt_decode, client, db, mocker
+):
+    mocked_task = mocker.patch("services.task.TaskService.create_report_results")
+    mocker.patch.object(
+        CanDoCoverageUploadsPermission, "has_permission", return_value=True
+    )
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    mock_jwt_decode.return_value = {
+        "repository": f"url/{repository.name}",
+        "repository_owner": repository.author.username,
+        "iss": "https://token.actions.githubusercontent.com",
+    }
+    token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    repository.save()
+    commit_report.save()
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {token}")
     url = reverse(
         "new_upload.reports_results",
         args=["github", "codecov::::the_repo", commit.commitid, "code"],
