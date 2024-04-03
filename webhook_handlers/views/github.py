@@ -412,9 +412,7 @@ class GithubWebhookHandler(APIView):
 
         return Response()
 
-    def _decide_app_name(
-        self, ghapp: GithubAppInstallation, app_id: Union[str, int]
-    ) -> str:
+    def _decide_app_name(self, ghapp: GithubAppInstallation) -> str:
         """Possibly updated the name of a GithubAppInstallation that has been fetched from DB or created.
         Only the real default installation maybe use the name `GITHUB_APP_INSTALLATION_DEFAULT_NAME`
         (otherwise we break the app)
@@ -427,6 +425,10 @@ class GithubWebhookHandler(APIView):
         """
         if ghapp.is_configured():
             return ghapp.name
+        log.warning(
+            "Github installation is unconfigured. Changing name to 'unconfigured_app'",
+            extra=dict(installation=ghapp.external_id, previous_name=ghapp.name),
+        )
         return "unconfigured_app"
 
     def _handle_installation_repository_events(self, request, *args, **kwargs):
@@ -448,7 +450,7 @@ class GithubWebhookHandler(APIView):
         # Either update or set
         # But this value shouldn't change for the installation, so doesn't matter
         ghapp_installation.app_id = app_id
-        ghapp_installation.name = self._decide_app_name(ghapp_installation, app_id)
+        ghapp_installation.name = self._decide_app_name(ghapp_installation)
 
         all_repos_affected = request.data.get("repository_selection") == "all"
         if all_repos_affected:
@@ -516,9 +518,7 @@ class GithubWebhookHandler(APIView):
                 # Either update or set
                 # But this value shouldn't change for the installation, so doesn't matter
                 ghapp_installation.app_id = app_id
-                ghapp_installation.name = self._decide_app_name(
-                    ghapp_installation, app_id
-                )
+                ghapp_installation.name = self._decide_app_name(ghapp_installation)
 
                 affects_all_repositories = (
                     request.data["installation"]["repository_selection"] == "all"
