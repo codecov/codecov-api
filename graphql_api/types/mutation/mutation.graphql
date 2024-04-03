@@ -24,4 +24,5 @@ type Mutation {
   deleteFlag(input: DeleteFlagInput!): DeleteFlagPayload
   saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
   saveTermsAgreement(input: SaveTermsAgreementInput!): SaveTermsAgreementPayload
+  deleteComponentMeasurements(input: DeleteComponentMeasurementsInput!): DeleteComponentMeasurementsPayload
 }

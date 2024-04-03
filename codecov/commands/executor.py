@@ -3,6 +3,7 @@ from codecov_auth.models import Owner, User
 from compare.commands.compare import CompareCommands
 from core.commands.branch import BranchCommands
 from core.commands.commit import CommitCommands
+from core.commands.component import ComponentCommands
 from core.commands.flag import FlagCommands
 from core.commands.pull import PullCommands
 from core.commands.repository import RepositoryCommands
@@ -18,6 +19,7 @@ mapping = {
     "pull": PullCommands,
     "upload": UploadCommands,
     "flag": FlagCommands,
+    "component": ComponentCommands,
 }
 
 

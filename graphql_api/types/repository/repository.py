@@ -5,11 +5,13 @@ import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
+from shared.yaml import UserYaml
 
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from core.models import Branch, Repository
 from graphql_api.actions.commits import repo_commits
+from graphql_api.actions.components import component_measurements
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -20,6 +22,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
@@ -283,6 +286,47 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
     return dataset.is_backfilled()
 
 
+@repository_bindable.field("componentsMeasurementsActive")
+@sync_to_async
+def resolve_components_measurements_active(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    return Dataset.objects.filter(
+        name=MeasurementName.COMPONENT_COVERAGE.value,
+        repository_id=repository.pk,
+    ).exists()
+
+
+@repository_bindable.field("componentsMeasurementsBackfilled")
+@sync_to_async
+def resolve_components_measurements_backfilled(repository: Repository, info) -> bool:
+    if not settings.TIMESERIES_ENABLED:
+        return False
+
+    dataset = Dataset.objects.filter(
+        name=MeasurementName.COMPONENT_COVERAGE.value,
+        repository_id=repository.pk,
+    ).first()
+
+    if not dataset:
+        return False
+
+    return dataset.is_backfilled()
+
+
+@repository_bindable.field("componentsCount")
+@sync_to_async
+def resolve_components_count(repository: Repository, info) -> int:
+    repo_yaml_components = UserYaml.get_final_yaml(
+        owner_yaml=repository.author.yaml,
+        repo_yaml=repository.yaml,
+        ownerid=repository.author.ownerid,
+    ).get_components()
+
+    return len(repo_yaml_components)
+
+
 @repository_bindable.field("isATSConfigured")
 def resolve_is_ats_configured(repository: Repository, info) -> bool:
     if not repository.yaml or "flag_management" not in repository.yaml:
@@ -354,3 +398,52 @@ def resolve_repository_result_type(obj, *_):
         return "OwnerNotActivatedError"
     elif isinstance(obj, NotFoundError):
         return "NotFoundError"
+
+
+@repository_bindable.field("components")
+@convert_kwargs_to_snake_case
+@sync_to_async
+def resolve_component_measurements(
+    repository: Repository,
+    info,
+    interval: Interval,
+    before: datetime,
+    after: datetime,
+    branch: Optional[str] = None,
+    filters: Optional[Mapping] = None,
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
+):
+    components = UserYaml.get_final_yaml(
+        owner_yaml=repository.author.yaml,
+        repo_yaml=repository.yaml,
+        ownerid=repository.author.ownerid,
+    ).get_components()
+
+    if not settings.TIMESERIES_ENABLED or not components:
+        return []
+
+    if filters and "components" in filters:
+        components = [
+            c_id for c_id in components if c_id.component_id in filters["components"]
+        ]
+
+    component_ids = [c.component_id for c in components]
+    all_measurements = component_measurements(
+        repository, component_ids, interval, after, before, branch
+    )
+    queried_measurements = [
+        ComponentMeasurements(
+            raw_measurements=all_measurements.get(component_id, []),
+            component_id=component_id,
+            interval=interval,
+            after=after,
+            before=before,
+        )
+        for component_id in component_ids
+    ]
+
+    return sorted(
+        queried_measurements,
+        key=lambda c: c.name,
+        reverse=ordering_direction == OrderingDirection.DESC,
+    )
