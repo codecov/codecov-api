@@ -400,7 +400,7 @@ def resolve_repository_result_type(obj, *_):
         return "NotFoundError"
 
 
-@repository_bindable.field("componentMeasurements")
+@repository_bindable.field("components")
 @convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_component_measurements(

@@ -778,7 +778,7 @@ query ComponentMeasurements(
 ) {
     owner(username: $name) {
         repository: repositoryDeprecated(name: $repo) {
-            componentMeasurements(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+            components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
                 __typename
                 ... on ComponentMeasurements {
                     name
@@ -901,7 +901,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "componentMeasurements": [
+                    "components": [
                         {
                             "__typename": "ComponentMeasurements",
                             "name": "golang",
@@ -983,7 +983,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "componentMeasurements": [
+                    "components": [
                         {
                             "__typename": "ComponentMeasurements",
                             "name": "golang",
@@ -1013,7 +1013,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
             "before": timezone.datetime(2022, 6, 23),
         }
         data = self.gql_request(query_component_measurements, variables=variables)
-        assert data == {"owner": {"repository": {"componentMeasurements": []}}}
+        assert data == {"owner": {"repository": {"components": []}}}
 
     def test_component_measurements_with_filter(self):
         MeasurementFactory(
@@ -1090,7 +1090,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "componentMeasurements": [
+                    "components": [
                         {
                             "__typename": "ComponentMeasurements",
                             "name": "python",
@@ -1203,7 +1203,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "componentMeasurements": [
+                    "components": [
                         {
                             "__typename": "ComponentMeasurements",
                             "name": "golang",
