@@ -1,6 +1,3 @@
-from graphql import GraphQLError
-
-
 class BaseException(Exception):
     pass
 
@@ -25,8 +22,3 @@ class NotFound(BaseException):
 
 class MissingService(BaseException):
     message = "Missing required service"
-
-
-class UnauthorizedGuestAccess(GraphQLError):
-    def __init__(self):
-        super().__init__("Unauthorized", extensions={"status": 403})
