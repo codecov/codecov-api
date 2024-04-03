@@ -26,8 +26,8 @@ gunicorn>=22.0.0
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 idna>=3.7
 minio
-opentelemetry-instrumentation-django>=0.41b0
-opentelemetry-sdk>=1.20.0
+opentelemetry-instrumentation-django>=0.45b0
+opentelemetry-sdk>=1.24.0
 opentracing
 pre-commit
 psycopg2
