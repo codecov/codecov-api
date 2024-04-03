@@ -415,6 +415,10 @@ class TaskService(object):
         ).apply_async()
 
     def delete_component_measurements(self, repoid: int, component_id: str) -> None:
+        log.info(
+            f"Delete component mesurements data",
+            extra=dict(repository_id=repoid, component_id=component_id),
+        )
         self._create_signature(
             celery_config.timeseries_delete_task_name,
             kwargs=dict(
