@@ -78,9 +78,8 @@ class V2ValidateYamlHandler(V1ValidateYamlHandler):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        source = self.request.query_params.get("source", None)
-        if source is not None:
-            sentry_metrics.set("validate_yaml_source", source)
+        source = self.request.query_params.get("source", "unknown")
+        sentry_metrics.incr("validate_v2", tags={"source": source})
 
         if not self.request.body:
             return Response(
