@@ -512,6 +512,8 @@ class GithubAppInstallation(
         """Returns whether this installation is properly configured and can be used"""
         if self.app_id is not None and self.pem_path is not None:
             return True
+        if self.name == "unconfigured_app":
+            return False
         # The default app is configured in the installation YAML
         installation_default_app_id = get_config("github", "integration", "id")
         return str(self.app_id) == str(installation_default_app_id)
