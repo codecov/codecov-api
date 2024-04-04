@@ -1,5 +1,5 @@
 upload/ @codecov/Platform
-graphql_api/ @codecov/Applications
+graphql_api/ @codecov/API
 **/migrations/ @codecov/database-migration-reviewers
 
 codecov_auth/models.py @adrian-codecov
