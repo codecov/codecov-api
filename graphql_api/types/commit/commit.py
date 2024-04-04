@@ -273,6 +273,8 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
 
     if flags_filter and not commit_report.flags:
         return UnknownFlags(f"No coverage with chosen flags: {flags_filter}")
+    elif flags_filter:
+        commit_report = commit_report.filter(flags=flags_filter)
 
     report_paths = ReportPaths(
         report=commit_report,
