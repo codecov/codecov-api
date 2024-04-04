@@ -1,10 +1,12 @@
 from django.urls import reverse
 from shared.django_apps.reports.models import *
+from shared.django_apps.reports.models import REPORTS_APP_LABEL
 
 
 class ProxyReportSession(ReportSession):
     class Meta:
         proxy = True
+        app_label = REPORTS_APP_LABEL
 
     @property
     def download_url(self):
