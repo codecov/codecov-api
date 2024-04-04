@@ -47,7 +47,7 @@ class AdminTest(TestCase):
         message = []
         message.append({"changed": {"fields": ["using_integration"]}})
         self.repo_admin.log_change(MagicMock, repo, message)
-        assert mocked_super_log_change.called_once()
+        mocked_super_log_change.assert_called_once()
         assert message == [
             {"changed": {"fields": ["using_integration"]}},
             {"using_integration": "prev value: True, new value: False"},

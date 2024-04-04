@@ -40,7 +40,7 @@ class DeleteFlagTest(GraphQLTestHelper, TransactionTestCase):
 
         assert data == {"deleteFlag": None}
 
-        assert execute_mock.called_once_with(
+        execute_mock.assert_called_once_with(
             owner_username="test-owner",
             repo_name="test-repo",
             flag_name="test-flag",
