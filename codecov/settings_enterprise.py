@@ -71,3 +71,5 @@ ADMINS_LIST = get_config("setup", "admins", default=[])
 CSRF_TRUSTED_ORIGINS = [
     get_config("setup", "trusted_origin", default=DEFAULT_TRUSTED_ORIGIN)
 ]
+
+GUEST_ACCESS = get_config("setup", "guest_access", default=True)

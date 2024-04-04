@@ -348,6 +348,27 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert data["me"]["owner"]["repository"]["flagsMeasurementsActive"] == False
         assert data["me"]["owner"]["repository"]["flagsMeasurementsBackfilled"] == False
 
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_repository_components_metadata(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user)
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsMeasurementsActive
+                componentsMeasurementsBackfilled
+            """,
+            owner=user,
+            variables={"name": repo.name},
+        )
+        assert (
+            data["me"]["owner"]["repository"]["componentsMeasurementsActive"] == False
+        )
+        assert (
+            data["me"]["owner"]["repository"]["componentsMeasurementsBackfilled"]
+            == False
+        )
+
     @patch("shared.yaml.user_yaml.UserYaml.get_final_yaml")
     def test_repository_repository_config_indication_range(self, mocked_useryaml):
         mocked_useryaml.return_value = {"coverage": {"range": [60, 80]}}
@@ -501,3 +522,49 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_repository(repo.name)
         assert res["languages"] == ["C", "C++"]
+
+    def test_repository_has_components_count(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {"component_id": "blah", "paths": [r".*\.go"]},
+                        {"component_id": "cool_rules"},
+                    ],
+                }
+            },
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsCount
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["componentsCount"] == 2
+
+    def test_repository_no_components_count(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsCount
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["componentsCount"] == 0

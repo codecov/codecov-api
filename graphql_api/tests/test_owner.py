@@ -2,12 +2,11 @@ import asyncio
 from datetime import timedelta
 from unittest.mock import patch
 
-import pytest
 from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
-from codecov.commands.exceptions import MissingService, Unauthenticated, Unauthorized
+from codecov.commands.exceptions import MissingService
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
@@ -280,7 +279,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         owner = OwnerFactory(username="random_org_test", service="github")
         query = query_current_user_is_admin % (owner.username)
         data = self.gql_request(query, owner=user, with_errors=True)
-        assert data["errors"][0]["message"] == Unauthorized.message
         assert data["data"]["owner"]["isAdmin"] is None
 
     @patch(

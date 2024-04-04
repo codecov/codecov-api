@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import PropertyMock, patch
 
 from django.test import TestCase
@@ -84,7 +84,7 @@ class CoverageMeasurement(TestCase):
         self.add_upload_measurements_records(owner=owner, quantity=3)
         freezer.stop()
 
-        # Now
+        # Uploads within the last 30 days
         freezer = freeze_time("2024-02-10T00:00:00")
         freezer.start()
         self.add_upload_measurements_records(owner=owner, quantity=5)
@@ -94,9 +94,13 @@ class CoverageMeasurement(TestCase):
         assert len(all_measurements) == 8
 
         plan_service = PlanService(current_org=owner)
+        # Now
+        freezer = freeze_time("2024-03-05T00:00:00")
+        freezer.start()
         monthly_measurements = query_monthly_coverage_measurements(
             plan_service=plan_service
         )
+        freezer.stop()
         assert monthly_measurements == 5
 
     def test_query_monthly_coverage_measurements_excluding_uploads_during_trial(self):
@@ -104,21 +108,21 @@ class CoverageMeasurement(TestCase):
         freezer.start()
         owner = OwnerFactory(
             trial_status="expired",
-            trial_start_date=datetime.utcnow(),
-            trial_end_date=datetime.utcnow() + timedelta(days=14),
+            trial_start_date=datetime.now(timezone.utc),
+            trial_end_date=datetime.now(timezone.utc) + timedelta(days=14),
         )
         freezer.stop()
 
+        # Within Trial Period
         freezer = freeze_time("2024-02-05T00:00:00")
         freezer.start()
         self.add_upload_measurements_records(owner=owner, quantity=3)
         freezer.stop()
 
-        # Now
+        # Post Trial Period
         freezer = freeze_time("2024-02-20T00:00:00")
         freezer.start()
         self.add_upload_measurements_records(owner=owner, quantity=6)
-        freezer.stop()
 
         all_measurements = UserMeasurement.objects.all()
         assert len(all_measurements) == 9
@@ -127,6 +131,7 @@ class CoverageMeasurement(TestCase):
         monthly_measurements = query_monthly_coverage_measurements(
             plan_service=plan_service
         )
+        freezer.stop()
         assert monthly_measurements == 6
 
     @patch("plan.service.PlanService.monthly_uploads_limit", new_callable=PropertyMock)

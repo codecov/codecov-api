@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from django.urls import reverse
@@ -268,3 +268,57 @@ def test_commit_tokenless_missing_branch(db, client, mocker):
     )
     assert response.status_code == 400
     mocked_call.assert_not_called()
+
+
+@patch("upload.helpers.jwt.decode")
+@patch("upload.helpers.PyJWKClient")
+def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
+    repository = RepositoryFactory.create(
+        private=False, author__username="codecov", name="the_repo"
+    )
+    mocked_call = mocker.patch.object(TaskService, "update_commit")
+    mock_jwt_decode.return_value = {
+        "repository": f"url/{repository.name}",
+        "repository_owner": repository.author.username,
+        "iss": "https://token.actions.githubusercontent.com",
+    }
+    token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+
+    client = APIClient()
+    repo_slug = f"{repository.author.username}::::{repository.name}"
+    url = reverse(
+        "new_upload.commits",
+        args=[repository.author.service, repo_slug],
+    )
+    response = client.post(
+        url,
+        {
+            "commitid": "commit_sha",
+            "pullid": "4",
+        },
+        format="json",
+        headers={"Authorization": f"token {token}"},
+    )
+    assert response.status_code == 201
+    response_json = response.json()
+    commit = Commit.objects.get(commitid="commit_sha")
+    expected_response = {
+        "author": None,
+        "branch": None,
+        "ci_passed": None,
+        "commitid": "commit_sha",
+        "message": None,
+        "parent_commit_id": None,
+        "repository": {
+            "name": repository.name,
+            "is_private": repository.private,
+            "active": repository.active,
+            "language": repository.language,
+            "yaml": repository.yaml,
+        },
+        "pullid": 4,
+        "state": None,
+        "timestamp": commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    }
+    assert expected_response == response_json
+    mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)

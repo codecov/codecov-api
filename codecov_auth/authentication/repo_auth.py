@@ -1,14 +1,17 @@
 import re
+from datetime import datetime
 from typing import List
 from uuid import UUID
 
 from asgiref.sync import async_to_sync
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
 from django.utils import timezone
+from jwt import PyJWTError
 from rest_framework import authentication, exceptions
-from shared.torngit.exceptions import TorngitObjectNotFoundError
+from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import metrics
+from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
 from codecov_auth.models import (
@@ -19,8 +22,9 @@ from codecov_auth.models import (
 )
 from core.models import Repository
 from services.repo_providers import RepoProviderService
-from upload.helpers import get_global_tokens
+from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import get_repository_from_string
+from utils import is_uuid
 
 
 class LegacyTokenRepositoryAuth(RepositoryAuthInterface):
@@ -29,13 +33,17 @@ class LegacyTokenRepositoryAuth(RepositoryAuthInterface):
         self._repository = repository
 
     def get_scopes(self):
-        return ["upload"]
+        return [TokenTypeChoices.UPLOAD]
 
     def get_repositories(self):
         return [self._repository]
 
     def allows_repo(self, repository):
         return repository in self.get_repositories()
+
+
+class OIDCTokenRepositoryAuth(LegacyTokenRepositoryAuth):
+    pass
 
 
 class TableTokenRepositoryAuth(RepositoryAuthInterface):
@@ -186,17 +194,35 @@ class GlobalTokenAuthentication(authentication.TokenAuthentication):
 
 class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, key):
-        # Actual verification for org level tokens
-        token = OrganizationLevelToken.objects.filter(token=key).first()
+        if is_uuid(key):
+            # Actual verification for org level tokens
+            token = OrganizationLevelToken.objects.filter(token=key).first()
 
-        if token is None:
-            return None
-        if token.valid_until and token.valid_until <= timezone.now():
-            raise exceptions.AuthenticationFailed("Token is expired.")
+            if token is None:
+                return None
+            if token.valid_until and token.valid_until <= timezone.now():
+                raise exceptions.AuthenticationFailed("Token is expired.")
+
+            return (
+                token.owner,
+                OrgLevelTokenRepositoryAuth(token),
+            )
+
+
+class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
+    def authenticate_credentials(self, token):
+        if not token or is_uuid(token):
+            return None  # continue to next auth class
+        try:
+            repository = get_repo_with_github_actions_oidc_token(token)
+        except (ObjectDoesNotExist, PyJWTError):
+            raise exceptions.AuthenticationFailed(
+                f"Github OIDC Token Auth: Invalid token."
+            )
 
         return (
-            token.owner,
-            OrgLevelTokenRepositoryAuth(token),
+            RepositoryAsUser(repository),
+            OIDCTokenRepositoryAuth(repository, {"token": token}),
         )
 
 
@@ -211,6 +237,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     """
 
     auth_failed_message = "Not valid tokenless upload"
+    rate_limit_failed_message = "Tokenless has reached GitHub rate limit. Please upload using a token: https://docs.codecov.com/docs/adding-the-codecov-token."
 
     def _get_repo_info_from_request_path(self, request) -> Repository:
         path_info = request.get_full_path_info()
@@ -245,6 +272,17 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
             return await repository_service.get_pull_request(fork_pr)
         except TorngitObjectNotFoundError:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        except TorngitRateLimitError as e:
+            metrics.incr("auth.get_pr_info.rate_limit_hit")
+            sentry_metrics.incr("auth.get_pr_info.rate_limit_hit")
+            if e.reset:
+                now_timestamp = datetime.now().timestamp()
+                retry_after = int(e.reset) - int(now_timestamp)
+            elif e.retry_after:
+                retry_after = int(e.retry_after)
+            raise exceptions.Throttled(
+                wait=retry_after, detail=self.rate_limit_failed_message
+            )
 
     def authenticate(self, request):
         fork_slug = request.headers.get("X-Tokenless", None)

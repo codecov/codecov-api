@@ -148,8 +148,6 @@ class Owner(ExportModelOperationsMixin("codecov_auth.owner"), models.Model):
     stripe_subscription_id = models.TextField(null=True, blank=True)
     stripe_coupon_id = models.TextField(null=True, blank=True)
 
-    # createstamp seems to be used by legacy to track first login
-    # so we shouldn't touch this outside login
     createstamp = models.DateTimeField(null=True)
 
     service_id = models.TextField(null=False)
@@ -510,10 +508,13 @@ class GithubAppInstallation(
 
     def is_configured(self) -> bool:
         """Returns whether this installation is properly configured and can be used"""
-        if self.name == GITHUB_APP_INSTALLATION_DEFAULT_NAME:
-            # The default app is configured in the installation YAML
+        if self.app_id is not None and self.pem_path is not None:
             return True
-        return self.app_id is not None and self.pem_path is not None
+        if self.name == "unconfigured_app":
+            return False
+        # The default app is configured in the installation YAML
+        installation_default_app_id = get_config("github", "integration", "id")
+        return str(self.app_id) == str(installation_default_app_id)
 
     def repository_queryset(self) -> BaseManager[Repository]:
         """Returns a QuerySet of repositories covered by this installation"""
