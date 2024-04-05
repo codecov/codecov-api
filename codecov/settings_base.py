@@ -555,4 +555,5 @@ MIGRATION_MODULES = {
     "codecov_auth": "shared.django_apps.codecov_auth.migrations",
     "core": "shared.django_apps.core.migrations",
     "reports": "shared.django_apps.reports.migrations",
+    "legacy_migrations": "shared.django_apps.legacy_migrations.migrations",
 }
