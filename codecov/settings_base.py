@@ -463,7 +463,11 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
     get_config("setup", "enterprise_license", default=False)
 )
 
-CORS_ALLOW_HEADERS = list(default_headers) + ["token-type"]
+CORS_ALLOW_HEADERS = (
+    list(default_headers)
+    + ["token-type"]
+    + get_config("setup", "api_cors_extra_headers", default=["baggage"])
+)
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
