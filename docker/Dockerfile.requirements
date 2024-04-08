@@ -18,8 +18,7 @@ RUN apk add --update --no-cache \
     build-base \
     cargo \
     curl-dev \
-    && pip install --upgrade pip \
-    && pip install --upgrade setuptools
+    && pip install --upgrade pip
 
 COPY requirements.txt /
 WORKDIR /pip-packages/
@@ -36,8 +35,7 @@ RUN apk -U upgrade binutils busybox expat libretls && \
     libffi-dev \
     make \
     curl \
-    && pip install --upgrade pip \
-    && pip install --upgrade setuptools
+    && pip install --upgrade pip
 
 
 WORKDIR /pip-packages/
