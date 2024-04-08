@@ -34,7 +34,8 @@ RUN apk -U upgrade binutils busybox expat libretls && \
     libxslt-dev \
     libffi-dev \
     make \
-    curl
+    curl \
+    && pip install --upgrade pip
 
 
 WORKDIR /pip-packages/
