@@ -80,7 +80,7 @@ type Repository {
     orderingDirection: OrderingDirection
   ): [ComponentMeasurements!]!
   componentsYaml(
-    term_id: String
+    termId: String
   ): [ComponentsYaml]!
 }
 

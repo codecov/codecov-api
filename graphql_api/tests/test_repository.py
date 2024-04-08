@@ -592,7 +592,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(
             query_repository
             % """
-                componentsYaml(term_id: null) {
+                componentsYaml(termId: null) {
                     id
                     name
                 }
@@ -629,7 +629,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(
             query_repository
             % """
-                componentsYaml(term_id: "blah") {
+                componentsYaml(termId: "blah") {
                     id
                     name
                 }
