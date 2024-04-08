@@ -3,14 +3,17 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
 from django.test import override_settings
 from django.utils import timezone
+from jwt import PyJWTError
 from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
 from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyQueryTokenAuthentication,
@@ -19,7 +22,7 @@ from codecov_auth.authentication.repo_auth import (
     TokenlessAuth,
     TokenlessAuthentication,
 )
-from codecov_auth.models import OrganizationLevelToken, RepositoryToken
+from codecov_auth.models import SERVICE_GITHUB, OrganizationLevelToken, RepositoryToken
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 
@@ -221,6 +224,55 @@ class TestGlobalTokenAuthentication(object):
         assert auth.get_scopes() == ["upload"]
 
 
+@patch("codecov_auth.authentication.repo_auth.get_repo_with_github_actions_oidc_token")
+class TestGitHubOIDCTokenAuthentication(object):
+    def test_authenticate_credentials_empty_returns_none(
+        self, mocked_get_repo_with_token, db
+    ):
+        token = None
+        authentication = GitHubOIDCTokenAuthentication()
+        res = authentication.authenticate_credentials(token)
+        assert res is None
+
+    def test_authenticate_credentials_uuid_returns_none(
+        self, mocked_get_repo_with_token, db
+    ):
+        token = uuid.uuid4()
+        authentication = GitHubOIDCTokenAuthentication()
+        res = authentication.authenticate_credentials(token)
+        assert res is None
+
+    def test_authenticate_credentials_no_repo(self, mocked_get_repo_with_token, db):
+        mocked_get_repo_with_token.side_effect = ObjectDoesNotExist()
+        token = "the best token"
+        authentication = GitHubOIDCTokenAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed):
+            authentication.authenticate_credentials(token)
+
+    def test_authenticate_credentials_oidc_error(self, mocked_get_repo_with_token, db):
+        mocked_get_repo_with_token.side_effect = PyJWTError()
+        token = "the best token"
+        authentication = GitHubOIDCTokenAuthentication()
+        with pytest.raises(exceptions.AuthenticationFailed):
+            authentication.authenticate_credentials(token)
+
+    def test_authenticate_credentials_oidc_valid(self, mocked_get_repo_with_token, db):
+        token = "the best token"
+        repository = RepositoryFactory()
+        owner = repository.author
+        owner.service = SERVICE_GITHUB
+        owner.save()
+        mocked_get_repo_with_token.return_value = repository
+        authentication = GitHubOIDCTokenAuthentication()
+        res = authentication.authenticate_credentials(token)
+        assert res is not None
+        user, auth = res
+        assert auth.get_repositories() == [repository]
+        assert auth.allows_repo(repository)
+        assert user._repository == repository
+        assert auth.get_scopes() == ["upload"]
+
+
 class TestOrgLevelTokenAuthentication(object):
     @override_settings(IS_ENTERPRISE=True)
     def test_enterprise_no_token_return_none(self, db, mocker):
@@ -344,6 +396,17 @@ class TestOrgLevelTokenAuthentication(object):
         assert auth.allows_repo(repository)
         assert auth.allows_repo(other_repo_from_owner)
         assert not auth.allows_repo(random_repo)
+
+    def test_token_is_not_uuid(self):
+        """
+        OIDC tokens are not UUID, so if you do token = OrganizationLevelToken.objects.filter(token=key).first(),
+        you get a ValidationError for trying a non-UUID in a models.UUIDField. Rather than adding a try/except,
+        check whether the incoming `key` is a UUID - if not, don't try to find it in OrganizationLevelToken.
+        """
+        authentication = OrgLevelTokenAuthentication()
+        token = "not a uuid"
+        res = authentication.authenticate_credentials(token)
+        assert res is None
 
 
 class TestTokenlessAuth(object):

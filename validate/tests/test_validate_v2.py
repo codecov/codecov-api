@@ -1,30 +1,38 @@
+from unittest.mock import patch
+
 from django.test import Client, TestCase
 from rest_framework.reverse import reverse
-from rest_framework.test import APITestCase
-from yaml import YAMLError
 
 
+@patch("validate.views.sentry_metrics.incr")
 class TestValidateYamlV2Handler(TestCase):
-    def _post(self, data):
+    def _post(self, data, query_source=""):
         client = Client()
+        if query_source:
+            query_source = f"?source={query_source}"
+            print(reverse("validate-yaml-v2") + query_source)
         return client.post(
-            reverse("validate-yaml-v2"), data=data, content_type="text/plain"
+            reverse("validate-yaml-v2") + query_source,
+            data=data,
+            content_type="text/plain",
         )
 
-    def test_no_data(self):
+    def test_no_data(self, mock_metrics):
         res = self._post("")
         assert res.status_code == 400
         assert res.json() == {"valid": False, "message": "YAML is empty"}
+        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
 
-    def test_list_type(self):
+    def test_list_type(self, mock_metrics):
         res = self._post("- testing: 123")
         assert res.status_code == 400
         assert res.json() == {
             "valid": False,
             "message": "YAML must be a dictionary type",
         }
+        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
 
-    def test_parse_error(self):
+    def test_parse_error(self, mock_metrics):
         res = self._post("foo: - 123")
         assert res.status_code == 400
         assert res.json() == {
@@ -36,8 +44,9 @@ class TestValidateYamlV2Handler(TestCase):
                 "problem": "sequence entries are not allowed here",
             },
         }
+        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
 
-    def test_parse_invalid(self):
+    def test_parse_invalid(self, mock_metrics):
         res = self._post("comment: 123")
         assert res.status_code == 400
         assert res.json() == {
@@ -45,8 +54,9 @@ class TestValidateYamlV2Handler(TestCase):
             "message": "YAML does not match the accepted schema",
             "validation_error": {"comment": ["must be of ['dict', 'boolean'] type"]},
         }
+        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
 
-    def test_parse_valid(self):
+    def test_parse_valid(self, mock_metrics):
         res = self._post("comment: true")
         assert res.status_code == 200
         assert res.json() == {
@@ -56,3 +66,10 @@ class TestValidateYamlV2Handler(TestCase):
                 "comment": True,
             },
         }
+        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
+
+    def test_query_source_metric(self, mock_metrics):
+        self._post("comment: true", query_source="vscode")
+        print(mock_metrics.mock_calls)
+        mock_metrics.assert_called()
+        mock_metrics.assert_called_with("validate_v2", tags={"source": "vscode"})

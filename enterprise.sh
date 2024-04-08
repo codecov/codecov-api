@@ -29,6 +29,7 @@ if [[ "$1" = "api" || -z "$1" ]];
 then
   # Migrate
   python manage.py migrate
+  python manage.py migrate --database "timeseries"
   # Start api
   ${SUB}$prefix gunicorn codecov.wsgi:application --workers=$GUNICORN_WORKERS --bind ${CODECOV_API_BIND:-0.0.0.0}:${CODECOV_API_PORT:-8000} --access-logfile '-' ${statsd}--timeout "${GUNICORN_TIMEOUT:-600}"${POST}
 elif [[ "$1" = "rti" ]];
@@ -38,6 +39,7 @@ then
 elif [[ "$1" = "migrate" ]];
 then
   python manage.py migrate
+  python manage.py migrate --database "timeseries"
 else
   exec "$@"
 fi

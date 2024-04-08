@@ -183,7 +183,9 @@ class LoginMixin(object):
 
     def get_or_create_org(self, single_organization):
         owner, was_created = Owner.objects.get_or_create(
-            service=self.service, service_id=single_organization["id"]
+            service=self.service,
+            service_id=single_organization["id"],
+            defaults={"createstamp": timezone.now()},
         )
         return owner
 
