@@ -6,11 +6,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
 from sentry_sdk import metrics as sentry_metrics
-from shared.config import get_config
 from shared.metrics import metrics
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
+    OIDCTokenRepositoryAuth,
     OrgLevelTokenAuthentication,
     OrgLevelTokenRepositoryAuth,
     RepositoryLegacyTokenAuthentication,
@@ -51,6 +52,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
     authentication_classes = [
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
@@ -173,7 +175,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         )
 
     def send_analytics_data(self, commit: Commit, upload: ReportSession, version):
-        token = self.get_token(commit)
+        token = self.get_token_for_analytics(commit)
         analytics_upload_data = {
             "commit": commit.commitid,
             "branch": commit.branch,
@@ -197,7 +199,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             commit.repository.author.ownerid, analytics_upload_data
         )
 
-    def get_token(self, commit: Commit):
+    def get_token_for_analytics(self, commit: Commit):
         repo = commit.repository
         if isinstance(self.request.auth, TokenlessAuth):
             token = "tokenless_upload"
@@ -205,6 +207,8 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             token = (
                 OrganizationLevelToken.objects.filter(owner=repo.author).first().token
             )
+        elif isinstance(self.request.auth, OIDCTokenRepositoryAuth):
+            token = "oidc_token_upload"
         else:
             token = repo.upload_token
         return token

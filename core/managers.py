@@ -318,6 +318,7 @@ class RepositoryQuerySet(QuerySet):
                 service=owner.service,
                 username=git_repo_fork_owner["username"],
                 service_id=git_repo_fork_owner["service_id"],
+                defaults={"createstamp": timezone.now()},
             )
             fork, _ = self.get_or_create(
                 author=fork_owner,

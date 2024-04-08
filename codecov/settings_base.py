@@ -504,7 +504,11 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
     get_config("setup", "enterprise_license", default=False)
 )
 
-CORS_ALLOW_HEADERS = list(default_headers) + ["token-type"]
+CORS_ALLOW_HEADERS = (
+    list(default_headers)
+    + ["token-type"]
+    + get_config("setup", "api_cors_extra_headers", default=["baggage"])
+)
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
@@ -590,3 +594,11 @@ elif IS_DEV:
 
 SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
 SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
+
+# Allows to do migrations from another module
+MIGRATION_MODULES = {
+    "codecov_auth": "shared.django_apps.codecov_auth.migrations",
+    "core": "shared.django_apps.core.migrations",
+    "reports": "shared.django_apps.reports.migrations",
+    "legacy_migrations": "shared.django_apps.legacy_migrations.migrations",
+}

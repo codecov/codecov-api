@@ -3,3 +3,15 @@ type Component {
     name: String!
     totals: CoverageTotals
 }
+
+type ComponentMeasurements {
+    name: String!
+    percentCovered: Float
+    percentChange: Float
+    measurements: [Measurement!]!
+}
+
+type ComponentsYaml {
+    id: String!
+    name: String!
+}

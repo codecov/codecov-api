@@ -14,7 +14,7 @@ from shared import celery_config
 
 from core.models import Repository
 from services.task.task_router import route_task
-from timeseries.models import Dataset
+from timeseries.models import Dataset, MeasurementName
 
 celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
@@ -410,5 +410,20 @@ class TaskService(object):
                 from_addr=from_addr,
                 subject=subject,
                 **kwargs,
+            ),
+        ).apply_async()
+
+    def delete_component_measurements(self, repoid: int, component_id: str) -> None:
+        log.info(
+            f"Delete component measurements data",
+            extra=dict(repository_id=repoid, component_id=component_id),
+        )
+        self._create_signature(
+            celery_config.timeseries_delete_task_name,
+            kwargs=dict(
+                repository_id=repoid,
+                measurement_only=True,
+                measurement_type=MeasurementName.COMPONENT_COVERAGE.value,
+                measurement_id=component_id,
             ),
         ).apply_async()

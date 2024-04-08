@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
 )
@@ -42,6 +43,7 @@ class BundleAnalysisView(APIView):
     permission_classes = [UploadBundleAnalysisPermission]
     authentication_classes = [
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
 

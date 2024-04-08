@@ -171,6 +171,33 @@ def test_commit_serializer_contains_expected_fields(transactional_db, mocker):
     assert serializer.data == expected_data
 
 
+def test_commit_serializer_does_not_duplicate(transactional_db, mocker):
+    repository = RepositoryFactory()
+    serializer = CommitSerializer()
+
+    saved_commit1 = serializer.create(
+        {
+            "repository": repository,
+            "commitid": "1234567",
+            "parent_commit_id": "2345678",
+            "pullid": 1,
+            "branch": "test_branch",
+        }
+    )
+
+    saved_commit2 = serializer.create(
+        {
+            "repository": repository,
+            "commitid": "1234567",
+            "parent_commit_id": "2345678",
+            "pullid": 1,
+            "branch": "test_branch",
+        }
+    )
+
+    assert saved_commit1 == saved_commit2
+
+
 def test_invalid_update_data(transactional_db, mocker):
     commit = CommitFactory.create()
     new_data = {"pullid": "1"}

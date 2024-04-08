@@ -37,15 +37,6 @@ class MinioEndpoints(Enum):
         return self.value.format(**kwaargs)
 
 
-def get_minio_client():
-    return Minio(
-        settings.MINIO_LOCATION,
-        access_key=settings.MINIO_SECRET_KEY,
-        secret_key=settings.MINIO_ACCESS_KEY,
-        secure=True,
-    )
-
-
 # Service class for performing archive operations. Meant to work against the
 # underlying StorageService
 class ArchiveService(object):

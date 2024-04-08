@@ -55,6 +55,9 @@ type Repository {
   flagsCount: Int!
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
+  componentsMeasurementsActive: Boolean!
+  componentsMeasurementsBackfilled: Boolean!
+  componentsCount: Int!
   measurements(
     interval: MeasurementInterval!
     after: DateTime
@@ -68,6 +71,17 @@ type Repository {
   languages: [String!]
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
+  components(
+    interval: MeasurementInterval!
+    before: DateTime!
+    after: DateTime!
+    branch: String
+    filters: ComponentMeasurementsSetFilters
+    orderingDirection: OrderingDirection
+  ): [ComponentMeasurements!]!
+  componentsYaml(
+    termId: String
+  ): [ComponentsYaml]!
 }
 
 type PullConnection {
