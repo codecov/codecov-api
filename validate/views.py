@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.metrics import metrics as sentry_metrics
+from sentry_sdk import metrics as sentry_metrics
 from shared.validation.exceptions import InvalidYamlException
 from shared.yaml.validation import validate_yaml
 from yaml import YAMLError, safe_load
