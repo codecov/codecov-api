@@ -447,3 +447,28 @@ def resolve_component_measurements(
         key=lambda c: c.name,
         reverse=ordering_direction == OrderingDirection.DESC,
     )
+
+
+@repository_bindable.field("componentsYaml")
+@convert_kwargs_to_snake_case
+def resolve_component_yaml(
+    repository: Repository, info, term: Optional[str]
+) -> List[str]:
+    components = UserYaml.get_final_yaml(
+        owner_yaml=repository.author.yaml,
+        repo_yaml=repository.yaml,
+        ownerid=repository.author.ownerid,
+    ).get_components()
+
+    components = [
+        {
+            "id": c.component_id,
+            "name": c.name,
+        }
+        for c in components
+    ]
+
+    if term:
+        components = filter(lambda c: term in c["id"], components)
+
+    return components

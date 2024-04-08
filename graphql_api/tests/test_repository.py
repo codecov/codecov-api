@@ -568,3 +568,76 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data["me"]["owner"]["repository"]["componentsCount"] == 0
+
+    def test_repository_components_select(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {
+                            "component_id": "blah",
+                            "paths": [r".*\.go"],
+                            "name": "blah_name",
+                        },
+                        {"component_id": "cool_rules", "name": "cool_name"},
+                    ],
+                }
+            },
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsYaml(term: null) {
+                    id
+                    name
+                }
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["componentsYaml"] == [
+            {"id": "blah", "name": "blah_name"},
+            {"id": "cool_rules", "name": "cool_name"},
+        ]
+
+    def test_repository_components_select_with_search(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {
+                            "component_id": "blah",
+                            "paths": [r".*\.go"],
+                            "name": "blah_name",
+                        },
+                        {"component_id": "cool_rules", "name": "cool_name"},
+                    ],
+                }
+            },
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                componentsYaml(term: "blah") {
+                    id
+                    name
+                }
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["componentsYaml"] == [
+            {"id": "blah", "name": "blah_name"},
+        ]

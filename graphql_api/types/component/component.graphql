@@ -10,3 +10,8 @@ type ComponentMeasurements {
     percentChange: Float
     measurements: [Measurement!]!
 }
+
+type ComponentsYaml {
+    id: String!
+    name: String!
+}

@@ -79,6 +79,9 @@ type Repository {
     filters: ComponentMeasurementsSetFilters
     orderingDirection: OrderingDirection
   ): [ComponentMeasurements!]!
+  componentsYaml(
+    term: String
+  ): [ComponentsYaml]!
 }
 
 type PullConnection {
