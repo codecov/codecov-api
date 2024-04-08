@@ -452,7 +452,7 @@ def resolve_component_measurements(
 @repository_bindable.field("componentsYaml")
 @convert_kwargs_to_snake_case
 def resolve_component_yaml(
-    repository: Repository, info, term: Optional[str]
+    repository: Repository, info, term_id: Optional[str]
 ) -> List[str]:
     components = UserYaml.get_final_yaml(
         owner_yaml=repository.author.yaml,
@@ -468,7 +468,7 @@ def resolve_component_yaml(
         for c in components
     ]
 
-    if term:
-        components = filter(lambda c: term in c["id"], components)
+    if term_id:
+        components = filter(lambda c: term_id in c["id"], components)
 
     return components
