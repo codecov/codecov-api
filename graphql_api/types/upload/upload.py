@@ -12,7 +12,7 @@ from graphql_api.types.enums import (
     UploadState,
     UploadType,
 )
-from reports.models import ProxyReportSession, ReportSession
+from reports.models import ReportSession
 
 upload_bindable = ObjectType("Upload")
 upload_bindable.set_alias("flags", "flag_names")
@@ -68,7 +68,7 @@ def resolve_ci_url(upload, info):
 @sync_to_async
 def resolve_download_url(upload: ReportSession, info) -> str:
     request = info.context["request"]
-    repository = upload.commit.repository
+    repository = upload.report.commit.repository
     download_url = (
         reverse(
             "upload-download",
