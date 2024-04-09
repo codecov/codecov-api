@@ -30,20 +30,13 @@ RUN rm -rf /pip-packages/src
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM $PYTHON_IMAGE
 
-RUN apk -U upgrade binutils busybox expat libretls && \
-    apk add --no-cache postgresql-libs && \
-    apk add --no-cache --virtual .build-deps gcc \
-    libxslt-dev \
-    libffi-dev \
-    make \
-    curl \
-    && pip install --upgrade pip
-
 # Our postgres driver psycopg2 requires libpq-dev as a runtime dependency
 RUN apt-get update
 RUN apt-get install -y \
     libpq-dev \
-    make
+    make \
+    curl \
+    && pip install --upgrade pip
 
 WORKDIR /pip-packages/
 COPY --from=build /pip-packages/ /pip-packages/
