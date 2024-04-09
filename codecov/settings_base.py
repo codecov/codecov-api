@@ -553,3 +553,11 @@ elif IS_DEV:
 
 SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
 SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
+
+# Allows to do migrations from another module
+MIGRATION_MODULES = {
+    "codecov_auth": "shared.django_apps.codecov_auth.migrations",
+    "core": "shared.django_apps.core.migrations",
+    "reports": "shared.django_apps.reports.migrations",
+    "legacy_migrations": "shared.django_apps.legacy_migrations.migrations",
+}
