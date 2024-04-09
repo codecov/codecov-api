@@ -106,6 +106,110 @@ class EmptyReport(MockReport):
 
 
 class TestCommit(GraphQLTestHelper, TransactionTestCase):
+    def setUp(self):
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        self.org = OwnerFactory(username="codecov")
+        self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
+        self.author = OwnerFactory()
+        self.parent_commit = CommitFactory(repository=self.repo)
+        self.commit = CommitFactory(
+            repository=self.repo,
+            totals={"c": "12", "diff": [0, 0, 0, 0, 0, "14"]},
+            parent_commit_id=self.parent_commit.commitid,
+        )
+        self.report = CommitReportFactory(commit=self.commit)
+
+        # mock reports for all tests in this class
+        self.head_report_patcher = patch(
+            "services.comparison.Comparison.head_report", new_callable=PropertyMock
+        )
+        self.head_report = self.head_report_patcher.start()
+        self.head_report.return_value = None
+        self.addCleanup(self.head_report_patcher.stop)
+        self.base_report_patcher = patch(
+            "services.comparison.Comparison.base_report", new_callable=PropertyMock
+        )
+        self.base_report = self.base_report_patcher.start()
+        self.base_report.return_value = None
+        self.addCleanup(self.base_report_patcher.stop)
+
+    def test_fetch_commit(self):
+        query = (
+            query_commit
+            % """
+            message,
+            createdAt,
+            commitid,
+            state,
+            author { username }
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["commitid"] == self.commit.commitid
+        assert commit["message"] == self.commit.message
+        assert commit["author"]["username"] == self.commit.author.username
+        assert commit["state"] == self.commit.state
+
+    def test_fetch_commits(self):
+        query = query_commits % "message,commitid,ciPassed"
+        self.repo_2 = RepositoryFactory(
+            author=self.org, name="test-repo", private=False
+        )
+        commits_in_db = [
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=123,
+                timestamp=datetime.today() - timedelta(days=3),
+            ),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=456,
+                timestamp=datetime.today() - timedelta(days=1),
+            ),
+            CommitFactory(
+                repository=self.repo_2,
+                commitid=789,
+                timestamp=datetime.today() - timedelta(days=2),
+            ),
+        ]
+
+        variables = {"org": self.org.username, "repo": self.repo_2.name}
+        data = self.gql_request(query, variables=variables)
+        commits = paginate_connection(data["owner"]["repository"]["commits"])
+        commits_commitids = [commit["commitid"] for commit in commits]
+        assert commits_commitids == ["456", "789", "123"]
+
+    def test_fetch_parent_commit(self):
+        query = query_commit % "parent { commitid } "
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["parent"]["commitid"] == self.parent_commit.commitid
+
+    def test_resolve_commit_without_parent(self):
+        self.commit_without_parent = CommitFactory(
+            repository=self.repo, parent_commit_id=None
+        )
+        query = query_commit % "parent { commitid } "
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit_without_parent.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["parent"] == None
+
     def test_fetch_commit_coverage(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
         query = query_commit % "totals { coverage } "
