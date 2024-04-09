@@ -42,7 +42,7 @@ cachetools==4.1.1
     # via
     #   google-auth
     #   shared
-celery[redis]==5.2.3
+celery[redis]==5.2.7
     # via -r requirements.in
 cerberus==1.3.2
     # via
