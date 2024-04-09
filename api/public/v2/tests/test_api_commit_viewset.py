@@ -246,7 +246,7 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
         # allows access to public repos
         assert response.status_code == 200
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_detail_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -366,7 +366,7 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_commit_uploads_not_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):

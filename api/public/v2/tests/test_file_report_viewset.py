@@ -90,7 +90,7 @@ class FileReportViewSetTestCase(TestCase):
         url = f"{url}?{qs}"
         return self.client.get(url)
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report(self, build_report_from_commit, get_repo_permissions):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.side_effect = [sample_report()]
@@ -131,7 +131,7 @@ class FileReportViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit3)
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_no_walk_back(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -143,7 +143,7 @@ class FileReportViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit3)
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_not_enough_walk_back(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -157,7 +157,7 @@ class FileReportViewSetTestCase(TestCase):
             [call(self.commit3), call(self.commit2)]
         )
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_with_walk_back(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -202,7 +202,7 @@ class FileReportViewSetTestCase(TestCase):
             [call(self.commit3), call(self.commit2), call(self.commit1)]
         )
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_with_walk_back_oldest_sha(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -219,7 +219,7 @@ class FileReportViewSetTestCase(TestCase):
             [call(self.commit3), call(self.commit2)]
         )
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_large_walk_back(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -229,7 +229,7 @@ class FileReportViewSetTestCase(TestCase):
         res = self._request_file_report(path="foo/file1.py", walk_back=21)
         assert res.status_code == 400
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_walk_back_no_parent(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -243,7 +243,7 @@ class FileReportViewSetTestCase(TestCase):
             [call(self.commit3), call(self.commit2), call(self.commit1)]
         )
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_walk_back_commit_not_found(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -258,7 +258,7 @@ class FileReportViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_has_calls([call(self.commit3)])
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_walk_back_commit_not_complete(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -309,7 +309,7 @@ class FileReportViewSetTestCase(TestCase):
 
         build_report_from_commit.assert_has_calls([call(self.commit3)])
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_walk_back_found(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -323,7 +323,7 @@ class FileReportViewSetTestCase(TestCase):
             [call(self.commit3), call(self.commit2)]
         )
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_missing_file(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -341,7 +341,7 @@ class FileReportViewSetTestCase(TestCase):
             [call(self.commit3), call(self.commit2), call(self.commit1)]
         )
 
-    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.report.build_report_from_commit")
     def test_file_report_missing_parent_commit(
         self, build_report_from_commit, get_repo_permissions
     ):
