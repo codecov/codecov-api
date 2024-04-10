@@ -44,7 +44,10 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
         url_path="tree",
     )
     def tree(self, request, *args, **kwargs):
+        flags = request.query_params.get("flags")  # Optional flags parameter
+        components = request.query_params.get("components")  # Optional components parameter
         report = self.get_object()
-        paths = ReportPaths(report)
+
+        paths = ReportPaths(report = report, filter_flags=flags, filter_paths=components)
         serializer = TreeSerializer(paths.single_directory(), many=True)
         return Response(serializer.data)
