@@ -8,7 +8,7 @@ class TestLoggingConfig(object):
         log_record = {"levelname": "weird_level", "message": "This is a message"}
         cljf = CustomLocalJsonFormatter()
         res = cljf.jsonify_log_record(log_record)
-        assert "weird_level: This is a message --- {}" == res
+        assert "weird_level: This is a message \n {}" == res
 
     def test_local_formatter_with_exc_info(self):
         log_record = {
@@ -18,4 +18,4 @@ class TestLoggingConfig(object):
         }
         cljf = CustomLocalJsonFormatter()
         res = cljf.jsonify_log_record(log_record)
-        assert "weird_level: This is a message --- {}\nLine\nWith\nbreaks" == res
+        assert "weird_level: This is a message \n {}\nLine\nWith\nbreaks" == res
