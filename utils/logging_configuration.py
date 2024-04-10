@@ -24,11 +24,10 @@ class CustomLocalJsonFormatter(BaseLogger):
         message = log_record.pop("message")
         exc_info = log_record.pop("exc_info", "")
         content = super().jsonify_log_record(log_record)
-        formattedC = super().format_json_on_new_lines(content) if content else content
-        formattedE = super().format_json_on_new_lines(exc_info) if exc_info else None
+        formatted = super().format_json_on_new_lines(content) if content else None
         if exc_info:
-            return f"{levelname}: {message} \n {formattedC}\n{formattedE}"
-        return f"{levelname}: {message} \n {formattedC}"
+            return f"{levelname}: {message} \n {formatted}\n{exc_info}"
+        return f"{levelname}: {message} \n {formatted}"
 
 
 class CustomDatadogJsonFormatter(BaseLogger):
