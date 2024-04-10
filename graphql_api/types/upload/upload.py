@@ -1,6 +1,8 @@
 from typing import Optional
 
 from ariadne import ObjectType
+from django.urls import reverse
+from shared.django_apps.utils.services import get_short_service_name
 
 from codecov.db import sync_to_async
 from graphql_api.helpers.connection import queryset_to_connection
@@ -10,7 +12,7 @@ from graphql_api.types.enums import (
     UploadState,
     UploadType,
 )
-from reports.models import ProxyReportSession, ReportSession
+from reports.models import ReportSession
 
 upload_bindable = ObjectType("Upload")
 upload_bindable.set_alias("flags", "flag_names")
@@ -46,7 +48,7 @@ async def resolve_errors(report_session, info, **kwargs):
         queryset,
         ordering=("updated_at",),
         ordering_direction=OrderingDirection.ASC,
-        **kwargs
+        **kwargs,
     )
     return result
 
@@ -66,10 +68,19 @@ def resolve_ci_url(upload, info):
 @sync_to_async
 def resolve_download_url(upload: ReportSession, info) -> str:
     request = info.context["request"]
-    proxy_upload: ProxyReportSession = ProxyReportSession.objects.filter(
-        report_id=upload.report_id
-    ).first()
-    download_absolute_uri = request.build_absolute_uri(proxy_upload.download_url)
+    repository = upload.report.commit.repository
+    download_url = (
+        reverse(
+            "upload-download",
+            kwargs={
+                "service": get_short_service_name(repository.author.service),
+                "owner_username": repository.author.username,
+                "repo_name": repository.name,
+            },
+        )
+        + f"?path={upload.storage_path}"
+    )
+    download_absolute_uri = request.build_absolute_uri(download_url)
     return download_absolute_uri.replace("http", "https", 1)
 
 
