@@ -113,3 +113,8 @@ class ComponentMeasurements:
         return fill_sparse_measurements(
             self.raw_measurements, self.interval, self.after, self.before
         )
+
+    @cached_property
+    def last_uploaded(self):
+        if len(self.raw_measurements) > 1:
+            return self.raw_measurements[-1]["timestamp_bin"]
