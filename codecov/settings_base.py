@@ -354,9 +354,11 @@ LOGGING = {
     "handlers": {
         "default": {
             "level": "INFO",
-            "formatter": "standard"
-            if get_settings_module() == SettingsModule.DEV.value
-            else "json",
+            "formatter": (
+                "standard"
+                if get_settings_module() == SettingsModule.DEV.value
+                else "json"
+            ),
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
         },
