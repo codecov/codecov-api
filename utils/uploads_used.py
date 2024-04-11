@@ -1,11 +1,12 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 
 from plan.constants import TrialStatus
+from reports.models import ReportSession
 from utils.config import get_config
 
 log = logging.getLogger(__name__)
