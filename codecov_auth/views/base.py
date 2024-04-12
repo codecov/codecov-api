@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 from django.conf import settings
 from django.contrib.auth import login, logout
+from django.contrib.sessions.models import Session as DjangoSession
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
@@ -13,7 +14,7 @@ from django.utils import timezone
 from shared.encryption.token import encode_token
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
-from codecov_auth.models import Owner, OwnerProfile, User
+from codecov_auth.models import Owner, OwnerProfile, Session, User
 from services.analytics import AnalyticsService
 from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
@@ -243,7 +244,7 @@ class LoginMixin(object):
                 )
                 owner.user = current_user
                 owner.save()
-
+                
             login(request, current_user)
             log.info(
                 "User logged in",
@@ -252,6 +253,7 @@ class LoginMixin(object):
 
         request.session["current_owner_id"] = owner.pk
         RefreshService().trigger_refresh(owner.ownerid, owner.username)
+        self.store_login_session(owner)
 
     def get_and_modify_owner(self, user_dict, request) -> Owner:
         user_orgs = user_dict["orgs"]
@@ -422,3 +424,22 @@ class LoginMixin(object):
             return {k: v[0] for k, v in filtered_params.items()}
         else:
             return {}
+
+    def store_login_session(self, owner: Owner):
+        # Store user's login session info after logging in
+        http_x_forwarded_for = self.request.META.get("HTTP_X_FORWARDED_FOR")
+        if http_x_forwarded_for:
+            ip = http_x_forwarded_for.split(",")[0]
+        else:
+            ip = self.request.META.get("REMOTE_ADDR")
+
+        login_session = DjangoSession.objects.get(session_key=self.request.session.session_key)
+
+        Session.objects.create(
+            lastseen=timezone.now(),
+            useragent=self.request.META.get("HTTP_USER_AGENT"),
+            ip=ip,
+            login_session=login_session,
+            type=Session.SessionType.LOGIN,
+            owner=owner,
+        )

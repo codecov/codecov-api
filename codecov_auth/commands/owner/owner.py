@@ -1,3 +1,5 @@
+from django.core.handlers.wsgi import WSGIRequest
+
 from codecov.commands.base import BaseCommand
 
 from .interactors.cancel_trial import CancelTrialInteractor
@@ -24,8 +26,11 @@ class OwnerCommands(BaseCommand):
     def create_api_token(self, name):
         return self.get_interactor(CreateApiTokenInteractor).execute(name)
 
-    def delete_session(self, sessionid):
-        return self.get_interactor(DeleteSessionInteractor).execute(sessionid)
+    def delete_session(self, sessionid: str, request: WSGIRequest):
+        return self.get_interactor(DeleteSessionInteractor).execute(
+            sessionid,
+            request,
+        )
 
     def create_user_token(self, name, token_type=None):
         return self.get_interactor(CreateUserTokenInteractor).execute(name, token_type)
