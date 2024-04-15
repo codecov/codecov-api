@@ -73,14 +73,6 @@ class AsyncGraphqlView(GraphQLAsyncView):
         document: DocumentNode,
         data: dict,
     ) -> Optional[Collection]:
-        log.info(
-            "RANDOM STUFF",
-            extra=dict(
-                context_value=context_value,
-                document=document,
-                data=data.get("variables"),
-            ),
-        )
         return [
             cost_validator(
                 maximum_cost=50,
