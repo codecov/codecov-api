@@ -47,7 +47,9 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
             )
 
             if not filtered_components:
-                raise NotFound(f"Coverage report for components {filtered_components} not found")
+                raise NotFound(
+                    f"Coverage report for components {filtered_components} not found"
+                )
 
             for component in filtered_components:
                 component_paths.extend(component.paths)
