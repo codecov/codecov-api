@@ -292,6 +292,22 @@ class CoverageViewSetTests(APITestCase):
     def test_tree_no_data_for_components(
         self, build_report_from_commit, commit_components_mock
     ):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["fileA.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "c2",
+                    "name": "ComponentTwo",
+                    "paths": ["fileB.py"],
+                }
+            ),
+        ]
         build_report_from_commit.return_value = sample_report()
         res = self._tree(components=["does-not-exist"])
-        assert res.json == []
+        assert res.json() == []
