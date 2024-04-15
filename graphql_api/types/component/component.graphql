@@ -9,6 +9,7 @@ type ComponentMeasurements {
     percentCovered: Float
     percentChange: Float
     measurements: [Measurement!]!
+    lastUploaded: DateTime
 }
 
 type ComponentsYaml {
