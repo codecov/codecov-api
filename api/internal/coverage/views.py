@@ -3,10 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
+import services.components as components_service
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from api.shared.report.serializers import TreeSerializer
-import services.components as components_service
 from services.path import ReportPaths
 
 
