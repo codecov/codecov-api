@@ -289,7 +289,7 @@ class CoverageViewSetTests(APITestCase):
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.components.commit_components")
-    def test_tree_no_data_for_components(
+    def test_tree_components_has_data(
         self, commit_components_mock, build_report_from_commit
     ):
         commit_components_mock.return_value = [
@@ -300,14 +300,46 @@ class CoverageViewSetTests(APITestCase):
                     "paths": ["fileA.py"],
                 }
             ),
+        ]
+        build_report_from_commit.return_value = sample_report()
+        res = self._tree(components=["ComponentOne"])
+        assert res.json() == [
+            {
+                "name": "foo",
+                "full_path": "foo",
+                "coverage": 62.5,
+                "lines": 8,
+                "hits": 5,
+                "partials": 0,
+                "misses": 3,
+                "children": [
+                    {
+                        "name": "file1.py",
+                        "full_path": "foo/file1.py",
+                        "coverage": 62.5,
+                        "lines": 8,
+                        "hits": 5,
+                        "partials": 0,
+                        "misses": 3,
+                    }
+                ],
+            },
+        ]
+
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.components.commit_components")
+    def test_tree_no_data_for_components(
+        self, commit_components_mock, build_report_from_commit
+    ):
+        commit_components_mock.return_value = [
             Component.from_dict(
                 {
-                    "component_id": "c2",
-                    "name": "ComponentTwo",
-                    "paths": ["fileB.py"],
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["foo/file1.py"],
                 }
             ),
         ]
         build_report_from_commit.return_value = sample_report()
-        res = self._tree(components=["does-not-exist"])
-        assert res.json() == []
+        res = self._tree(components=["ComponentOne"])
+        assert res.status_code == 404
