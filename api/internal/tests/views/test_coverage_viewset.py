@@ -290,7 +290,7 @@ class CoverageViewSetTests(APITestCase):
     @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.components.commit_components")
     def test_tree_no_data_for_components(
-        self, build_report_from_commit, commit_components_mock
+        self, commit_components_mock, build_report_from_commit
     ):
         commit_components_mock.return_value = [
             Component.from_dict(
