@@ -1,6 +1,6 @@
 import json
 import re
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -196,3 +196,35 @@ def test_upload_bundle_analysis_invalid_token(db, client, mocker, mock_redis):
     assert res.status_code == 401
     assert res.json() == {"detail": "Invalid token."}
     assert not upload.called
+
+
+@patch("upload.helpers.jwt.decode")
+@patch("upload.helpers.PyJWKClient")
+def test_upload_bundle_analysis_github_oidc_auth(
+    mock_jwks_client, mock_jwt_decode, db, mocker
+):
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+    repository = RepositoryFactory()
+    mock_jwt_decode.return_value = {
+        "repository": f"url/{repository.name}",
+        "repository_owner": repository.author.username,
+        "iss": "https://token.actions.githubusercontent.com",
+    }
+    token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {token}")
+
+    res = client.post(
+        reverse("upload-bundle-analysis"),
+        {
+            "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
+            "slug": f"{repository.author.username}::::{repository.name}",
+        },
+        format="json",
+    )
+    assert res.status_code == 201

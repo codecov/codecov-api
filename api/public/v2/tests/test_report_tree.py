@@ -65,7 +65,7 @@ class ReportTreeTests(APITestCase):
         self.client = APIClient()
         self.client.force_login_owner(self.current_owner)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 
@@ -103,7 +103,7 @@ class ReportTreeTests(APITestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_depth(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 
@@ -163,7 +163,7 @@ class ReportTreeTests(APITestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_path(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 

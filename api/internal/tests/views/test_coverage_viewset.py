@@ -100,6 +100,8 @@ class CoverageViewSetTests(APITestCase):
                 }
             ),
         ]
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_tree(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 
         res = self._tree(components=["global"])
@@ -158,7 +160,7 @@ class CoverageViewSetTests(APITestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit1)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_sha(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 
@@ -218,14 +220,14 @@ class CoverageViewSetTests(APITestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit2)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_missing_sha(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 
         res = self._tree(sha="wrong")
         assert res.status_code == 404
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_branch(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 
@@ -285,14 +287,14 @@ class CoverageViewSetTests(APITestCase):
 
         build_report_from_commit.assert_called_once_with(self.commit3)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_missing_branch(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
 
         res = self._tree(branch="wrong-branch")
         assert res.status_code == 404
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_missing_report(self, build_report_from_commit):
         build_report_from_commit.return_value = None
 

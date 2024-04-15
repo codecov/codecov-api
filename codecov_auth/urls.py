@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import path, re_path
 
 from .views.bitbucket import BitbucketLoginView
@@ -39,5 +40,6 @@ urlpatterns = [
     path("login/bbs", BitbucketServerLoginView.as_view(), name="bbs-login"),
     path("login/stash", BitbucketServerLoginView.as_view(), name="stash-login"),
     path("login/sentry", SentryLoginView.as_view(), name="sentry-login"),
-    path("login/okta", OktaLoginView.as_view(), name="okta-login"),
 ]
+if settings.OKTA_ISS is not None:
+    urlpatterns += [path("login/okta", OktaLoginView.as_view(), name="okta-login")]

@@ -14,7 +14,7 @@ from django.views import View
 from requests.auth import HTTPBasicAuth
 
 from codecov_auth.models import OktaUser, User
-from codecov_auth.views.base import LoginMixin
+from codecov_auth.views.base import LoginMixin, StateMixin
 from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
@@ -48,9 +48,10 @@ def validate_id_token(iss: str, id_token: str) -> dict:
 auth = HTTPBasicAuth(settings.OKTA_OAUTH_CLIENT_ID, settings.OKTA_OAUTH_CLIENT_SECRET)
 
 
-class OktaLoginView(LoginMixin, View):
-    def _fetch_user_data(self, iss: str, code: str) -> Optional[Dict]:
+class OktaLoginView(LoginMixin, StateMixin, View):
+    service = "okta"
 
+    def _fetch_user_data(self, iss: str, code: str, state: str) -> Optional[Dict]:
         res = requests.post(
             f"{iss}/oauth2/v1/token",
             auth=auth,
@@ -58,50 +59,49 @@ class OktaLoginView(LoginMixin, View):
                 "grant_type": "authorization_code",
                 "code": code,
                 "redirect_uri": settings.OKTA_OAUTH_REDIRECT_URL,
+                "state": state,
             },
         )
+
+        if not self.verify_state(state):
+            log.warning("Invalid state during Okta OAuth")
+            return None
 
         if res.status_code >= 400:
             return None
         return res.json()
 
     def _redirect_to_consent(self, iss: str) -> HttpResponse:
+        state = self.generate_state()
         qs = urlencode(
             dict(
                 response_type="code",
                 client_id=settings.OKTA_OAUTH_CLIENT_ID,
                 scope="openid email profile",
                 redirect_uri=settings.OKTA_OAUTH_REDIRECT_URL,
-                state=iss,
+                state=state,
             )
         )
         redirect_url = f"{iss}/oauth2/v1/authorize?{qs}"
         response = redirect(redirect_url)
         self.store_to_cookie_utm_tags(response)
 
-        if settings.OKTA_ISS is None:
-            # ISS was passed to us from Okta
-            self._store_iss_cookie(iss, response)
-
         return response
-
-    def _store_iss_cookie(self, iss: str, response: HttpResponse):
-        response.set_cookie(
-            "_okta_iss",
-            iss,
-            max_age=86400,  # Same as state validatiy
-            httponly=True,
-            domain=settings.COOKIES_DOMAIN,
-        )
 
     def _perform_login(self, request: HttpRequest) -> HttpResponse:
         code = request.GET.get("code")
-        iss = settings.OKTA_ISS or request.COOKIES.get("_okta_iss")
+        state = request.GET.get("state")
+
+        if not self.verify_state(state):
+            log.warning("Invalid state during Okta login")
+            return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
+
+        iss = settings.OKTA_ISS
         if iss is None:
             log.warning("Unable to log in due to missing Okta issuer", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
-        user_data = self._fetch_user_data(iss, code)
+        user_data = self._fetch_user_data(iss, code, state)
         if user_data is None:
             log.warning("Unable to log in due to problem on Okta", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
@@ -111,6 +111,7 @@ class OktaLoginView(LoginMixin, View):
         # TEMPORARY: we're assuming a single owner for the time being since there's
         # no supporting UI to select which owner you'd like to view
         owner = current_user.owners.first()
+        self.remove_state(state)
         if owner is not None:
             service = get_short_service_name(owner.service)
             response = redirect(f"{settings.CODECOV_DASHBOARD_URL}/{service}")
@@ -118,7 +119,6 @@ class OktaLoginView(LoginMixin, View):
             # user has not connected any owners yet
             response = redirect(f"{settings.CODECOV_DASHBOARD_URL}/sync")
 
-        response.delete_cookie("_okta_iss")
         return response
 
     def _login_user(self, request: HttpRequest, iss: str, user_data: dict):
@@ -183,7 +183,7 @@ class OktaLoginView(LoginMixin, View):
         if request.GET.get("code"):
             return self._perform_login(request)
         else:
-            iss = settings.OKTA_ISS or request.GET.get("iss")
+            iss = settings.OKTA_ISS
             if not iss:
                 log.warning("Missing Okta issuer")
                 return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
