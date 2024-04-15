@@ -88,18 +88,8 @@ class CoverageViewSetTests(APITestCase):
         self.client.force_login_owner(self.current_owner)
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.components.commit_components")
-    def test_tree(self, build_report_from_commit, commit_components_mock):
+    def test_tree(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
-        commit_components_mock.return_value = [
-            Component.from_dict(
-                {
-                    "component_id": "global",
-                    "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
-                }
-            ),
-        ]
         res = self._tree(components=["Global"])
         assert res.status_code == 200
         assert res.json() == [
@@ -302,15 +292,6 @@ class CoverageViewSetTests(APITestCase):
     def test_tree_no_data_for_components(
         self, build_report_from_commit, commit_components_mock
     ):
-        commit_components_mock.return_value = [
-            Component.from_dict(
-                {
-                    "component_id": "global",
-                    "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
-                }
-            ),
-        ]
         build_report_from_commit.return_value = sample_report()
         res = self._tree(components=["does-not-exist"])
         assert res.json == []
