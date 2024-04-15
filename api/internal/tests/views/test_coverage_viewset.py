@@ -9,8 +9,7 @@ from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (BranchFactory, CommitFactory,
-                                  RepositoryFactory)
+from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 from utils.test_utils import Client
 
 
@@ -100,6 +99,7 @@ class CoverageViewSetTests(APITestCase):
                 }
             ),
         ]
+
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree(self, build_report_from_commit):
         build_report_from_commit.return_value = sample_report()
