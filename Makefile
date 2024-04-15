@@ -21,7 +21,7 @@ API_DOMAIN ?= api
 PROXY_NETWORK ?= api_default
 
 # Codecov CLI version to use
-CODECOV_CLI_VERSION := 0.4.1
+CODECOV_CLI_VERSION := 0.5.1
 
 build:
 	make build.requirements
