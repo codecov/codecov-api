@@ -1,4 +1,3 @@
-from msilib.schema import Component
 from unittest.mock import patch
 from urllib.parse import urlencode
 
@@ -9,7 +8,9 @@ from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
+from core.tests.factories import (BranchFactory, CommitFactory,
+                                  RepositoryFactory)
+from services.components import Component
 from utils.test_utils import Client
 
 
