@@ -46,7 +46,9 @@ def filter_components_by_name(
     Given a list of Components and a list of strings (terms),
     return a new list of Components only including Components with names in terms (case insensitive)
     """
+    print(terms)
     terms = [v.lower() for v in terms]
+    print(terms)
     return list(filter(lambda c: c.name.lower() in terms, components))
 
 

@@ -42,6 +42,8 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
             all_components = components_service.commit_components(
                 commit, self.request.user
             )
+            print("all components")
+            print(all_components)
             filtered_components = components_service.filter_components_by_name(
                 all_components, components
             )
