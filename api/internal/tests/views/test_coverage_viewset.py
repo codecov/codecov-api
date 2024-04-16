@@ -100,7 +100,7 @@ class CoverageViewSetTests(APITestCase):
             ),
         ]
         build_report_from_commit.return_value = sample_report()
-        res = self._tree(components=["Global"])
+        res = self._tree(components="Global")
         assert res.status_code == 200
         assert res.json() == [
             {
@@ -307,10 +307,10 @@ class CoverageViewSetTests(APITestCase):
                 {
                     "component_id": "c1",
                     "name": "ComponentOne",
-                    "paths": ["foo/file1.py"],
+                    "paths": ["dne.py"],
                 }
             ),
         ]
         build_report_from_commit.return_value = sample_report()
-        res = self._tree(components=["ComponentOne"])
+        res = self._tree(components="ComponentOne")
         assert res.status_code == 404

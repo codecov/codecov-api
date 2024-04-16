@@ -42,15 +42,9 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
             all_components = components_service.commit_components(
                 commit, self.request.user
             )
-            print("all components")
-            print(all_components)
             filtered_components = components_service.filter_components_by_name(
                 all_components, components
             )
-
-            print("filtered components")
-            print(filtered_components)
-
             if not filtered_components:
                 raise NotFound(
                     f"Coverage report for components {filtered_components} not found"
@@ -58,7 +52,6 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
 
             for component in filtered_components:
                 component_paths.extend(component.paths)
-            print(component_paths)
         flags = self.request.query_params.getlist("flags")
 
         paths = ReportPaths(
