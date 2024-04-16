@@ -1,6 +1,4 @@
-union DeleteSessionError =
-    UnauthenticatedError
-  | ValidationError
+union DeleteSessionError = UnauthenticatedError
 
 type DeleteSessionPayload {
   error: DeleteSessionError
