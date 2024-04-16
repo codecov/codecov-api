@@ -46,6 +46,9 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
                 all_components, components
             )
 
+            print("filtered components")
+            print(filtered_components)
+
             if not filtered_components:
                 raise NotFound(
                     f"Coverage report for components {filtered_components} not found"
@@ -53,7 +56,7 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
 
             for component in filtered_components:
                 component_paths.extend(component.paths)
-
+            print(component_paths)
         flags = self.request.query_params.getlist("flags")
 
         paths = ReportPaths(
@@ -65,5 +68,7 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
     @action(detail=False, methods=["get"], url_path="tree")
     def tree(self, request, *args, **kwargs):
         paths = self.get_object()
+        print("paths")
+        print(paths)
         serializer = TreeSerializer(paths.single_directory(), many=True)
         return Response(serializer.data)
