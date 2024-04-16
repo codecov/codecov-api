@@ -95,7 +95,7 @@ class CoverageViewSetTests(APITestCase):
                 {
                     "component_id": "global",
                     "name": "Global",
-                    "paths": ["(?s:.*/[^\\/]*\\.py.*)\\Z"],
+                    "paths": ["foo/file1.py", "file3.py", "bar/file2.py"],
                 }
             ),
         ]
