@@ -45,6 +45,7 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
             filtered_components = components_service.filter_components_by_name(
                 all_components, components
             )
+
             if not filtered_components:
                 raise NotFound(
                     f"Coverage report for components {filtered_components} not found"
@@ -63,7 +64,5 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
     @action(detail=False, methods=["get"], url_path="tree")
     def tree(self, request, *args, **kwargs):
         paths = self.get_object()
-        print("paths")
-        print(paths)
         serializer = TreeSerializer(paths.single_directory(), many=True)
         return Response(serializer.data)
