@@ -228,7 +228,14 @@ class ReportPaths:
         """
         Returns the report totals for a given prefixed path.
         """
-        return self.report.get_file_totals(path.full_path)
+        # Fixes an issue when filtering by flags does not work in the case where
+        # one flag covers half of the file and another flag covers another half.
+        # Using get_file_totals will return the totals for coverage of all flags
+        # applied to the file instead of just the filter flags being queried
+        if self.filter_flags:
+            return self.report.get(path.full_path).totals
+        else:
+            return self.report.get_file_totals(path.full_path)
 
     def _single_directory_recursive(
         self, paths: Iterable[PrefixedPath]
