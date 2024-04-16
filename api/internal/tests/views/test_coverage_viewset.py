@@ -313,4 +313,4 @@ class CoverageViewSetTests(APITestCase):
         ]
         build_report_from_commit.return_value = sample_report()
         res = self._tree(components="ComponentOne")
-        assert res.status_code == 404
+        assert res.json() == []
