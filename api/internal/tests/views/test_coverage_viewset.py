@@ -314,3 +314,21 @@ class CoverageViewSetTests(APITestCase):
         build_report_from_commit.return_value = sample_report()
         res = self._tree(components="ComponentOne")
         assert res.json() == []
+
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.components.commit_components")
+    def test_tree_not_found_for_components(
+        self, commit_components_mock, build_report_from_commit
+    ):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["dne.py"],
+                }
+            ),
+        ]
+        build_report_from_commit.return_value = sample_report()
+        res = self._tree(components="Does_not_exist")
+        assert res.status_code == 404
