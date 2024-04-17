@@ -21,7 +21,7 @@ type Commit {
     after: String
     last: Int
     before: String
-  ): UploadConnection @cost(complexity: 1, multipliers: ["first", "last"])
+  ): UploadConnection @cost(complexity: 10, multipliers: ["first", "last"])
   criticalFiles: [CriticalFile!]!
   pathContents(path: String, filters: PathContentsFilters): PathContentsResult
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
