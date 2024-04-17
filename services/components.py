@@ -116,5 +116,5 @@ class ComponentMeasurements:
 
     @cached_property
     def last_uploaded(self):
-        if len(self.raw_measurements) > 1:
+        if len(self.raw_measurements) > 0:
             return self.raw_measurements[-1]["timestamp_bin"]
