@@ -21,7 +21,7 @@ API_DOMAIN ?= api
 PROXY_NETWORK ?= api_default
 
 # Codecov CLI version to use
-CODECOV_CLI_VERSION := 0.4.1
+CODECOV_CLI_VERSION := 0.5.1
 
 build:
 	make build.requirements
@@ -79,6 +79,10 @@ build.app:
 	docker build -f docker/Dockerfile . \
 		-t ${AR_REPO}:latest \
 		-t ${AR_REPO}:${VERSION} \
+		--label "org.label-schema.vendor"="Codecov" \
+		--label "org.label-schema.version"="${release_version}-${sha}" \
+		--label "org.opencontainers.image.revision"="$(long_sha)" \
+		--label "org.opencontainers.image.source"="github.com/codecov/codecov-api" \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
 		--build-arg RELEASE_VERSION=${VERSION} \
 		--build-arg BUILD_ENV=cloud
@@ -99,6 +103,8 @@ build.self-hosted-runtime:
 	docker build -f docker/Dockerfile . \
 		-t ${DOCKERHUB_REPO}:latest \
 		-t ${DOCKERHUB_REPO}:${VERSION} \
+		--label "org.label-schema.vendor"="Codecov" \
+		--label "org.label-schema.version"="${release_version}-${sha}" \
 		--build-arg REQUIREMENTS_IMAGE=${AR_REPO}:${REQUIREMENTS_TAG} \
         --build-arg RELEASE_VERSION=${VERSION} \
         --build-arg BUILD_ENV=self-hosted-runtime
@@ -188,7 +194,7 @@ test_env.install_cli:
 	pip install codecov-cli==$(CODECOV_CLI_VERSION)
 
 test_env.container_prepare:
-	apk add -U curl git build-base jq
+	apt-get -y install git build-essential netcat-traditional
 	make test_env.install_cli
 	git config --global --add safe.directory /app
 
