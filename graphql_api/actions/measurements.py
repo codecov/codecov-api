@@ -1,9 +1,11 @@
 from datetime import datetime
 from typing import Iterable, Mapping, Optional
 
+from django.db.models import Max
+
 from core.models import Repository
 from timeseries.helpers import aggregate_measurements, aligned_start_date
-from timeseries.models import Interval, MeasurementSummary
+from timeseries.models import Interval, Measurement, MeasurementSummary
 
 
 def measurements_by_ids(
@@ -40,3 +42,23 @@ def measurements_by_ids(
         measurements[measurable_id].append(measurement)
 
     return measurements
+
+
+def measurements_last_uploaded_by_ids(
+    owner_id: int,
+    repo_id: int,
+    measurable_name: str,
+    measurable_ids: str,
+    branch: Optional[str] = None,
+):
+    queryset = Measurement.objects.filter(
+        owner_id=owner_id,
+        repo_id=repo_id,
+        measurable_id__in=measurable_ids,
+        name=measurable_name,
+    )
+
+    if branch:
+        queryset = queryset.filter(branch=branch)
+
+    return queryset.values("measurable_id").annotate(last_uploaded=Max("timestamp"))
