@@ -7,7 +7,7 @@ from api.public.v2.component.serializers import ComponentSerializer
 from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
-from services.components import commit_components
+from services.components import commit_components, component_filtered_report
 
 
 @extend_schema(
@@ -38,6 +38,22 @@ class ComponentViewSet(viewsets.ViewSet, RepoPropertyMixin):
         Returns a list of components for the specified repository
         """
         commit = self.get_commit()
+        report = commit.full_report
         components = commit_components(commit, request.user)
-        serializer = ComponentSerializer(components, many=True)
+        coverage = {}
+        for component in components:
+            component_report = component_filtered_report(report, [component])
+            coverage[component.component_id] = round(
+                float(component_report.totals.coverage), 2
+            )
+
+        components_with_coverage = [
+            {
+                "component_id": c.component_id,
+                "name": c.name,
+                "coverage": coverage[c.component_id],
+            }
+            for c in components
+        ]
+        serializer = ComponentSerializer(components_with_coverage, many=True)
         return Response(serializer.data)
