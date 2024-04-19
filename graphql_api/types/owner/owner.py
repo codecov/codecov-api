@@ -108,22 +108,23 @@ def resolve_ownerid(owner, info) -> int:
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
-    repository: Optional[Repository] = await command.fetch_repository(owner, name)
+    repository = await command.fetch_repository(owner, name)
 
     if repository is None:
         return NotFoundError()
 
     current_owner = info.context["request"].current_owner
-    if repository.private:
+    is_configured_repo = repository.active or repository.activated
+
+    if repository.private and is_configured_repo:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
-        is_activated = await sync_to_async(activation.is_activated)(
+        is_owner_activated = await sync_to_async(activation.is_activated)(
             owner, current_owner
         )
-        if not is_activated:
+        if not is_owner_activated:
             return OwnerNotActivatedError()
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
-
     return repository
 
 

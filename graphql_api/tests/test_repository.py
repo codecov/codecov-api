@@ -458,6 +458,32 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "message": "You must be activated in the org",
         }
 
+    @patch("services.activation.is_activated")
+    @patch("services.activation.try_auto_activate")
+    def test_resolve_inactive__user_on_unconfigured_repo(
+        self, try_auto_activate, is_activated
+    ):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=False,
+            activated=False,
+            private=True,
+            name="test-one",
+        )
+
+        is_activated.return_value = False
+
+        data = self.gql_request(
+            query_repository % "name",
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"] == {
+            "__typename": "OwnerNotActivatedError",
+            "message": "You must be activated in the org",
+        }
+
     def test_repository_not_found(self):
         data = self.gql_request(
             query_repository % "name",
