@@ -2,12 +2,12 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from rest_framework.reverse import reverse
+from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.components import Component
-from shared.reports.resources import Report, ReportFile, ReportLine
-from shared.utils.sessions import Session
 from utils.test_utils import APIClient
 
 
