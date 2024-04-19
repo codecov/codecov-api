@@ -108,7 +108,7 @@ def resolve_ownerid(owner, info) -> int:
 @owner_bindable.field("repository")
 async def resolve_repository(owner, info, name):
     command = info.context["executor"].get_command("repository")
-    repository = await command.fetch_repository(owner, name)
+    repository: Optional[Repository] = await command.fetch_repository(owner, name)
 
     if repository is None:
         return NotFoundError()
