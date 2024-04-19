@@ -479,7 +479,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
 
-        assert data["me"]["owner"]["repository"] == {{"name": "test-one"}}
+        assert data["me"]["owner"]["repository"]["name"] == "test-one"
 
     def test_repository_not_found(self):
         data = self.gql_request(
