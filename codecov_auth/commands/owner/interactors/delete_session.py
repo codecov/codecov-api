@@ -12,7 +12,7 @@ class DeleteSessionInteractor(BaseInteractor):
             raise Unauthenticated()
 
     @sync_to_async
-    def execute(self, sessionid: str):
+    def execute(self, sessionid: int):
         self.validate()
         session_to_delete = Session.objects.get(sessionid=sessionid)
         DjangoSession.objects.filter(

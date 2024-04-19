@@ -433,9 +433,9 @@ class LoginMixin(object):
         else:
             ip = self.request.META.get("REMOTE_ADDR")
 
-        login_session = DjangoSession.objects.get(
+        login_session = DjangoSession.objects.filter(
             session_key=self.request.session.session_key
-        )
+        ).first()
 
         Session.objects.create(
             lastseen=timezone.now(),

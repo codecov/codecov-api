@@ -1,11 +1,16 @@
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
+from django.utils import timezone
 
 from codecov.commands.exceptions import Unauthenticated
 from codecov.db import sync_to_async
-from codecov_auth.models import Session
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory
+from codecov_auth.models import DjangoSession, Session
+from codecov_auth.tests.factories import (
+    DjangoSessionFactory,
+    OwnerFactory,
+    SessionFactory,
+)
 
 from ..delete_session import DeleteSessionInteractor
 
@@ -18,7 +23,10 @@ def get_session(id):
 class DeleteSessionInteractorTest(TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
-        self.session = SessionFactory(owner=self.owner)
+        self.django_session = DjangoSessionFactory()
+        self.session = SessionFactory(
+            owner=self.owner, login_session=self.django_session
+        )
 
     async def test_when_unauthenticated_raise(self):
         with pytest.raises(Unauthenticated):
@@ -28,5 +36,12 @@ class DeleteSessionInteractorTest(TransactionTestCase):
         await DeleteSessionInteractor(self.owner, "github").execute(
             self.session.sessionid
         )
-        with pytest.raises(Session.DoesNotExist):
-            await get_session(self.session.sessionid)
+
+        @sync_to_async
+        def assert_sessions():
+            return (
+                len(DjangoSession.objects.all()) == 0
+                and len(Session.objects.all()) == 0
+            )
+
+        assert assert_sessions

@@ -5,6 +5,7 @@ from django.utils import timezone
 from factory.django import DjangoModelFactory
 
 from codecov_auth.models import (
+    DjangoSession,
     OktaUser,
     OrganizationLevelToken,
     Owner,
@@ -88,6 +89,14 @@ class OwnerProfileFactory(DjangoModelFactory):
     default_org = factory.SubFactory(OwnerFactory)
 
 
+class DjangoSessionFactory(DjangoModelFactory):
+    class Meta:
+        model = DjangoSession
+
+    expire_date = timezone.now()
+    session_key = factory.Faker("uuid4")
+
+
 class SessionFactory(DjangoModelFactory):
     class Meta:
         model = Session
@@ -96,6 +105,7 @@ class SessionFactory(DjangoModelFactory):
     lastseen = timezone.now()
     type = Session.SessionType.API.value
     token = factory.Faker("uuid4")
+    login_session = factory.SubFactory(DjangoSessionFactory)
 
 
 class OrganizationLevelTokenFactory(DjangoModelFactory):
