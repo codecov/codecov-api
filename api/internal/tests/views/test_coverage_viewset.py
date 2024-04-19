@@ -9,6 +9,7 @@ from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
+from services.components import Component
 from utils.test_utils import Client
 
 
@@ -87,10 +88,19 @@ class CoverageViewSetTests(APITestCase):
         self.client.force_login_owner(self.current_owner)
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    def test_tree(self, build_report_from_commit):
+    @patch("services.components.commit_components")
+    def test_tree(self, commit_components_mock, build_report_from_commit):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": [".*/*.py"],
+                }
+            ),
+        ]
         build_report_from_commit.return_value = sample_report()
-
-        res = self._tree()
+        res = self._tree(components="Global")
         assert res.status_code == 200
         assert res.json() == [
             {
@@ -286,3 +296,63 @@ class CoverageViewSetTests(APITestCase):
 
         res = self._tree()
         assert res.status_code == 404
+
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.components.commit_components")
+    def test_tree_no_data_for_components(
+        self, commit_components_mock, build_report_from_commit
+    ):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["dne.py"],
+                }
+            ),
+        ]
+        build_report_from_commit.return_value = sample_report()
+        res = self._tree(components="ComponentOne")
+        assert res.json() == []
+
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.components.commit_components")
+    def test_tree_not_found_for_components(
+        self, commit_components_mock, build_report_from_commit
+    ):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["dne.py"],
+                }
+            ),
+        ]
+        build_report_from_commit.return_value = sample_report()
+        res = self._tree(components="Does_not_exist")
+        assert res.status_code == 404
+
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.components.commit_components")
+    def test_tree_not_found_for_components(
+        self, commit_components_mock, build_report_from_commit
+    ):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["dne.py"],
+                }
+            ),
+        ]
+        build_report_from_commit.return_value = sample_report()
+        res = self._tree(components="Does_not_exist")
+        assert res.status_code == 404
+
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_tree_no_data_for_flags(self, build_report_from_commit):
+        build_report_from_commit.return_value = sample_report()
+        res = self._tree(flags="Does_not_exist")
+        assert res.json() == []
