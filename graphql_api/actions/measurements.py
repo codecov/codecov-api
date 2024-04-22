@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Iterable, Mapping, Optional
 
-from django.db.models import Max
+from django.db.models import Max, QuerySet
 
 from core.models import Repository
 from timeseries.helpers import aggregate_measurements, aligned_start_date
@@ -50,7 +50,7 @@ def measurements_last_uploaded_by_ids(
     measurable_name: str,
     measurable_ids: str,
     branch: Optional[str] = None,
-):
+) -> QuerySet:
     queryset = Measurement.objects.filter(
         owner_id=owner_id,
         repo_id=repo_id,
