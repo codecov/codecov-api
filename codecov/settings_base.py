@@ -48,10 +48,11 @@ INSTALLED_APPS = [
     "staticanalysis",
     "timeseries",
     "django_prometheus",
-    "user_measurements",
     "psqlextra",
-    "shared.django_apps.rollouts",
     "django_better_admin_arrayfield",
+    # New Shared Models
+    "shared.django_apps.rollouts",
+    "shared.django_apps.user_measurements",
 ]
 
 MIDDLEWARE = [
@@ -251,7 +252,9 @@ if TIMESERIES_ENABLED:
 POSTGRES_EXTRA_DB_BACKEND_BASE: "django_prometheus.db.backends.postgresql"
 
 # Allows to use the pgpartition command
-PSQLEXTRA_PARTITIONING_MANAGER = "user_measurements.partitioning.manager"
+PSQLEXTRA_PARTITIONING_MANAGER = (
+    "shared.django_apps.user_measurements.partitioning.manager"
+)
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
@@ -354,9 +357,11 @@ LOGGING = {
     "handlers": {
         "default": {
             "level": "INFO",
-            "formatter": "standard"
-            if get_settings_module() == SettingsModule.DEV.value
-            else "json",
+            "formatter": (
+                "standard"
+                if get_settings_module() == SettingsModule.DEV.value
+                else "json"
+            ),
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
         },

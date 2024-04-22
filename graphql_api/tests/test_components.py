@@ -790,6 +790,7 @@ query ComponentMeasurements(
                         max
                         timestamp
                     }
+                    lastUploaded
                 }
             }
         }
@@ -933,6 +934,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                                     "timestamp": "2022-06-23T00:00:00+00:00",
                                 },
                             ],
+                            "lastUploaded": "2022-06-22T00:00:00+00:00",
                         },
                         {
                             "__typename": "ComponentMeasurements",
@@ -965,6 +967,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                                     "timestamp": "2022-06-23T00:00:00+00:00",
                                 },
                             ],
+                            "lastUploaded": "2022-06-22T00:00:00+00:00",
                         },
                     ]
                 }
@@ -990,6 +993,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                             "percentCovered": None,
                             "percentChange": None,
                             "measurements": [],
+                            "lastUploaded": None,
                         },
                         {
                             "__typename": "ComponentMeasurements",
@@ -997,6 +1001,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                             "percentCovered": None,
                             "percentChange": None,
                             "measurements": [],
+                            "lastUploaded": None,
                         },
                     ]
                 }
@@ -1122,6 +1127,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                                     "timestamp": "2022-06-23T00:00:00+00:00",
                                 },
                             ],
+                            "lastUploaded": "2022-06-22T00:00:00+00:00",
                         },
                     ]
                 }
@@ -1235,6 +1241,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                                     "timestamp": "2022-06-23T00:00:00+00:00",
                                 },
                             ],
+                            "lastUploaded": "2022-06-22T00:00:00+00:00",
                         },
                         {
                             "__typename": "ComponentMeasurements",
@@ -1242,6 +1249,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                             "percentCovered": None,
                             "percentChange": None,
                             "measurements": [],
+                            "lastUploaded": None,
                         },
                     ]
                 }
