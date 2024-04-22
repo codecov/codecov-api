@@ -1,3 +1,4 @@
+import ast
 import os
 from urllib.parse import urlparse
 
@@ -112,6 +113,8 @@ else:
     DATABASE_HOST = get_config("services", "database", "host", default="postgres")
     DATABASE_PORT = get_config("services", "database", "port", default=5432)
 
+DATABASE_OPTIONS = get_config("services", "database", "options", default="{}")
+
 DATABASE_READ_REPLICA_ENABLED = get_config(
     "setup", "database", "read_replica_enabled", default=False
 )
@@ -138,6 +141,8 @@ else:
         "services", "database_read", "host", default="postgres"
     )
     DATABASE_READ_PORT = get_config("services", "database_read", "port", default=5432)
+
+DATABASE_READ_OPTIONS = get_config("services", "database_read", "options", default="{}")
 
 TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
 TIMESERIES_REAL_TIME_AGGREGATES = get_config(
@@ -169,6 +174,10 @@ else:
         "services", "timeseries_database", "port", default=5432
     )
 
+TIMESERIES_DATABASE_OPTIONS = get_config(
+    "services", "timeseries_database", "options", default="{}"
+)
+
 TIMESERIES_DATABASE_READ_REPLICA_ENABLED = get_config(
     "setup", "timeseries", "read_replica_enabled", default=False
 )
@@ -198,6 +207,10 @@ else:
         "services", "timeseries_database_read", "port", default=5432
     )
 
+TIMESERIES_DATABASE_READ_OPTIONS = get_config(
+    "services", "timeseries_database_read", "options", default="{}"
+)
+
 # this is the time in seconds django decides to keep the connection open after the request
 # the default is 0 seconds, meaning django closes the connection after every request
 # https://docs.djangoproject.com/en/3.1/ref/settings/#conn-max-age
@@ -212,6 +225,7 @@ DATABASES = {
         "HOST": DATABASE_HOST,
         "PORT": DATABASE_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
+        "OPTIONS": ast.literal_eval(DATABASE_OPTIONS),
     }
 }
 
@@ -224,6 +238,7 @@ if DATABASE_READ_REPLICA_ENABLED:
         "HOST": DATABASE_READ_HOST,
         "PORT": DATABASE_READ_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
+        "OPTIONS": ast.literal_eval(DATABASE_READ_OPTIONS),
     }
 
 if TIMESERIES_ENABLED:
@@ -235,6 +250,7 @@ if TIMESERIES_ENABLED:
         "HOST": TIMESERIES_DATABASE_HOST,
         "PORT": TIMESERIES_DATABASE_PORT,
         "CONN_MAX_AGE": CONN_MAX_AGE,
+        "OPTIONS": ast.literal_eval(TIMESERIES_DATABASE_OPTIONS),
     }
 
     if TIMESERIES_DATABASE_READ_REPLICA_ENABLED:
@@ -246,6 +262,7 @@ if TIMESERIES_ENABLED:
             "HOST": TIMESERIES_DATABASE_READ_HOST,
             "PORT": TIMESERIES_DATABASE_READ_PORT,
             "CONN_MAX_AGE": CONN_MAX_AGE,
+            "OPTIONS": ast.literal_eval(TIMESERIES_DATABASE_READ_OPTIONS),
         }
 
 # See https://django-postgres-extra.readthedocs.io/en/master/settings.html
