@@ -40,20 +40,17 @@ class ComponentViewSet(viewsets.ViewSet, RepoPropertyMixin):
         commit = self.get_commit()
         report = commit.full_report
         components = commit_components(commit, request.user)
-        coverage = {}
+        components_with_coverage = []
         for component in components:
             component_report = component_filtered_report(report, [component])
-            coverage[component.component_id] = round(
-                float(component_report.totals.coverage), 2
+            coverage = round(float(component_report.totals.coverage), 2)
+            components_with_coverage.append(
+                {
+                    "component_id": component.component_id,
+                    "name": component.name,
+                    "coverage": coverage,
+                }
             )
 
-        components_with_coverage = [
-            {
-                "component_id": c.component_id,
-                "name": c.name,
-                "coverage": coverage[c.component_id],
-            }
-            for c in components
-        ]
         serializer = ComponentSerializer(components_with_coverage, many=True)
         return Response(serializer.data)

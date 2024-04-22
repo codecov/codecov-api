@@ -11,6 +11,7 @@ from services.components import Component
 from utils.test_utils import APIClient
 
 
+# Borrowed from ./test_file_report_viewset.py
 def sample_report():
     report = Report()
     first_file = ReportFile("foo/file1.py")
@@ -24,11 +25,13 @@ def sample_report():
     first_file.append(8, ReportLine.create(coverage=1, sessions=[[0, 1]]))
     first_file.append(9, ReportLine.create(coverage=1, sessions=[[0, 1]]))
     first_file.append(10, ReportLine.create(coverage=0, sessions=[[0, 1]]))
+    # (1 * 5 hits + 0 * 3 misses) / 8 lines = 0.625 coverage
     second_file = ReportFile("bar/file2.py")
     second_file.append(12, ReportLine.create(coverage=1, sessions=[[0, 1]]))
     second_file.append(
         51, ReportLine.create(coverage="1/2", type="b", sessions=[[0, 1]])
     )
+    #  (1 * 1 hit + 0 * 1 partial) / 2 lines = 0.5 coverage
     report.append(first_file)
     report.append(second_file)
     report.add_session(Session(flags=["flag1", "flag2"]))
