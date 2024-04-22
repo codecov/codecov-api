@@ -30,6 +30,8 @@ class StorageService(MinioStorageService):
             self.minio_config["iam_auth"] = False
         if "iam_endpoint" not in self.minio_config:
             self.minio_config["iam_endpoint"] = None
+        if "region" not in self.minio_config:
+            self.minio_config["region"] = None
 
         if not MINIO_CLIENT:
             MINIO_CLIENT = self.init_minio_client(
@@ -40,6 +42,7 @@ class StorageService(MinioStorageService):
                 self.minio_config["verify_ssl"],
                 self.minio_config["iam_auth"],
                 self.minio_config["iam_endpoint"],
+                self.minio_config["region"],
             )
             log.info("----- created minio_client: ---- ")
         self.minio_client = MINIO_CLIENT
