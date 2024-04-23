@@ -10,6 +10,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
@@ -30,6 +31,9 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
         repository = self.get_repo()
@@ -67,6 +71,9 @@ class ReportResultsView(
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
         repository = self.get_repo()

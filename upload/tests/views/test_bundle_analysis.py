@@ -194,7 +194,10 @@ def test_upload_bundle_analysis_invalid_token(db, client, mocker, mock_redis):
         format="json",
     )
     assert res.status_code == 401
-    assert res.json() == {"detail": "Invalid token."}
+    assert res.json() == {
+        "detail": "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    }
     assert not upload.called
 
 
