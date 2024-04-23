@@ -10,7 +10,6 @@ class TestValidateYamlV2Handler(TestCase):
         client = Client()
         if query_source:
             query_source = f"?source={query_source}"
-            print(reverse("validate-yaml-v2") + query_source)
         return client.post(
             reverse("validate-yaml-v2") + query_source,
             data=data,
@@ -70,6 +69,5 @@ class TestValidateYamlV2Handler(TestCase):
 
     def test_query_source_metric(self, mock_metrics):
         self._post("comment: true", query_source="vscode")
-        print(mock_metrics.mock_calls)
         mock_metrics.assert_called()
         mock_metrics.assert_called_with("validate_v2", tags={"source": "vscode"})

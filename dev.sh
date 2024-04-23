@@ -19,6 +19,10 @@ _start_gunicorn() {
     python manage.py migrate
     python manage.py migrate --database "timeseries"
   fi
+  if [[ "$DEBUGPY" ]]; then
+      pip install debugpy
+      python -m debugpy --listen 0.0.0.0:12345 -m gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
+  fi
   gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
 }
 
