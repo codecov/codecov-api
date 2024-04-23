@@ -42,6 +42,9 @@ class CounterAssertionSet:
             )
 
 
+# TODO: Re-enable some cheaper form of user-agent logging
+# https://github.com/codecov/engineering-team/issues/1654
+"""
 class PrometheusUserAgentLabelTest(TestCase):
     def test_user_agent_label_added(self):
         user_agent = "iphone"
@@ -129,3 +132,4 @@ class PrometheusUserAgentLabelTest(TestCase):
                             == "none"  # not all requests have User-Agent header defined
                             or sample.labels["user_agent"] == user_agent
                         )
+"""
