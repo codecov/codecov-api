@@ -76,7 +76,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
     ) -> Optional[Collection]:
         return [
             cost_validator(
-                maximum_cost=150,
+                maximum_cost=1500,
                 default_cost=1,
                 variables=data.get("variables"),
             )
