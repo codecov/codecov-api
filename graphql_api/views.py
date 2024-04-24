@@ -10,7 +10,11 @@ from ariadne import format_error
 from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed
+from django.http import (
+    HttpResponseBadRequest,
+    HttpResponseNotAllowed,
+    JsonResponse,
+)
 from graphql import DocumentNode
 from graphql.error.graphql_error import GraphQLError
 from sentry_sdk import capture_exception
@@ -76,7 +80,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
     ) -> Optional[Collection]:
         return [
             cost_validator(
-                maximum_cost=1500,
+                maximum_cost=settings.GRAPHQL_QUERY_COST_THRESHOLD,
                 default_cost=1,
                 variables=data.get("variables"),
             )
@@ -119,17 +123,21 @@ class AsyncGraphqlView(GraphQLAsyncView):
             data = json.loads(content)
 
             if "errors" in data:
-                error_message = data["errors"][0]["message"]
-                if "The query exceeds the maximum cost" in error_message:
-                    costs = data["errors"][0]["extensions"]["cost"]
-                    log.error(
-                        "Query Cost Exceeded",
-                        extra=dict(
-                            requested_cost=costs["requestedQueryCost"],
-                            maximum_cost=costs["maximumAvailable"],
-                        ),
-                    )
-                    return HttpResponseBadRequest("Your query is too costly.")
+                try:
+                    if data["errors"][0]["extensions"]["cost"]:
+                        costs = data["errors"][0]["extensions"]["cost"]
+                        log.error(
+                            "Query Cost Exceeded",
+                            extra=dict(
+                                requested_cost=costs.get("requestedQueryCost"),
+                                maximum_cost=costs.get("maximumAvailable"),
+                            ),
+                        )
+                        return HttpResponseBadRequest(
+                            JsonResponse("Your query is too costly.")
+                        )
+                except:
+                    pass
             return response
 
     def context_value(self, request):

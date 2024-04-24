@@ -1,7 +1,8 @@
 import json
+import logging
 import os
 import tempfile
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from ariadne import ObjectType, make_executable_schema
 from ariadne.validation import cost_directive
@@ -90,10 +91,15 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
             == "Cannot query field 'fieldThatDoesntExist' on type 'Query'."
         )
 
-    @override_settings(DEBUG=False)
-    async def test_when_costly_query(self):
+    @override_settings(DEBUG=False, GRAPHQL_QUERY_COST_THRESHOLD=1000)
+    @patch("logging.Logger.error")
+    async def test_when_costly_query(self, mock_error_logger):
         schema = generate_cost_test_schema()
         data = await self.do_query(schema, " { stuff }")
+
         assert data["errors"] is not None
         assert data["errors"][0]["extensions"]["cost"]["requestedQueryCost"] == 2000
-        assert data["errors"][0]["extensions"]["cost"]["maximumAvailable"] == 1500
+        assert data["errors"][0]["extensions"]["cost"]["maximumAvailable"] == 1000
+        mock_error_logger.assert_called_with(
+            "Query Cost Exceeded", extra=dict(requested_cost=2000, maximum_cost=1000)
+        )
