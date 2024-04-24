@@ -1,7 +1,7 @@
-from ddf import G
 from django.test import TransactionTestCase
+from django.utils import timezone
 
-from codecov_auth.models import Session
+from codecov_auth.models import DjangoSession, Session
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
@@ -25,12 +25,22 @@ class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
         assert data["deleteSession"]["error"]["__typename"] == "UnauthenticatedError"
 
     def test_when_authenticated(self):
-        G(Session, owner=self.owner)
-        session = self.owner.session_set.first()
-        sessionid = session.sessionid
-        data = self.gql_request(
+        django_session = DjangoSession.objects.create(
+            expire_date=timezone.now(),
+            session_key="123abc",
+        )
+        sessionid = Session.objects.create(
+            lastseen=timezone.now(),
+            useragent="Firefox",
+            ip="0.0.0.0",
+            login_session=django_session,
+            type=Session.SessionType.LOGIN,
+            owner=self.owner,
+        ).sessionid
+
+        self.gql_request(
             query, owner=self.owner, variables={"input": {"sessionid": sessionid}}
         )
-        assert data["deleteSession"] == None
-        deleted_session = self.owner.session_set.filter(sessionid=sessionid).first()
-        assert None == deleted_session
+
+        assert len(DjangoSession.objects.filter(session_key="123abc")) == 0
+        assert len(Session.objects.filter(sessionid=sessionid)) == 0

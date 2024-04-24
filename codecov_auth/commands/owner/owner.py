@@ -24,7 +24,7 @@ class OwnerCommands(BaseCommand):
     def create_api_token(self, name):
         return self.get_interactor(CreateApiTokenInteractor).execute(name)
 
-    def delete_session(self, sessionid):
+    def delete_session(self, sessionid: int):
         return self.get_interactor(DeleteSessionInteractor).execute(sessionid)
 
     def create_user_token(self, name, token_type=None):
