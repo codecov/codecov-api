@@ -85,12 +85,14 @@ class ComponentMeasurements:
         interval: Interval,
         after: datetime,
         before: datetime,
+        last_measurement: datetime,
     ):
         self.raw_measurements = raw_measurements
         self.component_id = component_id
         self.interval = interval
         self.after = after
         self.before = before
+        self.last_measurement = last_measurement
 
     @cached_property
     def name(self):
@@ -116,5 +118,4 @@ class ComponentMeasurements:
 
     @cached_property
     def last_uploaded(self):
-        if len(self.raw_measurements) > 0:
-            return self.raw_measurements[-1]["timestamp_bin"]
+        return self.last_measurement
