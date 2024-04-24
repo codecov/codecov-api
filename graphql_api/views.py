@@ -10,11 +10,7 @@ from ariadne import format_error
 from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
-from django.http import (
-    HttpResponseBadRequest,
-    HttpResponseNotAllowed,
-    JsonResponse,
-)
+from django.http import HttpResponseBadRequest, HttpResponseNotAllowed, JsonResponse
 from graphql import DocumentNode
 from graphql.error.graphql_error import GraphQLError
 from sentry_sdk import capture_exception
