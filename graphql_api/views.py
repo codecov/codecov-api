@@ -12,7 +12,8 @@ from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
 from django.http import HttpResponseBadRequest, HttpResponseNotAllowed, JsonResponse
 from graphql import DocumentNode
-from sentry_sdk import capture_exception, metrics as sentry_metrics
+from sentry_sdk import capture_exception
+from sentry_sdk import metrics as sentry_metrics
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
