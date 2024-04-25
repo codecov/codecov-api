@@ -1,15 +1,13 @@
 import os
 from urllib.parse import urlparse
 
-import asgiref.sync as sync
 import sentry_sdk
-from asgiref.sync import SyncToAsync
 from corsheaders.defaults import default_headers
-from django.db import close_old_connections
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
@@ -533,10 +531,13 @@ REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", defa
 
 SENTRY_ENV = os.environ.get("CODECOV_ENV", False)
 SENTRY_DSN = os.environ.get("SERVICES__SENTRY__SERVER_DSN", None)
+SENTRY_DENY_LIST = DEFAULT_DENYLIST + ["_headers", "token_to_use"]
+
 if SENTRY_DSN is not None:
     SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1))
     sentry_sdk.init(
         dsn=SENTRY_DSN,
+        event_scrubber=EventScrubber(denylist=SENTRY_DENY_LIST),
         integrations=[
             DjangoIntegration(),
             CeleryIntegration(),
@@ -554,6 +555,7 @@ if SENTRY_DSN is not None:
 elif IS_DEV:
     sentry_sdk.init(
         spotlight=IS_DEV,
+        event_scrubber=EventScrubber(denylist=SENTRY_DENY_LIST),
     )
 
 SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
