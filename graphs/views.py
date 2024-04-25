@@ -214,6 +214,10 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             )
 
         report = report_service.build_report_from_commit(commit)
+
+        if report is None:
+            raise NotFound("Not found. Note: file for chunks not found in storage")
+
         return report.flare(None, [70, 100])
 
     def get_pull_flare(self, pullid):

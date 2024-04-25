@@ -11,7 +11,10 @@ import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from core.models import Branch, Repository
 from graphql_api.actions.commits import repo_commits
-from graphql_api.actions.components import component_measurements
+from graphql_api.actions.components import (
+    component_measurements,
+    component_measurements_last_uploaded,
+)
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -431,6 +434,17 @@ def resolve_component_measurements(
     all_measurements = component_measurements(
         repository, component_ids, interval, after, before, branch
     )
+
+    last_measurements = component_measurements_last_uploaded(
+        owner_id=repository.author.ownerid,
+        repo_id=repository.repoid,
+        measurable_ids=component_ids,
+        branch=branch,
+    )
+    last_measurements_mapping = {
+        row["measurable_id"]: row["last_uploaded"] for row in last_measurements
+    }
+
     queried_measurements = [
         ComponentMeasurements(
             raw_measurements=all_measurements.get(component_id, []),
@@ -438,6 +452,7 @@ def resolve_component_measurements(
             interval=interval,
             after=after,
             before=before,
+            last_measurement=last_measurements_mapping.get(component_id),
         )
         for component_id in component_ids
     ]

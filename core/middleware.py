@@ -55,8 +55,10 @@ class CustomMetricsWithUA(Metrics):
     """
 
     def register_metric(self, metric_cls, name, documentation, labelnames=(), **kwargs):
-        if name in USER_AGENT_METRICS:
-            labelnames = list(labelnames) + ["user_agent"]
+        # TODO: Re-enable a cheaper form of user-agent logging
+        # https://github.com/codecov/engineering-team/issues/1654
+        # if name in USER_AGENT_METRICS:
+        #    labelnames = list(labelnames) + ["user_agent"]
         return super().register_metric(
             metric_cls, name, documentation, labelnames=labelnames, **kwargs
         )
@@ -79,7 +81,9 @@ class AppMetricsAfterMiddlewareWithUA(PrometheusAfterMiddleware):
 
     def label_metric(self, metric, request, response=None, **labels):
         new_labels = labels
-        if metric._name in USER_AGENT_METRICS:
-            new_labels = {"user_agent": request.headers.get("User-Agent", "none")}
-            new_labels.update(labels)
+        # TODO: Re-enable a cheaper form of user-agent logging
+        # https://github.com/codecov/engineering-team/issues/1654
+        # if metric._name in USER_AGENT_METRICS:
+        #     new_labels = {"user_agent": request.headers.get("User-Agent", "none")}
+        #     new_labels.update(labels)
         return super().label_metric(metric, request, response=response, **new_labels)
