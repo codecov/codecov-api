@@ -1,8 +1,5 @@
 import json
-import logging
-import os
-import tempfile
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 from ariadne import ObjectType, make_executable_schema
 from ariadne.validation import cost_directive
@@ -101,5 +98,10 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
         assert data["errors"][0]["extensions"]["cost"]["requestedQueryCost"] == 2000
         assert data["errors"][0]["extensions"]["cost"]["maximumAvailable"] == 1000
         mock_error_logger.assert_called_with(
-            "Query Cost Exceeded", extra=dict(requested_cost=2000, maximum_cost=1000)
+            "Query Cost Exceeded",
+            extra=dict(
+                requested_cost=2000,
+                maximum_cost=1000,
+                request_body=dict(query="{ stuff }"),
+            ),
         )
