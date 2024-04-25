@@ -4,7 +4,7 @@ import os
 import shutil
 import socket
 from asyncio import iscoroutine
-from typing import Any, Collection, Optional, Type
+from typing import Any, Collection, Optional
 
 from ariadne import format_error
 from ariadne.validation import cost_validator
@@ -12,8 +12,7 @@ from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
 from django.http import HttpResponseBadRequest, HttpResponseNotAllowed, JsonResponse
 from graphql import DocumentNode
-from graphql.error.graphql_error import GraphQLError
-from sentry_sdk import capture_exception
+from sentry_sdk import capture_exception, metrics as sentry_metrics
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
@@ -110,6 +109,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             "user": request.user,
         }
         log.info("GraphQL Request", extra=log_data)
+        sentry_metrics.incr("graphql.info.request_made")
 
         # request.user = await get_user(request) or AnonymousUser()
         with RequestFinalizer(request):
@@ -119,6 +119,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             data = json.loads(content)
 
             if "errors" in data:
+                sentry_metrics.incr("graphql.error.all")
                 try:
                     if data["errors"][0]["extensions"]["cost"]:
                         costs = data["errors"][0]["extensions"]["cost"]
@@ -129,6 +130,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
                                 maximum_cost=costs.get("maximumAvailable"),
                             ),
                         )
+                        sentry_metrics.incr("graphql.error.query_cost_exceeded")
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
                         )
