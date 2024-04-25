@@ -95,6 +95,9 @@ class AsyncGraphqlView(GraphQLAsyncView):
         # get request body information
         req_body = json.loads(request.body.decode("utf-8")) if request.body else {}
 
+        # get request path information
+        req_path = request.get_full_path()
+
         # clean up graphql query to remove new lines and extra spaces
         if "query" in req_body and isinstance(req_body["query"], str):
             req_body["query"] = req_body["query"].replace("\n", " ")
@@ -104,12 +107,12 @@ class AsyncGraphqlView(GraphQLAsyncView):
         log_data = {
             "server_hostname": socket.gethostname(),
             "request_method": request.method,
-            "request_path": request.get_full_path(),
+            "request_path": req_path,
             "request_body": req_body,
             "user": request.user,
         }
         log.info("GraphQL Request", extra=log_data)
-        sentry_metrics.incr("graphql.info.request_made")
+        sentry_metrics.incr("graphql.info.request_made", tags={"path": req_path})
 
         # request.user = await get_user(request) or AnonymousUser()
         with RequestFinalizer(request):
@@ -119,7 +122,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             data = json.loads(content)
 
             if "errors" in data:
-                sentry_metrics.incr("graphql.error.all")
+                sentry_metrics.incr("graphql.error.all", tags={"path": req_path})
                 try:
                     if data["errors"][0]["extensions"]["cost"]:
                         costs = data["errors"][0]["extensions"]["cost"]
@@ -128,9 +131,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
                             extra=dict(
                                 requested_cost=costs.get("requestedQueryCost"),
                                 maximum_cost=costs.get("maximumAvailable"),
+                                request_body=req_body,
                             ),
                         )
-                        sentry_metrics.incr("graphql.error.query_cost_exceeded")
+                        sentry_metrics.incr(
+                            "graphql.error.query_cost_exceeded",
+                            tags={"path": req_path},
+                        )
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
                         )
