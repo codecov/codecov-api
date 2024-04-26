@@ -423,7 +423,7 @@ sortedcontainers==2.4.0
     #   intervaltree
 sqlalchemy==1.4.50
     # via shared
-sqlparse==0.4.4
+sqlparse==0.5.0
     # via django
 starlette==0.36.2
     # via ariadne
