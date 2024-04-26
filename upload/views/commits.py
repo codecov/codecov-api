@@ -10,6 +10,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
     TokenlessAuth,
     TokenlessAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from core.models import Commit
 from services.task import TaskService
@@ -30,6 +31,9 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def get_queryset(self):
         repository = self.get_repo()

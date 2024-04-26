@@ -68,20 +68,20 @@ class TestRepositoryLegacyTokenAuthentication(object):
     def test_authenticate_credentials_empty(self, db):
         token = None
         authentication = RepositoryLegacyTokenAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed):
-            authentication.authenticate_credentials(token)
+        res = authentication.authenticate_credentials(token)
+        assert res is None
 
     def test_authenticate_credentials_not_uuid(self, db):
         token = "not-a-uuid"
         authentication = RepositoryLegacyTokenAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed):
-            authentication.authenticate_credentials(token)
+        res = authentication.authenticate_credentials(token)
+        assert res is None
 
     def test_authenticate_credentials_uuid_no_repo(self, db):
         token = str(uuid.uuid4())
         authentication = RepositoryLegacyTokenAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed):
-            authentication.authenticate_credentials(token)
+        res = authentication.authenticate_credentials(token)
+        assert res is None
 
     def test_authenticate_credentials_uuid_token_with_repo(self, db):
         repo = RepositoryFactory.create()
@@ -246,15 +246,15 @@ class TestGitHubOIDCTokenAuthentication(object):
         mocked_get_repo_with_token.side_effect = ObjectDoesNotExist()
         token = "the best token"
         authentication = GitHubOIDCTokenAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed):
-            authentication.authenticate_credentials(token)
+        res = authentication.authenticate_credentials(token)
+        assert res is None
 
     def test_authenticate_credentials_oidc_error(self, mocked_get_repo_with_token, db):
         mocked_get_repo_with_token.side_effect = PyJWTError()
         token = "the best token"
         authentication = GitHubOIDCTokenAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed):
-            authentication.authenticate_credentials(token)
+        res = authentication.authenticate_credentials(token)
+        assert res is None
 
     def test_authenticate_credentials_oidc_valid(self, mocked_get_repo_with_token, db):
         token = "the best token"

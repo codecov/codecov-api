@@ -150,6 +150,30 @@ def test_test_results_github_oidc_token(
     assert res.status_code == 201
 
 
+def test_test_results_no_auth(db, client, mocker, mock_redis):
+    owner = OwnerFactory(service="github", username="codecov")
+    repository = RepositoryFactory.create(author=owner)
+    token = "BAD"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {token}")
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
+            "slug": f"{repository.author.username}::::{repository.name}",
+        },
+        format="json",
+    )
+    assert res.status_code == 401
+    assert (
+        res.json().get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
+
+
 def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     create_presigned_put = mocker.patch(
