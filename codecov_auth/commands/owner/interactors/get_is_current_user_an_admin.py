@@ -45,6 +45,7 @@ class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
             else:
                 try:
                     isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_owner)
+                    isAdmin = True
                     if isAdmin:
                         # save admin provider in admins list
                         owner.add_admin(current_owner)

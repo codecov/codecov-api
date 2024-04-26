@@ -75,7 +75,7 @@ ROOT_URLCONF = "codecov.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": ["codecov/"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

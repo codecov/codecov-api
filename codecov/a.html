@@ -1,0 +1,22 @@
+{% load static %}
+{% load i18n %}
+
+{% spaceless %}
+<div class="related-widget-wrapper">
+    <div class="dynamic-array-widget">
+        <ul>
+            {% for subwidget in widget.subwidgets %}
+                <li class="array-item" {% if widget.is_none %}data-isNone="true" style="display: none"{% endif %}>
+                    {% with widget=subwidget %}
+                        {% include widget.template_name %}
+                    {% endwith %}
+                    <div class="remove">
+                        <div class="inline-deletelink"></div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+        <div><input type="button" class="add-array-item" value="{% trans "Add another" %}"></div>
+    </div>
+</div>
+{% endspaceless %}
