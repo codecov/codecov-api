@@ -405,6 +405,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
+            coverage_enabled=False,
+            bundle_analysis_enabled=True,
         )
 
         self.gql_request(
@@ -425,6 +427,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
+            coverage_enabled=True,
+            bundle_analysis_enabled=True,
         )
 
         is_activated.return_value = False
@@ -446,6 +450,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
+            coverage_enabled=False,
+            bundle_analysis_enabled=True,
         )
 
         data = self.gql_request(
