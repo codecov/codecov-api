@@ -114,9 +114,11 @@ async def resolve_repository(owner, info, name):
         return NotFoundError()
 
     current_owner = info.context["request"].current_owner
-    is_configured_repo = repository.active or repository.activated
+    has_products_enabled = (
+        repository.bundleAnalysisEnabled and repository.coverageEnabled
+    )
 
-    if repository.private and is_configured_repo:
+    if repository.private and has_products_enabled:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
         is_owner_activated = await sync_to_async(activation.is_activated)(
             owner, current_owner
