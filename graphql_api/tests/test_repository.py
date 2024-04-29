@@ -405,7 +405,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
-            coverage_enabled=False,
+            coverage_enabled=True,
             bundle_analysis_enabled=True,
         )
 
@@ -450,7 +450,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
-            coverage_enabled=False,
+            coverage_enabled=True,
             bundle_analysis_enabled=True,
         )
 
