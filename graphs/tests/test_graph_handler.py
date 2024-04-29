@@ -657,3 +657,36 @@ class TestGraphHandler(APITestCase):
             response.data["detail"]
             == "Not found. Note: private repositories require ?token arguments"
         )
+
+    @patch("services.report.build_report_from_commit")
+    def test_pull_file_not_found_in_storage(self, mocked_build_report):
+        mocked_build_report.return_value = None
+        gh_owner = OwnerFactory(service="github")
+        repo = RepositoryFactory(
+            author=gh_owner,
+            active=True,
+            private=True,
+            name="repo1",
+            image_token="12345678",
+            branch="master",
+        )
+        CommitWithReportFactory(repository=repo, author=gh_owner)
+        PullFactory(pullid=10, repository_id=repo.repoid, _flare=None)
+
+        response = self._get_pull(
+            "tree",
+            kwargs={
+                "service": "gh",
+                "owner_username": gh_owner.username,
+                "repo_name": "repo1",
+                "ext": "svg",
+                "pull": 10,
+            },
+            data={"token": "12345678"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert (
+            response.data["detail"]
+            == "Not found. Note: file for chunks not found in storage"
+        )

@@ -9,6 +9,7 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from reports.models import ReportSession
 from services.task import TaskService
@@ -26,6 +27,9 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
         repo = self.get_repo()

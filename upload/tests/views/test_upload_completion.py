@@ -140,6 +140,43 @@ def test_upload_completion_view_processed_uploads_github_oidc_auth(
     mocked_manual_trigger.assert_called_once_with(repository.repoid, commit.commitid)
 
 
+def test_upload_completion_view_no_auth(db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    token = "BAD"
+    commit = CommitFactory(repository=repository)
+    report = CommitReportFactory(commit=commit)
+    upload1 = UploadFactory(report=report)
+    upload2 = UploadFactory(report=report)
+    repository.save()
+    commit.save()
+    report.save()
+    upload1.save()
+    upload2.save()
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {token}")
+    url = reverse(
+        "new_upload.upload-complete",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+        ],
+    )
+    response = client.post(
+        url,
+    )
+    response_json = response.json()
+    assert response.status_code == 401
+    assert (
+        response_json.get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
+
+
 @patch("services.task.TaskService.manual_upload_completion_trigger")
 def test_upload_completion_view_still_processing_uploads(
     mocked_manual_trigger, db, mocker

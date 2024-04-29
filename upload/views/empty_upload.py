@@ -15,6 +15,7 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
@@ -71,6 +72,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
         serializer = EmptyUploadSerializer(data=request.data)

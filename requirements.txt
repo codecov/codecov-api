@@ -213,8 +213,9 @@ httpx==0.23.0
     # via shared
 identify==2.2.2
     # via pre-commit
-idna==2.8
+idna==3.7
     # via
+    #   -r requirements.in
     #   anyio
     #   requests
     #   rfc3986
@@ -396,7 +397,7 @@ sentry-sdk==1.40.4
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/bf5fd12a12b8bd35c533298ccee4813a15e20067.tar.gz
+shared @ https://github.com/codecov/shared/archive/a0030c20c3a132a5d8ceb090c150a8d57249306e.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
@@ -422,7 +423,7 @@ sortedcontainers==2.4.0
     #   intervaltree
 sqlalchemy==1.4.50
     # via shared
-sqlparse==0.4.4
+sqlparse==0.5.0
     # via django
 starlette==0.36.2
     # via ariadne
