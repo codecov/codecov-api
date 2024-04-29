@@ -137,6 +137,10 @@ else:
     )
     DATABASE_READ_PORT = get_config("services", "database_read", "port", default=5432)
 
+GRAPHQL_QUERY_COST_THRESHOLD = get_config(
+    "setup", "graphql", "query_cost_threshold", default=10000
+)
+
 TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
 TIMESERIES_REAL_TIME_AGGREGATES = get_config(
     "setup", "timeseries", "real_time_aggregates", default=False

@@ -9,13 +9,13 @@ type Me {
     after: String
     last: Int
     before: String
-  ): SessionConnection!
+  ): SessionConnection! @cost(complexity: 7, multipliers: ["first", "last"])
   tokens(
     first: Int
     after: String
     last: Int
     before: String
-  ): UserTokenConnection!
+  ): UserTokenConnection! @cost(complexity: 5, multipliers: ["first", "last"])
   viewableRepositories(
     filters: RepositorySetFilters
     ordering: RepositoryOrdering
@@ -25,6 +25,7 @@ type Me {
     last: Int
     before: String
   ): ViewableRepositoryConnection!
+    @cost(complexity: 25, multipliers: ["first", "last"])
   myOrganizations(
     filters: OrganizationSetFilters
     first: Int
@@ -32,6 +33,7 @@ type Me {
     last: Int
     before: String
   ): MyOrganizationConnection!
+    @cost(complexity: 15, multipliers: ["first", "last"])
   isSyncingWithGitProvider: Boolean!
   trackingMetadata: trackingMetadata! # temporary solution to expose the user metadata
   privateAccess: Boolean

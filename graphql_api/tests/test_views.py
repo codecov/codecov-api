@@ -1,9 +1,8 @@
 import json
-import os
-import tempfile
 from unittest.mock import patch
 
 from ariadne import ObjectType, make_executable_schema
+from ariadne.validation import cost_directive
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import ResolverMatch
 
@@ -26,6 +25,17 @@ def generate_schema_that_raise_with(exception):
         raise exception
 
     return make_executable_schema(types, query_bindable)
+
+
+def generate_cost_test_schema():
+    types = """
+    type Query {
+        stuff: String @cost(complexity: 2000)
+    }
+    """
+    query_bindable = ObjectType("Query")
+
+    return make_executable_schema([types, cost_directive], query_bindable)
 
 
 class ArianeViewTestCase(GraphQLTestHelper, TestCase):
@@ -76,4 +86,22 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
         assert (
             data["errors"][0]["message"]
             == "Cannot query field 'fieldThatDoesntExist' on type 'Query'."
+        )
+
+    @override_settings(DEBUG=False, GRAPHQL_QUERY_COST_THRESHOLD=1000)
+    @patch("logging.Logger.error")
+    async def test_when_costly_query(self, mock_error_logger):
+        schema = generate_cost_test_schema()
+        data = await self.do_query(schema, " { stuff }")
+
+        assert data["errors"] is not None
+        assert data["errors"][0]["extensions"]["cost"]["requestedQueryCost"] == 2000
+        assert data["errors"][0]["extensions"]["cost"]["maximumAvailable"] == 1000
+        mock_error_logger.assert_called_with(
+            "Query Cost Exceeded",
+            extra=dict(
+                requested_cost=2000,
+                maximum_cost=1000,
+                request_body=dict(query="{ stuff }"),
+            ),
         )

@@ -1,4 +1,5 @@
 from ariadne import load_schema_from_path
+from ariadne.validation import cost_directive
 from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
@@ -105,6 +106,7 @@ types = [
     self_hosted_license,
     user_token,
     repository_config,
+    cost_directive,
 ]
 
 bindables = [
