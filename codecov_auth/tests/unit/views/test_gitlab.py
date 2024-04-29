@@ -80,6 +80,11 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
             as_tuple=mocker.MagicMock(return_value=("a", "b"))
         ),
     )
+
+    session = client.session
+    session["gitlab_oauth_state"] = "abc"
+    session.save()
+
     url = reverse("gitlab-login")
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gl")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
@@ -92,7 +97,9 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     assert encryptor.decode(owner.oauth_token) == f"{access_token}: :{refresh_token}"
 
 
-def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
+def test_get_gitlab_already_with_code_no_session(
+    client, mocker, db, settings, mock_redis
+):
     settings.GITLAB_CLIENT_ID = (
         "testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth"
     )

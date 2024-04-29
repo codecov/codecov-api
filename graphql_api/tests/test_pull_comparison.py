@@ -979,7 +979,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         compute_comparisons_mock.assert_called_once
 
-    def test_pull_comparison_missing_head_report(self):
+    def test_pull_comparison_missing_head_report_deprecated(self):
         self.head_report.side_effect = comparison.MissingComparisonReport(
             "Missing head report"
         )
@@ -1010,7 +1010,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
             is None
         )
 
-    def test_pull_comparison_missing_base_report(self):
+    def test_pull_comparison_missing_base_report_deprecated(self):
         self.base_report.side_effect = comparison.MissingComparisonReport(
             "Missing base report"
         )

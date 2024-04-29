@@ -1303,7 +1303,7 @@ class TestBadgeHandler(APITestCase):
         assert response.status_code == status.HTTP_200_OK
 
     @patch("core.models.Commit.full_report", new_callable=PropertyMock)
-    def test_commit_report_null(self, full_report_mock):
+    def test_commit_report_no_flags(self, full_report_mock):
         gh_owner = OwnerFactory(service="github")
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
