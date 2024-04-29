@@ -2629,7 +2629,10 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
 
     @patch.object(requests, "get")
     def test_circleci_invalid_stop_time(self, mock_get):
-        expected_response = {"vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a"}
+        expected_response = {
+            "vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "stop_time": "",
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 

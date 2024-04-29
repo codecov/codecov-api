@@ -979,68 +979,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         compute_comparisons_mock.assert_called_once
 
-    def test_pull_comparison_missing_head_report_deprecated(self):
-        self.head_report.side_effect = comparison.MissingComparisonReport(
-            "Missing head report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                ... on Comparison {
-                    state
-                    impactedFilesDeprecated {
-                        headName
-                    }
-                }
-            }
-        """
-
-        res = self.gql_request(
-            base_query % (self.repository.name, self.pull.pullid, query),
-            owner=self.owner,
-            with_errors=True,
-        )
-        assert res["errors"] is not None
-        assert res["errors"][0]["message"] == "Missing head report"
-        assert (
-            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
-                "impactedFilesDeprecated"
-            ]
-            is None
-        )
-
-    def test_pull_comparison_missing_base_report_deprecated(self):
-        self.base_report.side_effect = comparison.MissingComparisonReport(
-            "Missing base report"
-        )
-
-        query = """
-            pullId
-            compareWithBase {
-                ... on Comparison {
-                    state
-                    impactedFilesDeprecated {
-                        headName
-                    }
-                }
-            }
-        """
-
-        res = self.gql_request(
-            base_query % (self.repository.name, self.pull.pullid, query),
-            owner=self.owner,
-            with_errors=True,
-        )
-        assert res["errors"] is not None
-        assert res["errors"][0]["message"] == "Missing base report"
-        assert (
-            res["data"]["me"]["owner"]["repository"]["pull"]["compareWithBase"][
-                "impactedFilesDeprecated"
-            ]
-            is None
-        )
-
     def test_pull_comparison_missing_when_commit_comparison_state_is_errored(self):
         self.commit_comparison.state = CommitComparison.CommitComparisonStates.ERROR
         self.commit_comparison.save()
