@@ -469,8 +469,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             activated=False,
             private=True,
             name="test-one",
-            coverageEnabled=True,
-            BundleAnalysisEnabled=False,
+            coverage_enabled=True,
+            bundle_analysis_enabled=False,
         )
 
         is_activated.return_value = False

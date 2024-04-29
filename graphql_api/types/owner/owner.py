@@ -115,7 +115,7 @@ async def resolve_repository(owner, info, name):
 
     current_owner = info.context["request"].current_owner
     has_products_enabled = (
-        repository.bundleAnalysisEnabled and repository.coverageEnabled
+        repository.bundle_analysis_enabled and repository.coverage_enabled
     )
 
     if repository.private and has_products_enabled:
