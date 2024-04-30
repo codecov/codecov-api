@@ -2,10 +2,10 @@ from rest_framework import serializers
 
 
 class FeatureIdentifierDataSerializer(serializers.Serializer):
-    email = serializers.CharField(max_length=200)
-    user_id = serializers.CharField(max_length=200)
-    repo_id = serializers.CharField(max_length=200)
-    org_id = serializers.CharField(max_length=200)
+    email = serializers.CharField(max_length=200, allow_blank=True)
+    user_id = serializers.IntegerField()
+    repo_id = serializers.IntegerField()
+    org_id = serializers.IntegerField()
 
 
 class FeatureRequestSerializer(serializers.Serializer):

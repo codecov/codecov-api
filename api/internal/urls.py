@@ -77,5 +77,5 @@ urlpatterns += [
         "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
         include(compare_router.urls),
     ),
-    path("features", FeaturesView.as_view()),
+    path("features", FeaturesView.as_view(), name="features"),
 ]

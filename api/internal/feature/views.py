@@ -18,7 +18,9 @@ class FeaturesView(APIView):
 
             feature_flags = FeatureFlag.objects.filter(
                 name__in=feature_flag_names
-            ).prefetch_related("variants")
+            ).prefetch_related(
+                "variants"
+            )  # fetch the feature flag variants aswell
 
             result = {}
             for feature_flag in feature_flags:
