@@ -46,7 +46,7 @@ class FeatureFlagVariantInline(admin.StackedInline):
 
 
 class FeatureFlagAdmin(admin.ModelAdmin):
-    list_display = ["name", "number_of_variants"]
+    list_display = ["name", "is_active", "number_of_variants", "proportion_percentage"]
     search_fields = ["name"]
     inlines = [FeatureFlagVariantInline]
 
@@ -54,6 +54,11 @@ class FeatureFlagAdmin(admin.ModelAdmin):
         return obj.variants.count()
 
     number_of_variants.short_description = "# of Variants"
+
+    def proportion_percentage(self, obj):
+        return str(round(obj.proportion * 100)) + "%"
+
+    proportion_percentage.short_description = "Experiment Proportion"
 
 
 class FeatureFlagVariantAdmin(admin.ModelAdmin, DynamicArrayMixin):
