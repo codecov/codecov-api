@@ -7,6 +7,13 @@ from shared.django_apps.rollouts.models import (
 from shared.django_apps.utils.model_utils import rollout_identifier_to_override_string
 from shared.rollouts import Feature
 
+FEATURES_CACHE_REDIS_KEY = "features_endpoint_cache"
+
+
+def get_flag_cache_redis_key(flag_name):
+    return FEATURES_CACHE_REDIS_KEY + ":" + flag_name
+
+
 # TODO: these function should ideally be consolidated with
 # what the `Feature` util in `shared.rollouts/__init__.py` uses
 # into some flag service module so that the core logic of flags
