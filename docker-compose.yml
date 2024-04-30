@@ -15,6 +15,9 @@ services:
     environment:
       - RUN_ENV=DEV
       - SETUP__TIMESERIES__ENABLED=${TIMESERIES_ENABLED-true}
+      # Improves pytest-cov performance in python 3.12
+      # https://github.com/nedbat/coveragepy/issues/1665#issuecomment-1937075835
+      - COVERAGE_CORE=sysmon 
     env_file:
       - .testenv
   postgres:
