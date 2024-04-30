@@ -201,7 +201,7 @@ grpcio-status==1.58.0
     # via
     #   google-api-core
     #   google-cloud-pubsub
-gunicorn==20.1.0
+gunicorn==22.0.0
     # via -r requirements.in
 h11==0.12.0
     # via httpcore
