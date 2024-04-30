@@ -307,7 +307,7 @@ SPECTACULAR_SETTINGS = {
 
 # The frame-ancestors directive restricts the URLs which can embed the resource using
 # frame, iframe, object, or embed. This configuration denies doing so.
-CSP_FRAME_ANCESTORS = ("'none'")
+CSP_FRAME_ANCESTORS = "'none'"
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
