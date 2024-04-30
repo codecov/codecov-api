@@ -1,3 +1,5 @@
+import logging
+
 from django.core.cache import cache
 from rest_framework import status
 from rest_framework.response import Response
@@ -5,40 +7,51 @@ from rest_framework.views import APIView
 from shared.django_apps.rollouts.models import FeatureFlag
 
 from api.internal.feature.helpers import evaluate_flag, get_flag_cache_redis_key
+from utils.config import get_config
 
 from .serializers import FeatureRequestSerializer
 
+log = logging.getLogger(__name__)
+
 
 class FeaturesView(APIView):
+    skip_feature_cache = get_config("setup", "skip_feature_cache", default=False)
+
     def post(self, request):
         serializer = FeatureRequestSerializer(data=request.data)
         if serializer.is_valid():
             flag_evaluations = {}
             identifier_data = serializer.validated_data["identifier_data"]
-
             feature_flag_names = serializer.validated_data["feature_flags"]
+
             feature_flag_cache_keys = [
                 get_flag_cache_redis_key(flag_name) for flag_name in feature_flag_names
             ]
             cache_misses = []
 
-            # fetch flags from cache
-            cached_flags = cache.get_many(feature_flag_cache_keys)
+            if not self.skip_feature_cache:
+                # fetch flags from cache
+                cached_flags = cache.get_many(feature_flag_cache_keys)
 
-            for ind in range(len(feature_flag_cache_keys)):
-                cache_key = feature_flag_cache_keys[ind]
-                flag_name = feature_flag_names[ind]
+                for ind in range(len(feature_flag_cache_keys)):
+                    cache_key = feature_flag_cache_keys[ind]
+                    flag_name = feature_flag_names[ind]
 
-                # if flag is in cache, make the evaluation. Otherwise, we'll
-                # fetch the flag from DB later
-                if cache_key in cached_flags:
-                    hits += 1
-                    flag_evaluations[flag_name] = evaluate_flag(
-                        cached_flags[cache_key], identifier_data
-                    )
-                else:
-                    cache_misses.append(flag_name)
-                    misses += 1
+                    # if flag is in cache, make the evaluation. Otherwise, we'll
+                    # fetch the flag from DB later
+                    if cache_key in cached_flags:
+                        hits += 1
+                        flag_evaluations[flag_name] = evaluate_flag(
+                            cached_flags[cache_key], identifier_data
+                        )
+                    else:
+                        cache_misses.append(flag_name)
+                        misses += 1
+            else:
+                cache_misses = feature_flag_names
+                log.warning(
+                    "skip_feature_cache for Feature should only be turned on in development environments, and should not be used in production"
+                )
 
             flags_to_add_to_cache = {}
 
