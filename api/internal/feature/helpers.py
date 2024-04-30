@@ -90,4 +90,7 @@ def evaluate_flag(feature_flag: FeatureFlag, identifier_data):
         if bucket_start <= key and key < bucket_end:
             return variant.value
 
-    return False  # make default something to define in django admin
+    # the default fallback value for frontend flags is false. Note for
+    # future: could make default fallback value for flags a value that
+    # can be defined in django admin
+    return False

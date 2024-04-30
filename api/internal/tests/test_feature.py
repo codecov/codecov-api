@@ -176,7 +176,7 @@ def test_overrides_by_email(
     FeatureFlagVariant.objects.create(
         name="overrides_a",
         feature_flag=overrides,
-        proportion=1 / 2,
+        proportion=1 / 3,
         value=o_values[0],
         override_emails=o_emails[0],
         override_owner_ids=o_owner_ids[0],
@@ -186,15 +186,20 @@ def test_overrides_by_email(
     FeatureFlagVariant.objects.create(
         name="overrides_b",
         feature_flag=overrides,
-        proportion=1 / 2,
+        proportion=1 / 3,
         value=o_values[1],
         override_emails=o_emails[1],
         override_owner_ids=o_owner_ids[1],
         override_repo_ids=o_repo_ids[1],
         override_org_ids=o_org_ids[1],
     )
+    FeatureFlagVariant.objects.create(
+        name="overrides_c",
+        feature_flag=overrides,
+        proportion=1 / 3,
+        value="dfjosijsdiofjdos",
+    )
 
-    # Prepare the first test data
     data1 = {
         "feature_flags": ["overrides"],
         "identifier_data": {
@@ -208,7 +213,6 @@ def test_overrides_by_email(
     mock.setUp()
     res1 = mock.send_feature_request(data1)
 
-    # Prepare the second test data
     data2 = {
         "feature_flags": ["overrides"],
         "identifier_data": {
