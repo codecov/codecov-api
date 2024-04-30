@@ -40,13 +40,11 @@ class FeaturesView(APIView):
                     # if flag is in cache, make the evaluation. Otherwise, we'll
                     # fetch the flag from DB later
                     if cache_key in cached_flags:
-                        hits += 1
                         flag_evaluations[flag_name] = evaluate_flag(
                             cached_flags[cache_key], identifier_data
                         )
                     else:
                         cache_misses.append(flag_name)
-                        misses += 1
             else:
                 cache_misses = feature_flag_names
                 log.warning(
