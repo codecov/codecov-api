@@ -317,6 +317,26 @@ class PlanServiceTests(TestCase):
 
         assert plan_service.has_trial_dates == True
 
+    def test_plan_service_has_seats_left(self):
+        current_org = OwnerFactory(
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            plan_user_count=6,
+            plan_activated_users=[i for i in range(5)],
+        )
+        plan_service = PlanService(current_org=current_org)
+
+        assert plan_service.has_seats_left == True
+
+    def test_plan_service_has_no_seats_left(self):
+        current_org = OwnerFactory(
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            plan_user_count=5,
+            plan_activated_users=[i for i in range(5)],
+        )
+        plan_service = PlanService(current_org=current_org)
+
+        assert plan_service.has_seats_left == False
+
 
 class AvailablePlansBeforeTrial(TestCase):
     """
