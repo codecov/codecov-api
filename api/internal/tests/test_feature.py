@@ -129,7 +129,7 @@ class FeatureEndpointTests(APITestCase):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "rollout_identifier,o_emails,o_owner_ids,o_repo_ids,o_org_ids,o_values",
+    "rollout_universe,o_emails,o_owner_ids,o_repo_ids,o_org_ids,o_values",
     [
         (
             RolloutUniverse.EMAIL,
@@ -166,12 +166,12 @@ class FeatureEndpointTests(APITestCase):
     ],
 )
 def test_overrides_by_email(
-    rollout_identifier, o_emails, o_owner_ids, o_repo_ids, o_org_ids, o_values
+    rollout_universe, o_emails, o_owner_ids, o_repo_ids, o_org_ids, o_values
 ):
     overrides = FeatureFlag.objects.create(
         name="overrides",
         proportion=1.0,
-        rollout_identifier=rollout_identifier,
+        rollout_universe=rollout_universe,
     )
     FeatureFlagVariant.objects.create(
         name="overrides_a",
