@@ -68,6 +68,7 @@ MIDDLEWARE = [
     "codecov_auth.middleware.CurrentOwnerMiddleware",
     "codecov_auth.middleware.ImpersonationMiddleware",
     "core.middleware.AppMetricsAfterMiddlewareWithUA",
+    "csp.middleware.CSPMiddleware",
 ]
 
 ROOT_URLCONF = "codecov.urls"
@@ -304,16 +305,9 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",  # serve Redoc from Django (not CDN)
 }
 
-CSP_WORKER_SRC = ("'self'", "blob:")
-CSP_IMG_SRC = ("'self'", "data:", "cdn.redoc.ly")
-CSP_STYLE_SRC = (
-    "'self'",
-    "sha256-GvZq6XrzMRhFZ2MvEI09Lw7QbE3DnWuVQTMYafGYLcg=",
-    "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    "sha256-DLDPR1ic47WIdK2WyeLkblb/tm2mQH+Jt/NNhZWu1k0=",
-    "fonts.googleapis.com",
-)
-CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
+# The frame-ancestors directive restricts the URLs which can embed the resource using
+# frame, iframe, object, or embed. This configuration denies doing so.
+CSP_FRAME_ANCESTORS = "'none'"
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
