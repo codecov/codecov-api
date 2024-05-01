@@ -566,11 +566,3 @@ MIGRATION_MODULES = {
     "reports": "shared.django_apps.reports.migrations",
     "legacy_migrations": "shared.django_apps.legacy_migrations.migrations",
 }
-
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": get_config("services", "redis_url"),
-        "TIMEOUT": 300,  # 5 min TTL
-    }
-}

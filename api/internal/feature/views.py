@@ -1,12 +1,15 @@
 import logging
+import pickle
 
 from django.core.cache import cache
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.django_apps.rollouts.models import FeatureFlag
+from shared.rollouts import Feature
 
-from api.internal.feature.helpers import evaluate_flag, get_flag_cache_redis_key
+from api.internal.feature.helpers import get_flag_cache_redis_key, get_identifier
+from services.redis_configuration import get_redis_connection
 from utils.config import get_config
 
 from .serializers import FeatureRequestSerializer
@@ -16,6 +19,25 @@ log = logging.getLogger(__name__)
 
 class FeaturesView(APIView):
     skip_feature_cache = get_config("setup", "skip_feature_cache", default=False)
+    timeout = 300
+
+    def __init__(self, *args, **kwargs):
+        self.redis = get_redis_connection()
+        super().__init__(*args, **kwargs)
+
+    def get_many_from_redis(self, keys):
+        ret = self.redis.mget(keys)
+        return {k: pickle.loads(v) for k, v in zip(keys, ret) if v is not None}
+
+    def set_many_to_redis(self, data):
+        pipeline = self.redis.pipeline()
+        pipeline.mset({k: pickle.dumps(v) for k, v in data.items()})
+
+        # Setting timeout for each key as redis does not support timeout
+        # with mset().
+        for key in data:
+            pipeline.expire(key, self.timeout)
+        pipeline.execute()
 
     def post(self, request):
         serializer = FeatureRequestSerializer(data=request.data)
@@ -31,7 +53,7 @@ class FeaturesView(APIView):
 
             if not self.skip_feature_cache:
                 # fetch flags from cache
-                cached_flags = cache.get_many(feature_flag_cache_keys)
+                cached_flags = self.get_many_from_redis(feature_flag_cache_keys)
 
                 for ind in range(len(feature_flag_cache_keys)):
                     cache_key = feature_flag_cache_keys[ind]
@@ -40,9 +62,12 @@ class FeaturesView(APIView):
                     # if flag is in cache, make the evaluation. Otherwise, we'll
                     # fetch the flag from DB later
                     if cache_key in cached_flags:
-                        flag_evaluations[flag_name] = evaluate_flag(
-                            cached_flags[cache_key], identifier_data
-                        )
+                        feature_flag = cached_flags[cache_key]
+                        identifier = get_identifier(feature_flag, identifier_data)
+
+                        flag_evaluations[flag_name] = Feature(
+                            flag_name, feature_flag, list(feature_flag.variants.all())
+                        ).check_value_no_fetch(identifier=identifier)
                     else:
                         cache_misses.append(flag_name)
             else:
@@ -62,16 +87,18 @@ class FeaturesView(APIView):
 
             # evaluate the remaining flags
             for feature_flag in missed_feature_flags:
-                flag_evaluations[feature_flag.name] = evaluate_flag(
-                    feature_flag, identifier_data
-                )
+                identifier = get_identifier(feature_flag, identifier_data)
+
+                flag_evaluations[feature_flag.name] = Feature(
+                    feature_flag.name, feature_flag, list(feature_flag.variants.all())
+                ).check_value_no_fetch(identifier=identifier)
                 flags_to_add_to_cache[
                     get_flag_cache_redis_key(feature_flag.name)
                 ] = feature_flag
 
             # add the new flags to cache
             if len(flags_to_add_to_cache) >= 1:
-                cache.set_many(flags_to_add_to_cache)
+                self.set_many_to_redis(flags_to_add_to_cache)
 
             return Response(flag_evaluations, status=status.HTTP_200_OK)
         else:

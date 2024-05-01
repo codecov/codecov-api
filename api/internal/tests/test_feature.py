@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 from shared.django_apps.rollouts.models import (
     FeatureFlag,
     FeatureFlagVariant,
-    RolloutIdentifier,
+    RolloutUniverse,
 )
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -132,7 +132,7 @@ class FeatureEndpointTests(APITestCase):
     "rollout_identifier,o_emails,o_owner_ids,o_repo_ids,o_org_ids,o_values",
     [
         (
-            RolloutIdentifier.EMAIL,
+            RolloutUniverse.EMAIL,
             (["david@gmail.com"], ["daniel@gmail.com"]),
             ([], []),
             ([], []),
@@ -140,7 +140,7 @@ class FeatureEndpointTests(APITestCase):
             (1, 2),
         ),
         (
-            RolloutIdentifier.OWNER_ID,
+            RolloutUniverse.OWNER_ID,
             ([], []),
             (["1"], ["2"]),
             ([], []),
@@ -148,7 +148,7 @@ class FeatureEndpointTests(APITestCase):
             (3, 4),
         ),
         (
-            RolloutIdentifier.REPO_ID,
+            RolloutUniverse.REPO_ID,
             ([], []),
             ([], []),
             (["21"], ["31"]),
@@ -156,7 +156,7 @@ class FeatureEndpointTests(APITestCase):
             (5, 6),
         ),
         (
-            RolloutIdentifier.ORG_ID,
+            RolloutUniverse.ORG_ID,
             ([], []),
             ([], []),
             ([], []),
