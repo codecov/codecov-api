@@ -90,28 +90,28 @@ class FeatureEndpointTests(APITestCase):
         self.assertEqual(res.data["feature_b"], True)
 
     def test_variant_assigned_false(self):
-        feature_a = FeatureFlag.objects.create(
-            name="feature_a", proportion=1.0, salt="random_salt"
+        feature_aaa = FeatureFlag.objects.create(
+            name="feature_aaa", proportion=1.0, salt="random_salt"
         )
         FeatureFlagVariant.objects.create(
             name="disabled",
-            feature_flag=feature_a,
+            feature_flag=feature_aaa,
             proportion=1.0,
             value=False,
         )
 
-        feature_b = FeatureFlag.objects.create(
-            name="feature_b", proportion=1.0, salt="random_salt"
+        feature_bbb = FeatureFlag.objects.create(
+            name="feature_bbb", proportion=1.0, salt="random_salt"
         )
         FeatureFlagVariant.objects.create(
             name="disabled",
-            feature_flag=feature_b,
+            feature_flag=feature_bbb,
             proportion=1.0,
             value=False,
         )
 
         data = {
-            "feature_flags": ["feature_a", "feature_b"],
+            "feature_flags": ["feature_aaa", "feature_bbb"],
             "identifier_data": {
                 "email": "d",
                 "user_id": 1,
@@ -123,8 +123,8 @@ class FeatureEndpointTests(APITestCase):
         res = self.send_feature_request(data)
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.data["feature_a"], False)
-        self.assertEqual(res.data["feature_b"], False)
+        self.assertEqual(res.data["feature_aaa"], False)
+        self.assertEqual(res.data["feature_bbb"], False)
 
 
 @pytest.mark.django_db
@@ -169,7 +169,7 @@ def test_overrides_by_email(
     rollout_universe, o_emails, o_owner_ids, o_repo_ids, o_org_ids, o_values
 ):
     overrides = FeatureFlag.objects.create(
-        name="overrides",
+        name="overrides_" + str(rollout_universe),
         proportion=1.0,
         rollout_universe=rollout_universe,
     )
@@ -201,7 +201,7 @@ def test_overrides_by_email(
     )
 
     data1 = {
-        "feature_flags": ["overrides"],
+        "feature_flags": ["overrides_" + str(rollout_universe)],
         "identifier_data": {
             "email": o_emails[0][0] if o_emails[0] else "",
             "user_id": o_owner_ids[0][0] if o_owner_ids[0] else 0,
@@ -214,7 +214,7 @@ def test_overrides_by_email(
     res1 = mock.send_feature_request(data1)
 
     data2 = {
-        "feature_flags": ["overrides"],
+        "feature_flags": ["overrides_" + str(rollout_universe)],
         "identifier_data": {
             "email": o_emails[1][0] if o_emails[1] else "",
             "user_id": o_owner_ids[1][0] if o_owner_ids[1] else 0,
@@ -225,6 +225,6 @@ def test_overrides_by_email(
     res2 = mock.send_feature_request(data2)
 
     assert res1.status_code == 200
-    assert res1.data["overrides"] == o_values[0]
+    assert res1.data["overrides_" + str(rollout_universe)] == o_values[0]
     assert res2.status_code == 200
-    assert res2.data["overrides"] == o_values[1]
+    assert res2.data["overrides_" + str(rollout_universe)] == o_values[1]
