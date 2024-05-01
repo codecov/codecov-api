@@ -488,7 +488,6 @@ class GithubWebhookHandler(APIView):
         # TODO: Consider adding "suspend" action here?
         # https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation
         if action == "deleted":
-
             if event == GitHubWebhookEvents.INSTALLATION:
                 ghapp_installation: Optional[
                     GithubAppInstallation
@@ -510,7 +509,6 @@ class GithubWebhookHandler(APIView):
             # GithubWebhookEvents.INSTALLTION_REPOSITORIES also execute this code
             # because of deprecated flow. But the GithubAppInstallation shouldn't be changed
             if event == GitHubWebhookEvents.INSTALLATION:
-
                 ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
                     installation_id=installation_id, owner=owner
                 )

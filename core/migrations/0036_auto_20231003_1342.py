@@ -11,7 +11,6 @@ def update_version(apps, schema):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0035_auto_20230907_2123"),
     ]

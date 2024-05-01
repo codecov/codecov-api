@@ -5,7 +5,6 @@ from rest_framework.response import Response
 
 class GraphBadgeAPIMixin(object):
     def get(self, request, *args, **kwargs):
-
         ext = self.kwargs.get("ext")
         if not ext in self.extensions:
             return Response(

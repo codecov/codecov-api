@@ -14,7 +14,6 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
-
     actions_token = settings.GITHUB_ACTIONS_TOKEN
     client_id = settings.GITHUB_CLIENT_ID
     client_secret = settings.GITHUB_CLIENT_SECRET

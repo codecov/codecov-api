@@ -11,7 +11,6 @@ def update_version(apps, schema):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0039_pull_pulls_repoid_id"),
     ]

@@ -12,7 +12,6 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessCircleciHandler(BaseTokenlessUploadHandler):
-
     circleci_token = settings.CIRCLECI_TOKEN
 
     def get_build(self):

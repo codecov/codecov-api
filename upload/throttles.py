@@ -57,7 +57,6 @@ class UploadsPerWindowThrottle(BaseThrottle):
                         report__commit=commit
                     ).exists()
                     if not did_commit_uploads_start_already:
-
                         if get_uploads_used(redis, plan_service, limit, owner) >= limit:
                             log.warning(
                                 "User exceeded its limits for usage",

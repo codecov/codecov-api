@@ -76,7 +76,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data=data,
-            format="json"
+            format="json",
         )
 
     def setUp(self):
@@ -1259,7 +1259,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.SIGNATURE: "",
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -1278,7 +1278,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -1297,7 +1297,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_200_OK

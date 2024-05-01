@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0025_owner_stripe_coupon_id"),
     ]

@@ -113,7 +113,6 @@ class StripeWebhookHandler(APIView):
             )
 
     def subscription_schedule_released(self, schedule):
-
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
         requesting_user_id = subscription.metadata.obo

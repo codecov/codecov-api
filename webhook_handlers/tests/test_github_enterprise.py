@@ -60,7 +60,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data=data,
-            format="json"
+            format="json",
         )
 
     def setUp(self):
@@ -1017,7 +1017,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.SIGNATURE: "",
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN

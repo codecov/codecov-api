@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0020_commit_commits_repoid_commitid_short_and_more"),
     ]

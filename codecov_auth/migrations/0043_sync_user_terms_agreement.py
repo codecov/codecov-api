@@ -6,7 +6,6 @@ from shared.django_apps.migration_utils import RiskyRunSQL
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0042_owner_trial_fired_by"),
     ]

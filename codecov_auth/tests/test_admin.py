@@ -91,7 +91,6 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.admin.ModelAdmin.get_deleted_objects")
     def test_confirmation_deleted_objects(self, mocked_deleted_objs):
-
         user_to_delete = OwnerFactory()
         deleted_objs = [
             'Owner: <a href="/admin/codecov_auth/owner/{}/change/">{};</a>'.format(

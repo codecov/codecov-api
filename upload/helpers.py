@@ -766,7 +766,6 @@ def get_agent_from_headers(headers):
 
 
 def get_version_from_headers(headers):
-
     try:
         return headers["User-Agent"].split("/")[1]
     except Exception as e:

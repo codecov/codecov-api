@@ -240,7 +240,9 @@ def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")
 @sync_to_async
 def resolve_has_different_number_of_head_and_base_reports(
-    comparison: ComparisonReport, info, **kwargs  # type: ignore
+    comparison: ComparisonReport,
+    info,
+    **kwargs,  # type: ignore
 ) -> False:
     # TODO: can we remove the need for `info.context["comparison"]` here?
     if "comparison" not in info.context:

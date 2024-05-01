@@ -195,7 +195,6 @@ def test_okta_redirect_to_authorize_invalid_iss(client):
 def test_okta_perform_login(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
-
     state = "test-state"
     session = client.session
     session["okta_oauth_state"] = state

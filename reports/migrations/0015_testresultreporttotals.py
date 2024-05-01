@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reports", "0014_rename_env_test_flags_hash_and_more"),
     ]

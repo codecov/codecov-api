@@ -208,7 +208,7 @@ def resolve_flags(
     info,
     filters: Mapping = None,
     ordering_direction: OrderingDirection = OrderingDirection.ASC,
-    **kwargs
+    **kwargs,
 ):
     queryset = flags_for_repo(repository, filters)
     connection = queryset_to_connection_sync(

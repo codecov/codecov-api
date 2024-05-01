@@ -39,7 +39,7 @@ def resolve_repositories(
     filters=None,
     ordering=RepositoryOrdering.ID,
     ordering_direction=OrderingDirection.ASC,
-    **kwargs
+    **kwargs,
 ):
     current_owner = info.context["request"].current_owner
     queryset = list_repository_for_owner(current_owner, owner, filters)
@@ -47,7 +47,7 @@ def resolve_repositories(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
         ordering_direction=ordering_direction,
-        **kwargs
+        **kwargs,
     )
 
 
