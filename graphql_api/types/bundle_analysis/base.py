@@ -1,4 +1,4 @@
-from typing import List, Mapping
+from typing import List, Mapping, Optional
 
 from ariadne import ObjectType
 
@@ -34,12 +34,12 @@ def resolve_bundle_load_time(bundle_data: BundleData, info) -> BundleLoadTime:
 
 
 @bundle_module_bindable.field("name")
-def resolve_name(bundle_module: ModuleReport, info) -> str:
+def resolve_bundle_module_name(bundle_module: ModuleReport, info) -> str:
     return bundle_module.name
 
 
 @bundle_module_bindable.field("bundleData")
-def resolve_bundle_data(bundle_module: ModuleReport, info) -> int:
+def resolve_bundle_module_bundle_data(bundle_module: ModuleReport, info) -> int:
     return BundleData(bundle_module.size_total)
 
 
@@ -47,7 +47,7 @@ def resolve_bundle_data(bundle_module: ModuleReport, info) -> int:
 
 
 @bundle_asset_bindable.field("name")
-def resolve_name(bundle_asset: AssetReport, info) -> str:
+def resolve_bundle_asset_name(bundle_asset: AssetReport, info) -> str:
     return bundle_asset.name
 
 
@@ -62,7 +62,7 @@ def resolve_extension(bundle_asset: AssetReport, info) -> str:
 
 
 @bundle_asset_bindable.field("bundleData")
-def resolve_bundle_data(bundle_asset: AssetReport, info) -> BundleData:
+def resolve_bundle_asset_bundle_data(bundle_asset: AssetReport, info) -> BundleData:
     return BundleData(bundle_asset.size_total)
 
 
@@ -72,7 +72,9 @@ def resolve_modules(bundle_asset: AssetReport, info) -> List[ModuleReport]:
 
 
 @bundle_asset_bindable.field("moduleExtensions")
-def resolve_module_extensions(bundle_asset: AssetReport, info) -> List[str]:
+def resolve_bundle_asset_module_extensions(
+    bundle_asset: AssetReport, info
+) -> List[str]:
     return bundle_asset.module_extensions
 
 
@@ -110,7 +112,7 @@ def resolve_module_count(bundle_report: BundleReport, info) -> int:
 def resolve_assets(
     bundle_report: BundleReport,
     info,
-    filters: Mapping = None,
+    filters: Optional[Mapping] = None,
 ) -> List[AssetReport]:
     extensions_filter = filters.get("moduleExtensions", None) if filters else None
     return list(bundle_report.assets(extensions_filter))

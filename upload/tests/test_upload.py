@@ -1837,7 +1837,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         ]
 
     @patch.object(requests, "get")
-    def test_travis_failed_requests_connection_error(self, mock_get):
+    def test_travis_failed_requests_connection_error_ex(self, mock_get):
         mock_get.side_effect = [
             Exception("Not found"),
             requests.exceptions.HTTPError("Not found"),
@@ -2629,7 +2629,10 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
 
     @patch.object(requests, "get")
     def test_circleci_invalid_stop_time(self, mock_get):
-        expected_response = {"vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a"}
+        expected_response = {
+            "vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "stop_time": "",
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -2648,7 +2651,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         ]
 
     @patch.object(requests, "get")
-    def test_circleci_invalid_stop_time(self, mock_get):
+    def test_circleci_invalid_stop_time_gh(self, mock_get):
         expected_response = {
             "vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "vcs_type": "github",

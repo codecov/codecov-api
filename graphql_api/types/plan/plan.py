@@ -50,7 +50,7 @@ def resolve_plan_name(plan_service: PlanService, info) -> str:
 
 
 @plan_bindable.field("value")
-def resolve_plan_name(plan_service: PlanService, info) -> str:
+def resolve_plan_name_as_value(plan_service: PlanService, info) -> str:
     return plan_service.plan_name
 
 

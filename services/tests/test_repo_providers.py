@@ -136,7 +136,7 @@ class TestRepoProviderService(InternalAPITest):
     def get_owner_gh(self):
         return Owner.objects.filter(ownerid=self.repo_gh.author.ownerid).first()
 
-    def test_get_torngit_with_names(self):
+    def test_get_torngit_with_names_github(self):
         provider = RepoProviderService().get_by_name(
             self.repo_gh.author,
             self.repo_gh.name,
@@ -145,7 +145,7 @@ class TestRepoProviderService(InternalAPITest):
         )
         assert isinstance(Github(), type(provider))
 
-    def test_get_torngit_with_names(self):
+    def test_get_torngit_with_names_gitlab(self):
         provider = RepoProviderService().get_by_name(
             self.repo_gl.author,
             self.repo_gl.name,
