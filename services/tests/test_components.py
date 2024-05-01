@@ -142,7 +142,7 @@ class ComponentComparisonTest(TransactionTestCase):
         self.comparison = Comparison(self.user, self.base_commit, self.head_commit)
 
     @patch("services.comparison.Comparison.base_report", new_callable=PropertyMock)
-    def test_head_report(self, base_report_mock):
+    def test_base_report(self, base_report_mock):
         report = sample_report()
         base_report_mock.return_value = report
 
@@ -153,9 +153,9 @@ class ComponentComparisonTest(TransactionTestCase):
             }
         )
         component_comparison = ComponentComparison(self.comparison, component_go)
-        assert component_comparison.head_report.files == ["file_1.go"]
+        assert component_comparison.base_report.files == ["file_1.go"]
         assert (
-            component_comparison.head_report.totals.coverage
+            component_comparison.base_report.totals.coverage
             == report.get("file_1.go").totals.coverage
         )
 

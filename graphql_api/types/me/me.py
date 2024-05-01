@@ -116,7 +116,7 @@ def resolve_business_email(current_owner: Owner, _, **kwargs) -> Optional[str]:
 
 @me_bindable.field("privateAccess")
 @sync_to_async
-def resolve_profile(owner: Owner, info) -> bool:
+def resolve_private_access(owner: Owner, info) -> bool:
     if owner.private_access is None:
         return False
     return owner.private_access

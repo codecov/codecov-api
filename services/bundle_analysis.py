@@ -160,7 +160,7 @@ class AssetReport(object):
         return self.asset.size
 
     @cached_property
-    def modules(self) -> ModuleReport:
+    def modules(self) -> List[ModuleReport]:
         return [ModuleReport(module) for module in self.asset.modules()]
 
     @cached_property
