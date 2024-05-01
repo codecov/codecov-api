@@ -1,11 +1,4 @@
-import mmh3
-from shared.django_apps.rollouts.models import (
-    FeatureFlag,
-    FeatureFlagVariant,
-    RolloutUniverse,
-)
-from shared.django_apps.utils.model_utils import rollout_identifier_to_override_string
-from shared.rollouts import Feature
+from shared.django_apps.rollouts.models import FeatureFlag, RolloutUniverse
 
 FEATURES_CACHE_REDIS_KEY = "features_endpoint_cache"
 
