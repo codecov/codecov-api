@@ -6,6 +6,7 @@ cerberus
 ddtrace
 Django
 django-cors-headers
+django-csp
 django-dynamic-fixture
 django-filter
 django-model-utils
