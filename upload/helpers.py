@@ -225,7 +225,7 @@ def parse_params(data):
 def get_repo_with_github_actions_oidc_token(token):
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     token_issuer = str(unverified_contents.get("iss"))
-    log.debug(
+    log.info(
         "In GitHubOIDCTokenAuthentication 3",
         extra=dict(
             token_slice=str(token)[39:49],
@@ -236,7 +236,7 @@ def get_repo_with_github_actions_oidc_token(token):
     if token_issuer == "https://token.actions.githubusercontent.com":
         service = "github"
         jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
-        log.debug(
+        log.info(
             "In GitHubOIDCTokenAuthentication 4",
             extra=dict(
                 token_slice=str(token)[39:49],
@@ -249,7 +249,7 @@ def get_repo_with_github_actions_oidc_token(token):
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
-        log.debug(
+        log.info(
             "In GitHubOIDCTokenAuthentication 5",
             extra=dict(
                 token_slice=str(token)[39:49], service=service, jwks_url=jwks_url
@@ -264,7 +264,7 @@ def get_repo_with_github_actions_oidc_token(token):
         audience=[settings.CODECOV_API_URL],
     )
     repo = str(data.get("repository")).split("/")[-1]
-    log.debug(
+    log.info(
         "In GitHubOIDCTokenAuthentication 6",
         extra=dict(
             token_slice=str(token)[39:49],
@@ -278,7 +278,7 @@ def get_repo_with_github_actions_oidc_token(token):
         name=repo,
         author__username=data.get("repository_owner"),
     )
-    log.debug(
+    log.info(
         "In GitHubOIDCTokenAuthentication 7",
         extra=dict(
             token_slice=str(token)[39:49],

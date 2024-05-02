@@ -233,14 +233,14 @@ class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
 
 class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, token):
-        log.debug(
+        log.info(
             "In GitHubOIDCTokenAuthentication 1",
             extra=dict(
                 token_slice=str(token)[39:49] if token else None,
             ),
         )
         if not token or is_uuid(token):
-            log.debug(
+            log.info(
                 "In GitHubOIDCTokenAuthentication 2",
                 extra=dict(
                     token_slice=str(token)[39:49] if token else None,
@@ -251,7 +251,7 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
         try:
             repository = get_repo_with_github_actions_oidc_token(token)
         except (ObjectDoesNotExist, PyJWTError) as e:
-            log.debug(
+            log.info(
                 "In GitHubOIDCTokenAuthentication 10",
                 extra=dict(
                     token_slice=str(token)[39:49],
@@ -260,7 +260,7 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
             )
             return None  # continue to next auth class
 
-        log.debug(
+        log.info(
             "In GitHubOIDCTokenAuthentication Success",
             extra=dict(token_slice=str(token)[39:49], repository=str(repository)),
         )
