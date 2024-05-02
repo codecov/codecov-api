@@ -550,6 +550,8 @@ if SENTRY_DSN is not None:
             ),
         },
     )
+    if os.getenv("CLUSTER_ENV"):
+        sentry_sdk.set_tag("cluster", os.getenv("CLUSTER_ENV"))
 elif IS_DEV:
     sentry_sdk.init(
         spotlight=IS_DEV,
