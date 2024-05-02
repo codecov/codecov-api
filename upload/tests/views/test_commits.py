@@ -89,6 +89,24 @@ def test_commits_get(client, db):
     )
 
 
+def test_commits_get_no_auth(client, db):
+    repo = RepositoryFactory(name="the-repo")
+    CommitFactory(repository=repo)
+    CommitFactory(repository=repo)
+    repo_slug = f"{repo.author.username}::::{repo.name}"
+    url = reverse("new_upload.commits", args=[repo.author.service, repo_slug])
+    assert url == f"/upload/{repo.author.service}/{repo_slug}/commits"
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token BAD")
+    res = client.get(url, format="json")
+    assert res.status_code == 401
+    assert (
+        res.json().get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
+
+
 def test_commit_post_empty(db, client, mocker):
     mocked_call = mocker.patch.object(TaskService, "update_commit")
     repository = RepositoryFactory.create()

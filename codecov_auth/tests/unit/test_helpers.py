@@ -26,11 +26,12 @@ def test_current_user_part_of_org_when_user_is_owner():
 def test_current_user_part_of_org_when_user_doesnt_have_org():
     org = OwnerFactory()
     current_user = OwnerFactory(organizations=None)
-    assert current_user_part_of_org(current_user, current_user) is False
+    current_user.save()
+    assert current_user_part_of_org(current_user, org) is False
 
 
 @pytest.mark.django_db
-def test_current_user_part_of_org_when_user_doesnt_have_org():
+def test_current_user_part_of_org_when_user_has_org():
     org = OwnerFactory()
     current_user = OwnerFactory(organizations=[org.ownerid])
     current_user.save()

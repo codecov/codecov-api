@@ -628,36 +628,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         }
 
     @patch("services.report.build_report_from_commit")
-    def test_fetch_path_contents_unknown_flags(self, report_mock):
-        report_mock.return_value = MockReport()
-
-        data = self.gql_request(
-            query_files,
-            variables={
-                "org": self.org.username,
-                "repo": self.repo.name,
-                "branch": self.branch.name,
-                "path": "",
-                "filters": {"flags": ["test-123"]},
-            },
-        )
-        assert data == {
-            "owner": {
-                "repository": {
-                    "branch": {
-                        "head": {
-                            "pathContents": {
-                                "__typename": "UnknownFlags",
-                                "message": "No coverage with chosen flags",
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    @patch("services.report.build_report_from_commit")
-    def test_fetch_path_contents_unknown_flags(self, report_mock):
+    def test_fetch_path_contents_unknown_flags_no_flags(self, report_mock):
         report_mock.return_value = MockNoFlagsReport()
 
         data = self.gql_request(

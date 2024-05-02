@@ -443,3 +443,31 @@ def test_empty_upload_no_commit_pr_id(
     notify_mock.assert_called_once_with(
         repoid=repository.repoid, commitid=commit.commitid, empty_upload="pass"
     )
+
+
+def test_empty_upload_no_auth(db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    token = "BAD"
+    client = APIClient()
+    url = reverse(
+        "new_upload.empty_upload",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+        ],
+    )
+    response = client.post(
+        url,
+        headers={"Authorization": f"token {token}"},
+    )
+    response_json = response.json()
+    assert response.status_code == 401
+    assert (
+        response_json.get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )

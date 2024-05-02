@@ -11,7 +11,7 @@ type Owner {
     after: String
     last: Int
     before: String
-  ): RepositoryConnection!
+  ): RepositoryConnection! @cost(complexity: 25, multipliers: ["first", "last"])
   repository(name: String!): RepositoryResult!
   repositoryDeprecated(name: String!): Repository
   numberOfUploads: Int
