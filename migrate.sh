@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# Command ran by k8s to run migrations for api
 echo "Running Django migrations"
 prefix=""
 if [ -f "/usr/local/bin/berglas" ]; then
