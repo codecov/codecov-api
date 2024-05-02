@@ -16,4 +16,5 @@ type Plan {
   benefits: [String!]!
   monthlyUploadLimit: Int
   planUserCount: Int
+  hasSeatsLeft: Boolean!
 }

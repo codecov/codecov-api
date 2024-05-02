@@ -77,3 +77,25 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "pretrialUsersCount": 234,
             "planUserCount": 123,
         }
+
+    def test_owner_plan_data_has_seats_left(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            trial_status=TrialStatus.ONGOING.value,
+            plan_user_count=2,
+            plan_activated_users=[],
+        )
+        query = """{
+            owner(username: "%s") {
+                plan {
+                    hasSeatsLeft
+                }
+            }
+        }
+        """ % (
+            current_org.username
+        )
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["plan"] == {"hasSeatsLeft": True}

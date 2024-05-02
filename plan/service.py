@@ -258,3 +258,10 @@ class PlanService:
     @property
     def has_trial_dates(self) -> bool:
         return bool(self.trial_start_date and self.trial_end_date)
+
+    @property
+    def has_seats_left(self) -> bool:
+        return (
+            self.plan_activated_users is None
+            or len(self.plan_activated_users) < self.plan_user_count
+        )

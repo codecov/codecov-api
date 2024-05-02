@@ -95,3 +95,9 @@ def resolve_monthly_uploads_limit(plan_service: PlanService, info) -> Optional[i
 @convert_kwargs_to_snake_case
 def resolve_plan_user_count(plan_service: PlanService, info) -> int:
     return plan_service.plan_user_count
+
+
+@plan_bindable.field("hasSeatsLeft")
+@convert_kwargs_to_snake_case
+def resolve_has_seats_left(plan_service: PlanService, info) -> bool:
+    return plan_service.has_seats_left
