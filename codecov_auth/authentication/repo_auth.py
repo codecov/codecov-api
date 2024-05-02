@@ -277,6 +277,11 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
             )
             return None  # continue to next auth class
 
+        log.debug(
+            "In GitHubOIDCTokenAuthentication Success",
+            extra=dict(token_slice=str(token)[39:49], repository=str(repository)),
+        )
+
         log.info(
             "In GitHubOIDCTokenAuthentication Success",
             extra=dict(token_slice=token_slice_for_logging, repository=str(repository)),
