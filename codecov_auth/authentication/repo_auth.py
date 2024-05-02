@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import datetime
 from typing import List
@@ -27,6 +28,8 @@ from services.repo_providers import RepoProviderService
 from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import get_repository_from_string
 from utils import is_uuid
+
+log = logging.getLogger(__name__)
 
 
 def repo_auth_custom_exception_handler(exc, context):
@@ -230,12 +233,37 @@ class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
 
 class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, token):
+        log.debug(
+            "In GitHubOIDCTokenAuthentication 1",
+            extra=dict(
+                token_slice=str(token)[39:49] if token else None,
+            ),
+        )
         if not token or is_uuid(token):
+            log.debug(
+                "In GitHubOIDCTokenAuthentication 2",
+                extra=dict(
+                    token_slice=str(token)[39:49] if token else None,
+                    is_uuid=is_uuid(token),
+                ),
+            )
             return None  # continue to next auth class
         try:
             repository = get_repo_with_github_actions_oidc_token(token)
-        except (ObjectDoesNotExist, PyJWTError):
+        except (ObjectDoesNotExist, PyJWTError) as e:
+            log.debug(
+                "In GitHubOIDCTokenAuthentication 10",
+                extra=dict(
+                    token_slice=str(token)[39:49],
+                    error_message=f"{e}",
+                ),
+            )
             return None  # continue to next auth class
+
+        log.debug(
+            "In GitHubOIDCTokenAuthentication Success",
+            extra=dict(token_slice=str(token)[39:49], repository=str(repository)),
+        )
 
         return (
             RepositoryAsUser(repository),

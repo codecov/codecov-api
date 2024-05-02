@@ -225,13 +225,36 @@ def parse_params(data):
 def get_repo_with_github_actions_oidc_token(token):
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     token_issuer = str(unverified_contents.get("iss"))
+    log.debug(
+        "In GitHubOIDCTokenAuthentication 3",
+        extra=dict(
+            token_slice=str(token)[39:49],
+            unverified_contents=unverified_contents,
+            token_issuer=token_issuer,
+        ),
+    )
     if token_issuer == "https://token.actions.githubusercontent.com":
         service = "github"
         jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
+        log.debug(
+            "In GitHubOIDCTokenAuthentication 4",
+            extra=dict(
+                token_slice=str(token)[39:49],
+                token_issuer=token_issuer,
+                service=service,
+                jwks_url=jwks_url,
+            ),
+        )
     else:
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
+        log.debug(
+            "In GitHubOIDCTokenAuthentication 5",
+            extra=dict(
+                token_slice=str(token)[39:49], service=service, jwks_url=jwks_url
+            ),
+        )
     jwks_client = PyJWKClient(jwks_url)
     signing_key = jwks_client.get_signing_key_from_jwt(token)
     data = jwt.decode(
@@ -241,10 +264,30 @@ def get_repo_with_github_actions_oidc_token(token):
         audience=[settings.CODECOV_API_URL],
     )
     repo = str(data.get("repository")).split("/")[-1]
+    log.debug(
+        "In GitHubOIDCTokenAuthentication 6",
+        extra=dict(
+            token_slice=str(token)[39:49],
+            signing_key=signing_key,
+            decoded_token=data,
+            repo=repo,
+        ),
+    )
     repository = Repository.objects.get(
         author__service=service,
         name=repo,
         author__username=data.get("repository_owner"),
+    )
+    log.debug(
+        "In GitHubOIDCTokenAuthentication 7",
+        extra=dict(
+            token_slice=str(token)[39:49],
+            author__service=service,
+            repo=repo,
+            author__username=data.get("repository_owner"),
+            repoid=repository.repoid,
+            repo_obj=str(repository),
+        ),
     )
     return repository
 
