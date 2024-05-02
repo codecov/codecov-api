@@ -1,24 +1,26 @@
 # syntax=docker/dockerfile:1.4
-ARG PYTHON_IMAGE=python:3.9.16-alpine3.18
+ARG PYTHON_IMAGE=python:3.9.18-slim-bookworm
+
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
 FROM $PYTHON_IMAGE as build
 
-RUN apk add --update --no-cache \
-    git \
-    openssh \
-    postgresql-dev \
-    musl-dev \
-    libxslt-dev \
-    python3-dev \
+# Pinning a specific nightly version so that builds don't suddenly break if a
+# "this feature is now stabilized" warning is promoted to an error or something.
+# We would like to keep up with nightly if we can.
+ARG RUST_VERSION=nightly-2024-02-22
+ENV RUST_VERSION=${RUST_VERSION}
+
+RUN apt-get update
+RUN apt-get install -y \
+    build-essential \
     libffi-dev \
-    gcc \
-    libcurl \
-    bash \
-    rust \
-    build-base \
-    cargo \
-    curl-dev \
-    && pip install --upgrade pip
+    libpq-dev \
+    curl
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | bash -s -- -y --default-toolchain $RUST_VERSION
+ENV PATH="/root/.cargo/bin:$PATH"
 
 COPY requirements.txt /
 WORKDIR /pip-packages/
@@ -28,14 +30,13 @@ RUN rm -rf /pip-packages/src
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM $PYTHON_IMAGE
 
-RUN apk -U upgrade binutils busybox expat libretls && \
-    apk add --no-cache postgresql-libs && \
-    apk add --no-cache --virtual .build-deps gcc \
-    libxslt-dev \
-    libffi-dev \
+# Our postgres driver psycopg2 requires libpq-dev as a runtime dependency
+RUN apt-get update
+RUN apt-get install -y \
+    libpq-dev \
     make \
-    curl
-
+    curl \
+    && pip install --upgrade pip
 
 WORKDIR /pip-packages/
 COPY --from=build /pip-packages/ /pip-packages/

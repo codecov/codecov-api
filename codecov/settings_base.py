@@ -1,15 +1,13 @@
 import os
 from urllib.parse import urlparse
 
-import asgiref.sync as sync
 import sentry_sdk
-from asgiref.sync import SyncToAsync
 from corsheaders.defaults import default_headers
-from django.db import close_old_connections
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
@@ -48,10 +46,11 @@ INSTALLED_APPS = [
     "staticanalysis",
     "timeseries",
     "django_prometheus",
-    "user_measurements",
     "psqlextra",
-    "shared.django_apps.rollouts",
     "django_better_admin_arrayfield",
+    # New Shared Models
+    "shared.django_apps.rollouts",
+    "shared.django_apps.user_measurements",
 ]
 
 MIDDLEWARE = [
@@ -69,6 +68,7 @@ MIDDLEWARE = [
     "codecov_auth.middleware.CurrentOwnerMiddleware",
     "codecov_auth.middleware.ImpersonationMiddleware",
     "core.middleware.AppMetricsAfterMiddlewareWithUA",
+    "csp.middleware.CSPMiddleware",
 ]
 
 ROOT_URLCONF = "codecov.urls"
@@ -137,6 +137,10 @@ else:
         "services", "database_read", "host", default="postgres"
     )
     DATABASE_READ_PORT = get_config("services", "database_read", "port", default=5432)
+
+GRAPHQL_QUERY_COST_THRESHOLD = get_config(
+    "setup", "graphql", "query_cost_threshold", default=10000
+)
 
 TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
 TIMESERIES_REAL_TIME_AGGREGATES = get_config(
@@ -251,7 +255,9 @@ if TIMESERIES_ENABLED:
 POSTGRES_EXTRA_DB_BACKEND_BASE: "django_prometheus.db.backends.postgresql"
 
 # Allows to use the pgpartition command
-PSQLEXTRA_PARTITIONING_MANAGER = "user_measurements.partitioning.manager"
+PSQLEXTRA_PARTITIONING_MANAGER = (
+    "shared.django_apps.user_measurements.partitioning.manager"
+)
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
@@ -299,16 +305,9 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",  # serve Redoc from Django (not CDN)
 }
 
-CSP_WORKER_SRC = ("'self'", "blob:")
-CSP_IMG_SRC = ("'self'", "data:", "cdn.redoc.ly")
-CSP_STYLE_SRC = (
-    "'self'",
-    "sha256-GvZq6XrzMRhFZ2MvEI09Lw7QbE3DnWuVQTMYafGYLcg=",
-    "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
-    "sha256-DLDPR1ic47WIdK2WyeLkblb/tm2mQH+Jt/NNhZWu1k0=",
-    "fonts.googleapis.com",
-)
-CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
+# The frame-ancestors directive restricts the URLs which can embed the resource using
+# frame, iframe, object, or embed. This configuration denies doing so.
+CSP_FRAME_ANCESTORS = "'none'"
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
@@ -354,9 +353,11 @@ LOGGING = {
     "handlers": {
         "default": {
             "level": "INFO",
-            "formatter": "standard"
-            if get_settings_module() == SettingsModule.DEV.value
-            else "json",
+            "formatter": (
+                "standard"
+                if get_settings_module() == SettingsModule.DEV.value
+                else "json"
+            ),
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",  # Default is stderr
         },
@@ -463,7 +464,11 @@ SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and n
     get_config("setup", "enterprise_license", default=False)
 )
 
-CORS_ALLOW_HEADERS = list(default_headers) + ["token-type"]
+CORS_ALLOW_HEADERS = (
+    list(default_headers)
+    + ["token-type"]
+    + get_config("setup", "api_cors_extra_headers", default=["baggage"])
+)
 
 SKIP_RISKY_MIGRATION_STEPS = get_config("migrations", "skip_risky_steps", default=False)
 
@@ -524,10 +529,13 @@ REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", defa
 
 SENTRY_ENV = os.environ.get("CODECOV_ENV", False)
 SENTRY_DSN = os.environ.get("SERVICES__SENTRY__SERVER_DSN", None)
+SENTRY_DENY_LIST = DEFAULT_DENYLIST + ["_headers", "token_to_use"]
+
 if SENTRY_DSN is not None:
     SENTRY_SAMPLE_RATE = float(os.environ.get("SERVICES__SENTRY__SAMPLE_RATE", 0.1))
     sentry_sdk.init(
         dsn=SENTRY_DSN,
+        event_scrubber=EventScrubber(denylist=SENTRY_DENY_LIST),
         integrations=[
             DjangoIntegration(),
             CeleryIntegration(),
@@ -545,7 +553,16 @@ if SENTRY_DSN is not None:
 elif IS_DEV:
     sentry_sdk.init(
         spotlight=IS_DEV,
+        event_scrubber=EventScrubber(denylist=SENTRY_DENY_LIST),
     )
 
 SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
 SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
+
+# Allows to do migrations from another module
+MIGRATION_MODULES = {
+    "codecov_auth": "shared.django_apps.codecov_auth.migrations",
+    "core": "shared.django_apps.core.migrations",
+    "reports": "shared.django_apps.reports.migrations",
+    "legacy_migrations": "shared.django_apps.legacy_migrations.migrations",
+}

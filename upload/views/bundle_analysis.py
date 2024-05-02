@@ -9,8 +9,10 @@ from rest_framework.views import APIView
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
 from codecov_auth.models import Owner, Service
@@ -44,8 +46,12 @@ class BundleAnalysisView(APIView):
     permission_classes = [UploadBundleAnalysisPermission]
     authentication_classes = [
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def post(self, request):
         serializer = UploadSerializer(data=request.data)

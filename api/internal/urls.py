@@ -7,6 +7,7 @@ from api.internal.commit.views import CommitsViewSet
 from api.internal.compare.views import CompareViewSet
 from api.internal.coverage.views import CoverageViewSet
 from api.internal.enterprise_urls import urlpatterns as enterprise_urlpatterns
+from api.internal.feature.views import FeaturesView
 from api.internal.owner.views import (
     AccountDetailsViewSet,
     InvoiceViewSet,
@@ -76,4 +77,5 @@ urlpatterns += [
         "<str:service>/<str:owner_username>/repos/<str:repo_name>/",
         include(compare_router.urls),
     ),
+    path("features", FeaturesView.as_view(), name="features"),
 ]

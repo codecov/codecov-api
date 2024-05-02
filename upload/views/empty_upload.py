@@ -9,12 +9,13 @@ from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
-from shared.validation.helpers import translate_glob_to_regex
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
@@ -68,8 +69,12 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
     authentication_classes = [
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
         serializer = EmptyUploadSerializer(data=request.data)

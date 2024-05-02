@@ -1,4 +1,3 @@
-import uuid
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
@@ -10,7 +9,7 @@ from rest_framework.test import APIClient
 
 from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory, OwnerFactory
+from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import (
     CommitReport,
@@ -418,6 +417,186 @@ def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
             "version": "version",
             "uploader_type": "CLI",
         },
+    )
+
+
+@patch("upload.views.uploads.AnalyticsService")
+@patch("upload.helpers.jwt.decode")
+@patch("upload.helpers.PyJWKClient")
+@patch("shared.metrics.metrics.incr")
+def test_uploads_post_github_oidc_auth(
+    mock_metrics,
+    mock_jwks_client,
+    mock_jwt_decode,
+    analytics_service_mock,
+    db,
+    mocker,
+    mock_redis,
+):
+    presigned_put_mock = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
+    upload_task_mock = mocker.patch(
+        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+    )
+
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=False,
+    )
+    mock_jwt_decode.return_value = {
+        "repository": f"url/{repository.name}",
+        "repository_owner": repository.author.username,
+        "iss": "https://token.actions.githubusercontent.com",
+        "audience": [settings.CODECOV_API_URL],
+    }
+    token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.uploads",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
+    )
+    response = client.post(
+        url,
+        {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+        },
+        headers={"Authorization": f"token {token}"},
+    )
+    assert response.status_code == 201
+    response_json = response.json()
+    upload = ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).first()
+    assert all(
+        map(
+            lambda x: x in response_json.keys(),
+            ["external_id", "created_at", "raw_upload_location", "url"],
+        )
+    )
+    assert (
+        response_json.get("url")
+        == f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+    )
+
+    assert ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).exists()
+    assert RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag1"
+    ).exists()
+    assert RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag2"
+    ).exists()
+    flag1 = RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag1"
+    ).first()
+    flag2 = RepositoryFlag.objects.filter(
+        repository_id=repository.repoid, flag_name="flag2"
+    ).first()
+    assert UploadFlagMembership.objects.filter(
+        report_session_id=upload.id, flag_id=flag1.id
+    ).exists()
+    assert UploadFlagMembership.objects.filter(
+        report_session_id=upload.id, flag_id=flag2.id
+    ).exists()
+    assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+    mock_metrics.assert_has_calls(
+        [call("upload.cli.version"), call("uploads.accepted", 1)]
+    )
+
+    archive_service = ArchiveService(repository)
+    assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
+        version="v4",
+        date=upload.created_at.strftime("%Y-%m-%d"),
+        repo_hash=archive_service.storage_hash,
+        commit_sha=commit.commitid,
+        reportid=commit_report.external_id,
+        uploadid=upload.external_id,
+    )
+    presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
+    upload_task_mock.assert_called()
+    analytics_service_mock.return_value.account_uploaded_coverage_report.assert_called_with(
+        commit.repository.author.ownerid,
+        {
+            "commit": commit.commitid,
+            "branch": commit.branch,
+            "pr": commit.pullid,
+            "repo": commit.repository.name,
+            "repository_name": commit.repository.name,
+            "repository_id": commit.repository.repoid,
+            "service": commit.repository.service,
+            "build": upload.build_code,
+            "build_url": upload.build_url,
+            "flags": "",
+            "owner": commit.repository.author.ownerid,
+            "token": "oidc_token_upload",
+            "version": "version",
+            "uploader_type": "CLI",
+        },
+    )
+
+
+def test_uploads_with_bad_token(
+    db,
+    mocker,
+    mock_redis,
+):
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=False,
+    )
+    token = "BadToken"
+
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.uploads",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
+    )
+    response = client.post(
+        url,
+        {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+        },
+        headers={"Authorization": f"token {token}"},
+    )
+    assert response.status_code == 401
+    response_json = response.json()
+    upload = ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).exists()
+    assert upload is False
+
+    assert (
+        response_json.get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
     )
 
 

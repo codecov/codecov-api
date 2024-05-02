@@ -4,11 +4,13 @@ from typing import List
 from uuid import UUID
 
 from asgiref.sync import async_to_sync
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
 from django.utils import timezone
+from jwt import PyJWTError
 from rest_framework import authentication, exceptions
+from rest_framework.exceptions import NotAuthenticated
+from rest_framework.views import exception_handler
 from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import metrics
 from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
@@ -22,8 +24,29 @@ from codecov_auth.models import (
 )
 from core.models import Repository
 from services.repo_providers import RepoProviderService
-from upload.helpers import get_global_tokens
+from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import get_repository_from_string
+from utils import is_uuid
+
+
+def repo_auth_custom_exception_handler(exc, context):
+    """
+    User arrives here if they have correctly supplied a Token or the Tokenless Headers,
+    but their Token has not matched with any of our Authentication methods. The goal is to
+    give the user something better than "Invalid Token" or "Authentication credentials were not provided."
+    """
+    response = exception_handler(exc, context)
+    if response is not None:
+        try:
+            exc_code = response.data["detail"].code
+        except TypeError:
+            return response
+        if exc_code == NotAuthenticated.default_code:
+            response.data["detail"] = (
+                "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+                "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+            )
+    return response
 
 
 class LegacyTokenRepositoryAuth(RepositoryAuthInterface):
@@ -32,13 +55,17 @@ class LegacyTokenRepositoryAuth(RepositoryAuthInterface):
         self._repository = repository
 
     def get_scopes(self):
-        return ["upload"]
+        return [TokenTypeChoices.UPLOAD]
 
     def get_repositories(self):
         return [self._repository]
 
     def allows_repo(self, repository):
         return repository in self.get_repositories()
+
+
+class OIDCTokenRepositoryAuth(LegacyTokenRepositoryAuth):
+    pass
 
 
 class TableTokenRepositoryAuth(RepositoryAuthInterface):
@@ -116,12 +143,9 @@ class RepositoryLegacyTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, token):
         try:
             token = UUID(token)
-        except (ValueError, TypeError):
-            raise exceptions.AuthenticationFailed("Invalid token.")
-        try:
             repository = Repository.objects.get(upload_token=token)
-        except Repository.DoesNotExist:
-            raise exceptions.AuthenticationFailed("Invalid token.")
+        except (ValueError, TypeError, Repository.DoesNotExist):
+            return None  # continue to next auth class
         return (
             RepositoryAsUser(repository),
             LegacyTokenRepositoryAuth(repository, {"token": token}),
@@ -168,7 +192,7 @@ class GlobalTokenAuthentication(authentication.TokenAuthentication):
                     "Could not find a repository, try using repo upload token"
                 )
         else:
-            return None
+            return None  # continue to next auth class
         return (
             RepositoryAsUser(repository),
             LegacyTokenRepositoryAuth(repository, {"token": token}),
@@ -189,17 +213,33 @@ class GlobalTokenAuthentication(authentication.TokenAuthentication):
 
 class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, key):
-        # Actual verification for org level tokens
-        token = OrganizationLevelToken.objects.filter(token=key).first()
+        if is_uuid(key):  # else, continue to next auth class
+            # Actual verification for org level tokens
+            token = OrganizationLevelToken.objects.filter(token=key).first()
 
-        if token is None:
-            return None
-        if token.valid_until and token.valid_until <= timezone.now():
-            raise exceptions.AuthenticationFailed("Token is expired.")
+            if token is None:
+                return None
+            if token.valid_until and token.valid_until <= timezone.now():
+                raise exceptions.AuthenticationFailed("Token is expired.")
+
+            return (
+                token.owner,
+                OrgLevelTokenRepositoryAuth(token),
+            )
+
+
+class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
+    def authenticate_credentials(self, token):
+        if not token or is_uuid(token):
+            return None  # continue to next auth class
+        try:
+            repository = get_repo_with_github_actions_oidc_token(token)
+        except (ObjectDoesNotExist, PyJWTError):
+            return None  # continue to next auth class
 
         return (
-            token.owner,
-            OrgLevelTokenRepositoryAuth(token),
+            RepositoryAsUser(repository),
+            OIDCTokenRepositoryAuth(repository, {"token": token}),
         )
 
 
@@ -209,7 +249,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     It allows PRs from external contributors (forks) to upload coverage
     for the upstream repo when running in a PR.
 
-    While it uses the same "shell" (authentication.TOkenAuthentication)
+    While it uses the same "shell" (authentication.TokenAuthentication)
     it doesn't really rely on tokens to authenticate.
     """
 
@@ -265,7 +305,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         fork_slug = request.headers.get("X-Tokenless", None)
         fork_pr = request.headers.get("X-Tokenless-PR", None)
         if fork_slug is None or fork_pr is None:
-            return None
+            return None  # continue to next auth class
         # Get the repo
         repository = self._get_repo_info_from_request_path(request)
         # Tokneless is only for public repos

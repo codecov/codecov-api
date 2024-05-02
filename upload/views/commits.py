@@ -4,11 +4,13 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuth,
     TokenlessAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from core.models import Commit
 from services.task import TaskService
@@ -25,9 +27,13 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     authentication_classes = [
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def get_queryset(self):
         repository = self.get_repo()

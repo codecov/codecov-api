@@ -37,7 +37,7 @@ def resolve_state(comparison: ComparisonReport, info) -> str:
 @comparison_bindable.field("impactedFilesDeprecated")
 @convert_kwargs_to_snake_case
 @sync_to_async
-def resolve_impacted_files(
+def resolve_impacted_files_deprecated(
     comparison_report: ComparisonReport, info, filters=None
 ) -> List[ImpactedFile]:
     command: CompareCommands = info.context["executor"].get_command("compare")
@@ -240,9 +240,9 @@ def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")
 @sync_to_async
 def resolve_has_different_number_of_head_and_base_reports(
-    comparison: ComparisonReport, info, **kwargs
+    comparison: ComparisonReport, info, **kwargs  # type: ignore
 ) -> False:
-    # TODO: can we remove the need for `info.context["conmparison"]` here?
+    # TODO: can we remove the need for `info.context["comparison"]` here?
     if "comparison" not in info.context:
         return False
     comparison: Comparison = info.context["comparison"]

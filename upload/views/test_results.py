@@ -3,15 +3,17 @@ import uuid
 
 from django.utils import timezone
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotAuthenticated, PermissionDenied
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from sentry_sdk import metrics
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
 from codecov_auth.models import Owner, Service
@@ -51,8 +53,12 @@ class TestResultsView(
     permission_classes = [UploadTestResultsPermission]
     authentication_classes = [
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def post(self, request):
         serializer = UploadSerializer(data=request.data)

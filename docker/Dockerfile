@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.4
 ARG REQUIREMENTS_IMAGE
 ARG BUILD_ENV=self-hosted
-ARG BERGLAS_VERSION=1.0.3
+ARG BERGLAS_VERSION=2.0.2
 
 FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 
@@ -38,7 +38,8 @@ RUN rm /app/codecov/settings_dev.py && \
 RUN rm -rf /app/.github
 RUN rm -rf /app/.circleci
 # Create the codecov user to run the container as
-RUN addgroup -S application && adduser -S codecov -G application
+RUN addgroup --system application \
+    && adduser --system codecov --ingroup application --home /home/codecov
 RUN mkdir -p /config && chown codecov:application /config
 # copy the enterprise settings module.
 WORKDIR /app

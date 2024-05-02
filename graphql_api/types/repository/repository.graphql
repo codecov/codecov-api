@@ -23,21 +23,21 @@ type Repository {
     after: String
     last: Int
     before: String
-  ): PullConnection
+  ): PullConnection @cost(complexity: 10, multipliers: ["first", "last"])
   commits(
     filters: CommitsSetFilters
     first: Int
     after: String
     last: Int
     before: String
-  ): CommitConnection
+  ): CommitConnection @cost(complexity: 10, multipliers: ["first", "last"])
   branches(
     filters: BranchesSetFilters
     first: Int
     after: String
     last: Int
     before: String
-  ): BranchConnection
+  ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
   flags(
     filters: FlagSetFilters
     orderingDirection: OrderingDirection
@@ -45,7 +45,7 @@ type Repository {
     after: String
     last: Int
     before: String
-  ): FlagConnection!
+  ): FlagConnection! @cost(complexity: 3, multipliers: ["first", "last"])
   defaultBranch: String
   profilingToken: String
   criticalFiles: [CriticalFile!]!
@@ -55,6 +55,9 @@ type Repository {
   flagsCount: Int!
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
+  componentsMeasurementsActive: Boolean!
+  componentsMeasurementsBackfilled: Boolean!
+  componentsCount: Int!
   measurements(
     interval: MeasurementInterval!
     after: DateTime
@@ -68,6 +71,15 @@ type Repository {
   languages: [String!]
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
+  components(
+    interval: MeasurementInterval!
+    before: DateTime!
+    after: DateTime!
+    branch: String
+    filters: ComponentMeasurementsSetFilters
+    orderingDirection: OrderingDirection
+  ): [ComponentMeasurements!]!
+  componentsYaml(termId: String): [ComponentsYaml]!
 }
 
 type PullConnection {

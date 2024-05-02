@@ -5,10 +5,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView
 
 from codecov_auth.authentication.repo_auth import (
+    GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
@@ -25,9 +27,13 @@ class ReportViews(ListCreateAPIView, GetterMixin):
     authentication_classes = [
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
         repository = self.get_repo()
@@ -62,8 +68,12 @@ class ReportResultsView(
     authentication_classes = [
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
         repository = self.get_repo()

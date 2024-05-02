@@ -15,6 +15,6 @@ type Pull {
     after: String
     last: Int
     before: String
-  ): CommitConnection
+  ): CommitConnection @cost(complexity: 10, multipliers: ["first", "last"])
   firstPull: Boolean!
 }
