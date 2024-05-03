@@ -18,6 +18,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
     TokenlessAuth,
     TokenlessAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from codecov_auth.models import OrganizationLevelToken
 from core.models import Commit, Repository
@@ -60,6 +61,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         TokenlessAuthentication,
     ]
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer: UploadSerializer):
         repository: Repository = self.get_repo()
@@ -106,6 +110,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             report_id=report.id,
             upload_extras={"format_version": "v1"},
         )
+
         # Inserts mirror upload record into measurements table. CLI hits this endpoint
         insert_coverage_measurement(
             owner=repository.author,
