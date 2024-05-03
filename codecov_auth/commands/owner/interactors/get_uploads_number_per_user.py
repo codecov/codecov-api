@@ -7,10 +7,9 @@ from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from plan.service import PlanService
 from services.redis_configuration import get_redis_connection
-from utils.uploads_used import get_uploads_used
+from shared.upload.utils import query_monthly_coverage_measurements
 
 redis = get_redis_connection()
-
 
 class GetUploadsNumberPerUserInteractor(BaseInteractor):
     @sync_to_async
@@ -18,4 +17,4 @@ class GetUploadsNumberPerUserInteractor(BaseInteractor):
         plan_service = PlanService(current_org=owner)
         monthly_limit = plan_service.monthly_uploads_limit
         if monthly_limit is not None:
-            return get_uploads_used(redis, plan_service, monthly_limit, owner)
+            return query_monthly_coverage_measurements(plan_service=plan_service)
