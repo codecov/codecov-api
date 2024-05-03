@@ -309,6 +309,18 @@ SPECTACULAR_SETTINGS = {
 # frame, iframe, object, or embed. This configuration denies doing so.
 CSP_FRAME_ANCESTORS = "'none'"
 
+# Allows GraphQL Playground to render
+CSP_DEFAULT_SRC = [
+    "'self'",
+    "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='",
+    "'sha256-eKdXhLyOdPl2/gp1Ob116rCU2Ox54rseyz1MwCmzb6w='",
+    "'sha256-a1pELtDJXf8fPX1YL2JiBM91RQBeIAswunzgwMEsvwA='",
+    "'sha256-cNIcuS0BVLuBVP5rpfeFE42xHz7r5hMyf9YdfknWuCg='",
+    "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js",
+    "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
+    "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
+]
+
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
