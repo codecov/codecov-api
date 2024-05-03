@@ -53,7 +53,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             else:
                 retry_after = None
             raise exceptions.Throttled(
-                wait=retry_after,
+                wait=min(10, retry_after),
                 detail="Rate limit reached. Please upload with the Codecov repository upload token to resolve issue.",
             )
         except TorngitClientError as e:
