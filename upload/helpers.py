@@ -15,6 +15,7 @@ from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.github import InvalidInstallationError
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
+from shared.upload.utils import query_monthly_coverage_measurements
 
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
@@ -36,7 +37,6 @@ from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
 from utils.github import get_github_integration_token
-from shared.upload.utils import query_monthly_coverage_measurements
 
 from .constants import ci, global_upload_token_providers
 
@@ -526,7 +526,10 @@ def check_commit_upload_constraints(commit: Commit):
                 report__commit=commit
             ).exists()
             if not did_commit_uploads_start_already:
-                if query_monthly_coverage_measurements(plan_service=plan_service) >= limit:
+                if (
+                    query_monthly_coverage_measurements(plan_service=plan_service)
+                    >= limit
+                ):
                     log.warning(
                         "User exceeded its limits for usage",
                         extra=dict(ownerid=owner.ownerid, repoid=commit.repository_id),

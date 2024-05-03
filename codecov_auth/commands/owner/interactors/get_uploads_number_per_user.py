@@ -1,15 +1,16 @@
 from datetime import datetime, timedelta
 
 from django.db.models import Q
+from shared.upload.utils import query_monthly_coverage_measurements
 
 from codecov.commands.base import BaseInteractor
 from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from plan.service import PlanService
 from services.redis_configuration import get_redis_connection
-from shared.upload.utils import query_monthly_coverage_measurements
 
 redis = get_redis_connection()
+
 
 class GetUploadsNumberPerUserInteractor(BaseInteractor):
     @sync_to_async

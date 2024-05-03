@@ -7,7 +7,7 @@ from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
 from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import metrics
-from shared.upload.utils import insert_coverage_measurement, UploaderType
+from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -114,7 +114,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             upload=instance,
             uploader_used=UploaderType.CLI.value,
             private_repo=repository.private,
-            report_type=report.report_type
+            report_type=report.report_type,
         )
 
         # only Shelter requests are allowed to set their own `storage_path`

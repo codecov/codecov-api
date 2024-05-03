@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 
 from django.test import TransactionTestCase
+from shared.django_apps.reports.models import ReportType
+from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
-from shared.upload.utils import insert_coverage_measurement, UploaderType
-from shared.django_apps.reports.models import ReportType
 
 from ..get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 
@@ -18,7 +18,9 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         self.user_with_uploads = OwnerFactory()
         repo = RepositoryFactory.create(author=self.user_with_uploads, private=True)
         commit = CommitFactory.create(repository=repo)
-        report = CommitReportFactory.create(commit=commit, report_type=ReportType.COVERAGE.value)
+        report = CommitReportFactory.create(
+            commit=commit, report_type=ReportType.COVERAGE.value
+        )
 
         # Reports all created today/within the last 30 days
         for i in range(2):
@@ -31,7 +33,7 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
                 upload=upload,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repo.private,
-                report_type=report.report_type
+                report_type=report.report_type,
             )
 
         report_within_40_days = UploadFactory.create(report=report)
@@ -46,7 +48,9 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         )
         trial_repo = RepositoryFactory.create(author=self.trial_owner, private=True)
         trial_commit = CommitFactory.create(repository=trial_repo)
-        trial_report = CommitReportFactory.create(commit=trial_commit, report_type=ReportType.COVERAGE.value)
+        trial_report = CommitReportFactory.create(
+            commit=trial_commit, report_type=ReportType.COVERAGE.value
+        )
 
         report_before_trial = UploadFactory.create(report=trial_report)
         report_before_trial.created_at += timedelta(days=-12)
@@ -58,7 +62,7 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
             upload=report_before_trial,
             uploader_used=UploaderType.CLI.value,
             private_repo=repo.private,
-            report_type=report.report_type
+            report_type=report.report_type,
         )
         upload_before_trial.created_at += timedelta(days=-12)
         upload_before_trial.save()
@@ -73,7 +77,7 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
             upload=report_during_trial,
             uploader_used=UploaderType.CLI.value,
             private_repo=repo.private,
-            report_type=report.report_type
+            report_type=report.report_type,
         )
         upload_during_trial.created_at += timedelta(days=-5)
         upload_during_trial.save()
@@ -86,7 +90,7 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
             upload=report_after_trial,
             uploader_used=UploaderType.CLI.value,
             private_repo=repo.private,
-            report_type=report.report_type
+            report_type=report.report_type,
         )
 
     async def test_with_no_uploads(self):

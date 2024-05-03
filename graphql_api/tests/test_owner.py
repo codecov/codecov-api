@@ -6,6 +6,8 @@ from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 from graphql import GraphQLError
+from shared.django_apps.reports.models import ReportType
+from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
 from codecov_auth.models import OwnerProfile
@@ -17,8 +19,6 @@ from codecov_auth.tests.factories import (
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
-from shared.upload.utils import insert_coverage_measurement, UploaderType
-from shared.django_apps.reports.models import ReportType
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -262,7 +262,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             author__plan=PlanName.BASIC_PLAN_NAME.value, author=self.owner
         )
         first_commit = CommitFactory.create(repository=repository)
-        first_report = CommitReportFactory.create(commit=first_commit, report_type=ReportType.COVERAGE.value)
+        first_report = CommitReportFactory.create(
+            commit=first_commit, report_type=ReportType.COVERAGE.value
+        )
         for i in range(150):
             upload = UploadFactory.create(report=first_report)
             insert_coverage_measurement(
@@ -272,7 +274,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 upload=upload,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repository.private,
-                report_type=first_report.report_type
+                report_type=first_report.report_type,
             )
         query = query_uploads_number % (repository.author.username)
         data = self.gql_request(query, owner=self.owner)

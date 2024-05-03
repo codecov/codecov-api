@@ -6,8 +6,8 @@ import pytest
 from django.conf import settings
 from django.test import TransactionTestCase
 from rest_framework.exceptions import Throttled, ValidationError
-from shared.upload.utils import insert_coverage_measurement, UploaderType
 from shared.django_apps.reports.models import ReportType
+from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.models import GithubAppInstallation, Service
 from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
@@ -172,8 +172,12 @@ def test_check_commit_constraints_settings_enabled(db, settings, mocker):
     fourth_commit = CommitFactory.create(repository=repository)
     public_repository_commit = CommitFactory.create(repository=public_repository)
     unrelated_commit = CommitFactory.create()
-    first_report = CommitReportFactory.create(commit=first_commit, report_type=ReportType.COVERAGE.value)
-    fourth_report = CommitReportFactory.create(commit=fourth_commit, report_type=ReportType.COVERAGE.value)
+    first_report = CommitReportFactory.create(
+        commit=first_commit, report_type=ReportType.COVERAGE.value
+    )
+    fourth_report = CommitReportFactory.create(
+        commit=fourth_commit, report_type=ReportType.COVERAGE.value
+    )
     check_commit_upload_constraints(second_commit)
     for i in range(300):
         UploadFactory.create(report__commit__repository=public_repository)
@@ -185,7 +189,7 @@ def test_check_commit_constraints_settings_enabled(db, settings, mocker):
             upload=first_upload,
             uploader_used=UploaderType.CLI.value,
             private_repo=public_repository.private,
-            report_type=first_report.report_type
+            report_type=first_report.report_type,
         )
     # ensuring public repos counts don't count towards the quota
     check_commit_upload_constraints(second_commit)
@@ -198,7 +202,7 @@ def test_check_commit_constraints_settings_enabled(db, settings, mocker):
             upload=another_first_upload,
             uploader_used=UploaderType.CLI.value,
             private_repo=repository.private,
-            report_type=first_report.report_type
+            report_type=first_report.report_type,
         )
         fourth_upload = UploadFactory.create(report=fourth_report)
         insert_coverage_measurement(
@@ -208,7 +212,7 @@ def test_check_commit_constraints_settings_enabled(db, settings, mocker):
             upload=fourth_upload,
             uploader_used=UploaderType.CLI.value,
             private_repo=repository.private,
-            report_type=fourth_report.report_type
+            report_type=fourth_report.report_type,
         )
     # first and fourth commit already has uploads made, we won't block uploads to them
     check_commit_upload_constraints(first_commit)
