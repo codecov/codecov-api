@@ -46,6 +46,8 @@ class RepositoryPermissionsService:
         )
 
     def user_is_activated(self, current_owner, owner):
+        if not current_owner or not owner:
+            return False
         if current_owner.ownerid == owner.ownerid:
             return True
         if owner.has_legacy_plan:
