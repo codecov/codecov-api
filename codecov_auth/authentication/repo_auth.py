@@ -279,7 +279,7 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
 
         log.info(
             "In GitHubOIDCTokenAuthentication Success",
-            extra=dict(token_slice=str(token)[39:49], repository=str(repository)),
+            extra=dict(token_slice=token_slice_for_logging, repository=str(repository)),
         )
 
         log.info(
