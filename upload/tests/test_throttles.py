@@ -184,21 +184,6 @@ class ThrottlesUnitTests(APITestCase):
             else:
                 self.request_should_not_throttle(commit)
 
-    # @patch("redis.Redis.get")
-    # def test_validate_commit_count_uses_redis(self, mocked_get):
-    #     par = [(151, 0, False), (151, 250, True), (0, 300, True), (0, 200, False)]
-    #     for totals_column_count, window_count, should_raise in par:
-    #         owner = self.owner
-    #         repo = RepositoryFactory.create(author=owner)
-    #         mocked_get.return_value = window_count
-    #         commit = CommitFactory.create(
-    #             totals={"s": totals_column_count}, repository=repo
-    #         )
-    #         if should_raise:
-    #             self.uploads_per_window_throttled(commit)
-    #         else:
-    #             self.request_should_not_throttle(commit)
-
     def test_validate_redis_counter(self):
         redis = get_redis_connection()
         owner = self.owner
@@ -209,18 +194,3 @@ class ThrottlesUnitTests(APITestCase):
         self.request_should_not_throttle(commit)
         assert redis.get(cache_key) == b"1"
         redis.delete(cache_key)
-
-    # @patch("redis.Redis.get")
-    # def test_handles_redis_error(self, mocked_get):
-    #     def raise_oserror(*args, **kwargs):
-    #         raise OSError
-
-    #     mocked_get.side_effect = raise_oserror
-    #     owner = self.owner
-    #     repo = RepositoryFactory.create(author=owner)
-    #     commit = CommitFactory.create(totals={}, repository=repo)
-    #     self.request_should_not_throttle(commit)
-    #     repository = RepositoryFactory.create(author=owner, private=True)
-    #     for i in range(300):
-    #         UploadFactory.create(report__commit__repository=repository)
-    #     self.uploads_per_window_throttled(commit)
