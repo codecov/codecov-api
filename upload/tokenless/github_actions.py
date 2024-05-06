@@ -52,9 +52,12 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 retry_after = int(e.retry_after)
             else:
                 retry_after = None
+            time_to_available_str = ''
+            if retry_after is not None:
+                time_to_available_str = f" Expected time to availability: {retry_after}s."
             raise exceptions.Throttled(
-                wait=min(10, retry_after) if type(retry_after) == int else retry_after,
-                detail="Rate limit reached. Please upload with the Codecov repository upload token to resolve issue.",
+                wait=None,
+                detail=f"Rate limit reached. Please upload with the Codecov repository upload token to resolve issue.{time_to_available_str}",
             )
         except TorngitClientError as e:
             self.log_warning(message=f"Request client error {e}")
