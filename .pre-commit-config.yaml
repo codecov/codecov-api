@@ -8,3 +8,9 @@ repos:
     pass_filenames: false
     require_serial: true
     language: system
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: 'v1.10.0'
+  hooks:
+  - id: mypy
+    verbose: true
+    entry: bash -c 'mypy "$@" || true' --
