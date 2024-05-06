@@ -52,9 +52,11 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 retry_after = int(e.retry_after)
             else:
                 retry_after = None
-            time_to_available_str = ''
+            time_to_available_str = ""
             if retry_after is not None:
-                time_to_available_str = f" Expected time to availability: {retry_after}s."
+                time_to_available_str = (
+                    f" Expected time to availability: {retry_after}s."
+                )
             raise exceptions.Throttled(
                 wait=None,
                 detail=f"Rate limit reached. Please upload with the Codecov repository upload token to resolve issue.{time_to_available_str}",

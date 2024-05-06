@@ -2764,7 +2764,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             TokenlessUploadHandler("github_actions", params).verify_upload()
         self.assertEqual(
             str(e.exception.detail),
-            "Rate limit reached. Please upload with the Codecov repository upload token to resolve issue. Expected time to availability: 20s.",
+            "Rate limit reached. Please upload with the Codecov repository upload token to resolve issue. Expected time to availability: 10s.",
         )
 
         mock_get.reset_mock()
