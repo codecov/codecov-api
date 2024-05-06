@@ -1,5 +1,12 @@
 name: "Patch typing check"
-on: [push]
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+  merge_group:
 
 jobs:
   static-type-check:
