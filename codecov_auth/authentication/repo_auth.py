@@ -1,3 +1,5 @@
+import logging
+import random
 import re
 from datetime import datetime
 from typing import List
@@ -27,6 +29,8 @@ from services.repo_providers import RepoProviderService
 from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import get_repository_from_string
 from utils import is_uuid
+
+log = logging.getLogger(__name__)
 
 
 def repo_auth_custom_exception_handler(exc, context):
@@ -228,14 +232,55 @@ class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
             )
 
 
+def get_token_slice_for_logging(token):
+    """
+    temporary - for troubleshooting OIDC auth
+    """
+    random_int = random.randint(0, 999999999)
+    if token is None:
+        return f"Token is None, here is a random int {random_int}"
+    if len(str(token)) > 49:
+        # preferred
+        return str(token)[39:49]
+    return f"Token is short, here is a random int {random_int}"
+
+
 class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, token):
+        token_slice_for_logging = get_token_slice_for_logging(token=token)
+        log.info(
+            "In GitHubOIDCTokenAuthentication 1",
+            extra=dict(
+                token_slice=token_slice_for_logging,
+            ),
+        )
         if not token or is_uuid(token):
+            log.info(
+                "In GitHubOIDCTokenAuthentication 2",
+                extra=dict(
+                    token_slice=token_slice_for_logging,
+                    is_uuid=is_uuid(token),
+                ),
+            )
             return None  # continue to next auth class
         try:
-            repository = get_repo_with_github_actions_oidc_token(token)
-        except (ObjectDoesNotExist, PyJWTError):
+            repository = get_repo_with_github_actions_oidc_token(
+                token, token_slice=token_slice_for_logging
+            )
+        except (ObjectDoesNotExist, PyJWTError) as e:
+            log.info(
+                "In GitHubOIDCTokenAuthentication 10",
+                extra=dict(
+                    token_slice=token_slice_for_logging,
+                    error_message=f"{e}",
+                ),
+            )
             return None  # continue to next auth class
+
+        log.info(
+            "In GitHubOIDCTokenAuthentication Success",
+            extra=dict(token_slice=token_slice_for_logging, repository=str(repository)),
+        )
 
         return (
             RepositoryAsUser(repository),
