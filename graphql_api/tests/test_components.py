@@ -939,7 +939,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                         },
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": 80.0,
                             "percentChange": 5.0,
                             "measurements": [
@@ -998,7 +998,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                         },
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": None,
                             "percentChange": None,
                             "measurements": [],
@@ -1099,7 +1099,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                     "components": [
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": 80.0,
                             "percentChange": 5.0,
                             "measurements": [
@@ -1246,7 +1246,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                         },
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": None,
                             "percentChange": None,
                             "measurements": [],
