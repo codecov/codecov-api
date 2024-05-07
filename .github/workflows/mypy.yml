@@ -9,17 +9,6 @@ on:
   merge_group:
 
 jobs:
-  patch-typing-check::
-    name: Run Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: make lint.install
-      - name: Check
-        run: make lint.check
-
-jobs:
   patch-typing-check:
     name: Run Patch Type Check
     uses: codecov/gha-workflows/.github/workflows/mypy.yml@may_06_mypy
