@@ -426,9 +426,7 @@ def resolve_component_measurements(
         return []
 
     if filters and "components" in filters:
-        components = [
-            c_id for c_id in components if c_id.component_id in filters["components"]
-        ]
+        components = [c for c in components if c.component_id in filters["components"]]
 
     component_ids = [c.component_id for c in components]
     all_measurements = component_measurements(
@@ -445,6 +443,10 @@ def resolve_component_measurements(
         row["measurable_id"]: row["last_uploaded"] for row in last_measurements
     }
 
+    components_mapping = {
+        component.component_id: component.name for component in components
+    }
+
     queried_measurements = [
         ComponentMeasurements(
             raw_measurements=all_measurements.get(component_id, []),
@@ -453,6 +455,7 @@ def resolve_component_measurements(
             after=after,
             before=before,
             last_measurement=last_measurements_mapping.get(component_id),
+            components_mapping=components_mapping,
         )
         for component_id in component_ids
     ]

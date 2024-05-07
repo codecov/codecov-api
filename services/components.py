@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Iterable, List
+from typing import Dict, Iterable, List
 
 from django.utils.functional import cached_property
 from shared.components import Component
@@ -86,6 +86,7 @@ class ComponentMeasurements:
         after: datetime,
         before: datetime,
         last_measurement: datetime,
+        components_mapping: Dict[str, str],
     ):
         self.raw_measurements = raw_measurements
         self.component_id = component_id
@@ -93,9 +94,16 @@ class ComponentMeasurements:
         self.after = after
         self.before = before
         self.last_measurement = last_measurement
+        self.components_mapping = components_mapping
 
     @cached_property
     def name(self):
+        if self.components_mapping.get(self.component_id):
+            return self.components_mapping[self.component_id]
+        return self.component_id
+
+    @cached_property
+    def component_id(self):
         return self.component_id
 
     @cached_property
