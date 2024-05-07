@@ -92,3 +92,7 @@ def repo_commits(
     # We need `deleted is not true` in order for the query to use the right index.
     queryset = queryset.filter(deleted__isnot=True)
     return queryset
+
+
+def testing_commits():
+    return True
