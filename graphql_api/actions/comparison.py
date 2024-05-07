@@ -30,3 +30,7 @@ def validate_commit_comparison(
 
     if commit_comparison.state == CommitComparison.CommitComparisonStates.ERROR:
         return MissingComparison()
+
+
+def testing_comparison():
+    return True
