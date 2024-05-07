@@ -259,7 +259,7 @@ def get_repo_with_github_actions_oidc_token(token, token_slice=None):
         token,
         signing_key.key,
         algorithms=["RS256"],
-        audience=[settings.CODECOV_API_URL],
+        audience=[settings.CODECOV_API_URL, settings.CODECOV_URL],
     )
     repo = str(data.get("repository")).split("/")[-1]
     log.info(
