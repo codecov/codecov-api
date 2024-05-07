@@ -113,10 +113,10 @@ class UploadViews(ListCreateAPIView, GetterMixin):
 
         # Inserts mirror upload record into measurements table. CLI hits this endpoint
         insert_coverage_measurement(
-            owner=repository.author,
-            repo=repository,
-            commit=commit,
-            upload=instance,
+            owner_id=repository.author.ownerid,
+            repo_id=repository.repoid,
+            commit_id=commit.id,
+            upload_id=instance.id,
             uploader_used=UploaderType.CLI.value,
             private_repo=repository.private,
             report_type=report.report_type,

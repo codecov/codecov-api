@@ -27,10 +27,10 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
             # Explicit add insert_coverage_measurement as we'll do this every time that we make an upload
             upload = UploadFactory.create(report=report)
             insert_coverage_measurement(
-                owner=self.user_with_uploads,
-                repo=repo,
-                commit=commit,
-                upload=upload,
+                owner_id=self.user_with_uploads.ownerid,
+                repo_id=repo.repoid,
+                commit_id=commit.id,
+                upload_id=upload.id,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repo.private,
                 report_type=report.report_type,
@@ -56,10 +56,10 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         report_before_trial.created_at += timedelta(days=-12)
         report_before_trial.save()
         upload_before_trial = insert_coverage_measurement(
-            owner=self.trial_owner,
-            repo=repo,
-            commit=commit,
-            upload=report_before_trial,
+            owner_id=self.trial_owner.ownerid,
+            repo_id=repo.repoid,
+            commit_id=commit.id,
+            upload_id=report_before_trial.id,
             uploader_used=UploaderType.CLI.value,
             private_repo=repo.private,
             report_type=report.report_type,
@@ -71,10 +71,10 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         report_during_trial.created_at += timedelta(days=-5)
         report_during_trial.save()
         upload_during_trial = insert_coverage_measurement(
-            owner=self.trial_owner,
-            repo=repo,
-            commit=commit,
-            upload=report_during_trial,
+            owner_id=self.trial_owner.ownerid,
+            repo_id=repo.repoid,
+            commit_id=commit.id,
+            upload_id=report_during_trial.id,
             uploader_used=UploaderType.CLI.value,
             private_repo=repo.private,
             report_type=report.report_type,
@@ -84,10 +84,10 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
 
         report_after_trial = UploadFactory.create(report=trial_report)
         insert_coverage_measurement(
-            owner=self.trial_owner,
-            repo=repo,
-            commit=commit,
-            upload=report_after_trial,
+            owner_id=self.trial_owner.ownerid,
+            repo_id=repo.repoid,
+            commit_id=commit.id,
+            upload_id=report_after_trial.id,
             uploader_used=UploaderType.CLI.value,
             private_repo=repo.private,
             report_type=report.report_type,

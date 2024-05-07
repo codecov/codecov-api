@@ -268,10 +268,10 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         for i in range(150):
             upload = UploadFactory.create(report=first_report)
             insert_coverage_measurement(
-                owner=self.owner,
-                repo=repository,
-                commit=first_commit,
-                upload=upload,
+                owner_id=self.owner.ownerid,
+                repo_id=repository.repoid,
+                commit_id=first_commit.id,
+                upload_id=upload.id,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repository.private,
                 report_type=first_report.report_type,

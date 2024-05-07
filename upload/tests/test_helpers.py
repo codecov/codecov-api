@@ -183,10 +183,10 @@ def test_check_commit_constraints_settings_enabled(db, settings, mocker):
         UploadFactory.create(report__commit__repository=public_repository)
         first_upload = UploadFactory(report=first_report)
         insert_coverage_measurement(
-            owner=author,
-            repo=public_repository,
-            commit=public_repository_commit,
-            upload=first_upload,
+            owner_id=author.ownerid,
+            repo_id=public_repository.repoid,
+            commit_id=public_repository_commit.id,
+            upload_id=first_upload.id,
             uploader_used=UploaderType.CLI.value,
             private_repo=public_repository.private,
             report_type=first_report.report_type,
@@ -196,20 +196,20 @@ def test_check_commit_constraints_settings_enabled(db, settings, mocker):
     for i in range(150):
         another_first_upload = UploadFactory.create(report=first_report)
         insert_coverage_measurement(
-            owner=author,
-            repo=repository,
-            commit=first_commit,
-            upload=another_first_upload,
+            owner_id=author.ownerid,
+            repo_id=repository.repoid,
+            commit_id=first_commit.id,
+            upload_id=another_first_upload.id,
             uploader_used=UploaderType.CLI.value,
             private_repo=repository.private,
             report_type=first_report.report_type,
         )
         fourth_upload = UploadFactory.create(report=fourth_report)
         insert_coverage_measurement(
-            owner=author,
-            repo=repository,
-            commit=fourth_commit,
-            upload=fourth_upload,
+            owner_id=author.ownerid,
+            repo_id=repository.repoid,
+            commit_id=fourth_commit.id,
+            upload_id=fourth_upload.id,
             uploader_used=UploaderType.CLI.value,
             private_repo=repository.private,
             report_type=fourth_report.report_type,

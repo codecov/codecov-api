@@ -70,20 +70,20 @@ class ThrottlesUnitTests(APITestCase):
         for i in range(150):
             first_upload = UploadFactory(report=first_report)
             insert_coverage_measurement(
-                owner=self.owner,
-                repo=repository,
-                commit=first_commit,
-                upload=first_upload,
+                owner_id=self.owner.ownerid,
+                repo_id=repository.repoid,
+                commit_id=first_commit.id,
+                upload_id=first_upload.id,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repository.private,
                 report_type=first_report.report_type,
             )
             second_upload = UploadFactory(report=sec_report)
             insert_coverage_measurement(
-                owner=self.owner,
-                repo=repository,
-                commit=second_commit,
-                upload=second_upload,
+                owner_id=self.owner.ownerid,
+                repo_id=repository.repoid,
+                commit_id=second_commit.id,
+                upload_id=second_upload.id,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repository.private,
                 report_type=sec_report.report_type,
@@ -121,10 +121,10 @@ class ThrottlesUnitTests(APITestCase):
         for i in range(300):
             upload = UploadFactory.create(report__commit__repository=public_repository)
             insert_coverage_measurement(
-                owner=author,
-                repo=public_repository,
-                commit=second_commit,
-                upload=upload,
+                owner_id=author.ownerid,
+                repo_id=public_repository.repoid,
+                commit_id=second_commit.id,
+                upload_id=upload.id,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=public_repository.private,
                 report_type=second_report.report_type,
@@ -135,20 +135,20 @@ class ThrottlesUnitTests(APITestCase):
         for i in range(150):
             second_upload = UploadFactory.create(report=second_report)
             insert_coverage_measurement(
-                owner=author,
-                repo=repository,
-                commit=second_commit,
-                upload=second_upload,
+                owner_id=author.ownerid,
+                repo_id=repository.repoid,
+                commit_id=second_commit.id,
+                upload_id=second_upload.id,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repository.private,
                 report_type=second_report.report_type,
             )
             fourth_upload = UploadFactory.create(report=fourth_report)
             insert_coverage_measurement(
-                owner=author,
-                repo=repository,
-                commit=fourth_commit,
-                upload=fourth_upload,
+                owner_id=author.ownerid,
+                repo_id=repository.repoid,
+                commit_id=fourth_commit.id,
+                upload_id=fourth_upload.id,
                 uploader_used=UploaderType.CLI.value,
                 private_repo=repository.private,
                 report_type=fourth_report.report_type,
