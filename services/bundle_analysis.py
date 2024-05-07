@@ -292,9 +292,6 @@ class BundleAnalysisComparison(object):
     def load_time_total(self):
         return load_time_conversion(self.size_total)
 
-    def reloader():
-        return True
-
 
 @dataclass
 class BundleComparison(object):
