@@ -117,7 +117,7 @@ class ComponentMeasurements:
             return self.raw_measurements[-1]["avg"] - self.raw_measurements[0]["avg"]
 
     @cached_property
-    def measurements(self) -> List[Dict[str, Any]]:
+    def measurements(self) -> Iterable[Dict[str, Any]]:
         if not self.raw_measurements:
             return []
         return fill_sparse_measurements(
