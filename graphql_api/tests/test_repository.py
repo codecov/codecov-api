@@ -673,7 +673,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             {"id": "blah", "name": "blah_name"},
         ]
 
-    def test_repository_is_first_pull_request(self):
+    def test_repository_is_first_pull_request(self) -> None:
         repo = RepositoryFactory(
             author=self.owner,
             active=True,
@@ -694,7 +694,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == True
 
-    def test_repository_is_first_pull_request_compared_to_not_none(self):
+    def test_repository_is_first_pull_request_compared_to_not_none(self) -> None:
         repo = RepositoryFactory(
             author=self.owner,
             active=True,
@@ -715,7 +715,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == False
 
-    def test_repository_when_is_first_pull_request_false(self):
+    def test_repository_when_is_first_pull_request_false(self) -> None:
         repo = RepositoryFactory(
             author=self.owner,
             active=True,
