@@ -5,6 +5,7 @@ import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
+from graphql.type.definition import GraphQLResolveInfo
 from shared.yaml import UserYaml
 
 import timeseries.helpers as timeseries_helpers
@@ -42,7 +43,9 @@ repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
 
 
 @repository_bindable.field("oldestCommitAt")
-def resolve_oldest_commit_at(repository: Repository, info: Any) -> Optional[datetime]:
+def resolve_oldest_commit_at(
+    repository: Repository, info: GraphQLResolveInfo
+) -> Optional[datetime]:
     if hasattr(repository, "oldest_commit_at"):
         return repository.oldest_commit_at
     else:
@@ -50,55 +53,57 @@ def resolve_oldest_commit_at(repository: Repository, info: Any) -> Optional[date
 
 
 @repository_bindable.field("coverage")
-def resolve_coverage(repository: Repository, info):
+def resolve_coverage(repository: Repository, info: GraphQLResolveInfo):
     return repository.recent_coverage
 
 
 @repository_bindable.field("coverageSha")
-def resolve_coverage_sha(repository: Repository, info):
+def resolve_coverage_sha(repository: Repository, info: GraphQLResolveInfo):
     return repository.coverage_sha
 
 
 @repository_bindable.field("hits")
-def resolve_hits(repository: Repository, info) -> Optional[int]:
+def resolve_hits(repository: Repository, info: GraphQLResolveInfo) -> Optional[int]:
     return repository.hits
 
 
 @repository_bindable.field("misses")
-def resolve_misses(repository: Repository, info) -> Optional[int]:
+def resolve_misses(repository: Repository, info: GraphQLResolveInfo) -> Optional[int]:
     return repository.misses
 
 
 @repository_bindable.field("lines")
-def resolve_lines(repository: Repository, info) -> Optional[int]:
+def resolve_lines(repository: Repository, info: GraphQLResolveInfo) -> Optional[int]:
     return repository.lines
 
 
 @repository_bindable.field("branch")
-def resolve_branch(repository, info, name: str) -> Branch:
+def resolve_branch(
+    repository: Repository, info: GraphQLResolveInfo, name: str
+) -> Branch:
     command = info.context["executor"].get_command("branch")
     return command.fetch_branch(repository, name)
 
 
 @repository_bindable.field("author")
-def resolve_author(repository, info):
+def resolve_author(repository: Repository, info: GraphQLResolveInfo):
     return OwnerLoader.loader(info).load(repository.author_id)
 
 
 @repository_bindable.field("commit")
-def resolve_commit(repository, info, id):
+def resolve_commit(repository: Repository, info: GraphQLResolveInfo, id):
     loader = CommitLoader.loader(info, repository.pk)
     return loader.load(id)
 
 
 @repository_bindable.field("uploadToken")
-def resolve_upload_token(repository, info):
+def resolve_upload_token(repository: Repository, info: GraphQLResolveInfo):
     command = info.context["executor"].get_command("repository")
     return command.get_upload_token(repository)
 
 
 @repository_bindable.field("pull")
-def resolve_pull(repository, info, id):
+def resolve_pull(repository: Repository, info: GraphQLResolveInfo, id):
     command = info.context["executor"].get_command("pull")
     return command.fetch_pull_request(repository, id)
 
@@ -106,7 +111,11 @@ def resolve_pull(repository, info, id):
 @repository_bindable.field("pulls")
 @convert_kwargs_to_snake_case
 async def resolve_pulls(
-    repository, info, filters=None, ordering_direction=OrderingDirection.DESC, **kwargs
+    repository: Repository,
+    info: GraphQLResolveInfo,
+    filters=None,
+    ordering_direction=OrderingDirection.DESC,
+    **kwargs
 ):
     command = info.context["executor"].get_command("pull")
     queryset = await command.fetch_pull_requests(repository, filters)
@@ -120,7 +129,9 @@ async def resolve_pulls(
 
 @repository_bindable.field("commits")
 @convert_kwargs_to_snake_case
-async def resolve_commits(repository, info, filters=None, **kwargs):
+async def resolve_commits(
+    repository: Repository, info: GraphQLResolveInfo, filters=None, **kwargs
+):
     queryset = await sync_to_async(repo_commits)(repository, filters)
     connection = await queryset_to_connection(
         queryset,
@@ -140,7 +151,9 @@ async def resolve_commits(repository, info, filters=None, **kwargs):
 
 @repository_bindable.field("branches")
 @convert_kwargs_to_snake_case
-async def resolve_branches(repository, info, filters=None, **kwargs):
+async def resolve_branches(
+    repository: Repository, info: GraphQLResolveInfo, filters=None, **kwargs
+):
     command = info.context["executor"].get_command("branch")
     queryset = await command.fetch_branches(repository, filters)
     return await queryset_to_connection(
@@ -152,25 +165,27 @@ async def resolve_branches(repository, info, filters=None, **kwargs):
 
 
 @repository_bindable.field("defaultBranch")
-def resolve_default_branch(repository, info):
+def resolve_default_branch(repository: Repository, info: GraphQLResolveInfo):
     return repository.branch
 
 
 @repository_bindable.field("profilingToken")
-def resolve_profiling_token(repository, info):
+def resolve_profiling_token(repository: Repository, info: GraphQLResolveInfo):
     command = info.context["executor"].get_command("repository")
     return command.get_repository_token(repository, token_type="profiling")
 
 
 @repository_bindable.field("staticAnalysisToken")
-def resolve_static_analysis_token(repository, info):
+def resolve_static_analysis_token(repository: Repository, info: GraphQLResolveInfo):
     command = info.context["executor"].get_command("repository")
     return command.get_repository_token(repository, token_type="static_analysis")
 
 
 @repository_bindable.field("criticalFiles")
 @sync_to_async
-def resolve_critical_files(repository: Repository, info) -> List[CriticalFile]:
+def resolve_critical_files(
+    repository: Repository, info: GraphQLResolveInfo
+) -> List[CriticalFile]:
     """
     The current critical files for this repository - not tied to any
     particular commit or branch.  Based on the most recently received
@@ -183,12 +198,12 @@ def resolve_critical_files(repository: Repository, info) -> List[CriticalFile]:
 
 
 @repository_bindable.field("graphToken")
-def resolve_graph_token(repository, info):
+def resolve_graph_token(repository: Repository, info: GraphQLResolveInfo):
     return repository.image_token
 
 
 @repository_bindable.field("yaml")
-def resolve_repo_yaml(repository, info):
+def resolve_repo_yaml(repository: Repository, info: GraphQLResolveInfo):
     if repository.yaml is None:
         return None
     return yaml.dump(repository.yaml)
@@ -196,7 +211,7 @@ def resolve_repo_yaml(repository, info):
 
 @repository_bindable.field("bot")
 @sync_to_async
-def resolve_repo_bot(repository, info):
+def resolve_repo_bot(repository: Repository, info: GraphQLResolveInfo):
     return repository.bot
 
 
@@ -205,7 +220,7 @@ def resolve_repo_bot(repository, info):
 @sync_to_async
 def resolve_flags(
     repository: Repository,
-    info,
+    info: GraphQLResolveInfo,
     filters: Mapping = None,
     ordering_direction: OrderingDirection = OrderingDirection.ASC,
     **kwargs
@@ -250,19 +265,21 @@ def resolve_flags(
 
 
 @repository_bindable.field("active")
-def resolve_active(repository: Repository, info) -> bool:
+def resolve_active(repository: Repository, info: GraphQLResolveInfo) -> bool:
     return repository.active or False
 
 
 @repository_bindable.field("flagsCount")
 @sync_to_async
-def resolve_flags_count(repository: Repository, info) -> int:
+def resolve_flags_count(repository: Repository, info: GraphQLResolveInfo) -> int:
     return repository.flags.filter(deleted__isnot=True).count()
 
 
 @repository_bindable.field("flagsMeasurementsActive")
 @sync_to_async
-def resolve_flags_measurements_active(repository: Repository, info) -> bool:
+def resolve_flags_measurements_active(
+    repository: Repository, info: GraphQLResolveInfo
+) -> bool:
     if not settings.TIMESERIES_ENABLED:
         return False
 
@@ -274,7 +291,9 @@ def resolve_flags_measurements_active(repository: Repository, info) -> bool:
 
 @repository_bindable.field("flagsMeasurementsBackfilled")
 @sync_to_async
-def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
+def resolve_flags_measurements_backfilled(
+    repository: Repository, info: GraphQLResolveInfo
+) -> bool:
     if not settings.TIMESERIES_ENABLED:
         return False
 
@@ -291,7 +310,9 @@ def resolve_flags_measurements_backfilled(repository: Repository, info) -> bool:
 
 @repository_bindable.field("componentsMeasurementsActive")
 @sync_to_async
-def resolve_components_measurements_active(repository: Repository, info) -> bool:
+def resolve_components_measurements_active(
+    repository: Repository, info: GraphQLResolveInfo
+) -> bool:
     if not settings.TIMESERIES_ENABLED:
         return False
 
@@ -303,7 +324,9 @@ def resolve_components_measurements_active(repository: Repository, info) -> bool
 
 @repository_bindable.field("componentsMeasurementsBackfilled")
 @sync_to_async
-def resolve_components_measurements_backfilled(repository: Repository, info) -> bool:
+def resolve_components_measurements_backfilled(
+    repository: Repository, info: GraphQLResolveInfo
+) -> bool:
     if not settings.TIMESERIES_ENABLED:
         return False
 
@@ -320,7 +343,7 @@ def resolve_components_measurements_backfilled(repository: Repository, info) -> 
 
 @repository_bindable.field("componentsCount")
 @sync_to_async
-def resolve_components_count(repository: Repository, info) -> int:
+def resolve_components_count(repository: Repository, info: GraphQLResolveInfo) -> int:
     repo_yaml_components = UserYaml.get_final_yaml(
         owner_yaml=repository.author.yaml,
         repo_yaml=repository.yaml,
@@ -331,7 +354,7 @@ def resolve_components_count(repository: Repository, info) -> int:
 
 
 @repository_bindable.field("isATSConfigured")
-def resolve_is_ats_configured(repository: Repository, info) -> bool:
+def resolve_is_ats_configured(repository: Repository, info: GraphQLResolveInfo) -> bool:
     if not repository.yaml or "flag_management" not in repository.yaml:
         return False
 
@@ -345,7 +368,7 @@ def resolve_is_ats_configured(repository: Repository, info) -> bool:
 @sync_to_async
 def resolve_measurements(
     repository: Repository,
-    info,
+    info: GraphQLResolveInfo,
     interval: Interval,
     before: Optional[datetime] = None,
     after: Optional[datetime] = None,
@@ -366,27 +389,31 @@ def resolve_measurements(
 
 
 @repository_bindable.field("repositoryConfig")
-def resolve_repository_config(repository: Repository, info):
+def resolve_repository_config(repository: Repository, info: GraphQLResolveInfo):
     return repository
 
 
 @repository_bindable.field("primaryLanguage")
-def resolve_language(repository: Repository, info) -> str:
+def resolve_language(repository: Repository, info: GraphQLResolveInfo) -> str:
     return repository.language
 
 
 @repository_bindable.field("languages")
-def resolve_languages(repository: Repository, info) -> List[str]:
+def resolve_languages(repository: Repository, info: GraphQLResolveInfo) -> List[str]:
     return repository.languages
 
 
 @repository_bindable.field("bundleAnalysisEnabled")
-def resolve_bundle_analysis_enabled(repository: Repository, info) -> Optional[bool]:
+def resolve_bundle_analysis_enabled(
+    repository: Repository, info: GraphQLResolveInfo
+) -> Optional[bool]:
     return repository.bundle_analysis_enabled
 
 
 @repository_bindable.field("coverageEnabled")
-def resolve_coverage_enabled(repository: Repository, info) -> Optional[bool]:
+def resolve_coverage_enabled(
+    repository: Repository, info: GraphQLResolveInfo
+) -> Optional[bool]:
     return repository.coverage_enabled
 
 
@@ -408,7 +435,7 @@ def resolve_repository_result_type(obj, *_):
 @sync_to_async
 def resolve_component_measurements(
     repository: Repository,
-    info,
+    info: GraphQLResolveInfo,
     interval: Interval,
     before: datetime,
     after: datetime,
@@ -470,7 +497,7 @@ def resolve_component_measurements(
 @repository_bindable.field("componentsYaml")
 @convert_kwargs_to_snake_case
 def resolve_component_yaml(
-    repository: Repository, info, term_id: Optional[str]
+    repository: Repository, info: GraphQLResolveInfo, term_id: Optional[str]
 ) -> List[str]:
     components = UserYaml.get_final_yaml(
         owner_yaml=repository.author.yaml,
