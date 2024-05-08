@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Iterable, List, Mapping, Optional
+from typing import Any, Iterable, List, Mapping, Optional
 
 import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
@@ -42,7 +42,7 @@ repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
 
 
 @repository_bindable.field("oldestCommitAt")
-def resolve_oldest_commit_at(repository: Repository, info):
+def resolve_oldest_commit_at(repository: Repository, info: Any) -> Optional[datetime]:
     if hasattr(repository, "oldest_commit_at"):
         return repository.oldest_commit_at
     else:
