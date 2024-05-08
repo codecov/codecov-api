@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
 from django.utils.functional import cached_property
 from shared.components import Component
@@ -80,7 +80,7 @@ class ComponentComparison:
 class ComponentMeasurements:
     def __init__(
         self,
-        raw_measurements: Iterable[dict],
+        raw_measurements: List[dict],
         component_id: str,
         interval: Interval,
         after: datetime,
@@ -107,12 +107,12 @@ class ComponentMeasurements:
         return self.component_id
 
     @cached_property
-    def percent_covered(self) -> float:
+    def percent_covered(self) -> Optional[float]:
         if len(self.raw_measurements) > 0:
             return self.raw_measurements[-1]["avg"]
 
     @cached_property
-    def percent_change(self) -> float:
+    def percent_change(self) -> Optional[float]:
         if len(self.raw_measurements) > 1:
             return self.raw_measurements[-1]["avg"] - self.raw_measurements[0]["avg"]
 
