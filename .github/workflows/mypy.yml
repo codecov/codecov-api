@@ -1,0 +1,14 @@
+name: "Patch typing check"
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+  merge_group:
+
+jobs:
+  patch-typing-check:
+    name: Run Patch Type Check
+    uses: codecov/gha-workflows/.github/workflows/mypy.yml@v1.2.18
