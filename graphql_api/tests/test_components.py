@@ -816,6 +816,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                     "individual_components": [
                         {
                             "component_id": "python",
+                            "name": "pythonName",
                             "paths": [".*/*.py"],
                         },
                         {
@@ -938,7 +939,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                         },
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": 80.0,
                             "percentChange": 5.0,
                             "measurements": [
@@ -997,7 +998,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                         },
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": None,
                             "percentChange": None,
                             "measurements": [],
@@ -1098,7 +1099,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                     "components": [
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": 80.0,
                             "percentChange": 5.0,
                             "measurements": [
@@ -1245,11 +1246,127 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
                         },
                         {
                             "__typename": "ComponentMeasurements",
-                            "name": "python",
+                            "name": "pythonName",
                             "percentCovered": None,
                             "percentChange": None,
                             "measurements": [],
                             "lastUploaded": None,
+                        },
+                    ]
+                }
+            }
+        }
+
+    def test_component_measurements_id_fallback(self):
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=75.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="main",
+            measurable_id="python",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="dev",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-21T00:00:00",
+            value=85.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="dev",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T00:00:00",
+            value=95.0,
+        )
+        MeasurementFactory(
+            name="component_coverage",
+            owner_id=self.org.pk,
+            repo_id=self.repo.pk,
+            branch="dev",
+            measurable_id="golang",
+            commit_sha=self.commit.pk,
+            timestamp="2022-06-22T01:00:00",
+            value=85.0,
+        )
+
+        query = """
+        query ComponentMeasurements(
+            $name: String!
+            $repo: String!
+            $interval: MeasurementInterval!
+            $after: DateTime!
+            $before: DateTime!
+            $branch: String
+            $filters: ComponentMeasurementsSetFilters
+            $orderingDirection: OrderingDirection
+        ) {
+            owner(username: $name) {
+                repository: repositoryDeprecated(name: $repo) {
+                    components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+                        __typename
+                        ... on ComponentMeasurements {
+                            name
+                            componentId
+                        }
+                    }
+                }
+            }
+        }
+        """
+
+        variables = {
+            "name": self.org.username,
+            "repo": self.repo.name,
+            "interval": "INTERVAL_1_DAY",
+            "after": timezone.datetime(2022, 6, 20),
+            "before": timezone.datetime(2022, 6, 23),
+            "branch": "dev",
+        }
+        data = self.gql_request(query, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "components": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "componentId": "golang",
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "pythonName",
+                            "componentId": "python",
                         },
                     ]
                 }

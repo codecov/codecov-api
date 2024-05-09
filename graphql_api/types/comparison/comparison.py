@@ -2,6 +2,7 @@ from asyncio import gather
 from typing import List, Optional
 
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
+from graphql.type.definition import GraphQLResolveInfo
 
 import services.components as components_service
 from codecov.db import sync_to_async
@@ -30,7 +31,7 @@ comparison_bindable = ObjectType("Comparison")
 
 
 @comparison_bindable.field("state")
-def resolve_state(comparison: ComparisonReport, info) -> str:
+def resolve_state(comparison: ComparisonReport, info: GraphQLResolveInfo) -> str:
     return comparison.commit_comparison.state
 
 
@@ -38,7 +39,7 @@ def resolve_state(comparison: ComparisonReport, info) -> str:
 @convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_impacted_files_deprecated(
-    comparison_report: ComparisonReport, info, filters=None
+    comparison_report: ComparisonReport, info: GraphQLResolveInfo, filters=None
 ) -> List[ImpactedFile]:
     command: CompareCommands = info.context["executor"].get_command("compare")
     comparison: Comparison = info.context.get("comparison", None)
@@ -50,7 +51,7 @@ def resolve_impacted_files_deprecated(
 @convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_impacted_files(
-    comparison_report: ComparisonReport, info, filters=None
+    comparison_report: ComparisonReport, info: GraphQLResolveInfo, filters=None
 ) -> List[ImpactedFile]:
     command: CompareCommands = info.context["executor"].get_command("compare")
     comparison: Comparison = info.context.get("comparison", None)
@@ -67,32 +68,40 @@ def resolve_impacted_files(
 
 @comparison_bindable.field("impactedFilesCount")
 @sync_to_async
-def resolve_impacted_files_count(comparison: ComparisonReport, info):
+def resolve_impacted_files_count(
+    comparison: ComparisonReport, info: GraphQLResolveInfo
+):
     return len(comparison.impacted_files)
 
 
 @comparison_bindable.field("directChangedFilesCount")
 @sync_to_async
-def resolve_direct_changed_files_count(comparison: ComparisonReport, info):
+def resolve_direct_changed_files_count(
+    comparison: ComparisonReport, info: GraphQLResolveInfo
+):
     return len(comparison.impacted_files_with_direct_changes)
 
 
 @comparison_bindable.field("indirectChangedFilesCount")
 @sync_to_async
-def resolve_indirect_changed_files_count(comparison: ComparisonReport, info):
+def resolve_indirect_changed_files_count(
+    comparison: ComparisonReport, info: GraphQLResolveInfo
+):
     return len(comparison.impacted_files_with_unintended_changes)
 
 
 @comparison_bindable.field("impactedFile")
 @sync_to_async
-def resolve_impacted_file(comparison: ComparisonReport, info, path) -> ImpactedFile:
+def resolve_impacted_file(
+    comparison: ComparisonReport, info: GraphQLResolveInfo, path
+) -> ImpactedFile:
     return comparison.impacted_file(path)
 
 
 # TODO: rename `changeCoverage`
 @comparison_bindable.field("changeCoverage")
 async def resolve_change_coverage(
-    comparison: ComparisonReport, info
+    comparison: ComparisonReport, info: GraphQLResolveInfo
 ) -> Optional[float]:
     repository_id = comparison.commit_comparison.compare_commit.repository_id
     loader = CommitLoader.loader(info, repository_id)
@@ -124,7 +133,7 @@ async def resolve_change_coverage(
 
 @comparison_bindable.field("baseTotals")
 async def resolve_base_totals(
-    comparison: ComparisonReport, info
+    comparison: ComparisonReport, info: GraphQLResolveInfo
 ) -> Optional[ReportLevelTotals]:
     repository_id = comparison.commit_comparison.base_commit.repository_id
     loader = CommitLoader.loader(info, repository_id)
@@ -141,7 +150,7 @@ async def resolve_base_totals(
 
 @comparison_bindable.field("headTotals")
 async def resolve_head_totals(
-    comparison: ComparisonReport, info
+    comparison: ComparisonReport, info: GraphQLResolveInfo
 ) -> Optional[ReportLevelTotals]:
     repository_id = comparison.commit_comparison.compare_commit.repository_id
     loader = CommitLoader.loader(info, repository_id)
@@ -159,7 +168,9 @@ async def resolve_head_totals(
 
 
 @comparison_bindable.field("patchTotals")
-def resolve_patch_totals(comparison: ComparisonReport, info) -> dict:
+def resolve_patch_totals(
+    comparison: ComparisonReport, info: GraphQLResolveInfo
+) -> dict:
     totals = comparison.commit_comparison.patch_totals
     if not totals:
         return None
@@ -176,7 +187,7 @@ def resolve_patch_totals(comparison: ComparisonReport, info) -> dict:
 @comparison_bindable.field("flagComparisons")
 @sync_to_async
 def resolve_flag_comparisons(
-    comparison: ComparisonReport, info, filters=None
+    comparison: ComparisonReport, info: GraphQLResolveInfo, filters=None
 ) -> List[FlagComparison]:
     all_flags = get_flag_comparisons(comparison.commit_comparison)
 
@@ -194,7 +205,7 @@ def resolve_flag_comparisons(
 @comparison_bindable.field("componentComparisons")
 @sync_to_async
 def resolve_component_comparisons(
-    comparison_report: ComparisonReport, info, filters=None
+    comparison_report: ComparisonReport, info: GraphQLResolveInfo, filters=None
 ) -> List[ComponentComparison]:
     current_owner = info.context["request"].current_owner
     head_commit = comparison_report.commit_comparison.compare_commit
@@ -221,14 +232,16 @@ def resolve_component_comparisons(
 @comparison_bindable.field("componentComparisonsCount")
 @sync_to_async
 def resolve_component_comparisons_count(
-    comparison_report: ComparisonReport, info
+    comparison_report: ComparisonReport, info: GraphQLResolveInfo
 ) -> int:
     return comparison_report.commit_comparison.component_comparisons.count()
 
 
 @comparison_bindable.field("flagComparisonsCount")
 @sync_to_async
-def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
+def resolve_flag_comparisons_count(
+    comparison: ComparisonReport, info: GraphQLResolveInfo
+):
     """
     Resolver to return if the head and base of a pull request have
     different number of reports on the head and base. This implementation
@@ -240,7 +253,7 @@ def resolve_flag_comparisons_count(comparison: ComparisonReport, info):
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")
 @sync_to_async
 def resolve_has_different_number_of_head_and_base_reports(
-    comparison: ComparisonReport, info, **kwargs  # type: ignore
+    comparison: ComparisonReport, info: GraphQLResolveInfo, **kwargs  # type: ignore
 ) -> False:
     # TODO: can we remove the need for `info.context["comparison"]` here?
     if "comparison" not in info.context:
