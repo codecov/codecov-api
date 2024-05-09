@@ -2,11 +2,12 @@ import asyncio
 from datetime import timedelta
 from unittest.mock import patch
 
-import pytest
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 from graphql import GraphQLError
+from shared.django_apps.reports.models import ReportType
+from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
 from codecov_auth.models import OwnerProfile
@@ -250,9 +251,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["repository"]["name"] == repo.name
 
-    @patch("redis.Redis.get")
-    def test_resolve_number_of_uploads_per_user(self, mocked_get):
-        mocked_get.return_value = None
+    def test_resolve_number_of_uploads_per_user(self):
         query_uploads_number = """{
             owner(username: "%s") {
                numberOfUploads
@@ -263,9 +262,20 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             author__plan=PlanName.BASIC_PLAN_NAME.value, author=self.owner
         )
         first_commit = CommitFactory.create(repository=repository)
-        first_report = CommitReportFactory.create(commit=first_commit)
+        first_report = CommitReportFactory.create(
+            commit=first_commit, report_type=ReportType.COVERAGE.value
+        )
         for i in range(150):
-            UploadFactory.create(report=first_report)
+            upload = UploadFactory.create(report=first_report)
+            insert_coverage_measurement(
+                owner_id=self.owner.ownerid,
+                repo_id=repository.repoid,
+                commit_id=first_commit.id,
+                upload_id=upload.id,
+                uploader_used=UploaderType.CLI.value,
+                private_repo=repository.private,
+                report_type=first_report.report_type,
+            )
         query = query_uploads_number % (repository.author.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["numberOfUploads"] == 150
