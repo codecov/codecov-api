@@ -17,7 +17,7 @@ _start_gunicorn() {
   fi
   if [[ "$RUN_ENV" == "ENTERPRISE" ]] || [[ "$RUN_ENV" == "enterprise" ]] || [[ "$RUN_ENV" == "DEV" ]]; then
     python manage.py migrate
-    python manage.py migrate --database "timeseries"
+    python manage.py migrate --database "timeseries" timeseries
     python manage.py pgpartition --yes --skip-delete
   fi
   if [[ "$DEBUGPY" ]]; then
