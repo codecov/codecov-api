@@ -5,6 +5,7 @@ type Component {
 }
 
 type ComponentMeasurements {
+    componentId: String!
     name: String!
     percentCovered: Float
     percentChange: Float
