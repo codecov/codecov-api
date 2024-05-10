@@ -53,9 +53,9 @@ lint.run:
 
 lint.check:
 	echo "Linting..."
-	ruff format
-	echo "Sorting..."
 	ruff check
+	echo "Sorting..."
+	ruff format --check
 
 build.requirements:
 	# if docker pull succeeds, we have already build this version of
