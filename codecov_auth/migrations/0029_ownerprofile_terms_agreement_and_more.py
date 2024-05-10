@@ -6,7 +6,6 @@ import core.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0028_owner_sentry_user_data_owner_sentry_user_id"),
     ]

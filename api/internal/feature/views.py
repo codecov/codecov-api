@@ -80,9 +80,7 @@ class FeaturesView(APIView):
             # fetch flags not in cache
             missed_feature_flags = FeatureFlag.objects.filter(
                 name__in=cache_misses
-            ).prefetch_related(
-                "variants"
-            )  # include the feature flag variants aswell
+            ).prefetch_related("variants")  # include the feature flag variants aswell
 
             # evaluate the remaining flags
             for feature_flag in missed_feature_flags:
@@ -91,9 +89,9 @@ class FeaturesView(APIView):
                 flag_evaluations[feature_flag.name] = Feature(
                     feature_flag.name, feature_flag, list(feature_flag.variants.all())
                 ).check_value_no_fetch(identifier=identifier)
-                flags_to_add_to_cache[
-                    get_flag_cache_redis_key(feature_flag.name)
-                ] = feature_flag
+                flags_to_add_to_cache[get_flag_cache_redis_key(feature_flag.name)] = (
+                    feature_flag
+                )
 
             # add the new flags to cache
             if len(flags_to_add_to_cache) >= 1:

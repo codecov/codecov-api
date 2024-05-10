@@ -50,7 +50,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
         # if job not found in travis.com try travis.org
         if not travis_dot_com:
             log.info(
-                f"Unable to verify using travis.com, trying travis.org",
+                "Unable to verify using travis.com, trying travis.org",
                 extra=dict(
                     commit=self.upload_params["commit"],
                     repo_name=self.upload_params["repo"],
@@ -125,7 +125,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             now = datetime.utcnow()
             if not now <= finishTimeWithBuffer:
                 log.warning(
-                    f"Cancelling upload: 4 mins since build",
+                    "Cancelling upload: 4 mins since build",
                     extra=dict(
                         commit=self.upload_params["commit"],
                         repo_name=self.upload_params["repo"],
@@ -138,7 +138,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             # check if current state is correct (i.e not finished)
             if job["state"] != "started":
                 log.warning(
-                    f"Cancelling upload: job state does not indicate that build is in progress",
+                    "Cancelling upload: job state does not indicate that build is in progress",
                     extra=dict(
                         commit=self.upload_params["commit"],
                         repo_name=self.upload_params["repo"],
@@ -149,7 +149,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
                 raise NotFound(errors["travis"]["tokenless-bad-status"])
 
         log.info(
-            f"Finished travis tokenless upload",
+            "Finished travis tokenless upload",
             extra=dict(
                 commit=self.upload_params["commit"],
                 repo_name=self.upload_params["repo"],

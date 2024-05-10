@@ -10,7 +10,6 @@ import core.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("timeseries", "0013_measurable_indexes_caggs"),
     ]

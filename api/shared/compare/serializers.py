@@ -203,7 +203,6 @@ class ImpactedFileSerializer(serializers.Serializer):
 
 
 class ImpactedFilesComparisonSerializer(ComparisonSerializer):
-
     files = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
 

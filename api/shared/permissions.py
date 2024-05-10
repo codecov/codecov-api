@@ -3,8 +3,10 @@ import logging
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.http import Http404
-from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import (
+    SAFE_METHODS,  # ['GET', 'HEAD', 'OPTIONS']
+    BasePermission,
+)
 
 import services.self_hosted as self_hosted
 from api.shared.mixins import InternalPermissionsMixin, SuperPermissionsMixin
@@ -74,10 +76,10 @@ class RepositoryArtifactPermissions(BasePermission):
 
     permissions_service = RepositoryPermissionsService()
     message = (
-        f"Permission denied: some possible reasons for this are (1) the "
-        f"user doesn't have permission to view the specific resource, "
-        f"(2) the organization has a per-user plan or (3) the user is "
-        f"trying to view a private repo but is not activated."
+        "Permission denied: some possible reasons for this are (1) the "
+        "user doesn't have permission to view the specific resource, "
+        "(2) the organization has a per-user plan or (3) the user is "
+        "trying to view a private repo but is not activated."
     )
 
     def has_permission(self, request, view):

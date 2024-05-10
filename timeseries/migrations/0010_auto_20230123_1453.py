@@ -5,7 +5,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("timeseries", "0009_auto_20220804_1305"),
     ]

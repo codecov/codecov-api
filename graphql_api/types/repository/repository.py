@@ -115,7 +115,7 @@ async def resolve_pulls(
     info: GraphQLResolveInfo,
     filters=None,
     ordering_direction=OrderingDirection.DESC,
-    **kwargs
+    **kwargs,
 ):
     command = info.context["executor"].get_command("pull")
     queryset = await command.fetch_pull_requests(repository, filters)
@@ -223,7 +223,7 @@ def resolve_flags(
     info: GraphQLResolveInfo,
     filters: Mapping = None,
     ordering_direction: OrderingDirection = OrderingDirection.ASC,
-    **kwargs
+    **kwargs,
 ):
     queryset = flags_for_repo(repository, filters)
     connection = queryset_to_connection_sync(

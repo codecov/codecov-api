@@ -38,7 +38,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             )
         try:
             build = response.json()
-        except (JSONDecodeError) as e:
+        except JSONDecodeError as e:
             log.warning(
                 f"Expected JSON in Azure response, got error {e} instead",
                 extra=dict(
@@ -55,7 +55,6 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
         return build
 
     def verify(self):
-
         if not self.upload_params.get("job"):
             raise NotFound(
                 'Missing "job" argument. Please upload with the Codecov repository upload token to resolve issue.'

@@ -6,7 +6,6 @@ from shared.django_apps.migration_utils import RiskyRunSQL
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0045_remove_ownerprofile_terms_agreement"),
     ]

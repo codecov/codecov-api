@@ -8,7 +8,6 @@ import codecov_auth.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("codecov_auth", "0005_auto_20211029_1709")]
 
     operations = [

@@ -159,7 +159,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
         except TorngitClientError:
             log.warning(
-                f"Request client error",
+                "Request client error",
                 extra=dict(
                     commit=commit.commitid,
                     repoid=commit.repository.repoid,
@@ -177,7 +177,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 )
         except TorngitClientGeneralError:
             log.warning(
-                f"Request client error",
+                "Request client error",
                 extra=dict(
                     commit=commit.commitid,
                     repoid=commit.repository.repoid,

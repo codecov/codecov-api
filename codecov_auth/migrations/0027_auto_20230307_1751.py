@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0026_alter_owner_plan_user_count"),
     ]

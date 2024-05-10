@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     # BEGIN;
     # --
     # -- Add field app_id to githubappinstallation

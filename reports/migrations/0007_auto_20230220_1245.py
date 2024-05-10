@@ -5,7 +5,6 @@ from shared.django_apps.migration_utils import RiskyRunSQL
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reports", "0006_auto_20221212_1111"),
     ]

@@ -8,7 +8,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0014_alter_repositorytoken_token_type"),
     ]

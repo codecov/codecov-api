@@ -9,7 +9,6 @@ from yaml import YAMLError
 
 
 class TestValidateYamlHandler(APITestCase):
-
     # Wrap get and post client calls
 
     def _get(self):

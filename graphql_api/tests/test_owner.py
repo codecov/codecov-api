@@ -336,9 +336,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 username
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["defaultOrgUsername"] == None
 
@@ -358,9 +356,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 username
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["defaultOrgUsername"] == organization.username
 
@@ -372,9 +368,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 username
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["defaultOrgUsername"] == None
 
@@ -386,9 +380,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 username
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["defaultOrgUsername"] == None
 
@@ -401,9 +393,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 isCurrentUserActivated
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["isCurrentUserActivated"] == False
 
@@ -414,9 +404,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 isCurrentUserActivated
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         self.client.force_login(user=UserFactory())
         data = self.gql_request(query, owner=None)
         assert data["owner"]["isCurrentUserActivated"] == False
@@ -433,9 +421,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 isCurrentUserActivated
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=user)
         assert data["owner"]["isCurrentUserActivated"] == True
 
@@ -449,9 +435,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 isCurrentUserActivated
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=user)
         assert data["owner"]["isCurrentUserActivated"] == False
 
@@ -462,9 +446,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 isCurrentUserActivated
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query)
         assert data["owner"]["isCurrentUserActivated"] == False
 
@@ -479,9 +461,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 isCurrentUserActivated
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["isCurrentUserActivated"] == True
 
@@ -491,9 +471,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 isCurrentUserActivated
             }
         }
-        """ % (
-            self.owner.username
-        )
+        """ % (self.owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["isCurrentUserActivated"] == True
 
@@ -513,9 +491,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {
             "trialStatus": "ONGOING",
@@ -539,9 +515,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["pretrialPlan"] == {
             "benefits": [
@@ -566,9 +540,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["availablePlans"] == [
             {"planName": "users-basic"},
@@ -588,9 +560,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 username
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
 
         res = self.gql_request(query, provider="", with_errors=True)
 
@@ -608,9 +578,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 hasPrivateRepos
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
 
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["hasPrivateRepos"] == True
@@ -639,9 +607,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 hasPrivateRepos
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
 
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["hasPrivateRepos"] == False
@@ -656,9 +622,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 hashOwnerid
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
         data = self.gql_request(query, owner=user)
         assert data["owner"]["hashOwnerid"] is not None
 
@@ -670,9 +634,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 username
             }
         }
-        """ % (
-            owner.username
-        )
+        """ % (owner.username)
 
         try:
             self.gql_request(query)

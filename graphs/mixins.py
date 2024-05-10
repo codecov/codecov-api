@@ -5,7 +5,6 @@ from rest_framework.response import Response
 
 class GraphBadgeAPIMixin(object):
     def get(self, request, *args, **kwargs):
-
         ext = self.kwargs.get("ext")
         if not ext in self.extensions:
             return Response(
@@ -28,8 +27,8 @@ class GraphBadgeAPIMixin(object):
             response["Content-Type"] = "image/svg+xml"
             response["Pragma"] = "no-cache"
             response["Expires"] = "0"
-            response[
-                "Access-Control-Expose-Headers"
-            ] = "Content-Type, Cache-Control, Expires, Etag, Last-Modified"
+            response["Access-Control-Expose-Headers"] = (
+                "Content-Type, Cache-Control, Expires, Etag, Last-Modified"
+            )
             response["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         return response

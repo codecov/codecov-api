@@ -49,7 +49,7 @@ def run_sql(schema_editor, current_version):
     if not upgrade_migration_index_to_start_from:
         return
 
-    for (_, upgrade_migration) in UPGRADE_MIGRATIONS_BY_VERSION[
+    for _, upgrade_migration in UPGRADE_MIGRATIONS_BY_VERSION[
         upgrade_migration_index_to_start_from:
     ]:
         upgrade_migration(schema_editor)

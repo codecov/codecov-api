@@ -47,7 +47,7 @@ def generate_random_totals(
         "m": misses,
         "c": coverage,
         "C": complexity,
-        "N": complexity_total
+        "N": complexity_total,
         # Not currenly used: diff, files, sessions, branches, methods
     }
     return totals

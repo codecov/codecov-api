@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0027_auto_20230307_1751"),
     ]

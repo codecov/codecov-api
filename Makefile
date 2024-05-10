@@ -44,19 +44,18 @@ lint:
 	make lint.run
 
 lint.install:
-	python -m pip install --upgrade pip
 	echo "Installing..."
-	pip install -Iv black==22.3.0 isort
+	pip install -Iv ruff
 
 lint.run:
-	black .
-	isort --profile black .
+	ruff check
+	ruff format
 
 lint.check:
 	echo "Linting..."
-	black --check .
-	echo "Sorting..."
-	isort --profile black --check .
+	ruff check
+	echo "Formatting..."
+	ruff format --check
 
 build.requirements:
 	# if docker pull succeeds, we have already build this version of

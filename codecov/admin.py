@@ -16,9 +16,9 @@ class AdminMixin(object):
             for changed_field in form.changed_data:
                 prev_value = getattr(old_obj, changed_field)
                 new_value = getattr(new_obj, changed_field)
-                new_obj.changed_fields[
-                    changed_field
-                ] = f"prev value: {prev_value}, new value: {new_value}"
+                new_obj.changed_fields[changed_field] = (
+                    f"prev value: {prev_value}, new value: {new_value}"
+                )
 
         return super().save_model(request, new_obj, form, change)
 

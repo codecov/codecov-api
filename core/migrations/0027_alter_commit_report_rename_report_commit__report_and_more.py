@@ -6,7 +6,6 @@ import core.encoders
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0026_auto_20230605_1134"),
     ]

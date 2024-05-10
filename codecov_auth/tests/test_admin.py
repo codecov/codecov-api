@@ -33,7 +33,7 @@ class OwnerAdminTest(TestCase):
     def test_owner_admin_detail_page(self):
         owner = OwnerFactory()
         response = self.client.get(
-            reverse(f"admin:codecov_auth_owner_change", args=[owner.pk])
+            reverse("admin:codecov_auth_owner_change", args=[owner.pk])
         )
         self.assertEqual(response.status_code, 200)
 
@@ -43,7 +43,7 @@ class OwnerAdminTest(TestCase):
 
         with self.subTest("more than one user selected"):
             response = self.client.post(
-                reverse(f"admin:codecov_auth_owner_changelist"),
+                reverse("admin:codecov_auth_owner_changelist"),
                 {
                     "action": "impersonate_owner",
                     ACTION_CHECKBOX_NAME: [
@@ -59,7 +59,7 @@ class OwnerAdminTest(TestCase):
 
         with self.subTest("one user selected"):
             response = self.client.post(
-                reverse(f"admin:codecov_auth_owner_changelist"),
+                reverse("admin:codecov_auth_owner_changelist"),
                 {
                     "action": "impersonate_owner",
                     ACTION_CHECKBOX_NAME: [owner_to_impersonate.pk],
@@ -91,7 +91,6 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.admin.ModelAdmin.get_deleted_objects")
     def test_confirmation_deleted_objects(self, mocked_deleted_objs):
-
         user_to_delete = OwnerFactory()
         deleted_objs = [
             'Owner: <a href="/admin/codecov_auth/owner/{}/change/">{};</a>'.format(
@@ -133,7 +132,7 @@ class OwnerAdminTest(TestCase):
 
     def test_inline_orgwide_tokens_display(self):
         owner = OwnerFactory()
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner.ownerid])
+        request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
         inlines = self.owner_admin.get_inline_instances(request, owner)
@@ -146,7 +145,7 @@ class OwnerAdminTest(TestCase):
         owner_in_cloud_plan.save()
         org_token.save()
         request_url = reverse(
-            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+            "admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
         )
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
@@ -168,7 +167,7 @@ class OwnerAdminTest(TestCase):
         owner = OwnerFactory()
         assert owner.plan not in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
-        request_url = reverse(f"admin:codecov_auth_owner_change", args=[owner.ownerid])
+        request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
         inlines = self.owner_admin.get_inline_instances(request, owner)
@@ -184,7 +183,7 @@ class OwnerAdminTest(TestCase):
             == 0
         )
         request_url = reverse(
-            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+            "admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
         )
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
@@ -203,7 +202,7 @@ class OwnerAdminTest(TestCase):
         owner_in_cloud_plan.save()
         org_token.save()
         request_url = reverse(
-            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+            "admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
         )
         fake_data = {
             "staff": ["true"],
@@ -240,7 +239,7 @@ class OwnerAdminTest(TestCase):
         owner_in_cloud_plan.save()
         org_token.save()
         request_url = reverse(
-            f"admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
+            "admin:codecov_auth_owner_change", args=[owner_in_cloud_plan.ownerid]
         )
         fake_data = {
             "staff": ["true"],
@@ -348,16 +347,14 @@ class UserAdminTest(TestCase):
 
     def test_user_admin_list_page(self):
         user = UserFactory()
-        res = self.client.get(reverse(f"admin:codecov_auth_user_changelist"))
+        res = self.client.get(reverse("admin:codecov_auth_user_changelist"))
         assert res.status_code == 200
         assert user.name in res.content.decode("utf-8")
         assert user.email in res.content.decode("utf-8")
 
     def test_user_admin_detail_page(self):
         user = UserFactory()
-        res = self.client.get(
-            reverse(f"admin:codecov_auth_user_change", args=[user.pk])
-        )
+        res = self.client.get(reverse("admin:codecov_auth_user_change", args=[user.pk]))
         assert res.status_code == 200
         assert user.name in res.content.decode("utf-8")
         assert user.email in res.content.decode("utf-8")
@@ -375,7 +372,7 @@ class SentryUserAdminTest(TestCase):
 
     def test_user_admin_list_page(self):
         sentry_user = SentryUserFactory()
-        res = self.client.get(reverse(f"admin:codecov_auth_sentryuser_changelist"))
+        res = self.client.get(reverse("admin:codecov_auth_sentryuser_changelist"))
         assert res.status_code == 200
         content = res.content.decode("utf-8")
         assert sentry_user.name in res.content.decode("utf-8")
@@ -384,7 +381,7 @@ class SentryUserAdminTest(TestCase):
     def test_user_admin_detail_page(self):
         sentry_user = SentryUserFactory()
         res = self.client.get(
-            reverse(f"admin:codecov_auth_sentryuser_change", args=[sentry_user.pk])
+            reverse("admin:codecov_auth_sentryuser_change", args=[sentry_user.pk])
         )
         assert res.status_code == 200
         assert sentry_user.name in res.content.decode("utf-8")

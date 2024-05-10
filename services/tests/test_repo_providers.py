@@ -266,8 +266,8 @@ class TestRepoProviderService(InternalAPITest):
                     token=encryptor.decrypt_token(repo.bot.oauth_token),
                     verify_ssl="ssl_pem",
                     oauth_consumer_token=dict(
-                        key=getattr(settings, f"GITHUB_CLIENT_ID", "unknown"),
-                        secret=getattr(settings, f"GITHUB_CLIENT_SECRET", "unknown"),
+                        key=getattr(settings, "GITHUB_CLIENT_ID", "unknown"),
+                        secret=getattr(settings, "GITHUB_CLIENT_SECRET", "unknown"),
                     ),
                 ),
             ),
@@ -302,8 +302,8 @@ class TestRepoProviderService(InternalAPITest):
                     token=encryptor.decrypt_token(repo.bot.oauth_token),
                     verify_ssl="REQUESTS_CA_BUNDLE",
                     oauth_consumer_token=dict(
-                        key=getattr(settings, f"GITHUB_CLIENT_ID", "unknown"),
-                        secret=getattr(settings, f"GITHUB_CLIENT_SECRET", "unknown"),
+                        key=getattr(settings, "GITHUB_CLIENT_ID", "unknown"),
+                        secret=getattr(settings, "GITHUB_CLIENT_SECRET", "unknown"),
                     ),
                 ),
             ),
