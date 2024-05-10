@@ -4,7 +4,6 @@ from utils.test_utils import TestMigrations
 
 
 class Migration0046Test(TestMigrations):
-
     migrate_from = "0045_remove_ownerprofile_terms_agreement"
     migrate_to = "0046_dedupe_owner_admin_values"
 

@@ -53,9 +53,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {
             "trialStatus": "ONGOING",
@@ -94,8 +92,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {"hasSeatsLeft": True}

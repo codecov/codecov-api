@@ -57,7 +57,6 @@ class UploadsPerWindowThrottle(BaseThrottle):
                         report__commit=commit
                     ).exists()
                     if not did_commit_uploads_start_already:
-
                         if (
                             query_monthly_coverage_measurements(
                                 plan_service=plan_service

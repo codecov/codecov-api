@@ -108,5 +108,5 @@ class ReportResultsView(
                     report_code=self.kwargs.get("report_code"),
                 ),
             )
-            raise ValidationError(f"Report Results not found")
+            raise ValidationError("Report Results not found")
         return report_results

@@ -133,7 +133,7 @@ class GithubWebhookHandler(APIView):
                 )
             except Repository.DoesNotExist:
                 log.info(
-                    f"Received event for non-existent repository",
+                    "Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
                 raise NotFound("Repository does not exist")
@@ -158,7 +158,7 @@ class GithubWebhookHandler(APIView):
                         repo_data, owner
                     )[0]
                 log.info(
-                    f"Received event for non-existent repository",
+                    "Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
                 raise NotFound("Repository does not exist")
@@ -210,7 +210,7 @@ class GithubWebhookHandler(APIView):
                 f"Unsupported ref type: {ref_type}, exiting",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
-            return Response(f"Unsupported ref type")
+            return Response("Unsupported ref type")
         branch_name = self.request.data.get("ref")[11:]
         Branch.objects.filter(
             repository=self._get_repo(request), name=branch_name
@@ -241,7 +241,7 @@ class GithubWebhookHandler(APIView):
                 "Ref is tag, not branch, ignoring push event",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
-            return Response(f"Unsupported ref type")
+            return Response("Unsupported ref type")
 
         if not repo.active:
             log.debug(
@@ -488,13 +488,12 @@ class GithubWebhookHandler(APIView):
         # TODO: Consider adding "suspend" action here?
         # https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation
         if action == "deleted":
-
             if event == GitHubWebhookEvents.INSTALLATION:
-                ghapp_installation: Optional[
-                    GithubAppInstallation
-                ] = owner.github_app_installations.filter(
-                    installation_id=installation_id
-                ).first()
+                ghapp_installation: Optional[GithubAppInstallation] = (
+                    owner.github_app_installations.filter(
+                        installation_id=installation_id
+                    ).first()
+                )
                 if ghapp_installation is not None:
                     ghapp_installation.delete()
             # Deprecated flow - BEGIN
@@ -510,7 +509,6 @@ class GithubWebhookHandler(APIView):
             # GithubWebhookEvents.INSTALLTION_REPOSITORIES also execute this code
             # because of deprecated flow. But the GithubAppInstallation shouldn't be changed
             if event == GitHubWebhookEvents.INSTALLATION:
-
                 ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
                     installation_id=installation_id, owner=owner
                 )
@@ -681,7 +679,7 @@ class GithubWebhookHandler(APIView):
         if action == "removed":
             repo = self._get_repo(request)
             log.info(
-                f"Request to remove read permissions for user",
+                "Request to remove read permissions for user",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
             try:
@@ -690,7 +688,7 @@ class GithubWebhookHandler(APIView):
                 )
             except Owner.DoesNotExist:
                 log.info(
-                    f"Repository permissions unchanged -- owner doesn't exist",
+                    "Repository permissions unchanged -- owner doesn't exist",
                     extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
                 )
                 return Response(status=status.HTTP_404_NOT_FOUND)
@@ -708,7 +706,7 @@ class GithubWebhookHandler(APIView):
                 )
             except (ValueError, AttributeError):
                 log.info(
-                    f"Member didn't have read permissions, didn't update",
+                    "Member didn't have read permissions, didn't update",
                     extra=dict(
                         repoid=repo.repoid,
                         ownerid=member.ownerid,

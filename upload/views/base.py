@@ -42,7 +42,7 @@ class GetterMixin(ShelterMixin):
                 "Repository not found",
                 extra=dict(repo_slug=repo_slug),
             )
-            raise ValidationError(f"Repository not found")
+            raise ValidationError("Repository not found")
         return repository
 
     def get_commit(self, repo: Repository) -> Commit:
@@ -76,7 +76,7 @@ class GetterMixin(ShelterMixin):
                 "Report not found",
                 extra=dict(commit_sha=commit.commitid, report_code=report_code),
             )
-            raise ValidationError(f"Report not found")
+            raise ValidationError("Report not found")
         if report.report_type is None:
             report.report_type = CommitReport.ReportType.COVERAGE
             report.save()

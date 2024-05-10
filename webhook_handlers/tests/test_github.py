@@ -76,7 +76,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data=data,
-            format="json"
+            format="json",
         )
 
     def setUp(self):
@@ -695,7 +695,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_creates_new_owner_if_dne_all_repos_non_default_app(self):
         username, service_id = "newuser", 123456
@@ -737,7 +743,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_repositories_creates_new_owner_if_dne(self):
         username, service_id = "newuser", 123456
@@ -776,7 +788,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_update_repos_existing_ghapp_installation(self):
         owner = OwnerFactory(service=Service.GITHUB.value)
@@ -879,7 +897,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_repositories_update_existing_ghapp(self):
         # Should set integration_id to null for owner,
@@ -991,7 +1015,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_with_other_actions_sets_owner_integration_id_if_none(
         self,
@@ -1036,7 +1066,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_repositories_with_other_actions_sets_owner_itegration_id_if_none(
         self,
@@ -1259,7 +1295,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.SIGNATURE: "",
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -1278,7 +1314,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -1297,7 +1333,7 @@ class GithubWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_200_OK

@@ -72,7 +72,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 )
             },
             data=payload,
-            format="json"
+            format="json",
         )
 
     def test_invoice_payment_succeeded_sets_owner_delinquent_false(self):

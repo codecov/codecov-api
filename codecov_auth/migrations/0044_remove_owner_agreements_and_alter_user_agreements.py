@@ -6,7 +6,6 @@ import core.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0043_sync_user_terms_agreement"),
     ]

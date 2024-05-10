@@ -321,7 +321,7 @@ def determine_repo_for_upload(upload_params):
                 author__username=upload_params.get("owner"),
             )
         except ObjectDoesNotExist:
-            raise NotFound(f"Could not find a repository, try using repo upload token")
+            raise NotFound("Could not find a repository, try using repo upload token")
     else:
         raise ValidationError(
             "Need either a token or service to determine target repository"
@@ -808,7 +808,6 @@ def get_agent_from_headers(headers):
 
 
 def get_version_from_headers(headers):
-
     try:
         return headers["User-Agent"].split("/")[1]
     except Exception as e:

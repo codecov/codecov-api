@@ -28,7 +28,7 @@ class DatasetAdminTest(TransactionTestCase):
         self.dataset2 = DatasetFactory(repository_id=self.repo2.pk, backfilled=True)
 
     def test_list_page(self):
-        res = self.client.get(reverse(f"admin:timeseries_dataset_changelist"))
+        res = self.client.get(reverse("admin:timeseries_dataset_changelist"))
         assert res.status_code == 200
 
     def test_backfill_page(self):

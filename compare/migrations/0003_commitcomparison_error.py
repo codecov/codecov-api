@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("compare", "0002_commitcomparison_patch_totals")]
 
     operations = [

@@ -11,7 +11,6 @@ from utils.model_utils import ArchiveField, ArchiveFieldInterface
 
 class TestArchiveField(object):
     class ClassWithArchiveField(object):
-
         commit: Commit
         id = 1
         external_id = "external_id"

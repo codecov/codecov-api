@@ -5,7 +5,6 @@ from shared.django_apps.migration_utils import RiskyRunSQL
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("core", "0001_initial")]
 
     operations = [
