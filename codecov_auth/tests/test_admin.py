@@ -125,7 +125,7 @@ class OwnerAdminTest(TestCase):
         message = []
         message.append({"changed": {"fields": ["staff"]}})
         self.owner_admin.log_change(MagicMock, owner, message)
-        assert mocked_super_log_change.called_once()
+        mocked_super_log_change.assert_called_once()
         assert message == [
             {"changed": {"fields": ["staff"]}},
             {"staff": "prev value: True, new value: False"},
@@ -229,7 +229,7 @@ class OwnerAdminTest(TestCase):
             "_continue": ["Save and continue editing"],
         }
         response = self.client.post(request_url, data=fake_data)
-        assert mock_refresh.called_with(str(org_token.id))
+        mock_refresh.assert_called_with(str(org_token.id))
 
     @patch(
         "codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token"
@@ -265,7 +265,7 @@ class OwnerAdminTest(TestCase):
             "_continue": ["Save and continue editing"],
         }
         response = self.client.post(request_url, data=fake_data)
-        assert mock_refresh.not_called()
+        mock_refresh.assert_not_called()
 
     def test_start_trial_ui_display(self):
         owner = OwnerFactory()
