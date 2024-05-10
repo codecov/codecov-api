@@ -54,7 +54,7 @@ lint.run:
 lint.check:
 	echo "Linting..."
 	ruff check
-	echo "Sorting..."
+	echo "Formatting..."
 	ruff format --check
 
 build.requirements:
