@@ -21,7 +21,6 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryTokenAuthentication,
     TokenlessAuth,
     TokenlessAuthentication,
-    get_token_slice_for_logging,
 )
 from codecov_auth.models import SERVICE_GITHUB, OrganizationLevelToken, RepositoryToken
 from codecov_auth.tests.factories import OwnerFactory
@@ -272,29 +271,6 @@ class TestGitHubOIDCTokenAuthentication(object):
         assert auth.allows_repo(repository)
         assert user._repository == repository
         assert auth.get_scopes() == ["upload"]
-
-    @patch("codecov_auth.authentication.repo_auth.random.randint")
-    def test_get_token_slice_for_logging(self, rand_mock, _):
-        rand_mock.return_value = "0000"
-        result = get_token_slice_for_logging(token=None)
-        assert result == "Token is None, here is a random int 0000"
-
-        result = get_token_slice_for_logging(token=False)
-        assert result == "Token is short, here is a random int 0000"
-
-        result = get_token_slice_for_logging(token=uuid.uuid4())
-        assert result == "Token is short, here is a random int 0000"
-
-        result = get_token_slice_for_logging(token=123)
-        assert result == "Token is short, here is a random int 0000"
-
-        result = get_token_slice_for_logging(token="123")
-        assert result == "Token is short, here is a random int 0000"
-
-        jwt_like_str = "01234567890123456789012345678901234567890123456789"
-        result = get_token_slice_for_logging(token=jwt_like_str)
-        assert len(jwt_like_str) == 50
-        assert result == "9012345678"
 
 
 class TestOrgLevelTokenAuthentication(object):
