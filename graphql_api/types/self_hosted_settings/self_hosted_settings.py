@@ -6,12 +6,14 @@ import services.self_hosted as self_hosted
 
 self_hosted_settings_bindable = ObjectType("SelfHostedSettings")
 
+
 @self_hosted_settings_bindable.field("planAutoActivate")
 def resolve_plan_auto_activate(_, info) -> Optional[bool]:
     if not settings.IS_ENTERPRISE:
         return None
 
     return self_hosted.is_autoactivation_enabled()
+
 
 @self_hosted_settings_bindable.field("seatsLimit")
 def resolve_expiration_date(_, info) -> Optional[int]:
