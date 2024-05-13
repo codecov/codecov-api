@@ -1,7 +1,7 @@
 aiodataloader
 ariadne
 ariadne_django
-celery[redis]
+celery>=5.3.6
 cerberus
 ddtrace
 Django
@@ -20,14 +20,14 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/039efcfca9c11a5d6d02e1e4d19b86d022a21a72.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/f6c2c3852530192ab0c6b9fd0c0a800c2cbdb16f.tar.gz#egg=shared
 google-cloud-pubsub
 gunicorn>=22.0.0
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 idna>=3.7
 minio
-opentelemetry-instrumentation-django>=0.41b0
-opentelemetry-sdk>=1.20.0
+opentelemetry-instrumentation-django>=0.45b0
+opentelemetry-sdk>=1.24.0
 opentracing
 pre-commit
 psycopg2
@@ -45,6 +45,7 @@ redis
 regex
 requests
 sentry-sdk>=1.40.0
+sentry-sdk[celery]
 setproctitle
 simplejson
 stripe

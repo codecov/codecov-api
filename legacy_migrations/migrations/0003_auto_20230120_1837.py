@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("legacy_migrations", "0002_yaml_history_table"),
     ]

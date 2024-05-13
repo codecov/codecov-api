@@ -176,7 +176,7 @@ class OrgUploadTokenInline(admin.TabularInline):
         # 0 in this case refers to the 0th index of the inline
         # But there can only ever be 1 token per org, so it's fine to use that.
         return format_html(
-            f'<input type="checkbox" name="organization_tokens-0-REFRESH" id="id_organization_tokens-0-REFRESH">'
+            '<input type="checkbox" name="organization_tokens-0-REFRESH" id="id_organization_tokens-0-REFRESH">'
         )
 
     def has_change_permission(self, request, obj=None):

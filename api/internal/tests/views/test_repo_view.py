@@ -1040,7 +1040,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             response.data["latest_commit"]["report"]["totals"]
             == expected_commit_payload["report"]["totals"]
         )
-        self.assertEquals(
+        self.assertEqual(
             response.data["latest_commit"]["report"]["files"],
             [
                 {
@@ -1181,7 +1181,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             response.data["latest_commit"]["report"]["totals"]
             == expected_commit_payload["report"]["totals"]
         )
-        self.assertEquals(
+        self.assertEqual(
             response.data["latest_commit"]["report"]["files"],
             [
                 {

@@ -258,7 +258,7 @@ class TaskService(object):
         dataset_names: Iterable[str] = None,
     ):
         log.info(
-            f"Triggering timeseries backfill tasks for repo",
+            "Triggering timeseries backfill tasks for repo",
             extra=dict(
                 repoid=repository.pk,
                 start_date=start_date.isoformat(),
@@ -307,7 +307,7 @@ class TaskService(object):
         end_date: datetime,
     ):
         log.info(
-            f"Triggering dataset backfill",
+            "Triggering dataset backfill",
             extra=dict(
                 dataset_id=dataset.pk,
                 start_date=start_date.isoformat(),
@@ -326,7 +326,7 @@ class TaskService(object):
 
     def delete_timeseries(self, repository_id: int):
         log.info(
-            f"Delete repository timeseries data",
+            "Delete repository timeseries data",
             extra=dict(repository_id=repository_id),
         )
         self._create_signature(
@@ -416,7 +416,7 @@ class TaskService(object):
 
     def delete_component_measurements(self, repoid: int, component_id: str) -> None:
         log.info(
-            f"Delete component measurements data",
+            "Delete component measurements data",
             extra=dict(repository_id=repoid, component_id=component_id),
         )
         self._create_signature(

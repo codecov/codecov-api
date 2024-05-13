@@ -140,7 +140,6 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
         return comparison_error
 
     if commit_comparison and commit_comparison.is_processed:
-
         current_owner = info.context["request"].current_owner
         parent_commit = await CommitLoader.loader(info, commit.repository_id).load(
             commit.parent_commit_id

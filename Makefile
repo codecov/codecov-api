@@ -31,32 +31,31 @@ check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
 test:
-	python -m pytest --cov=./ --junitxml=junit.xml
+	COVERAGE_CORE=sysmon python -m pytest --cov=./ --junitxml=junit.xml
 
 test.unit:
-	python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml
+	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml
 
 test.integration:
-	python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml
+	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml
 
 lint:
 	make lint.install
 	make lint.run
 
 lint.install:
-	python -m pip install --upgrade pip
 	echo "Installing..."
-	pip install -Iv black==22.3.0 isort
+	pip install -Iv ruff
 
 lint.run:
-	black .
-	isort --profile black .
+	ruff check
+	ruff format
 
 lint.check:
 	echo "Linting..."
-	black --check .
-	echo "Sorting..."
-	isort --profile black --check .
+	ruff check
+	echo "Formatting..."
+	ruff format --check
 
 build.requirements:
 	# if docker pull succeeds, we have already build this version of

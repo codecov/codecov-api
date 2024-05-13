@@ -7,6 +7,7 @@ from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
 from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import metrics
+from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -65,10 +66,10 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer: UploadSerializer):
-        repository = self.get_repo()
+        repository: Repository = self.get_repo()
         validate_activated_repo(repository)
-        commit = self.get_commit(repository)
-        report = self.get_report(commit)
+        commit: Commit = self.get_commit(repository)
+        report: CommitReport = self.get_report(commit)
 
         sentry_tags = generate_upload_sentry_metrics_tags(
             action="coverage",
@@ -104,9 +105,21 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         if version:
             metrics.incr("upload.cli." + f"{version}")
         archive_service = ArchiveService(repository)
+        # Create upload record
         instance: ReportSession = serializer.save(
             report_id=report.id,
             upload_extras={"format_version": "v1"},
+        )
+
+        # Inserts mirror upload record into measurements table. CLI hits this endpoint
+        insert_coverage_measurement(
+            owner_id=repository.author.ownerid,
+            repo_id=repository.repoid,
+            commit_id=commit.id,
+            upload_id=instance.id,
+            uploader_used=UploaderType.CLI.value,
+            private_repo=repository.private,
+            report_type=report.report_type,
         )
 
         # only Shelter requests are allowed to set their own `storage_path`

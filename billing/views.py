@@ -27,7 +27,7 @@ class StripeWebhookHandler(APIView):
         if updated >= 1:
             log.info(f"Successfully updated info for {updated} customer(s)")
         else:
-            log.warning(f"Could not find customer")
+            log.warning("Could not find customer")
 
     def invoice_payment_succeeded(self, invoice):
         log.info(
@@ -113,7 +113,6 @@ class StripeWebhookHandler(APIView):
             )
 
     def subscription_schedule_released(self, schedule):
-
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
         owner = Owner.objects.get(ownerid=subscription.metadata.obo_organization)
         requesting_user_id = subscription.metadata.obo
@@ -201,8 +200,8 @@ class StripeWebhookHandler(APIView):
         if not subscription_schedule_id:
             if subscription.status == "incomplete_expired":
                 log.info(
-                    f"Subscription updated with status change "
-                    f"to 'incomplete_expired' -- cancelling to free",
+                    "Subscription updated with status change "
+                    "to 'incomplete_expired' -- cancelling to free",
                     extra=dict(stripe_subscription_id=subscription.id),
                 )
                 plan_service.set_default_plan_data()
@@ -286,13 +285,13 @@ class StripeWebhookHandler(APIView):
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
         if self.event.type not in StripeWebhookEvents.subscribed_events:
             log.warning(
-                f"Unsupported Stripe webhook event received, exiting",
+                "Unsupported Stripe webhook event received, exiting",
                 extra=dict(stripe_webhook_event=self.event.type),
             )
             return Response("Unsupported event type", status=204)
 
         log.info(
-            f"Stripe webhook event received",
+            "Stripe webhook event received",
             extra=dict(stripe_webhook_event=self.event.type),
         )
 

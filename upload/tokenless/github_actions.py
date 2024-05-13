@@ -14,7 +14,6 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
-
     actions_token = settings.GITHUB_ACTIONS_TOKEN
     client_id = settings.GITHUB_CLIENT_ID
     client_secret = settings.GITHUB_CLIENT_SECRET
@@ -98,7 +97,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             )
         ):
             self.log_warning(
-                message=f"Repository slug or commit sha do not match Github actions arguments"
+                message="Repository slug or commit sha do not match Github actions arguments"
             )
             raise NotFound(
                 "Repository slug or commit sha do not match Github actions build. Please upload with the Codecov repository upload token to resolve issue."

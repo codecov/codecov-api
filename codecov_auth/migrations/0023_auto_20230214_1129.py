@@ -5,7 +5,6 @@ from shared.django_apps.migration_utils import RiskyRunSQL
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("codecov_auth", "0022_alter_owner_max_upload_limit"),
     ]

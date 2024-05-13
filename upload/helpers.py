@@ -15,6 +15,7 @@ from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.github import InvalidInstallationError
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
+from shared.upload.utils import query_monthly_coverage_measurements
 
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
@@ -36,7 +37,6 @@ from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
 from utils.github import get_github_integration_token
-from utils.uploads_used import get_uploads_used, increment_uploads_used
 
 from .constants import ci, global_upload_token_providers
 
@@ -259,7 +259,7 @@ def get_repo_with_github_actions_oidc_token(token, token_slice=None):
         token,
         signing_key.key,
         algorithms=["RS256"],
-        audience=[settings.CODECOV_API_URL],
+        audience=[settings.CODECOV_API_URL, settings.CODECOV_URL],
     )
     repo = str(data.get("repository")).split("/")[-1]
     log.info(
@@ -321,7 +321,7 @@ def determine_repo_for_upload(upload_params):
                 author__username=upload_params.get("owner"),
             )
         except ObjectDoesNotExist:
-            raise NotFound(f"Could not find a repository, try using repo upload token")
+            raise NotFound("Could not find a repository, try using repo upload token")
     else:
         raise ValidationError(
             "Need either a token or service to determine target repository"
@@ -566,7 +566,10 @@ def check_commit_upload_constraints(commit: Commit):
                 report__commit=commit
             ).exists()
             if not did_commit_uploads_start_already:
-                if get_uploads_used(redis, plan_service, limit, owner) >= limit:
+                if (
+                    query_monthly_coverage_measurements(plan_service=plan_service)
+                    >= limit
+                ):
                     log.warning(
                         "User exceeded its limits for usage",
                         extra=dict(ownerid=owner.ownerid, repoid=commit.repository_id),
@@ -769,7 +772,6 @@ def dispatch_upload_task(
         3600,
         timezone.now().timestamp(),
     )
-    increment_uploads_used(redis, repository.author)
     commitid = task_arguments.get("commit")
 
     TaskService().upload(
@@ -806,7 +808,6 @@ def get_agent_from_headers(headers):
 
 
 def get_version_from_headers(headers):
-
     try:
         return headers["User-Agent"].split("/")[1]
     except Exception as e:

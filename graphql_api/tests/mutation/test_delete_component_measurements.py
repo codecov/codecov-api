@@ -42,7 +42,7 @@ class DeleteComponentMeasurementsTest(GraphQLTestHelper, TransactionTestCase):
 
         assert data == {"deleteComponentMeasurements": None}
 
-        assert execute_mock.called_once_with(
+        execute_mock.assert_called_once_with(
             owner_username="test-owner",
             repo_name="test-repo",
             component_id="test-component",

@@ -2,6 +2,9 @@ import logging
 
 from .settings_base import *
 
+# Remove CSP headers from local development build to allow GQL Playground
+MIDDLEWARE.remove("csp.middleware.CSPMiddleware")
+
 DEBUG = True
 # for shelter add "host.docker.internal" and make sure to map it to localhost
 # in your /etc/hosts

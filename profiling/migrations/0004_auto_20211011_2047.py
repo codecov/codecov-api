@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("profiling", "0003_profilingcommit_commit_sha")]
 
     operations = [

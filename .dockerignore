@@ -18,3 +18,4 @@ coverage.xml
 service.json
 .github
 .circleci
+gha-creds-*.json
