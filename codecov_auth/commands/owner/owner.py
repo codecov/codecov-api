@@ -84,5 +84,5 @@ class OwnerCommands(BaseCommand):
             org_username=org_username
         )
 
-    def cancel_trial(self, input) -> None:
+    def update_self_hosted_settings(self, input) -> None:
         return self.get_interactor(UpdateSelfHostedSettingsInteractor).execute(input)
