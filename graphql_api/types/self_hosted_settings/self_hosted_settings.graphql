@@ -1,5 +1,0 @@
-type SelfHostedSettings {
-  planAutoActivate: Boolean
-  seatsLimit: Int
-  seatsUsed: Int
-}

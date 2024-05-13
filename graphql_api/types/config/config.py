@@ -1,8 +1,9 @@
 from distutils.util import strtobool
-from typing import List
+from typing import List, Optional
 
 from ariadne import ObjectType
 from django.conf import settings
+from graphql.type.definition import GraphQLResolveInfo
 
 import services.self_hosted as self_hosted
 from codecov.db import sync_to_async
@@ -63,6 +64,14 @@ def resolve_sync_providers(_, info) -> List[str]:
         sync_providers.append(SyncProvider("bitbucket_server"))
 
     return sync_providers
+
+
+@config_bindable.field("planAutoActivate")
+def resolve_plan_auto_activate(_, info: GraphQLResolveInfo) -> Optional[bool]:
+    if not settings.IS_ENTERPRISE:
+        return None
+
+    return self_hosted.is_autoactivation_enabled()
 
 
 @config_bindable.field("seatsUsed")
