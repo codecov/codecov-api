@@ -43,7 +43,9 @@ class ComponentViewSet(viewsets.ViewSet, RepoPropertyMixin):
         components_with_coverage = []
         for component in components:
             component_report = component_filtered_report(report, [component])
-            coverage = round(float(component_report.totals.coverage), 2)
+            coverage = None
+            if component_report.totals.coverage is not None:
+                coverage = round(float(component_report.totals.coverage), 2)
             components_with_coverage.append(
                 {
                     "component_id": component.component_id,
