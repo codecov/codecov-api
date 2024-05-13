@@ -7,12 +7,12 @@ from codecov_auth.models import Session
 
 
 class DeleteSessionInteractor(BaseInteractor):
-    def validate(self):
+    def validate(self) -> None:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
     @sync_to_async
-    def execute(self, sessionid: int):
+    def execute(self, sessionid: int) -> None:
         self.validate()
         session_to_delete = Session.objects.get(sessionid=sessionid)
 
