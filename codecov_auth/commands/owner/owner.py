@@ -5,19 +5,25 @@ from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.create_user_token import CreateUserTokenInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
-from .interactors.get_is_current_user_an_admin import GetIsCurrentUserAnAdminInteractor
+from .interactors.get_is_current_user_an_admin import \
+    GetIsCurrentUserAnAdminInteractor
 from .interactors.get_org_upload_token import GetOrgUploadToken
-from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
+from .interactors.get_uploads_number_per_user import \
+    GetUploadsNumberPerUserInteractor
 from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
-from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
+from .interactors.regenerate_org_upload_token import \
+    RegenerateOrgUploadTokenInteractor
 from .interactors.revoke_user_token import RevokeUserTokenInteractor
 from .interactors.save_terms_agreement import SaveTermsAgreementInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.start_trial import StartTrialInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
-from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
+from .interactors.update_default_organization import \
+    UpdateDefaultOrganizationInteractor
 from .interactors.update_profile import UpdateProfileInteractor
+from .interactors.update_self_hosted_settings import \
+    UpdateSelfHostedSettingsInteractor
 
 
 class OwnerCommands(BaseCommand):
@@ -82,3 +88,6 @@ class OwnerCommands(BaseCommand):
         return self.get_interactor(CancelTrialInteractor).execute(
             org_username=org_username
         )
+
+    def cancel_trial(self, input) -> None:
+        return self.get_interactor(UpdateSelfHostedSettingsInteractor).execute(input)
