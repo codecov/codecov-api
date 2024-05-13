@@ -18,11 +18,11 @@ def resolve_plan_auto_activate(_, info: GraphQLResolveInfo) -> Optional[bool]:
 
 
 @self_hosted_settings_bindable.field("seatsLimit")
-def resolve_expiration_date(_, info: GraphQLResolveInfo) -> Optional[int]:
+def resolve_seats_limit(_, info: GraphQLResolveInfo) -> Optional[int]:
     if not settings.IS_ENTERPRISE:
         return None
 
-    return self_hosted.activated_owners().count()
+    return self_hosted.license_seats()
 
 
 @self_hosted_settings_bindable.field("seatsUsed")
@@ -30,4 +30,4 @@ def resolve_seats_used(_, info: GraphQLResolveInfo) -> Optional[int]:
     if not settings.IS_ENTERPRISE:
         return None
 
-    return self_hosted.license_seats()
+    return self_hosted.activated_owners().count()
