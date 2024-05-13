@@ -38,6 +38,10 @@ def sample_report():
     return report
 
 
+def empty_report():
+    return Report()
+
+
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class ComponentViewSetTestCase(TestCase):
     def setUp(self):
@@ -94,4 +98,31 @@ class ComponentViewSetTestCase(TestCase):
         assert res.json() == [
             {"component_id": "foo", "name": "Foo", "coverage": 62.5},
             {"component_id": "bar", "name": "Bar", "coverage": 50.0},
+        ]
+
+    @patch("api.public.v2.component.views.commit_components")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_component_list_no_coverage(
+        self, build_report_from_commit, commit_compontents, get_repo_permissions
+    ) -> None:
+        get_repo_permissions.return_value = (True, True)
+        build_report_from_commit.side_effect = [empty_report()]
+        commit_compontents.return_value = [
+            Component(
+                component_id="foo",
+                paths=[r".*foo"],
+                name="Foo",
+                flag_regexes=[],
+                statuses=[],
+            )
+        ]
+
+        res = self._request_components()
+        assert res.status_code == 200
+        assert res.json() == [
+            {
+                "component_id": "foo",
+                "name": "Foo",
+                "coverage": None,
+            }
         ]
