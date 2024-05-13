@@ -36,16 +36,16 @@ class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
         user = auth.get_user(self.client)
         assert user.is_authenticated
 
-        djangosessionid = DjangoSession.objects.all()
-        assert len(djangosessionid) == 1
+        django_session_id = DjangoSession.objects.all()
+        assert len(django_session_id) == 1
 
-        djangosessionid = djangosessionid[0]
+        django_session_id = django_session_id[0]
 
         sessionid = Session.objects.create(
             lastseen=timezone.now(),
             useragent="Firefox",
             ip="0.0.0.0",
-            login_session=djangosessionid,
+            login_session=django_session_id,
             type=Session.SessionType.LOGIN,
             owner=self.owner,
         ).sessionid
