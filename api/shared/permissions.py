@@ -3,10 +3,8 @@ import logging
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.http import Http404
-from rest_framework.permissions import (
-    SAFE_METHODS,  # ['GET', 'HEAD', 'OPTIONS']
-    BasePermission,
-)
+from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
+from rest_framework.permissions import BasePermission
 
 import services.self_hosted as self_hosted
 from api.shared.mixins import InternalPermissionsMixin, SuperPermissionsMixin
