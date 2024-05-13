@@ -4,5 +4,4 @@ input CommitsSetFilters {
   pullId: Int
   search: String
   states: [CommitState!]
-  status: [CommitStatus!]
 }
