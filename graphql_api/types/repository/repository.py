@@ -517,3 +517,15 @@ def resolve_component_yaml(
         components = filter(lambda c: term_id in c["id"], components)
 
     return components
+
+
+@repository_bindable.field("isFirstPullRequest")
+@sync_to_async
+def resolve_is_first_pull_request(repository: Repository, info) -> bool:
+    has_one_pr = repository.pull_requests.count() == 1
+
+    if has_one_pr:
+        first_pr = repository.pull_requests.first()
+        return not first_pr.compared_to
+
+    return False

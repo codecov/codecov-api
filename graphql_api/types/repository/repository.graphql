@@ -1,4 +1,5 @@
 type Repository {
+  isFirstPullRequest: Boolean!
   name: String!
   active: Boolean!
   activated: Boolean!
