@@ -1,11 +1,15 @@
 import logging
 
+from typing import Any, Tuple
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.http import Http404
 from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
 from rest_framework.permissions import BasePermission
+from django.http import HttpRequest
 
+from codecov_auth.models import Owner
+from core.models import Repository
 import services.self_hosted as self_hosted
 from api.shared.mixins import InternalPermissionsMixin, SuperPermissionsMixin
 from api.shared.repo.repository_accessors import RepoAccessors
@@ -18,7 +22,9 @@ log = logging.getLogger(__name__)
 
 class RepositoryPermissionsService:
     @torngit_safe
-    def _fetch_provider_permissions(self, owner, repo):
+    def _fetch_provider_permissions(
+        self, owner: Owner, repo: Repository
+    ) -> Tuple[bool, bool]:
         can_view, can_edit = RepoAccessors().get_repo_permissions(owner, repo)
 
         if can_view:
@@ -28,7 +34,7 @@ class RepositoryPermissionsService:
 
         return can_view, can_edit
 
-    def has_read_permissions(self, owner, repo):
+    def has_read_permissions(self, owner: Owner, repo: Repository) -> bool:
         return not repo.private or (
             owner is not None
             and (
@@ -39,13 +45,13 @@ class RepositoryPermissionsService:
             )
         )
 
-    def has_write_permissions(self, user, repo):
+    def has_write_permissions(self, user: Owner, repo: Repository) -> bool:
         return user.is_authenticated and (
             repo.author.ownerid == user.ownerid
             or self._fetch_provider_permissions(user, repo)[1]
         )
 
-    def user_is_activated(self, current_owner, owner):
+    def user_is_activated(self, current_owner: Owner, owner: Owner) -> bool:
         if not current_owner or not owner:
             return False
         if current_owner.ownerid == owner.ownerid:
@@ -80,7 +86,7 @@ class RepositoryArtifactPermissions(BasePermission):
         "trying to view a private repo but is not activated."
     )
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         if view.repo.private:
             user_activated_permissions = (
                 request.user.is_authenticated
@@ -105,19 +111,19 @@ class RepositoryArtifactPermissions(BasePermission):
 
 
 class SuperTokenPermissions(BasePermission, SuperPermissionsMixin):
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         return self.has_super_token_permissions(request)
 
 
 class InternalTokenPermissions(BasePermission, InternalPermissionsMixin):
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         return self.has_internal_token_permissions(request)
 
 
 class ChartPermissions(BasePermission):
     permissions_service = RepositoryPermissionsService()
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         log.info(
             f"Coverage chart has repositories {view.repositories}",
             extra=dict(user=request.current_owner),
@@ -140,7 +146,7 @@ class UserIsAdminPermissions(BasePermission):
     returns this owner.
     """
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         if settings.IS_ENTERPRISE:
             return request.user.is_authenticated and self_hosted.is_admin_owner(
                 request.current_owner
@@ -156,7 +162,7 @@ class UserIsAdminPermissions(BasePermission):
             )
 
     @torngit_safe
-    def _is_admin_on_provider(self, user, owner):
+    def _is_admin_on_provider(self, user: Owner, owner: Owner) -> bool:
         torngit_provider_adapter = get_provider(
             owner.service,
             {
@@ -181,7 +187,7 @@ class MemberOfOrgPermissions(BasePermission):
     Requires that the view has a '.owner' property that returns this owner.
     """
 
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         if not request.user.is_authenticated:
             return False
 
