@@ -672,3 +672,67 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert data["me"]["owner"]["repository"]["componentsYaml"] == [
             {"id": "blah", "name": "blah_name"},
         ]
+
+    def test_repository_is_first_pull_request(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        PullFactory(repository=repo, pullid=1, compared_to=None)
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isFirstPullRequest
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == True
+
+    def test_repository_is_first_pull_request_compared_to_not_none(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        PullFactory(repository=repo, pullid=1, compared_to=1)
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isFirstPullRequest
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == False
+
+    def test_repository_when_is_first_pull_request_false(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        PullFactory(repository=repo, pullid=1)
+        PullFactory(repository=repo, pullid=2)
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isFirstPullRequest
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == False
