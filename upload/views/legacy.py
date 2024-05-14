@@ -159,6 +159,7 @@ class UploadHandler(APIView, ShelterMixin):
 
         sentry_tags = generate_upload_sentry_metrics_tags(
             action="coverage",
+            endpoint="legacy_upload",
             request=self.request,
             repository=repository,
             is_shelter_request=self.is_shelter_request(),

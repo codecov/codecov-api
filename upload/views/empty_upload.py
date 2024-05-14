@@ -9,7 +9,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
-
+from sentry_sdk import metrics as sentry_metrics
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
@@ -20,7 +20,10 @@ from codecov_auth.authentication.repo_auth import (
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
-from upload.helpers import try_to_get_best_possible_bot_token
+from upload.helpers import (
+    try_to_get_best_possible_bot_token,
+    generate_upload_sentry_metrics_tags,
+)
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -145,6 +148,16 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         non_ignored_files = set(changed_files) - set(ignored_changed_files)
         TaskService().notify(
             repoid=repo.repoid, commitid=commit.commitid, empty_upload="fail"
+        )
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="empty_upload",
+                request=self.request,
+                repository=repo,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
         return Response(
             data={
