@@ -53,13 +53,15 @@ class UpdateSelfHostedSettingsTest(GraphQLTestHelper, TransactionTestCase):
     @override_settings(IS_ENTERPRISE=True)
     def test_authenticate_disable_autoactivation(self):
         owner = OwnerFactory()
-        assert self._request(owner=owner) == {"shouldAutoActivate": None}
+        assert self._request_deactivate(owner=owner) == {
+            "updateSelfHostedSettings": None
+        }
 
     @override_settings(IS_ENTERPRISE=False)
     def test_invalid_settings(self):
         owner = OwnerFactory()
         assert self._request(owner=owner) == {
-            "saveTermsAgreement": {
+            "updateSelfHostedSettings": {
                 "error": {
                     "__typename": "ValidationError",
                     "message": "enable_autoactivation and disable_autoactivation are only available in self-hosted environments",
