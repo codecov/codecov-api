@@ -27,7 +27,11 @@ class UpdateSelfHostedSettingsInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, input: UpdateSelfHostedSettingsInput) -> None:
         self.validate()
-        should_auto_activate = input.auto_activate_members
+        typed_input = UpdateSelfHostedSettingsInput(
+            auto_activate_members=input.get("shouldAutoActivate"),
+        )
+
+        should_auto_activate = typed_input.auto_activate_members
         if should_auto_activate:
             self_hosted.enable_autoactivation()
         else:
