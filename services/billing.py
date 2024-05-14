@@ -255,7 +255,7 @@ class StripeService(AbstractPaymentService):
         current_subscription_end_date = subscription["current_period_end"]
 
         subscription_item = subscription["items"]["data"][0]
-        current_plan = subscription_item["plan"]["name"]
+        current_plan = subscription_item["plan"]["id"]
         current_quantity = subscription_item["quantity"]
 
         stripe.SubscriptionSchedule.modify(
@@ -265,10 +265,10 @@ class StripeService(AbstractPaymentService):
                 {
                     "start_date": current_subscription_start_date,
                     "end_date": current_subscription_end_date,
-                    "plans": [
+                    "items": [
                         {
-                            "plan": settings.STRIPE_PLAN_IDS[current_plan],
-                            "price": settings.STRIPE_PLAN_IDS[current_plan],
+                            "plan": current_plan,
+                            "price": current_plan,
                             "quantity": current_quantity,
                         }
                     ],
@@ -277,7 +277,7 @@ class StripeService(AbstractPaymentService):
                 {
                     "start_date": current_subscription_end_date,
                     "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
+                    "items": [
                         {
                             "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
                             "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
