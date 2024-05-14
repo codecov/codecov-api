@@ -6,8 +6,9 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase, override_settings
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
-from codecov_auth.commands.owner.interactors.update_self_hosted_settings import \
-    UpdateSelfHostedSettingsInteractor
+from codecov_auth.commands.owner.interactors.update_self_hosted_settings import (
+    UpdateSelfHostedSettingsInteractor,
+)
 from codecov_auth.tests.factories import OwnerFactory
 
 
