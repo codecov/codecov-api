@@ -36,7 +36,7 @@ class UpdateSelfHostedSettingsInteractorTest(TransactionTestCase):
     def test_update_self_hosted_settings_when_auto_activate_is_false(self):
         # this might be a redundant check
         owner = OwnerFactory(plan_auto_activate=True)
-        self.execute(current_user=owner, input={"shouldAutoActivate": True})
+        self.execute(current_user=owner, input={"shouldAutoActivate": False})
         owner.refresh_from_db()
         assert owner.plan_auto_activate == False
 
