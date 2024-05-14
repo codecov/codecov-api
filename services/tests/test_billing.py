@@ -138,7 +138,7 @@ class MockSubscription(object):
                 {
                     "quantity": subscription_params["quantity"],
                     "id": subscription_params["id"],
-                    "plan": {"name": subscription_params["name"]},
+                    "plan": {"id": subscription_params["name"]},
                 }
             ]
         }
@@ -195,14 +195,10 @@ class StripeServiceTests(TestCase):
                 {
                     "start_date": subscription_params["start_date"],
                     "end_date": subscription_params["end_date"],
-                    "plans": [
+                    "items": [
                         {
-                            "plan": settings.STRIPE_PLAN_IDS[
-                                subscription_params["name"]
-                            ],
-                            "price": settings.STRIPE_PLAN_IDS[
-                                subscription_params["name"]
-                            ],
+                            "plan": subscription_params["name"],
+                            "price": subscription_params["name"],
                             "quantity": subscription_params["quantity"],
                         }
                     ],
@@ -212,7 +208,7 @@ class StripeServiceTests(TestCase):
                     "start_date": subscription_params["end_date"],
                     "end_date": subscription_params["end_date"]
                     + SCHEDULE_RELEASE_OFFSET,
-                    "plans": [
+                    "items": [
                         {
                             "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
                             "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],

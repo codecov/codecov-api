@@ -522,7 +522,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "subscription": subscription_id,
                         "phases": [
                             {},
-                            {"plans": [{"plan": new_plan, "quantity": new_quantity}]},
+                            {"items": [{"plan": new_plan, "quantity": new_quantity}]},
                         ],
                     }
                 },

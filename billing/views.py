@@ -95,7 +95,7 @@ class StripeWebhookHandler(APIView):
         if schedule["subscription"]:
             subscription = stripe.Subscription.retrieve(schedule["subscription"])
             scheduled_phase = schedule["phases"][1]
-            scheduled_plan = scheduled_phase["plans"][0]
+            scheduled_plan = scheduled_phase["items"][0]
             plan_id = scheduled_plan["plan"]
             stripe_plan_dict = settings.STRIPE_PLAN_IDS
             plan_name = list(stripe_plan_dict.keys())[
