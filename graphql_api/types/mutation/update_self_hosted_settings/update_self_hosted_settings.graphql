@@ -5,5 +5,5 @@ type UpdateSelfHostedSettingsPayload {
 }
 
 input UpdateSelfHostedSettingsInput {
-  should_auto_activate: Boolean!
+  shouldAutoActivate: Boolean!
 }
