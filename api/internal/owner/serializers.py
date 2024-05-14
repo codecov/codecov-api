@@ -216,7 +216,6 @@ class ScheduleDetailSerializer(serializers.Serializer):
     scheduled_phase = serializers.SerializerMethodField()
 
     def get_scheduled_phase(self, schedule):
-        print("le schedule", schedule)
         if len(schedule["phases"]) > 1:
             return StripeScheduledPhaseSerializer(schedule["phases"][-1]).data
         else:
