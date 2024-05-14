@@ -37,5 +37,3 @@ type ProviderError implements ResolverError {
 type OwnerNotActivatedError implements ResolverError {
   message: String!
 }
-
-v
