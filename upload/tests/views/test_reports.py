@@ -300,6 +300,7 @@ def test_reports_results_post_successful_github_oidc_auth(
     mock_jwks_client, mock_jwt_decode, client, db, mocker
 ):
     mocked_task = mocker.patch("services.task.TaskService.create_report_results")
+    mock_sentry_metrics = mocker.patch("upload.views.reports.sentry_metrics.incr")
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -323,7 +324,12 @@ def test_reports_results_post_successful_github_oidc_auth(
         "new_upload.reports_results",
         args=["github", "codecov::::the_repo", commit.commitid, "code"],
     )
-    response = client.post(url, content_type="application/json", data={})
+    response = client.post(
+        url,
+        content_type="application/json",
+        data={},
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
 
     assert (
         url
@@ -334,6 +340,17 @@ def test_reports_results_post_successful_github_oidc_auth(
         report_id=commit_report.id,
     ).exists()
     mocked_task.assert_called_once()
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "endpoint": "create_report_results",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
+    )
 
 
 def test_reports_results_already_exists_post_successful(client, db, mocker):
