@@ -157,7 +157,9 @@ class StripeService(AbstractPaymentService):
             stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
         stripe.Subscription.modify(
-            owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
+            owner.stripe_subscription_id,
+            cancel_at_period_end=True,
+            proration_behavior="none",
         )
 
     @_log_stripe_error
