@@ -24,6 +24,7 @@ def test_reports_get_not_allowed(client, mocker):
 
 def test_reports_post(client, db, mocker):
     mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
+    mock_sentry_metrics = mocker.patch("upload.views.reports.sentry_metrics.incr")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -35,7 +36,9 @@ def test_reports_post(client, db, mocker):
         "new_upload.reports",
         args=["github", "codecov::::the_repo", commit.commitid],
     )
-    response = client.post(url, data={"code": "code1"})
+    response = client.post(
+        url, data={"code": "code1"}, headers={"User-Agent": "codecov-cli/0.4.7"}
+    )
 
     assert (
         url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
@@ -45,6 +48,17 @@ def test_reports_post(client, db, mocker):
         commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "endpoint": "create_report",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
+    )
 
 
 @patch("upload.helpers.jwt.decode")

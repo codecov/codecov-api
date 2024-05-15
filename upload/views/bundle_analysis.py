@@ -134,8 +134,8 @@ class BundleAnalysisView(APIView, ShelterMixin):
         sentry_metrics.incr(
             "upload",
             tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                endpoint="create_report",
+                action="bundle_analysis",
+                endpoint="bundle_analysis",
                 request=self.request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),

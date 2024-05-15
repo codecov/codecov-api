@@ -132,7 +132,16 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 )
             )
         ]
-
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="empty_upload",
+                request=self.request,
+                repository=repo,
+                is_shelter_request=self.is_shelter_request(),
+            ),
+        )
         if set(changed_files) == set(ignored_changed_files):
             TaskService().notify(
                 repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
@@ -149,16 +158,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         TaskService().notify(
             repoid=repo.repoid, commitid=commit.commitid, empty_upload="fail"
         )
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                endpoint="empty_upload",
-                request=self.request,
-                repository=repo,
-                is_shelter_request=self.is_shelter_request(),
-            ),
-        )
+
         return Response(
             data={
                 "result": "Some files cannot be ignored. Triggering failing notifications.",
