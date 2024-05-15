@@ -199,7 +199,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
     quantity = serializers.SerializerMethodField()
 
     def get_plan(self, phase):
-        plan_id = phase["plans"][0]["plan"]
+        plan_id = phase["items"][0]["plan"]
         stripe_plan_dict = settings.STRIPE_PLAN_IDS
         plan_name = list(stripe_plan_dict.keys())[
             list(stripe_plan_dict.values()).index(plan_id)
@@ -208,7 +208,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         return marketing_plan_name
 
     def get_quantity(self, phase):
-        return phase["plans"][0]["quantity"]
+        return phase["items"][0]["quantity"]
 
 
 class ScheduleDetailSerializer(serializers.Serializer):
