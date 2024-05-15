@@ -103,6 +103,16 @@ class ReportResultsView(
             repoid=repository.repoid,
             report_code=report.code,
         )
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_report_results",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+            ),
+        )
         return instance
 
     def get_object(self):
