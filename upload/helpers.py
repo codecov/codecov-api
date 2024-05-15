@@ -780,12 +780,13 @@ def get_version_from_headers(headers):
 
 
 def generate_upload_sentry_metrics_tags(
-    action, request, repository, is_shelter_request
+    action, request, repository, is_shelter_request, endpoint: Optional[str] = None
 ):
     return dict(
         agent=get_agent_from_headers(request.headers),
         version=get_version_from_headers(request.headers),
         action=action,
+        endpoint=endpoint,
         repo_visibility="private" if repository.private is True else "public",
         is_using_shelter="yes" if is_shelter_request else "no",
     )
