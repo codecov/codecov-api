@@ -80,6 +80,7 @@ class TestResultsView(
             "upload",
             tags=generate_upload_sentry_metrics_tags(
                 action="test_results",
+                endpoint="test_results",
                 request=request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
