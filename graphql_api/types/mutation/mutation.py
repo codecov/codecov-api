@@ -15,10 +15,6 @@ from .delete_component_measurements import (
 )
 from .delete_flag import error_delete_flag, resolve_delete_flag
 from .delete_session import error_delete_session, resolve_delete_session
-from .encode_secret_string import (
-    error_encode_secret_string,
-    resolve_encode_secret_string,
-)
 from .onboard_user import error_onboard_user, resolve_onboard_user
 from .regenerate_org_upload_token import (
     error_generate_org_upload_token,
@@ -73,7 +69,6 @@ mutation_bindable.field("cancelTrial")(resolve_cancel_trial)
 mutation_bindable.field("deleteComponentMeasurements")(
     resolve_delete_component_measurements
 )
-mutation_bindable.field("encodeSecretString")(resolve_encode_secret_string)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -95,5 +90,4 @@ mutation_resolvers = [
     error_save_terms_agreement,
     error_start_trial,
     error_cancel_trial,
-    error_encode_secret_string,
 ]
