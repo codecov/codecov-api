@@ -49,7 +49,9 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-
+    mock_sentry_metrics = mocker.patch(
+        "upload.views.upload_completion.sentry_metrics.incr"
+    )
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -74,9 +76,7 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
             commit.commitid,
         ],
     )
-    response = client.post(
-        url,
-    )
+    response = client.post(url, headers={"User-Agent": "codecov-cli/0.4.7"})
     response_json = response.json()
     assert response.status_code == 200
     assert response_json == {
@@ -86,6 +86,17 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
         "uploads_error": 0,
     }
     mocked_manual_trigger.assert_called_once_with(repository.repoid, commit.commitid)
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "endpoint": "upload_complete",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
+    )
 
 
 @patch("services.task.TaskService.manual_upload_completion_trigger")

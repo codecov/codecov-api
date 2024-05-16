@@ -295,6 +295,7 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
         private=False, author__username="codecov", name="the_repo"
     )
     mocked_call = mocker.patch.object(TaskService, "update_commit")
+    mock_sentry_metrics = mocker.patch("upload.views.commits.sentry_metrics.incr")
     mock_jwt_decode.return_value = {
         "repository": f"url/{repository.name}",
         "repository_owner": repository.author.username,
@@ -315,7 +316,7 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
             "pullid": "4",
         },
         format="json",
-        headers={"Authorization": f"token {token}"},
+        headers={"Authorization": f"token {token}", "User-Agent": "codecov-cli/0.4.7"},
     )
     assert response.status_code == 201
     response_json = response.json()
@@ -340,3 +341,14 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
     }
     assert expected_response == response_json
     mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "endpoint": "create_commit",
+            "repo_visibility": "public",
+            "is_using_shelter": "no",
+        },
+    )

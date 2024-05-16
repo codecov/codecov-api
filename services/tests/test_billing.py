@@ -284,7 +284,9 @@ class StripeServiceTests(TestCase):
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
         self.stripe.delete_subscription(owner)
         modify_mock.assert_called_once_with(
-            stripe_subscription_id, cancel_at_period_end=True, prorate=False
+            stripe_subscription_id,
+            cancel_at_period_end=True,
+            proration_behavior="none",
         )
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == stripe_subscription_id
@@ -320,7 +322,9 @@ class StripeServiceTests(TestCase):
         self.stripe.delete_subscription(owner)
         schedule_release_mock.assert_called_once_with(stripe_schedule_id)
         modify_mock.assert_called_once_with(
-            stripe_subscription_id, cancel_at_period_end=True, prorate=False
+            stripe_subscription_id,
+            cancel_at_period_end=True,
+            proration_behavior="none",
         )
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == stripe_subscription_id
