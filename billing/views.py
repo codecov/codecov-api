@@ -282,7 +282,7 @@ class StripeWebhookHandler(APIView):
                 self.request.META.get(StripeHTTPHeaders.SIGNATURE),
                 settings.STRIPE_ENDPOINT_SECRET,
             )
-        except stripe.error.SignatureVerificationError as e:
+        except stripe.SignatureVerificationError as e:
             log.warning(f"Stripe webhook event received with invalid signature -- {e}")
             return Response("Invalid signature", status=status.HTTP_400_BAD_REQUEST)
         if self.event.type not in StripeWebhookEvents.subscribed_events:

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import TestCase
-from stripe.error import InvalidRequestError
+from stripe import InvalidRequestError
 
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory

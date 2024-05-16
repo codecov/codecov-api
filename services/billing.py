@@ -29,7 +29,7 @@ def _log_stripe_error(method):
     def catch_and_raise(*args, **kwargs):
         try:
             return method(*args, **kwargs)
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             log.warning(e.user_message)
             raise
 
@@ -91,7 +91,7 @@ class StripeService(AbstractPaymentService):
 
         self.requesting_user = requesting_user
 
-    def _get_checkout_session_and_subscription_metadata(self, owner):
+    def _get_checkout_session_and_subscription_metadata(self, owner: Owner):
         return {
             "service": owner.service,
             "obo_organization": owner.ownerid,
@@ -108,7 +108,7 @@ class StripeService(AbstractPaymentService):
         )
         try:
             invoice = stripe.Invoice.retrieve(invoice_id)
-        except stripe.error.InvalidRequestError as e:
+        except stripe.InvalidRequestError as e:
             log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:
@@ -127,7 +127,7 @@ class StripeService(AbstractPaymentService):
             return invoice
 
     @_log_stripe_error
-    def list_filtered_invoices(self, owner, limit=10):
+    def list_filtered_invoices(self, owner: Owner, limit=10):
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
@@ -142,7 +142,7 @@ class StripeService(AbstractPaymentService):
         return list(invoices_filtered_by_status_and_total)
 
     @_log_stripe_error
-    def delete_subscription(self, owner):
+    def delete_subscription(self, owner: Owner):
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         subscription_schedule_id = subscription.schedule
 
@@ -164,7 +164,7 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def get_subscription(self, owner):
+    def get_subscription(self, owner: Owner):
         if not owner.stripe_subscription_id:
             return None
         return stripe.Subscription.retrieve(
@@ -177,7 +177,7 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def get_schedule(self, owner):
+    def get_schedule(self, owner: Owner):
         if not owner.stripe_subscription_id:
             return None
 
