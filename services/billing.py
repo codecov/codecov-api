@@ -374,7 +374,7 @@ class StripeService(AbstractPaymentService):
             billing_address_collection="required",
             payment_method_types=["card"],
             payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
+            client_reference_id=str(owner.ownerid),
             success_url=success_url,
             cancel_url=cancel_url,
             customer=customer,
