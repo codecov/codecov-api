@@ -1,5 +1,5 @@
 from codecov.commands.base import BaseCommand
-from codecov_auth.models import Owner
+from core.models import Owner, Repository
 from timeseries.models import MeasurementName
 
 from .interactors.activate_measurements import ActivateMeasurementsInteractor
@@ -36,5 +36,5 @@ class RepositoryCommands(BaseCommand):
             repo_name, owner_name, measurement_type
         )
 
-    def encode_secret_string(self, owner: Owner, input) -> None:
-        return self.get_interactor(EncodeSecretStringInteractor).execute(owner, input)
+    def encode_secret_string(self, owner: Owner, repo: Repository, value: str) -> None:
+        return self.get_interactor(EncodeSecretStringInteractor).execute(owner, repo, value)

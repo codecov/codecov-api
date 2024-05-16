@@ -529,3 +529,12 @@ def resolve_is_first_pull_request(repository: Repository, info) -> bool:
         return not first_pr.compared_to
 
     return False
+
+
+@repository_bindable.field("encodedSecretString")
+@sync_to_async
+def resolve_is_first_pull_request(repository: Repository, info: GraphQLResolveInfo, value: str) -> bool:
+    command = info.context["executor"].get_command("repository")
+    owner = info.context["request"].current_owner
+    return command.encode_secret_string(owner, repository, value)
+
