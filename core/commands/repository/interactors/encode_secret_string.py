@@ -24,5 +24,4 @@ class EncodeSecretStringInteractor(BaseInteractor):
                 value,
             )
         )
-
         return encode_secret_string(to_encode)

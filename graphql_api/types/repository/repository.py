@@ -538,4 +538,4 @@ def resolve_encoded_secret_string(
 ) -> str:
     command = info.context["executor"].get_command("repository")
     owner = info.context["request"].current_owner
-    return command.encode_secret_string(owner, repository, value)
+    return {"value": command.encode_secret_string(owner, repository, value)}
