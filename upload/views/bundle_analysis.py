@@ -7,7 +7,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
-
+from sentry_sdk import metrics as sentry_metrics
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
@@ -20,7 +20,8 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
-from upload.helpers import dispatch_upload_task
+from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
+from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
 
 log = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class UploadSerializer(serializers.Serializer):
     branch = serializers.CharField(required=False, allow_null=True)
 
 
-class BundleAnalysisView(APIView):
+class BundleAnalysisView(APIView, ShelterMixin):
     permission_classes = [UploadBundleAnalysisPermission]
     authentication_classes = [
         OrgLevelTokenAuthentication,
@@ -130,5 +131,14 @@ class BundleAnalysisView(APIView):
             get_redis_connection(),
             report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
         )
-
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="bundle_analysis",
+                endpoint="bundle_analysis",
+                request=self.request,
+                repository=repo,
+                is_shelter_request=self.is_shelter_request(),
+            ),
+        )
         return Response({"url": url}, status=201)

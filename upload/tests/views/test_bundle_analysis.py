@@ -14,6 +14,9 @@ from services.task import TaskService
 
 def test_upload_bundle_analysis(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
+    mock_sentry_metrics = mocker.patch(
+        "upload.views.bundle_analysis.sentry_metrics.incr"
+    )
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
@@ -36,6 +39,7 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
             "service": "test-service",
         },
         format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
     )
     assert res.status_code == 201
 
@@ -78,6 +82,17 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
         countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+    )
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "bundle_analysis",
+            "endpoint": "bundle_analysis",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
     )
 
 
