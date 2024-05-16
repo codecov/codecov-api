@@ -379,14 +379,14 @@ class StripeService(AbstractPaymentService):
             cancel_url=cancel_url,
             customer=customer,
             customer_email=customer_email,
+            mode="subscription",
+            line_items=[
+                {
+                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }
+            ],
             subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_plan["quantity"],
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
         )

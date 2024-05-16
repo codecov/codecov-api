@@ -82,13 +82,17 @@ class StripeWebhookHandler(APIView):
 
     def subscription_schedule_created(self, schedule):
         subscription = stripe.Subscription.retrieve(schedule["subscription"])
+        sub_item = subscription.items.data[0]
+        sub_item_plan_id = sub_item.plan.id
+        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
         log.info(
-            f"Schedule created for customer "
-            f"with -- plan: {subscription.items.data[-1]}, quantity {subscription.items.data[-1].quantity}",
+            "Schedule created for customer",
             extra=dict(
                 stripe_customer_id=subscription.customer,
                 stripe_subscription_id=subscription.id,
                 ownerid=subscription.metadata["obo_organization"],
+                plan=plan_name,
+                quantity=sub_item.quantity,
             ),
         )
 
@@ -104,12 +108,13 @@ class StripeWebhookHandler(APIView):
             ]
             quantity = scheduled_plan["quantity"]
             log.info(
-                f"Schedule updated for customer "
-                f"with -- plan: {plan_name}, quantity {quantity}",
+                "Schedule updated for customer",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
                     stripe_subscription_id=subscription.id,
                     ownerid=subscription.metadata["obo_organization"],
+                    plan=plan_name,
+                    quantity=quantity,
                 ),
             )
 
@@ -164,11 +169,11 @@ class StripeWebhookHandler(APIView):
 
         if plan_name not in PAID_PLANS:
             log.warning(
-                f"Subscription creation requested for invalid plan "
-                f"'{plan_name}' -- doing nothing",
+                "Subscription creation requested for invalid plan",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
                     ownerid=subscription.metadata["obo_organization"],
+                    plan=plan_name,
                 ),
             )
             return
