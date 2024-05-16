@@ -252,7 +252,7 @@ class StripeService(AbstractPaymentService):
             )
 
     def _modify_subscription_schedule(
-        self, owner, subscription, subscription_schedule_id, desired_plan
+        self, owner: Owner, subscription, subscription_schedule_id, desired_plan
     ):
         current_subscription_start_date = subscription["current_period_start"]
         current_subscription_end_date = subscription["current_period_end"]

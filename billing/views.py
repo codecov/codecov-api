@@ -119,9 +119,19 @@ class StripeWebhookHandler(APIView):
         requesting_user_id = subscription.metadata["obo"]
         plan_service = PlanService(current_org=owner)
 
-        plan_service = PlanService(current_org=owner)
-        plan_service.update_plan(
-            name=subscription.plan.name, user_count=subscription.quantity
+        sub_item = subscription.items.data[0]
+        sub_item_plan_id = sub_item.plan.id
+        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
+        plan_service.update_plan(name=plan_name, user_count=sub_item.quantity)
+
+        log.info(
+            "Successfully updated customer plan info",
+            extra=dict(
+                stripe_subscription_id=subscription.id,
+                stripe_customer_id=subscription.customer,
+                plan=plan_name,
+                quantity=sub_item.quantity,
+            ),
         )
 
         log.info(
@@ -138,7 +148,11 @@ class StripeWebhookHandler(APIView):
 
     def customer_subscription_created(self, subscription: stripe.Subscription):
         print("THE STUF", subscription)
-        if not subscription.plan.id:
+        sub_item = subscription.items.data[0]
+        sub_item_plan_id = sub_item.plan.id
+        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
+
+        if not sub_item_plan_id:
             log.warning(
                 "Subscription created missing plan id, exiting",
                 extra=dict(
@@ -148,10 +162,10 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        if subscription.plan.name not in PAID_PLANS:
+        if plan_name not in PAID_PLANS:
             log.warning(
                 f"Subscription creation requested for invalid plan "
-                f"'{subscription.plan.name}' -- doing nothing",
+                f"'{plan_name}' -- doing nothing",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
                     ownerid=subscription.metadata["obo_organization"],
@@ -160,12 +174,13 @@ class StripeWebhookHandler(APIView):
             return
 
         log.info(
-            f"Subscription created for customer "
-            f"with -- plan: {subscription.plan.name}, quantity {subscription.quantity}",
+            "Subscription created for customer",
             extra=dict(
                 stripe_customer_id=subscription.customer,
                 stripe_subscription_id=subscription.id,
                 ownerid=subscription.metadata["obo_organization"],
+                plan=plan_name,
+                quantity=sub_item.quantity,
             ),
         )
         owner = Owner.objects.get(ownerid=subscription.metadata["obo_organization"])
@@ -175,13 +190,23 @@ class StripeWebhookHandler(APIView):
 
         plan_service = PlanService(current_org=owner)
         plan_service.expire_trial_when_upgrading()
-        plan_service.update_plan(
-            name=subscription.plan.name, user_count=subscription.quantity
+
+        plan_service.update_plan(name=plan_name, user_count=sub_item.quantity)
+
+        log.info(
+            "Successfully updated customer plan info",
+            extra=dict(
+                stripe_subscription_id=subscription.id,
+                stripe_customer_id=subscription.customer,
+                plan=plan_name,
+                quantity=sub_item.quantity,
+            ),
         )
 
         self._log_updated(1)
 
-    def customer_subscription_updated(self, subscription):
+    def customer_subscription_updated(self, subscription: stripe.Subscription):
+        print("THE STUF", subscription)
         owner: Owner = Owner.objects.get(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -212,24 +237,31 @@ class StripeWebhookHandler(APIView):
                 owner.repository_set.update(active=False, activated=False)
                 return
             # TODO: we can delete this if statement if we confirm there aren't any PAID_PLANS out there
-            if subscription.plan.name not in PAID_PLANS:
-                log.warning(
-                    f"Subscription update requested with invalid plan "
-                    f"{subscription.plan.name} -- doing nothing",
-                    extra=dict(stripe_subscription_id=subscription.id),
+            sub_item = subscription.items.data[0]
+            sub_item_plan_id = sub_item.plan.id
+            plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
+            if plan_name not in PAID_PLANS:
+                log.error(
+                    "Subscription update requested with invalid plan",
+                    extra=dict(
+                        stripe_subscription_id=subscription.id,
+                        stripe_customer_id=subscription.customer,
+                        plan=plan_name,
+                    ),
                 )
                 return
 
-            log.info(
-                f"Subscription updated with -- "
-                f"plan: {subscription.plan.name}, quantity: {subscription.quantity}",
-                extra=dict(stripe_subscription_id=subscription.id),
-            )
+            plan_service.update_plan(name=plan_name, user_count=sub_item.quantity)
 
-            plan_service.update_plan(
-                name=subscription.plan.name, user_count=subscription.quantity
+            log.info(
+                "Successfully updated customer plan info",
+                extra=dict(
+                    stripe_subscription_id=subscription.id,
+                    stripe_customer_id=subscription.customer,
+                    plan=plan_name,
+                    quantity=sub_item.quantity,
+                ),
             )
-            log.info("Successfully updated info for 1 customer")
 
     def customer_updated(self, customer):
         new_default_payment_method = customer["invoice_settings"][
