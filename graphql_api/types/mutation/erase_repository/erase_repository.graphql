@@ -4,6 +4,6 @@ type EraseRepositoryPayload {
   error: EraseRepositoryError
 }
 
-type EraseRepositoryInput {
+input EraseRepositoryInput {
   repoName: String!
 }
