@@ -10,7 +10,7 @@ from core.models import Repository
 
 class EncodeSecretStringInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, owner: Owner, repo: Repository, value: str):
+    def execute(self, owner: Owner, repo: Repository, value: str) -> str:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
         if not repo:
