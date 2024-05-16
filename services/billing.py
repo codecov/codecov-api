@@ -22,7 +22,7 @@ SCHEDULE_RELEASE_OFFSET = 10
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
-    stripe.api_version = "2023-10-16"
+    stripe.api_version = "2024-04-10"
 
 
 def _log_stripe_error(method):
