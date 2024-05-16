@@ -41,6 +41,7 @@ from .update_default_organization import (
     resolve_update_default_organization,
 )
 from .update_profile import error_update_profile, resolve_update_profile
+from .erase_repository import error_erase_repository, resolve_erase_repository
 
 mutation_bindable = MutationType()
 
@@ -69,6 +70,7 @@ mutation_bindable.field("cancelTrial")(resolve_cancel_trial)
 mutation_bindable.field("deleteComponentMeasurements")(
     resolve_delete_component_measurements
 )
+mutation_bindable.field("eraseRepository")(resolve_erase_repository)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -90,4 +92,5 @@ mutation_resolvers = [
     error_save_terms_agreement,
     error_start_trial,
     error_cancel_trial,
+    error_erase_repository,
 ]

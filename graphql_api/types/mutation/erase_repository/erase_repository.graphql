@@ -1,0 +1,9 @@
+union EraseRepositoryError = UnauthenticatedError | UnauthorizedError | ValidationError
+
+type EraseRepositoryPayload {
+  error: EraseRepositoryError
+}
+
+type EraseRepositoryInput {
+  repoName: String!
+}

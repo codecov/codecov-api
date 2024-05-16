@@ -6,6 +6,8 @@ from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
 from .interactors.regenerate_repository_token import RegenerateRepositoryTokenInteractor
+from .interactors.erase_repository import EraseRepositoryInteractor
+from codecov_auth.models import Owner
 
 
 class RepositoryCommands(BaseCommand):
@@ -33,3 +35,6 @@ class RepositoryCommands(BaseCommand):
         return self.get_interactor(ActivateMeasurementsInteractor).execute(
             repo_name, owner_name, measurement_type
         )
+
+    def erase_repository(self, repo_name: str, owner: Owner):
+        return self.get_interactor(EraseRepositoryInteractor).execute(repo_name, owner)
