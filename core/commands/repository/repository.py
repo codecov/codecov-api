@@ -7,7 +7,8 @@ from .interactors.encode_secret_string import EncodeSecretStringInteractor
 from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
-from .interactors.regenerate_repository_token import RegenerateRepositoryTokenInteractor
+from .interactors.regenerate_repository_token import \
+    RegenerateRepositoryTokenInteractor
 
 
 class RepositoryCommands(BaseCommand):
@@ -37,4 +38,6 @@ class RepositoryCommands(BaseCommand):
         )
 
     def encode_secret_string(self, owner: Owner, repo: Repository, value: str) -> None:
-        return self.get_interactor(EncodeSecretStringInteractor).execute(owner, repo, value)
+        return self.get_interactor(EncodeSecretStringInteractor).execute(
+            owner, repo, value
+        )

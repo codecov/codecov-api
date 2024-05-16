@@ -13,23 +13,21 @@ from codecov.db import sync_to_async
 from core.models import Branch, Repository
 from graphql_api.actions.commits import repo_commits
 from graphql_api.actions.components import (
-    component_measurements,
-    component_measurements_last_uploaded,
-)
+    component_measurements, component_measurements_last_uploaded)
 from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
-from graphql_api.helpers.connection import (
-    queryset_to_connection,
-    queryset_to_connection_sync,
-)
+from graphql_api.helpers.connection import (queryset_to_connection,
+                                            queryset_to_connection_sync)
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
-from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from graphql_api.types.errors.errors import (NotFoundError,
+                                             OwnerNotActivatedError)
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
-from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
+from timeseries.models import (Dataset, Interval, MeasurementName,
+                               MeasurementSummary)
 
 repository_bindable = ObjectType("Repository")
 
@@ -533,8 +531,9 @@ def resolve_is_first_pull_request(repository: Repository, info) -> bool:
 
 @repository_bindable.field("encodedSecretString")
 @sync_to_async
-def resolve_is_first_pull_request(repository: Repository, info: GraphQLResolveInfo, value: str) -> bool:
+def resolve_encoded_secret_string(
+    repository: Repository, info: GraphQLResolveInfo, value: str
+) -> str:
     command = info.context["executor"].get_command("repository")
     owner = info.context["request"].current_owner
     return command.encode_secret_string(owner, repository, value)
-
