@@ -22,6 +22,7 @@ SCHEDULE_RELEASE_OFFSET = 10
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
+    stripe.api_version = "2023-10-16"
 
 
 def _log_stripe_error(method):
@@ -157,7 +158,9 @@ class StripeService(AbstractPaymentService):
             stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
         stripe.Subscription.modify(
-            owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
+            owner.stripe_subscription_id,
+            cancel_at_period_end=True,
+            proration_behavior="none",
         )
 
     @_log_stripe_error

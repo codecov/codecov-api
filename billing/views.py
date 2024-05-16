@@ -16,6 +16,7 @@ from .constants import StripeHTTPHeaders, StripeWebhookEvents
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
+    stripe.api_version = "2023-10-16"
 
 log = logging.getLogger(__name__)
 
