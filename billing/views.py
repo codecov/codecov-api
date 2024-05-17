@@ -8,7 +8,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from codecov_auth.models import Owner
-from plan.constants import PAID_PLANS
 from plan.service import PlanService
 from services.billing import BillingService
 
@@ -24,15 +23,15 @@ log = logging.getLogger(__name__)
 class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
 
-    def _log_updated(self, updated):
+    def _log_updated(self, updated) -> None:
         if updated >= 1:
             log.info(f"Successfully updated info for {updated} customer(s)")
         else:
             log.warning("Could not find customer")
 
-    def invoice_payment_succeeded(self, invoice: stripe.Invoice):
+    def invoice_payment_succeeded(self, invoice: stripe.Invoice) -> None:
         log.info(
-            "Setting delinquency status False",
+            "Invoice Payment Succeeded - Setting delinquency status False",
             extra=dict(
                 stripe_customer_id=invoice.customer,
                 stripe_subscription_id=invoice.subscription,
@@ -48,9 +47,9 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated(1)
 
-    def invoice_payment_failed(self, invoice: stripe.Invoice):
+    def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         log.info(
-            "Setting delinquency status True",
+            "Invoice Payment Failed - Setting Deliquency status True",
             extra=dict(
                 stripe_customer_id=invoice.customer,
                 stripe_subscription_id=invoice.subscription,
@@ -62,9 +61,9 @@ class StripeWebhookHandler(APIView):
         ).update(delinquent=True)
         self._log_updated(updated)
 
-    def customer_subscription_deleted(self, subscription: stripe.Subscription):
+    def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         log.info(
-            "Setting free plan and deactivating repos for stripe customer",
+            "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
             extra=dict(
                 stripe_subscription_id=subscription.id,
                 stripe_customer_id=subscription.customer,
@@ -80,7 +79,9 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated(1)
 
-    def subscription_schedule_created(self, schedule: stripe.SubscriptionSchedule):
+    def subscription_schedule_created(
+        self, schedule: stripe.SubscriptionSchedule
+    ) -> None:
         subscription = stripe.Subscription.retrieve(schedule["subscription"])
         sub_item_plan_id = subscription.plan.id
         plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
@@ -95,7 +96,9 @@ class StripeWebhookHandler(APIView):
             ),
         )
 
-    def subscription_schedule_updated(self, schedule: stripe.SubscriptionSchedule):
+    def subscription_schedule_updated(
+        self, schedule: stripe.SubscriptionSchedule
+    ) -> None:
         if schedule["subscription"]:
             subscription = stripe.Subscription.retrieve(schedule["subscription"])
             scheduled_phase = schedule["phases"][-1]
@@ -117,7 +120,7 @@ class StripeWebhookHandler(APIView):
                 ),
             )
 
-    def subscription_schedule_released(self, schedule: stripe.Subscription):
+    def subscription_schedule_released(self, schedule: stripe.Subscription) -> None:
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
         owner = Owner.objects.get(ownerid=subscription.metadata["obo_organization"])
         requesting_user_id = subscription.metadata["obo"]
@@ -134,46 +137,44 @@ class StripeWebhookHandler(APIView):
                 stripe_customer_id=subscription.customer,
                 plan=plan_name,
                 quantity=subscription.quantity,
+                ownerid=owner.ownerid,
+                requesting_user_id=requesting_user_id,
             ),
         )
 
-        log.info(
-            f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{requesting_user_id}",
-            extra=dict(ownerid=owner.ownerid, requesting_user_id=requesting_user_id),
-        )
-
-    def customer_created(self, customer: stripe.Customer):
+    def customer_created(self, customer: stripe.Customer) -> None:
         # Based on what stripe doesn't gives us (an ownerid!)
         # in this event we cannot reliably create a customer,
         # so we're just logging that we created the event and
         # relying on customer.subscription.created to handle sub creation
         log.info("Customer created", extra=dict(stripe_customer_id=customer.id))
 
-    def customer_subscription_created(self, subscription: stripe.Subscription):
-        print("THE SUB CREATED", subscription)
+    def customer_subscription_created(self, subscription: stripe.Subscription) -> None:
         sub_item_plan_id = subscription.plan.id
-        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
 
         if not sub_item_plan_id:
             log.warning(
-                "Subscription created missing plan id, exiting",
+                "Subscription created, but missing plan_id",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
                     ownerid=subscription.metadata["obo_organization"],
+                    subscription_plan=subscription.plan,
                 ),
             )
             return
 
-        if plan_name not in PAID_PLANS:
+        if sub_item_plan_id not in settings.STRIPE_PLAN_VALS:
             log.warning(
                 "Subscription creation requested for invalid plan",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
                     ownerid=subscription.metadata["obo_organization"],
-                    plan=plan_name,
+                    plan_id=sub_item_plan_id,
                 ),
             )
             return
+
+        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
 
         log.info(
             "Subscription created for customer",
@@ -207,8 +208,7 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated(1)
 
-    def customer_subscription_updated(self, subscription: stripe.Subscription):
-        print("THE SUB UPDATED", subscription)
+    def customer_subscription_updated(self, subscription: stripe.Subscription) -> None:
         owner: Owner = Owner.objects.get(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -229,33 +229,36 @@ class StripeWebhookHandler(APIView):
         if not subscription_schedule_id:
             if subscription.status == "incomplete_expired":
                 log.info(
-                    "Subscription updated with status change "
-                    "to 'incomplete_expired' -- cancelling to free",
-                    extra=dict(stripe_subscription_id=subscription.id),
+                    "Subscription status updated to incomplete_expired, cancelling to free",
+                    extra=dict(
+                        stripe_subscription_id=subscription.id,
+                        stripe_customer_id=subscription.customer,
+                    ),
                 )
                 plan_service.set_default_plan_data()
                 # TODO: think of how to create services for different objects/classes to delegate responsibilities that are not
                 # from the owner
                 owner.repository_set.update(active=False, activated=False)
                 return
-            # TODO: we can delete this if statement if we confirm there aren't any PAID_PLANS out there
+
             sub_item_plan_id = subscription.plan.id
-            plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
-            if plan_name not in PAID_PLANS:
+            if sub_item_plan_id not in settings.STRIPE_PLAN_VALS:
                 log.error(
                     "Subscription update requested with invalid plan",
                     extra=dict(
                         stripe_subscription_id=subscription.id,
                         stripe_customer_id=subscription.customer,
-                        plan=plan_name,
+                        plan_id=sub_item_plan_id,
                     ),
                 )
                 return
 
+            plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
+
             plan_service.update_plan(name=plan_name, user_count=subscription.quantity)
 
             log.info(
-                "Successfully updated customer plan info",
+                "Successfully updated customer subscription",
                 extra=dict(
                     stripe_subscription_id=subscription.id,
                     stripe_customer_id=subscription.customer,
@@ -264,7 +267,7 @@ class StripeWebhookHandler(APIView):
                 ),
             )
 
-    def customer_updated(self, customer: stripe.Customer):
+    def customer_updated(self, customer: stripe.Customer) -> None:
         new_default_payment_method = customer["invoice_settings"][
             "default_payment_method"
         ]
@@ -281,12 +284,15 @@ class StripeWebhookHandler(APIView):
                 subscription["id"], default_payment_method=new_default_payment_method
             )
 
-    def checkout_session_completed(self, checkout_session: stripe.checkout.Session):
-        print("CHECKOUT SESH", checkout_session)
-
+    def checkout_session_completed(
+        self, checkout_session: stripe.checkout.Session
+    ) -> None:
         log.info(
             "Checkout session completed",
-            extra=dict(ownerid=checkout_session.client_reference_id),
+            extra=dict(
+                ownerid=checkout_session.client_reference_id,
+                stripe_customer_id=checkout_session.customer,
+            ),
         )
         owner = Owner.objects.get(ownerid=checkout_session.client_reference_id)
         owner.stripe_customer_id = checkout_session.customer
@@ -294,7 +300,7 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated(1)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."

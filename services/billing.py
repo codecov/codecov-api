@@ -297,7 +297,7 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if purchasing more seats.
         """
-        return (
+        return bool(
             owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]
         )
 
@@ -308,7 +308,7 @@ class StripeService(AbstractPaymentService):
         current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
         desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
 
-        return (
+        return bool(
             current_plan_info
             and current_plan_info.billing_rate == PlanBillingRate.MONTHLY.value
             and desired_plan_info
@@ -339,7 +339,7 @@ class StripeService(AbstractPaymentService):
         elif owner.plan in TEAM_PLANS and desired_plan["value"] not in TEAM_PLANS:
             return True
 
-        return is_same_term and is_same_seats
+        return bool(is_same_term and is_same_seats)
 
     def _get_proration_params(self, owner: Owner, desired_plan: dict) -> str:
         if (
@@ -361,7 +361,10 @@ class StripeService(AbstractPaymentService):
     @_log_stripe_error
     def create_checkout_session(self, owner: Owner, desired_plan):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
-        log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
+        log.info(
+            "Creating Stripe Checkout Session for owner",
+            extra=dict(owner_id=owner.ownerid),
+        )
 
         if not owner.stripe_customer_id:
             customer_email = owner.email
