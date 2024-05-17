@@ -1,6 +1,6 @@
-from distutils.util import strtobool
 from inspect import Parameter
 
+from distutils.util import strtobool
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins
