@@ -8,11 +8,12 @@ from graphql_api.helpers.mutation import (
 
 @wrap_error_handling_mutation
 @require_authenticated
-async def resolve_erase_repository(_, info, input):
+async def resolve_erase_repository(_, info, input) -> None:
     command = info.context["executor"].get_command("repository")
     current_owner = info.context["request"].current_owner
     repo_name = input.get("repoName")
     await command.erase_repository(repo_name=repo_name, owner=current_owner)
+    return None
 
 
 error_erase_repository = UnionType("EraseRepositoryError")
