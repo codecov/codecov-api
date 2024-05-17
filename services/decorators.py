@@ -30,7 +30,7 @@ def stripe_safe(method):
     def exec_method(*args, **kwargs):
         try:
             return method(*args, **kwargs)
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             exception = APIException(detail=e.user_message)
             exception.status_code = e.http_status
             raise exception

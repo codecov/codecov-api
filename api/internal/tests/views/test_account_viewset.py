@@ -8,7 +8,7 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-from stripe.error import StripeError
+from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.models import Service
