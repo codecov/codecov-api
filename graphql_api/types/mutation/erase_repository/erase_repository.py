@@ -1,7 +1,9 @@
 from ariadne import UnionType, convert_kwargs_to_snake_case
-from graphql_api.helpers.mutation import (require_authenticated,
-                                          resolve_union_error_type,
-                                          wrap_error_handling_mutation)
+from graphql_api.helpers.mutation import (
+    require_authenticated,
+    resolve_union_error_type,
+    wrap_error_handling_mutation,
+)
 
 
 @wrap_error_handling_mutation
