@@ -6,6 +6,7 @@ from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 from graphql import GraphQLError
+from prometheus_client import REGISTRY
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
@@ -13,13 +14,11 @@ from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
-    OwnerFactory,
     UserFactory,
 )
 from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
-
 from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
@@ -67,6 +66,18 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
 
     def test_fetching_repositories(self):
+        before = REGISTRY.get_sample_value(
+            "api_gql_counts_hits_total",
+            labels={"operation_type": "unknown_type", "operation_name": "owner"},
+        )
+        errors_before = REGISTRY.get_sample_value(
+            "api_gql_counts_errors_total",
+            labels={"operation_type": "unknown_type", "operation_name": "owner"},
+        )
+        timer_before = REGISTRY.get_sample_value(
+            "api_gql_timers_full_runtime_seconds_count",
+            labels={"operation_type": "unknown_type", "operation_name": "owner"},
+        )
         query = query_repositories % (self.owner.username, "", "")
         data = self.gql_request(query, owner=self.owner)
         assert data == {
@@ -82,6 +93,21 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 },
             }
         }
+        after = REGISTRY.get_sample_value(
+            "api_gql_counts_hits_total",
+            labels={"operation_type": "unknown_type", "operation_name": "owner"},
+        )
+        errors_after = REGISTRY.get_sample_value(
+            "api_gql_counts_errors_total",
+            labels={"operation_type": "unknown_type", "operation_name": "owner"},
+        )
+        timer_after = REGISTRY.get_sample_value(
+            "api_gql_timers_full_runtime_seconds_count",
+            labels={"operation_type": "unknown_type", "operation_name": "owner"},
+        )
+        assert after - before == 1
+        assert errors_after - errors_before == 0
+        assert timer_after - timer_before == 1
 
     def test_fetching_repositories_with_pagination(self):
         query = query_repositories % (self.owner.username, "(first: 1)", "endCursor")

@@ -3,11 +3,12 @@ from datetime import timedelta
 from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
+from prometheus_client import REGISTRY
 
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.types.user.user import resolve_customer_intent
-
 from .helper import GraphQLTestHelper
+from ..views import GQL_HIT_COUNTER, GQL_ERROR_COUNTER, GQL_REQUEST_LATENCIES
 
 
 @freeze_time("2023-06-19")
@@ -25,6 +26,21 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
         )
 
     def test_query_user_resolver(self):
+        GQL_HIT_COUNTER.labels(operation_type="unknown_type", operation_name="me")
+        GQL_ERROR_COUNTER.labels(operation_type="unknown_type", operation_name="me")
+        GQL_REQUEST_LATENCIES.labels(operation_type="unknown_type", operation_name="me")
+        before = REGISTRY.get_sample_value(
+            "api_gql_counts_hits_total",
+            labels={"operation_type": "unknown_type", "operation_name": "me"},
+        )
+        errors_before = REGISTRY.get_sample_value(
+            "api_gql_counts_errors_total",
+            labels={"operation_type": "unknown_type", "operation_name": "me"},
+        )
+        timer_before = REGISTRY.get_sample_value(
+            "api_gql_timers_full_runtime_seconds_count",
+            labels={"operation_type": "unknown_type", "operation_name": "me"},
+        )
         query = """{
             me {
                 user {
@@ -49,6 +65,21 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
             "studentUpdatedAt": "2023-06-20T00:00:00",
             "customerIntent": "Business",
         }
+        after = REGISTRY.get_sample_value(
+            "api_gql_counts_hits_total",
+            labels={"operation_type": "unknown_type", "operation_name": "me"},
+        )
+        errors_after = REGISTRY.get_sample_value(
+            "api_gql_counts_errors_total",
+            labels={"operation_type": "unknown_type", "operation_name": "me"},
+        )
+        timer_after = REGISTRY.get_sample_value(
+            "api_gql_timers_full_runtime_seconds_count",
+            labels={"operation_type": "unknown_type", "operation_name": "me"},
+        )
+        assert after - before == 1
+        assert errors_after - errors_before == 0
+        assert timer_after - timer_before == 1
 
     def test_query_null_user_customer_intent_resolver(self):
         null_user = OwnerFactory(user=None, service_id=4)
