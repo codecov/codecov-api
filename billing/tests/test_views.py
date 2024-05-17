@@ -2,6 +2,7 @@ import time
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+from pytest import raises
 import stripe
 from django.conf import settings
 from freezegun import freeze_time
@@ -18,13 +19,7 @@ from ..constants import StripeHTTPHeaders
 
 class MockSubscriptionPlan(object):
     def __init__(self, params):
-        self.id = params["new_plan"] or "price_1OCM2cGlVGuVgOrkMWUFjPFz"
-
-
-class MockOboOrg(object):
-    def __init__(self, owner):
-        self.obo_organization = owner.ownerid
-        self.obo = 15
+        self.id = params["new_plan"]
 
 
 class MockSubscription(object):
@@ -53,7 +48,7 @@ class StripeWebhookHandlerTests(APITestCase):
             stripe_customer_id="20f0", stripe_subscription_id="3p00"
         )
 
-    def _send_event(self, payload):
+    def _send_event(self, payload, errorSig=None):
         timestamp = time.time_ns()
 
         request = APIRequestFactory().post(
@@ -63,7 +58,8 @@ class StripeWebhookHandlerTests(APITestCase):
         return self.client.post(
             reverse("stripe-webhook"),
             **{
-                StripeHTTPHeaders.SIGNATURE: "t={},v1={}".format(
+                StripeHTTPHeaders.SIGNATURE: errorSig
+                or "t={},v1={}".format(
                     timestamp,
                     stripe.WebhookSignature._compute_signature(
                         "{}.{}".format(timestamp, request.body.decode("utf-8")),
@@ -74,6 +70,16 @@ class StripeWebhookHandlerTests(APITestCase):
             data=payload,
             format="json",
         )
+
+    def test_invalid_event_signature(self):
+        response = self._send_event(
+            payload={
+                "type": "blah",
+                "data": {},
+            },
+            errorSig="lol",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_invoice_payment_succeeded_sets_owner_delinquent_false(self):
         self.owner.deliquent = True
@@ -211,7 +217,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": "FOEKDCDEQ",
                         "customer": "sdo050493",
-                        "plan": {"id": "fieown4"},
+                        "plan": {"id": "?"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                     }
@@ -301,7 +307,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "fieown4"},
+                        "plan": {"id": "?"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
@@ -334,7 +340,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "fieown4"},
+                        "plan": {"id": "?"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
