@@ -1,4 +1,4 @@
-union UpdateDefaultOrganizationError = UnauthenticatedError | ValidationError
+union UpdateDefaultOrganizationError = UnauthenticatedError | ValidationError | UnauthorizedError
 
 type UpdateDefaultOrganizationPayload {
   error: UpdateDefaultOrganizationError
