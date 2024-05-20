@@ -1,6 +1,7 @@
 import os
 from urllib.parse import urlparse
 
+import django_prometheus
 import sentry_sdk
 from corsheaders.defaults import default_headers
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -252,7 +253,7 @@ if TIMESERIES_ENABLED:
         }
 
 # See https://django-postgres-extra.readthedocs.io/en/master/settings.html
-POSTGRES_EXTRA_DB_BACKEND_BASE: "django_prometheus.db.backends.postgresql"
+POSTGRES_EXTRA_DB_BACKEND_BASE: "django_prometheus.db.backends.postgresql"  # type: ignore
 
 # Allows to use the pgpartition command
 PSQLEXTRA_PARTITIONING_MANAGER = (

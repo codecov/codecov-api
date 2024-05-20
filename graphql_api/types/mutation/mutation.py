@@ -1,7 +1,5 @@
 from ariadne import MutationType
 
-from graphql_api.types.mutation.start_trial.start_trial import resolve_start_trial
-
 from .activate_measurements import (
     error_activate_measurements,
     resolve_activate_measurements,
