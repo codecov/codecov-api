@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from sentry_sdk import metrics as sentry_metrics
+
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,

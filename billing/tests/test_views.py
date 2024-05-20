@@ -2,10 +2,10 @@ import time
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from pytest import raises
 import stripe
 from django.conf import settings
 from freezegun import freeze_time
+from pytest import raises
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase

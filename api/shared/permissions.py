@@ -1,18 +1,19 @@
 import logging
-
 from typing import Any, Tuple
+
 from asgiref.sync import async_to_sync
 from django.conf import settings
-from django.http import Http404
-from rest_framework.permissions import SAFE_METHODS  # ['GET', 'HEAD', 'OPTIONS']
-from rest_framework.permissions import BasePermission
-from django.http import HttpRequest
+from django.http import Http404, HttpRequest
+from rest_framework.permissions import (
+    SAFE_METHODS,  # ['GET', 'HEAD', 'OPTIONS']
+    BasePermission,
+)
 
-from codecov_auth.models import Owner
-from core.models import Repository
 import services.self_hosted as self_hosted
 from api.shared.mixins import InternalPermissionsMixin, SuperPermissionsMixin
 from api.shared.repo.repository_accessors import RepoAccessors
+from codecov_auth.models import Owner
+from core.models import Repository
 from services.activation import try_auto_activate
 from services.decorators import torngit_safe
 from services.repo_providers import get_generic_adapter_params, get_provider
