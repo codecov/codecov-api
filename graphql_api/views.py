@@ -142,7 +142,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
                         )
-                except:
+                except Exception:
                     pass
             return response
 

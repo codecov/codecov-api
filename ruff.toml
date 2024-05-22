@@ -36,9 +36,9 @@ indent-width = 4
 target-version = "py312"
 
 [lint]
-# Currently only enabled for F541 and I: https://docs.astral.sh/ruff/rules/
-select = ["F", "I"]
-ignore = ["F841", "F401", "F405", "F403"]
+# Currently only enabled for F, I, and E rules, with a few exclusions: https://docs.astral.sh/ruff/rules/
+select = ["F", "I", "E"]
+ignore = ["F841", "F401", "F405", "F403", "E501", "E712", "E711"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 # The preferred method (for now) w.r.t. fixable rules is to manually update the makefile
