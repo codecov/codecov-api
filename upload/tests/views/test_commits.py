@@ -89,8 +89,26 @@ def test_commits_get(client, db):
     )
 
 
-def test_commits_get_no_auth(client, db):
+@pytest.mark.parametrize(
+    "repo_privacy,status_code,detail",
+    [
+        (
+            True,
+            401,
+            "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+            "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token",
+        ),
+        (
+            False,
+            200,
+            None,
+        ),
+    ],
+)
+def test_commits_get_no_auth(client, db, repo_privacy, status_code, detail):
     repo = RepositoryFactory(name="the-repo")
+    repo.private = repo_privacy
+    repo.save()
     CommitFactory(repository=repo)
     CommitFactory(repository=repo)
     repo_slug = f"{repo.author.username}::::{repo.name}"
@@ -99,12 +117,8 @@ def test_commits_get_no_auth(client, db):
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION="token BAD")
     res = client.get(url, format="json")
-    assert res.status_code == 401
-    assert (
-        res.json().get("detail")
-        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
-        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
-    )
+    assert res.status_code == status_code
+    assert res.json().get("detail") == detail
 
 
 def test_commit_post_empty(db, client, mocker):
@@ -188,25 +202,12 @@ def test_create_commit_already_exists(db, client, mocker):
     mocked_call.assert_called_with(commitid=commit.commitid, repoid=repository.repoid)
 
 
-@pytest.mark.parametrize("branch_sent", ["main", "someone/the_repo:main"])
+@pytest.mark.parametrize("branch_sent", ["someone/the_repo:main", "someone:main"])
 def test_commit_tokenless(db, branch_sent, client, mocker):
     repository = RepositoryFactory.create(
         private=False, author__username="codecov", name="the_repo"
     )
     mocked_call = mocker.patch.object(TaskService, "update_commit")
-
-    fake_provider_service = MagicMock(
-        name="fake_provider_service",
-        get_pull_request=AsyncMock(
-            return_value={
-                "base": {"slug": f"codecov/{repository.name}"},
-                "head": {"slug": f"someone/{repository.name}"},
-            }
-        ),
-    )
-    mocker.patch.object(
-        RepoProviderService, "get_adapter", return_value=fake_provider_service
-    )
 
     client = APIClient()
     repo_slug = f"{repository.author.username}::::{repository.name}"
@@ -222,14 +223,13 @@ def test_commit_tokenless(db, branch_sent, client, mocker):
             "branch": branch_sent,
         },
         format="json",
-        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
     )
     assert response.status_code == 201
     response_json = response.json()
     commit = Commit.objects.get(commitid="commit_sha")
     expected_response = {
         "author": None,
-        "branch": f"someone/{repository.name}:main",
+        "branch": f"{branch_sent}",
         "ci_passed": None,
         "commitid": "commit_sha",
         "message": None,
@@ -247,45 +247,6 @@ def test_commit_tokenless(db, branch_sent, client, mocker):
     }
     assert expected_response == response_json
     mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
-    fake_provider_service.get_pull_request.assert_called_with("4")
-
-
-def test_commit_tokenless_missing_branch(db, client, mocker):
-    repository = RepositoryFactory.create(
-        private=False, author__username="codecov", name="the_repo"
-    )
-    mocked_call = mocker.patch.object(TaskService, "update_commit")
-
-    fake_provider_service = MagicMock(
-        name="fake_provider_service",
-        get_pull_request=AsyncMock(
-            return_value={
-                "base": {"slug": f"codecov/{repository.name}"},
-                "head": {"slug": f"someone/{repository.name}"},
-            }
-        ),
-    )
-    mocker.patch.object(
-        RepoProviderService, "get_adapter", return_value=fake_provider_service
-    )
-
-    client = APIClient()
-    repo_slug = f"{repository.author.username}::::{repository.name}"
-    url = reverse(
-        "new_upload.commits",
-        args=[repository.author.service, repo_slug],
-    )
-    response = client.post(
-        url,
-        {
-            "commitid": "commit_sha",
-            "pullid": "4",
-        },
-        format="json",
-        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
-    )
-    assert response.status_code == 400
-    mocked_call.assert_not_called()
 
 
 @patch("upload.helpers.jwt.decode")

@@ -309,22 +309,11 @@ def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
         private=False,
     )
     commit = CommitFactory(repository=repository)
+    commit.branch = "someone:branch_name"
     commit_report = CommitReport.objects.create(commit=commit, code="code")
     repository.save()
     commit_report.save()
-
-    fake_provider_service = MagicMock(
-        name="fake_provider_service",
-        get_pull_request=AsyncMock(
-            return_value={
-                "base": {"slug": f"codecov/{repository.name}"},
-                "head": {"slug": f"someone/{repository.name}"},
-            }
-        ),
-    )
-    mocker.patch.object(
-        RepoProviderService, "get_adapter", return_value=fake_provider_service
-    )
+    commit.save()
 
     client = APIClient()
     url = reverse(
@@ -343,11 +332,9 @@ def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
             "flags": ["flag1", "flag2"],
             "version": "version",
         },
-        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
     )
     assert response.status_code == 201
     response_json = response.json()
-    fake_provider_service.get_pull_request.assert_called_with("4")
     upload = ReportSession.objects.filter(
         report_id=commit_report.id, upload_extras={"format_version": "v1"}
     ).first()

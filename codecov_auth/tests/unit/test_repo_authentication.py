@@ -21,10 +21,15 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryTokenAuthentication,
     TokenlessAuth,
     TokenlessAuthentication,
+    TokenlessCommitAuthentication,
 )
 from codecov_auth.models import SERVICE_GITHUB, OrganizationLevelToken, RepositoryToken
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
+from core.tests.factories import (
+    CommitFactory,
+    RepositoryFactory,
+    RepositoryTokenFactory,
+)
 
 
 class TestRepositoryLegacyQueryTokenAuthentication(object):
@@ -412,7 +417,9 @@ class TestOrgLevelTokenAuthentication(object):
 class TestTokenlessAuth(object):
     @pytest.mark.parametrize(
         "headers",
-        [{}, {"X-Tokenless": "user-name/repo-forked"}, {"X-Tokenless-PR": "15"}],
+        [
+            {},
+        ],
     )
     def test_tokenless_missing_headers(self, headers):
         request = APIRequestFactory().post(
@@ -420,8 +427,9 @@ class TestTokenlessAuth(object):
             headers=headers,
         )
         authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is None
+        with pytest.raises(exceptions.AuthenticationFailed) as exp:
+            authentication.authenticate(request)
+        assert str(exp.value) == "Not valid tokenless upload"
 
     def test_tokenless_bad_path(self):
         request = APIRequestFactory().post(
@@ -509,10 +517,10 @@ class TestTokenlessAuth(object):
         assert repo.service == "github"
         request = APIRequestFactory().post(
             request_uri,
-            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+            headers={"X-Tokenless": "user:branch"},
         )
-        authentication = TokenlessAuthentication()
-        assert authentication._get_repo_info_from_request_path(request) == repo
+        authentication = TokenlessCommitAuthentication()
+        assert authentication._get_info_from_request_path(request) == repo
 
     def test_tokenless_private_repo(self, db):
         repo = RepositoryFactory()
@@ -529,64 +537,18 @@ class TestTokenlessAuth(object):
         assert str(exp.value) == "Not valid tokenless upload"
 
     @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
-    def test_tokenless_pr_not_found(self, mock_repo_provider, db, mocker):
-        repo = RepositoryFactory(private=False)
-        mock_adapter = MagicMock(
-            name="mock_provider_adapter",
-            get_pull_request=MagicMock(
-                name="mock_get_pr", side_effect=TorngitObjectNotFoundError({}, "oh no")
-            ),
-        )
-        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
-
-        request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
-        )
-        authentication = TokenlessAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed) as exp:
-            authentication.authenticate(request)
-        assert str(exp.value) == "Not valid tokenless upload"
-        mock_adapter.get_pull_request.assert_called_with("15")
-
-    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
-    def test_tokenless_pr_from_different_fork(self, mock_repo_provider, db, mocker):
-        repo = RepositoryFactory(private=False)
-        pr_info = {
-            "base": {"slug": f"{repo.author.username}/{repo.name}"},
-            "head": {"slug": f"some-user/{repo.name}"},
-        }
-        mock_adapter = MagicMock(
-            name="mock_provider_adapter",
-            get_pull_request=AsyncMock(name="mock_get_pr", return_value=pr_info),
-        )
-        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
-        request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
-        )
-        authentication = TokenlessAuthentication()
-        with pytest.raises(exceptions.AuthenticationFailed) as exp:
-            authentication.authenticate(request)
-        assert str(exp.value) == "Not valid tokenless upload"
-        mock_adapter.get_pull_request.assert_called_with("15")
-
-    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
     def test_tokenless_success(self, mock_repo_provider, db, mocker):
         repo = RepositoryFactory(private=False)
-        pr_info = {
-            "base": {"slug": f"{repo.author.username}/{repo.name}"},
-            "head": {"slug": f"some-user/{repo.name}"},
-        }
-        mock_adapter = MagicMock(
-            name="mock_provider_adapter",
-            get_pull_request=AsyncMock(name="mock_get_pr", return_value=pr_info),
-        )
-        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
+
+        commit = CommitFactory()
+        commit.branch = "some_user:branch_name"
+        commit.save()
 
         request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": f"some-user/{repo.name}", "X-Tokenless-PR": "15"},
+            f"/upload/github/{repo.author.username}::::{repo.name}/commits/{commit.commitid}/reports/report_code/uploads",
+            headers={
+                "X-Tokenless": "some_user:branch_name",
+            },
         )
         authentication = TokenlessAuthentication()
         res = authentication.authenticate(request)
@@ -594,45 +556,3 @@ class TestTokenlessAuth(object):
         repo_as_user, auth_class = res
         assert repo_as_user.is_authenticated()
         assert isinstance(auth_class, TokenlessAuth)
-        mock_adapter.get_pull_request.assert_called_with("15")
-
-    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
-    def test_tokenless_rate_limit(self, mock_repo_provider, db, mocker):
-        repo = RepositoryFactory(private=False)
-        err = TorngitRateLimitError(
-            "error", "err msg", int(datetime.now().timestamp()) + 20, None
-        )
-        mock_adapter = MagicMock(
-            name="mock_provider_adapter",
-            get_pull_request=AsyncMock(name="mock_get_pr", side_effect=err),
-        )
-        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
-
-        request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": f"some-user/{repo.name}", "X-Tokenless-PR": "15"},
-        )
-        authentication = TokenlessAuthentication()
-
-        with pytest.raises(exceptions.Throttled):
-            res = authentication.authenticate(request)
-        mock_adapter.get_pull_request.assert_called_with("15")
-
-    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
-    def test_tokenless_rate_limit_retry_after(self, mock_repo_provider, db, mocker):
-        repo = RepositoryFactory(private=False)
-        err = TorngitRateLimitError("error", "err msg", None, 20)
-        mock_adapter = MagicMock(
-            name="mock_provider_adapter",
-            get_pull_request=AsyncMock(name="mock_get_pr", side_effect=err),
-        )
-        mock_repo_provider.return_value.get_adapter.return_value = mock_adapter
-
-        request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": f"some-user/{repo.name}", "X-Tokenless-PR": "15"},
-        )
-        authentication = TokenlessAuthentication()
-        with pytest.raises(exceptions.Throttled):
-            res = authentication.authenticate(request)
-        mock_adapter.get_pull_request.assert_called_with("15")

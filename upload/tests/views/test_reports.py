@@ -12,13 +12,27 @@ from services.task.task import TaskService
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 
-def test_reports_get_not_allowed(client, mocker):
+def test_reports_get_not_allowed(client, mocker, db):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-    url = reverse("new_upload.reports", args=["service", "the-repo", "commit-sha"])
-    assert url == "/upload/service/the-repo/commits/commit-sha/reports"
-    res = client.get(url)
+    owner = OwnerFactory(service="github")
+    repo = RepositoryFactory(name="the_repo", private=False, author=owner)
+    commit = CommitFactory(repository=repo)
+    commit.branch = "someone:branch"
+    owner.save()
+    repo.save()
+    commit.save()
+    headers = {}
+    url = reverse(
+        "new_upload.reports",
+        args=["github", f"{owner.username}::::the_repo", commit.commitid],
+    )
+    assert (
+        url
+        == f"/upload/github/{owner.username}::::the_repo/commits/{commit.commitid}/reports"
+    )
+    res = client.get(url, **headers)
     assert res.status_code == 405
 
 
@@ -100,6 +114,7 @@ def test_reports_post_no_auth(db, mocker):
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
+    repository.private = False
     token = "BAD"
     commit = CommitFactory(repository=repository)
     repository.save()
@@ -131,20 +146,9 @@ def test_reports_post_tokenless(client, db, mocker):
         private=False,
     )
     commit = CommitFactory(repository=repository)
+    commit.branch = "someone:branch"
     repository.save()
-
-    fake_provider_service = MagicMock(
-        name="fake_provider_service",
-        get_pull_request=AsyncMock(
-            return_value={
-                "base": {"slug": f"codecov/{repository.name}"},
-                "head": {"slug": f"someone/{repository.name}"},
-            }
-        ),
-    )
-    mocker.patch.object(
-        RepoProviderService, "get_adapter", return_value=fake_provider_service
-    )
+    commit.save()
 
     client = APIClient()
     url = reverse(
@@ -154,7 +158,7 @@ def test_reports_post_tokenless(client, db, mocker):
     response = client.post(
         url,
         data={"code": "code1"},
-        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
+        headers={},
     )
 
     assert (
@@ -165,7 +169,6 @@ def test_reports_post_tokenless(client, db, mocker):
         commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
-    fake_provider_service.get_pull_request.assert_called_with("4")
 
 
 def test_reports_post_tokenless_fail(client, db, mocker):
@@ -173,23 +176,10 @@ def test_reports_post_tokenless_fail(client, db, mocker):
         name="the_repo",
         author__username="codecov",
         author__service="github",
-        private=False,
+        private=True,
     )
     commit = CommitFactory(repository=repository)
     repository.save()
-
-    fake_provider_service = MagicMock(
-        name="fake_provider_service",
-        get_pull_request=AsyncMock(
-            return_value={
-                "base": {"slug": f"codecov/{repository.name}"},
-                "head": {"slug": f"someone/{repository.name}"},
-            }
-        ),
-    )
-    mocker.patch.object(
-        RepoProviderService, "get_adapter", return_value=fake_provider_service
-    )
 
     client = APIClient()
     url = reverse(
