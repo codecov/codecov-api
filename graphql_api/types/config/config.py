@@ -1,10 +1,7 @@
 from distutils.util import strtobool
 from typing import List, Optional
 
-from typing import List
-
 from ariadne import ObjectType
-from distutils.util import strtobool
 from django.conf import settings
 from graphql.type.definition import GraphQLResolveInfo
 
