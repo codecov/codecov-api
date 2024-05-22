@@ -1,12 +1,12 @@
 import json
 import logging
 import os
-import re
 import socket
 import time
 from asyncio import iscoroutine
 from typing import Any, Collection, Optional
 
+import regex
 from ariadne import format_error
 from ariadne.types import Extension
 from ariadne.validation import cost_validator
@@ -22,6 +22,7 @@ from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
 from codecov.db import sync_to_async
 from services import ServiceException
+
 from .schema import schema
 
 log = logging.getLogger(__name__)
@@ -71,7 +72,13 @@ class QueryMetricsExtension(Extension):
     def set_type_and_name(self, query):
         operation_type = "unknown_type"  # default value
         operation_name = "unknown_name"  # default value
-        match_obj = re.match(GQL_TYPE_AND_NAME_PATTERN, query)
+        try:
+            match_obj = regex.match(GQL_TYPE_AND_NAME_PATTERN, query, timeout=2)
+        except TimeoutError:
+            # does not block the rest of the gql request, logs and falls back to default values
+            query_slice = query[:30] if len(query) > 30 else query
+            log.error("Regex Timeout Error", extra=dict(query_slice=query_slice))
+            match_obj = None
 
         if match_obj:
             if match_obj.group(1) is not None:

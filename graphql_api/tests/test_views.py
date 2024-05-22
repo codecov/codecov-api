@@ -8,8 +8,9 @@ from django.urls import ResolverMatch
 from prometheus_client import REGISTRY
 
 from codecov.commands.exceptions import Unauthorized
-from .helper import GraphQLTestHelper
+
 from ..views import AsyncGraphqlView, QueryMetricsExtension
+from .helper import GraphQLTestHelper
 
 
 def generate_schema_that_raise_with(exception):
@@ -172,3 +173,30 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
                 query_slice="{ failing }",
             ),
         )
+
+    @patch("regex.match")
+    @patch("logging.Logger.error")
+    @patch("logging.Logger.info")
+    async def test_query_metrics_extension_set_type_and_name_timeout(
+        self, patched_info_log, patched_error_log, patched_regex
+    ):
+        patched_regex.side_effect = TimeoutError
+        extension = QueryMetricsExtension()
+        sample_named_query = "query MySession { operation body }"
+
+        extension.set_type_and_name(query=sample_named_query)
+
+        patched_info_log.assert_called_with(
+            "Could not match gql query format for logging",
+            extra=dict(
+                query_slice=sample_named_query[:30],
+            ),
+        )
+        patched_error_log.assert_called_with(
+            "Regex Timeout Error",
+            extra=dict(
+                query_slice=sample_named_query[:30],
+            ),
+        )
+        assert extension.operation_type == "unknown_type"
+        assert extension.operation_name == "unknown_name"

@@ -7,8 +7,9 @@ from prometheus_client import REGISTRY
 
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.types.user.user import resolve_customer_intent
+
+from ..views import GQL_ERROR_COUNTER, GQL_HIT_COUNTER, GQL_REQUEST_LATENCIES
 from .helper import GraphQLTestHelper
-from ..views import GQL_HIT_COUNTER, GQL_ERROR_COUNTER, GQL_REQUEST_LATENCIES
 
 
 @freeze_time("2023-06-19")

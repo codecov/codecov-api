@@ -14,11 +14,13 @@ from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
+    OwnerFactory,
     UserFactory,
 )
 from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
+
 from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
