@@ -3,6 +3,7 @@ import logging
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from sentry_sdk import metrics as sentry_metrics
+
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,

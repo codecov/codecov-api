@@ -8,8 +8,9 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 from sentry_sdk import metrics as sentry_metrics
+from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
+
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
@@ -21,8 +22,8 @@ from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
 from upload.helpers import (
-    try_to_get_best_possible_bot_token,
     generate_upload_sentry_metrics_tags,
+    try_to_get_best_possible_bot_token,
 )
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
