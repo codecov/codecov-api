@@ -15,6 +15,7 @@ from .delete_component_measurements import (
 )
 from .delete_flag import error_delete_flag, resolve_delete_flag
 from .delete_session import error_delete_session, resolve_delete_session
+from .erase_repository import error_erase_repository, resolve_erase_repository
 from .onboard_user import error_onboard_user, resolve_onboard_user
 from .regenerate_org_upload_token import (
     error_generate_org_upload_token,
@@ -41,7 +42,6 @@ from .update_default_organization import (
     resolve_update_default_organization,
 )
 from .update_profile import error_update_profile, resolve_update_profile
-from .erase_repository import error_erase_repository, resolve_erase_repository
 
 mutation_bindable = MutationType()
 

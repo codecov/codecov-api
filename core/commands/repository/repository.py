@@ -1,13 +1,13 @@
 from codecov.commands.base import BaseCommand
+from codecov_auth.models import Owner
 from timeseries.models import MeasurementName
 
 from .interactors.activate_measurements import ActivateMeasurementsInteractor
+from .interactors.erase_repository import EraseRepositoryInteractor
 from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
 from .interactors.regenerate_repository_token import RegenerateRepositoryTokenInteractor
-from .interactors.erase_repository import EraseRepositoryInteractor
-from codecov_auth.models import Owner
 
 
 class RepositoryCommands(BaseCommand):
