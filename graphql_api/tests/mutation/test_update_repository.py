@@ -1,6 +1,7 @@
+from django.test import TransactionTestCase, override_settings
+
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import BranchFactory, RepositoryFactory
-from django.test import TransactionTestCase, override_settings
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
