@@ -48,7 +48,7 @@ sentry-sdk>=1.40.0
 sentry-sdk[celery]
 setproctitle
 simplejson
-stripe
+stripe>=9.6.0
 urllib3>=1.26.17
 vcrpy
 whitenoise

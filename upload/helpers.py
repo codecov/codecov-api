@@ -222,37 +222,16 @@ def parse_params(data):
     return v.document
 
 
-def get_repo_with_github_actions_oidc_token(token, token_slice=None):
+def get_repo_with_github_actions_oidc_token(token):
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     token_issuer = str(unverified_contents.get("iss"))
-    log.info(
-        "In GitHubOIDCTokenAuthentication 3",
-        extra=dict(
-            token_slice=token_slice,
-            unverified_contents=unverified_contents,
-            token_issuer=token_issuer,
-        ),
-    )
     if token_issuer == "https://token.actions.githubusercontent.com":
         service = "github"
         jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
-        log.info(
-            "In GitHubOIDCTokenAuthentication 4",
-            extra=dict(
-                token_slice=token_slice,
-                token_issuer=token_issuer,
-                service=service,
-                jwks_url=jwks_url,
-            ),
-        )
     else:
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
-        log.info(
-            "In GitHubOIDCTokenAuthentication 5",
-            extra=dict(token_slice=token_slice, service=service, jwks_url=jwks_url),
-        )
     jwks_client = PyJWKClient(jwks_url)
     signing_key = jwks_client.get_signing_key_from_jwt(token)
     data = jwt.decode(
@@ -262,29 +241,10 @@ def get_repo_with_github_actions_oidc_token(token, token_slice=None):
         audience=[settings.CODECOV_API_URL, settings.CODECOV_URL],
     )
     repo = str(data.get("repository")).split("/")[-1]
-    log.info(
-        "In GitHubOIDCTokenAuthentication 6",
-        extra=dict(
-            token_slice=token_slice,
-            decoded_token=data,
-            repo=repo,
-        ),
-    )
     repository = Repository.objects.get(
         author__service=service,
         name=repo,
         author__username=data.get("repository_owner"),
-    )
-    log.info(
-        "In GitHubOIDCTokenAuthentication 7",
-        extra=dict(
-            token_slice=token_slice,
-            author__service=service,
-            repo=repo,
-            author__username=data.get("repository_owner"),
-            repoid=repository.repoid,
-            repo_obj=str(repository),  # Repo<author/name>
-        ),
     )
     return repository
 
@@ -821,12 +781,13 @@ def get_version_from_headers(headers):
 
 
 def generate_upload_sentry_metrics_tags(
-    action, request, repository, is_shelter_request
+    action, request, repository, is_shelter_request, endpoint: Optional[str] = None
 ):
     return dict(
         agent=get_agent_from_headers(request.headers),
         version=get_version_from_headers(request.headers),
         action=action,
+        endpoint=endpoint,
         repo_visibility="private" if repository.private is True else "public",
         is_using_shelter="yes" if is_shelter_request else "no",
     )

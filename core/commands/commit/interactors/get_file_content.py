@@ -21,7 +21,7 @@ class GetFileContentInteractor(BaseInteractor):
             return content.get("content").decode("utf-8")
         # TODO raise this to the API so we can handle it.
         except Exception:
-            log.exception(
+            log.info(
                 "GetFileContentInteractor - exception raised",
                 extra=dict(commitid=commit.commitid),
             )

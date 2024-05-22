@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from typing import Any, Iterable, List, Mapping, Optional
+from datetime import datetime
+from typing import Iterable, List, Mapping, Optional
 
 import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
@@ -529,3 +529,13 @@ def resolve_is_first_pull_request(repository: Repository, info) -> bool:
         return not first_pr.compared_to
 
     return False
+
+
+@repository_bindable.field("encodedSecretString")
+@sync_to_async
+def resolve_encoded_secret_string(
+    repository: Repository, info: GraphQLResolveInfo, value: str
+) -> dict[str, str]:
+    command = info.context["executor"].get_command("repository")
+    owner = info.context["request"].current_owner
+    return {"value": command.encode_secret_string(owner, repository, value)}
