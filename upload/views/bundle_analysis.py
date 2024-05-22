@@ -6,8 +6,9 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
 from sentry_sdk import metrics as sentry_metrics
+from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
+
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
