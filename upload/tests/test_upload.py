@@ -1065,7 +1065,6 @@ class UploadHandlerRouteTest(APITestCase):
             "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
             "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
             "url": None,
-            "branch": None,
             "job": None,
         }
 
@@ -1143,7 +1142,6 @@ class UploadHandlerRouteTest(APITestCase):
             "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
             "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
             "url": None,
-            "branch": None,
             "job": None,
         }
 
