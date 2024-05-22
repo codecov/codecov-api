@@ -1,13 +1,13 @@
 from typing import Optional
 
-from django.conf import settings
-
 import services.self_hosted as self_hosted
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov.db import sync_to_async
+from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
 from core.models import Repository
+from django.conf import settings
 
 
 class UpdateRepositoryInteractor(BaseInteractor):
@@ -15,12 +15,8 @@ class UpdateRepositoryInteractor(BaseInteractor):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
-        if settings.IS_ENTERPRISE:
-            if not self_hosted.is_admin_owner(self.current_owner):
-                raise Unauthorized()
-        else:
-            if not owner.is_admin(self.current_owner):
-                raise Unauthorized()
+        if not current_user_part_of_org(self.current_owner, owner):
+            raise Unauthorized()
 
     @sync_to_async
     def execute(

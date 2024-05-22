@@ -1,3 +1,5 @@
+from typing import Optional
+
 from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner
 from core.models import Repository
@@ -15,9 +17,15 @@ class RepositoryCommands(BaseCommand):
     def fetch_repository(self, owner, name):
         return self.get_interactor(FetchRepositoryInteractor).execute(owner, name)
 
-    def update_repository(self, owner: Owner, repo: Repository, value: str):
+    def update_repository(
+        self,
+        repo_name: str,
+        owner: Owner,
+        default_branch: Optional[str],
+        activated: Optional[bool],
+    ):
         return self.get_interactor(UpdateRepositoryInteractor).execute(
-            owner, repo, value
+            repo_name, owner, default_branch, activated
         )
 
     def get_upload_token(self, repository):
