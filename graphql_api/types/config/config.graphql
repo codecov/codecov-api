@@ -1,5 +1,6 @@
 type Config {
   loginProviders: [LoginProvider!]!
+  planAutoActivate: Boolean
   seatsUsed: Int
   seatsLimit: Int
   isTimescaleEnabled: Boolean!
