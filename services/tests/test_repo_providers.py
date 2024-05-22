@@ -136,7 +136,7 @@ class TestRepoProviderService(InternalAPITest):
     def get_owner_gh(self):
         return Owner.objects.filter(ownerid=self.repo_gh.author.ownerid).first()
 
-    def test_get_torngit_with_names(self):
+    def test_get_torngit_with_names_github(self):
         provider = RepoProviderService().get_by_name(
             self.repo_gh.author,
             self.repo_gh.name,
@@ -145,7 +145,7 @@ class TestRepoProviderService(InternalAPITest):
         )
         assert isinstance(Github(), type(provider))
 
-    def test_get_torngit_with_names(self):
+    def test_get_torngit_with_names_gitlab(self):
         provider = RepoProviderService().get_by_name(
             self.repo_gl.author,
             self.repo_gl.name,
@@ -266,8 +266,8 @@ class TestRepoProviderService(InternalAPITest):
                     token=encryptor.decrypt_token(repo.bot.oauth_token),
                     verify_ssl="ssl_pem",
                     oauth_consumer_token=dict(
-                        key=getattr(settings, f"GITHUB_CLIENT_ID", "unknown"),
-                        secret=getattr(settings, f"GITHUB_CLIENT_SECRET", "unknown"),
+                        key=getattr(settings, "GITHUB_CLIENT_ID", "unknown"),
+                        secret=getattr(settings, "GITHUB_CLIENT_SECRET", "unknown"),
                     ),
                 ),
             ),
@@ -302,8 +302,8 @@ class TestRepoProviderService(InternalAPITest):
                     token=encryptor.decrypt_token(repo.bot.oauth_token),
                     verify_ssl="REQUESTS_CA_BUNDLE",
                     oauth_consumer_token=dict(
-                        key=getattr(settings, f"GITHUB_CLIENT_ID", "unknown"),
-                        secret=getattr(settings, f"GITHUB_CLIENT_SECRET", "unknown"),
+                        key=getattr(settings, "GITHUB_CLIENT_ID", "unknown"),
+                        secret=getattr(settings, "GITHUB_CLIENT_SECRET", "unknown"),
                     ),
                 ),
             ),

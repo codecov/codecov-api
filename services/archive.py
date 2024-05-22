@@ -42,7 +42,6 @@ class MinioEndpoints(Enum):
 # Service class for performing archive operations. Meant to work against the
 # underlying StorageService
 class ArchiveService(object):
-
     """
     The root level of the archive. In s3 terms,
     this would be the name of the bucket

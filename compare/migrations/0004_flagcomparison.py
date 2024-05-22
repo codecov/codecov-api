@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reports", "0003_auto_20211118_1150"),
         ("compare", "0003_commitcomparison_error"),

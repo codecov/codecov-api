@@ -1,11 +1,5 @@
 import os
 
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.httpx import HttpxIntegration
-from sentry_sdk.integrations.redis import RedisIntegration
-
 from .settings_base import *
 
 DEBUG = False
@@ -30,6 +24,17 @@ STRIPE_PLAN_IDS = {
     "users-enterprisem": "price_1LmjypGlVGuVgOrkzKtNqhwW",
     "users-teamm": "price_1NqPKdGlVGuVgOrkm9OFvtz8",
     "users-teamy": "price_1NrlXiGlVGuVgOrkgMTw5yno",
+}
+
+STRIPE_PLAN_VALS = {
+    "price_1Gv2B8GlVGuVgOrkFnLunCgc": "users-pr-inappm",
+    "price_1Gv2COGlVGuVgOrkuOYVLIj7": "users-pr-inappy",
+    "price_1MlY9yGlVGuVgOrkHluurBtJ": "users-sentrym",
+    "price_1MlYAYGlVGuVgOrke9SdbBUn": "users-sentryy",
+    "price_1LmjzwGlVGuVgOrkIwlM46EU": "users-enterprisey",
+    "price_1LmjypGlVGuVgOrkzKtNqhwW": "users-enterprisem",
+    "price_1NqPKdGlVGuVgOrkm9OFvtz8": "users-teamm",
+    "price_1NrlXiGlVGuVgOrkgMTw5yno": "users-teamy",
 }
 
 CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]

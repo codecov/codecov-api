@@ -69,9 +69,9 @@ class UploadHandler(APIView, ShelterMixin):
         response["Accept"] = "text/*"
         response["Access-Control-Allow-Origin"] = "*"
         response["Access-Control-Allow-Method"] = "POST"
-        response[
-            "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        response["Access-Control-Allow-Headers"] = (
+            "Origin, Content-Type, Accept, X-User-Agent"
+        )
 
         return response
 
@@ -91,9 +91,9 @@ class UploadHandler(APIView, ShelterMixin):
         # Set response headers
         response = HttpResponse()
         response["Access-Control-Allow-Origin"] = "*"
-        response[
-            "Access-Control-Allow-Headers"
-        ] = "Origin, Content-Type, Accept, X-User-Agent"
+        response["Access-Control-Allow-Headers"] = (
+            "Origin, Content-Type, Accept, X-User-Agent"
+        )
 
         # Parse request parameters
         request_params = {
@@ -159,6 +159,7 @@ class UploadHandler(APIView, ShelterMixin):
 
         sentry_tags = generate_upload_sentry_metrics_tags(
             action="coverage",
+            endpoint="legacy_upload",
             request=self.request,
             repository=repository,
             is_shelter_request=self.is_shelter_request(),

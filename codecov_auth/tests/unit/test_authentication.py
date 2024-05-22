@@ -45,7 +45,7 @@ class UserTokenAuthenticationTests(TestCase):
     def test_bearer_token_auth_invalid_token(self):
         request_factory = APIRequestFactory()
         request = request_factory.get(
-            "", HTTP_AUTHORIZATION=f"Bearer 8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
+            "", HTTP_AUTHORIZATION="Bearer 8f9bc6cb-fd14-43bc-bbb5-be1e7c948f34"
         )
 
         authenticator = UserTokenAuthentication()

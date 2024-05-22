@@ -109,7 +109,9 @@ class UploadDownloadHelperTest(APITransactionTestCase):
         assert response.status_code == 302
         headers = response.headers
         assert headers["location"] == "presigned-url"
-        assert create_presigned_get.called_once_with("archive", "v4/raw/hasssshhh", 30)
+        create_presigned_get.assert_called_once_with(
+            "archive", "v4/raw/hasssshhh", expires=30
+        )
 
     @patch("services.archive.ArchiveService.read_file")
     def test_invalid_repo_archive_path(self, mock_read_file):

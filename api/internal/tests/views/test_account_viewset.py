@@ -8,7 +8,7 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-from stripe.error import StripeError
+from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.models import Service
@@ -203,7 +203,7 @@ class AccountViewSetTests(APITestCase):
             {},
             {
                 "start_date": schedule_params["start_date"],
-                "plans": [
+                "items": [
                     {
                         "plan": schedule_params["stripe_plan_id"],
                         "quantity": schedule_params["quantity"],
@@ -295,15 +295,15 @@ class AccountViewSetTests(APITestCase):
         phases = [
             {
                 "start_date": 123689126536,
-                "plans": [{"plan": "test_plan_123", "quantity": 4}],
+                "items": [{"plan": "test_plan_123", "quantity": 4}],
             },
             {
                 "start_date": 123689126636,
-                "plans": [{"plan": "test_plan_456", "quantity": 5}],
+                "items": [{"plan": "test_plan_456", "quantity": 5}],
             },
             {
                 "start_date": schedule_params["start_date"],
-                "plans": [
+                "items": [
                     {
                         "plan": schedule_params["stripe_plan_id"],
                         "quantity": schedule_params["quantity"],

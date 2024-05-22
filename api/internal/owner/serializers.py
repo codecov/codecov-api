@@ -134,7 +134,7 @@ class PlanSerializer(serializers.Serializer):
         if value not in plan_values:
             if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
                 log.warning(
-                    f"Non-Sentry user attempted to transition to Sentry plan",
+                    "Non-Sentry user attempted to transition to Sentry plan",
                     extra=dict(owner_id=current_owner.pk, plan=value),
                 )
             raise serializers.ValidationError(
@@ -149,11 +149,11 @@ class PlanSerializer(serializers.Serializer):
         if plan["value"] in PAID_PLANS:
             if "quantity" not in plan:
                 raise serializers.ValidationError(
-                    f"Field 'quantity' required for updating to paid plans"
+                    "Field 'quantity' required for updating to paid plans"
                 )
             if plan["quantity"] <= 1:
                 raise serializers.ValidationError(
-                    f"Quantity for paid plan must be greater than 1"
+                    "Quantity for paid plan must be greater than 1"
                 )
 
             plan_service = PlanService(current_org=owner)
@@ -161,7 +161,7 @@ class PlanSerializer(serializers.Serializer):
 
             if plan["quantity"] < owner.activated_user_count and not is_org_trialing:
                 raise serializers.ValidationError(
-                    f"Quantity cannot be lower than currently activated user count"
+                    "Quantity cannot be lower than currently activated user count"
                 )
             if (
                 plan["quantity"] == owner.plan_user_count
@@ -169,7 +169,7 @@ class PlanSerializer(serializers.Serializer):
                 and not is_org_trialing
             ):
                 raise serializers.ValidationError(
-                    f"Quantity or plan for paid plan must be different from the existing one"
+                    "Quantity or plan for paid plan must be different from the existing one"
                 )
             if (
                 plan["value"] in TEAM_PLAN_REPRESENTATIONS
@@ -199,7 +199,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
     quantity = serializers.SerializerMethodField()
 
     def get_plan(self, phase):
-        plan_id = phase["plans"][0]["plan"]
+        plan_id = phase["items"][0]["plan"]
         stripe_plan_dict = settings.STRIPE_PLAN_IDS
         plan_name = list(stripe_plan_dict.keys())[
             list(stripe_plan_dict.values()).index(plan_id)
@@ -208,7 +208,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         return marketing_plan_name
 
     def get_quantity(self, phase):
-        return phase["plans"][0]["quantity"]
+        return phase["items"][0]["quantity"]
 
 
 class ScheduleDetailSerializer(serializers.Serializer):

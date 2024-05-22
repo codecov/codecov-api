@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from freezegun import freeze_time
+from pytest import raises
 
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.tests.factories import OwnerFactory
@@ -316,6 +317,51 @@ class PlanServiceTests(TestCase):
         plan_service = PlanService(current_org=current_org)
 
         assert plan_service.has_trial_dates == True
+
+    def test_plan_service_has_seats_left(self):
+        current_org = OwnerFactory(
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            plan_user_count=6,
+            plan_activated_users=[i for i in range(5)],
+        )
+        plan_service = PlanService(current_org=current_org)
+
+        assert plan_service.has_seats_left == True
+
+    def test_plan_service_has_no_seats_left(self):
+        current_org = OwnerFactory(
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            plan_user_count=5,
+            plan_activated_users=[i for i in range(5)],
+        )
+        plan_service = PlanService(current_org=current_org)
+
+        assert plan_service.has_seats_left == False
+
+    def test_plan_service_update_plan_invalid_name(self):
+        current_org = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        plan_service = PlanService(current_org=current_org)
+
+        with raises(ValueError, match="Unsupported plan"):
+            plan_service.update_plan(name="blah", user_count=1)
+
+    def test_plan_service_update_plan_invalid_user_count(self):
+        current_org = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        plan_service = PlanService(current_org=current_org)
+
+        with raises(ValueError, match="Quantity Needed"):
+            plan_service.update_plan(
+                name=PlanName.BASIC_PLAN_NAME.value, user_count=None
+            )
+
+    def test_plan_service_update_plan_succeeds(self):
+        current_org = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        plan_service = PlanService(current_org=current_org)
+
+        plan_service.update_plan(name=PlanName.TEAM_MONTHLY.value, user_count=8)
+
+        assert current_org.plan == PlanName.TEAM_MONTHLY.value
+        assert current_org.plan_user_count == 8
 
 
 class AvailablePlansBeforeTrial(TestCase):

@@ -48,6 +48,7 @@ def test_empty_upload_with_yaml_ignored_files(
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
+    mock_sentry_metrics = mocker.patch("upload.views.empty_upload.sentry_metrics.incr")
     mock_final_yaml.return_value = UserYaml(
         {
             "ignore": [
@@ -79,9 +80,7 @@ def test_empty_upload_with_yaml_ignored_files(
             commit.commitid,
         ],
     )
-    response = client.post(
-        url,
-    )
+    response = client.post(url, headers={"User-Agent": "codecov-cli/0.4.7"})
     response_json = response.json()
     assert response.status_code == 200
     assert (
@@ -90,6 +89,17 @@ def test_empty_upload_with_yaml_ignored_files(
     )
     notify_mock.assert_called_once_with(
         repoid=repository.repoid, commitid=commit.commitid, empty_upload="pass"
+    )
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "endpoint": "empty_upload",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
     )
 
 
@@ -442,4 +452,32 @@ def test_empty_upload_no_commit_pr_id(
     assert response_json.get("non_ignored_files") == []
     notify_mock.assert_called_once_with(
         repoid=repository.repoid, commitid=commit.commitid, empty_upload="pass"
+    )
+
+
+def test_empty_upload_no_auth(db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    commit = CommitFactory(repository=repository)
+    token = "BAD"
+    client = APIClient()
+    url = reverse(
+        "new_upload.empty_upload",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+        ],
+    )
+    response = client.post(
+        url,
+        headers={"Authorization": f"token {token}"},
+    )
+    response_json = response.json()
+    assert response.status_code == 401
+    assert (
+        response_json.get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
     )

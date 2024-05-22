@@ -8,6 +8,7 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
+from sentry_sdk import metrics as sentry_metrics
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
 from codecov_auth.authentication.repo_auth import (
@@ -15,11 +16,15 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    repo_auth_custom_exception_handler,
 )
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
-from upload.helpers import try_to_get_best_possible_bot_token
+from upload.helpers import (
+    generate_upload_sentry_metrics_tags,
+    try_to_get_best_possible_bot_token,
+)
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -71,6 +76,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
     ]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
         serializer = EmptyUploadSerializer(data=request.data)
@@ -125,7 +133,16 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 )
             )
         ]
-
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="empty_upload",
+                request=self.request,
+                repository=repo,
+                is_shelter_request=self.is_shelter_request(),
+            ),
+        )
         if set(changed_files) == set(ignored_changed_files):
             TaskService().notify(
                 repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
@@ -142,6 +159,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         TaskService().notify(
             repoid=repo.repoid, commitid=commit.commitid, empty_upload="fail"
         )
+
         return Response(
             data={
                 "result": "Some files cannot be ignored. Triggering failing notifications.",
@@ -155,7 +173,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
         except TorngitClientError:
             log.warning(
-                f"Request client error",
+                "Request client error",
                 extra=dict(
                     commit=commit.commitid,
                     repoid=commit.repository.repoid,
@@ -173,7 +191,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 )
         except TorngitClientGeneralError:
             log.warning(
-                f"Request client error",
+                "Request client error",
                 extra=dict(
                     commit=commit.commitid,
                     repoid=commit.repository.repoid,

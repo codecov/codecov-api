@@ -35,43 +35,49 @@ def resolve_bundle_analysis_comparison_result_type(obj, *_):
 
 
 @bundle_analysis_comparison_bindable.field("sizeDelta")
-def resolve_size_delta(bundles_analysis_comparison: BundleAnalysisComparison, info):
+def resolve_ba_comparison_size_delta(
+    bundles_analysis_comparison: BundleAnalysisComparison, info
+):
     return bundles_analysis_comparison.size_delta
 
 
 @bundle_analysis_comparison_bindable.field("sizeTotal")
-def resolve_size_total(bundles_analysis_comparison: BundleAnalysisComparison, info):
+def resolve_ba_comparison_size_total(
+    bundles_analysis_comparison: BundleAnalysisComparison, info
+):
     return bundles_analysis_comparison.size_total
 
 
 @bundle_analysis_comparison_bindable.field("loadTimeDelta")
-def resolve_load_time_delta(
+def resolve_ba_comparison_load_time_delta(
     bundles_analysis_comparison: BundleAnalysisComparison, info
 ):
     return bundles_analysis_comparison.load_time_delta
 
 
 @bundle_analysis_comparison_bindable.field("loadTimeTotal")
-def resolve_load_time_total(
+def resolve_ba_comparison_load_time_total(
     bundles_analysis_comparison: BundleAnalysisComparison, info
 ):
     return bundles_analysis_comparison.load_time_total
 
 
 @bundle_analysis_comparison_bindable.field("bundles")
-def resolve_bundles(bundles_analysis_comparison: BundleAnalysisComparison, info):
+def resolve_ba_comparison_bundles(
+    bundles_analysis_comparison: BundleAnalysisComparison, info
+):
     return bundles_analysis_comparison.bundles
 
 
 @bundle_analysis_comparison_bindable.field("bundleData")
-def resolve_bundle_data(
+def resolve_ba_comparison_bundle_data(
     bundles_analysis_comparison: BundleAnalysisComparison, info
 ) -> BundleData:
     return BundleData(bundles_analysis_comparison.size_total)
 
 
 @bundle_analysis_comparison_bindable.field("bundleChange")
-def resolve_bundle_delta(
+def resolve_ba_comparison_bundle_delta(
     bundles_analysis_comparison: BundleAnalysisComparison, info
 ) -> BundleData:
     return BundleData(bundles_analysis_comparison.size_delta)

@@ -24,6 +24,7 @@ def test_reports_get_not_allowed(client, mocker):
 
 def test_reports_post(client, db, mocker):
     mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
+    mock_sentry_metrics = mocker.patch("upload.views.reports.sentry_metrics.incr")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -35,7 +36,9 @@ def test_reports_post(client, db, mocker):
         "new_upload.reports",
         args=["github", "codecov::::the_repo", commit.commitid],
     )
-    response = client.post(url, data={"code": "code1"})
+    response = client.post(
+        url, data={"code": "code1"}, headers={"User-Agent": "codecov-cli/0.4.7"}
+    )
 
     assert (
         url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
@@ -45,6 +48,17 @@ def test_reports_post(client, db, mocker):
         commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "endpoint": "create_report",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
+    )
 
 
 @patch("upload.helpers.jwt.decode")
@@ -80,6 +94,32 @@ def test_reports_post_github_oidc_auth(
         commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+
+
+def test_reports_post_no_auth(db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    token = "BAD"
+    commit = CommitFactory(repository=repository)
+    repository.save()
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + token)
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(url, data={"code": "code1"})
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+    assert response.status_code == 401
+    assert (
+        response.json().get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
 
 
 def test_reports_post_tokenless(client, db, mocker):
@@ -126,6 +166,47 @@ def test_reports_post_tokenless(client, db, mocker):
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
     fake_provider_service.get_pull_request.assert_called_with("4")
+
+
+def test_reports_post_tokenless_fail(client, db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=False,
+    )
+    commit = CommitFactory(repository=repository)
+    repository.save()
+
+    fake_provider_service = MagicMock(
+        name="fake_provider_service",
+        get_pull_request=AsyncMock(
+            return_value={
+                "base": {"slug": f"codecov/{repository.name}"},
+                "head": {"slug": f"someone/{repository.name}"},
+            }
+        ),
+    )
+    mocker.patch.object(
+        RepoProviderService, "get_adapter", return_value=fake_provider_service
+    )
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+    response = client.post(
+        url,
+        data={"code": "code1"},
+        headers={"X-Tokenless": "someone/bad", "X-Tokenless-PR": "4"},
+    )
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+    assert response.status_code == 401
+    assert response.json().get("detail") == "Not valid tokenless upload"
 
 
 def test_create_report_already_exists(client, db, mocker):
@@ -219,6 +300,7 @@ def test_reports_results_post_successful_github_oidc_auth(
     mock_jwks_client, mock_jwt_decode, client, db, mocker
 ):
     mocked_task = mocker.patch("services.task.TaskService.create_report_results")
+    mock_sentry_metrics = mocker.patch("upload.views.reports.sentry_metrics.incr")
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -242,7 +324,12 @@ def test_reports_results_post_successful_github_oidc_auth(
         "new_upload.reports_results",
         args=["github", "codecov::::the_repo", commit.commitid, "code"],
     )
-    response = client.post(url, content_type="application/json", data={})
+    response = client.post(
+        url,
+        content_type="application/json",
+        data={},
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
 
     assert (
         url
@@ -253,6 +340,17 @@ def test_reports_results_post_successful_github_oidc_auth(
         report_id=commit_report.id,
     ).exists()
     mocked_task.assert_called_once()
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "coverage",
+            "endpoint": "create_report_results",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
+    )
 
 
 def test_reports_results_already_exists_post_successful(client, db, mocker):

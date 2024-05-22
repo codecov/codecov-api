@@ -14,6 +14,9 @@ from services.task import TaskService
 
 def test_upload_bundle_analysis(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
+    mock_sentry_metrics = mocker.patch(
+        "upload.views.bundle_analysis.sentry_metrics.incr"
+    )
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
@@ -36,6 +39,7 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
             "service": "test-service",
         },
         format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
     )
     assert res.status_code == 201
 
@@ -78,6 +82,17 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
         countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+    )
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "bundle_analysis",
+            "endpoint": "bundle_analysis",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
     )
 
 
@@ -184,7 +199,7 @@ def test_upload_bundle_analysis_invalid_token(db, client, mocker, mock_redis):
     commit = CommitFactory.create(repository=repository)
 
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"token 2a869881-9c0f-4754-b790-3f5920be3605")
+    client.credentials(HTTP_AUTHORIZATION="token 2a869881-9c0f-4754-b790-3f5920be3605")
 
     res = client.post(
         reverse("upload-bundle-analysis"),
@@ -194,7 +209,10 @@ def test_upload_bundle_analysis_invalid_token(db, client, mocker, mock_redis):
         format="json",
     )
     assert res.status_code == 401
-    assert res.json() == {"detail": "Invalid token."}
+    assert res.json() == {
+        "detail": "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    }
     assert not upload.called
 
 

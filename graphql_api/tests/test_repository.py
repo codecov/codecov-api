@@ -405,6 +405,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
+            coverage_enabled=True,
+            bundle_analysis_enabled=True,
         )
 
         self.gql_request(
@@ -425,6 +427,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
+            coverage_enabled=True,
+            bundle_analysis_enabled=True,
         )
 
         is_activated.return_value = False
@@ -446,6 +450,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
             active=True,
             private=True,
+            coverage_enabled=True,
+            bundle_analysis_enabled=True,
         )
 
         data = self.gql_request(
@@ -457,6 +463,31 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "__typename": "OwnerNotActivatedError",
             "message": "You must be activated in the org",
         }
+
+    @patch("services.activation.is_activated")
+    @patch("services.activation.try_auto_activate")
+    def test_resolve_inactive_user_on_unconfigured_repo(
+        self, try_auto_activate, is_activated
+    ):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=False,
+            activated=False,
+            private=True,
+            name="test-one",
+            coverage_enabled=True,
+            bundle_analysis_enabled=False,
+        )
+
+        is_activated.return_value = False
+
+        data = self.gql_request(
+            query_repository % "name",
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["name"] == "test-one"
 
     def test_repository_not_found(self):
         data = self.gql_request(
@@ -641,3 +672,67 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert data["me"]["owner"]["repository"]["componentsYaml"] == [
             {"id": "blah", "name": "blah_name"},
         ]
+
+    def test_repository_is_first_pull_request(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        PullFactory(repository=repo, pullid=1, compared_to=None)
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isFirstPullRequest
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == True
+
+    def test_repository_is_first_pull_request_compared_to_not_none(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        PullFactory(repository=repo, pullid=1, compared_to=1)
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isFirstPullRequest
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == False
+
+    def test_repository_when_is_first_pull_request_false(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        PullFactory(repository=repo, pullid=1)
+        PullFactory(repository=repo, pullid=2)
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isFirstPullRequest
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == False

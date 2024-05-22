@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
 from django.utils.functional import cached_property
 from shared.components import Component
@@ -80,34 +80,44 @@ class ComponentComparison:
 class ComponentMeasurements:
     def __init__(
         self,
-        raw_measurements: Iterable[dict],
+        raw_measurements: List[dict],
         component_id: str,
         interval: Interval,
         after: datetime,
         before: datetime,
+        last_measurement: datetime,
+        components_mapping: Dict[str, str],
     ):
         self.raw_measurements = raw_measurements
         self.component_id = component_id
         self.interval = interval
         self.after = after
         self.before = before
+        self.last_measurement = last_measurement
+        self.components_mapping = components_mapping
 
     @cached_property
-    def name(self):
+    def name(self) -> str:
+        if self.components_mapping.get(self.component_id):
+            return self.components_mapping[self.component_id]
         return self.component_id
 
     @cached_property
-    def percent_covered(self):
+    def component_id(self) -> str:
+        return self.component_id
+
+    @cached_property
+    def percent_covered(self) -> Optional[float]:
         if len(self.raw_measurements) > 0:
             return self.raw_measurements[-1]["avg"]
 
     @cached_property
-    def percent_change(self):
+    def percent_change(self) -> Optional[float]:
         if len(self.raw_measurements) > 1:
             return self.raw_measurements[-1]["avg"] - self.raw_measurements[0]["avg"]
 
     @cached_property
-    def measurements(self):
+    def measurements(self) -> Iterable[Dict[str, Any]]:
         if not self.raw_measurements:
             return []
         return fill_sparse_measurements(
@@ -115,6 +125,5 @@ class ComponentMeasurements:
         )
 
     @cached_property
-    def last_uploaded(self):
-        if len(self.raw_measurements) > 0:
-            return self.raw_measurements[-1]["timestamp_bin"]
+    def last_uploaded(self) -> datetime:
+        return self.last_measurement

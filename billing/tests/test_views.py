@@ -5,6 +5,7 @@ from unittest.mock import patch
 import stripe
 from django.conf import settings
 from freezegun import freeze_time
+from pytest import raises
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
@@ -18,18 +19,12 @@ from ..constants import StripeHTTPHeaders
 
 class MockSubscriptionPlan(object):
     def __init__(self, params):
-        self.name = params["new_plan"]
-
-
-class MockOboOrg(object):
-    def __init__(self, owner):
-        self.obo_organization = owner.ownerid
-        self.obo = 15
+        self.id = params["new_plan"]
 
 
 class MockSubscription(object):
     def __init__(self, owner, params):
-        self.metadata = MockOboOrg(owner)
+        self.metadata = {"obo_organization": owner.ownerid, "obo": 15}
         self.plan = MockSubscriptionPlan(params)
         self.quantity = params["new_quantity"]
         self.customer = "cus_123"
@@ -38,7 +33,7 @@ class MockSubscription(object):
             "data": [
                 {
                     "quantity": params["new_quantity"],
-                    "plan": {"name": params["new_plan"]},
+                    "plan": {"id": params["new_plan"]},
                 }
             ]
         }
@@ -53,7 +48,7 @@ class StripeWebhookHandlerTests(APITestCase):
             stripe_customer_id="20f0", stripe_subscription_id="3p00"
         )
 
-    def _send_event(self, payload):
+    def _send_event(self, payload, errorSig=None):
         timestamp = time.time_ns()
 
         request = APIRequestFactory().post(
@@ -63,7 +58,8 @@ class StripeWebhookHandlerTests(APITestCase):
         return self.client.post(
             reverse("stripe-webhook"),
             **{
-                StripeHTTPHeaders.SIGNATURE: "t={},v1={}".format(
+                StripeHTTPHeaders.SIGNATURE: errorSig
+                or "t={},v1={}".format(
                     timestamp,
                     stripe.WebhookSignature._compute_signature(
                         "{}.{}".format(timestamp, request.body.decode("utf-8")),
@@ -72,8 +68,18 @@ class StripeWebhookHandlerTests(APITestCase):
                 )
             },
             data=payload,
-            format="json"
+            format="json",
         )
+
+    def test_invalid_event_signature(self):
+        response = self._send_event(
+            payload={
+                "type": "blah",
+                "data": {},
+            },
+            errorSig="lol",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_invoice_payment_succeeded_sets_owner_delinquent_false(self):
         self.owner.deliquent = True
@@ -178,14 +184,14 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.stripe_customer_id = None
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.created",
                 "data": {
                     "object": {
                         "id": "FOEKDCDEQ",
                         "customer": "sdo050493",
-                        "plan": {"id": None, "name": "users-inappy"},
+                        "plan": {"id": None},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                     }
@@ -211,7 +217,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": "FOEKDCDEQ",
                         "customer": "sdo050493",
-                        "plan": {"id": "fieown4", "name": "users-free"},
+                        "plan": {"id": "?"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                     }
@@ -240,7 +246,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": stripe_subscription_id,
                         "customer": stripe_customer_id,
-                        "plan": {"id": "fieown4", "name": plan_name},
+                        "plan": {"id": "plan_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "status": "active",
@@ -274,7 +280,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": stripe_subscription_id,
                         "customer": stripe_customer_id,
-                        "plan": {"id": "fieown4", "name": plan_name},
+                        "plan": {"id": "plan_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "default_payment_method": "blabla",
@@ -301,7 +307,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "fieown4", "name": "users-free"},
+                        "plan": {"id": "?"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
@@ -334,7 +340,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "fieown4", "name": "users-free"},
+                        "plan": {"id": "?"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
@@ -372,7 +378,9 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "fieown4", "name": "users-pr-inappy"},
+                        "plan": {
+                            "id": "plan_H6P16wij3lUuxg",
+                        },
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "incomplete_expired",
@@ -402,14 +410,14 @@ class StripeWebhookHandlerTests(APITestCase):
         plan_name = "users-pr-inappy"
         quantity = 20
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.updated",
                 "data": {
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "fieown4", "name": plan_name},
+                        "plan": {"id": "plan_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "status": "active",
@@ -435,7 +443,8 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.save()
 
         self.new_params = {
-            "new_plan": "users-pr-inappm",
+            "new_plan": "plan_H6P3KZXwmAbqPS",
+            "new_id": "plan_H6P3KZXwmAbqPS",
             "new_quantity": 7,
             "subscription_id": None,
         }
@@ -456,7 +465,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.plan == self.new_params["new_plan"]
+        assert self.owner.plan == settings.STRIPE_PLAN_VALS[self.new_params["new_plan"]]
         assert self.owner.plan_user_count == self.new_params["new_quantity"]
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -471,7 +480,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.save()
 
         self.params = {
-            "new_plan": "users-pr-inappm",
+            "new_plan": "plan_H6P3KZXwmAbqPS",
             "new_quantity": 7,
             "subscription_id": subscription_id,
         }
@@ -522,7 +531,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "subscription": subscription_id,
                         "phases": [
                             {},
-                            {"plans": [{"plan": new_plan, "quantity": new_quantity}]},
+                            {"items": [{"plan": new_plan, "quantity": new_quantity}]},
                         ],
                     }
                 },

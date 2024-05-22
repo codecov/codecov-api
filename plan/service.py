@@ -44,9 +44,11 @@ class PlanService:
         else:
             self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
 
-    def update_plan(self, name: PlanName, user_count: int) -> None:
+    def update_plan(self, name, user_count: int | None) -> None:
         if name not in USER_PLAN_REPRESENTATIONS:
             raise ValueError("Unsupported plan")
+        if not user_count:
+            raise ValueError("Quantity Needed")
         self.current_org.plan = name
         self.current_org.plan_user_count = user_count
         self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
@@ -258,3 +260,10 @@ class PlanService:
     @property
     def has_trial_dates(self) -> bool:
         return bool(self.trial_start_date and self.trial_end_date)
+
+    @property
+    def has_seats_left(self) -> bool:
+        return (
+            self.plan_activated_users is None
+            or len(self.plan_activated_users) < self.plan_user_count
+        )

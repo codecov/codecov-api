@@ -15,9 +15,14 @@ _start_gunicorn() {
   if [[ "$STATSD_HOST" ]]; then
     suffix="--statsd-host ${STATSD_HOST}:${STATSD_PORT}"
   fi
-  if [[ "$RUN_ENV" == "ENTERPRISE" ]] || [[ "$RUN_ENV" == "enterprise" ]] || [[ "$RUN_ENV" == "DEV" ]]; then
+  if [ "$RUN_ENV" == "ENTERPRISE" ] || [ "$RUN_ENV" == "DEV" ]; then
     python manage.py migrate
-    python manage.py migrate --database "timeseries"
+    python manage.py migrate --database "timeseries" timeseries
+    python manage.py pgpartition --yes --skip-delete
+  fi
+  if [[ "$DEBUGPY" ]]; then
+      pip install debugpy
+      python -m debugpy --listen 0.0.0.0:12345 -m gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
   fi
   gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
 }

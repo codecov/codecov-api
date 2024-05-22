@@ -7,7 +7,7 @@ from services.path import Dir, File
 
 
 def partition_list_into_files_and_directories(
-    items: Iterable[Union[File, Dir]]
+    items: Iterable[Union[File, Dir]],
 ) -> tuple[Union[File, Dir]]:
     files = []
     directories = []
@@ -23,7 +23,7 @@ def partition_list_into_files_and_directories(
 
 
 def sort_list_by_directory(
-    items: Iterable[Union[File, Dir]]
+    items: Iterable[Union[File, Dir]],
 ) -> Iterable[Union[File, Dir]]:
     (files, directories) = partition_list_into_files_and_directories(items=items)
     return directories + files

@@ -128,22 +128,22 @@ def test_get_redirection_url_from_state_give_url(mock_redis):
 
 def test_remove_state_with_with_delay(mock_redis):
     mixin = set_up_mixin()
-    mock_redis.set(f"oauth-state-abc", "http://localhost/gh/codecov")
+    mock_redis.set("oauth-state-abc", "http://localhost/gh/codecov")
     mixin.remove_state("abc", delay=5)
     initial_datetime = datetime.now()
     with freeze_time(initial_datetime) as frozen_time:
-        assert mock_redis.get(f"oauth-state-abc") is not None
+        assert mock_redis.get("oauth-state-abc") is not None
         frozen_time.move_to(initial_datetime + timedelta(seconds=4))
-        assert mock_redis.get(f"oauth-state-abc") is not None
+        assert mock_redis.get("oauth-state-abc") is not None
         frozen_time.move_to(initial_datetime + timedelta(seconds=6))
-        assert mock_redis.get(f"oauth-state-abc") is None
+        assert mock_redis.get("oauth-state-abc") is None
 
 
 def test_remove_state_with_with_no_delay(mock_redis):
     mixin = set_up_mixin()
-    mock_redis.set(f"oauth-state-abc", "http://localhost/gh/codecov")
+    mock_redis.set("oauth-state-abc", "http://localhost/gh/codecov")
     mixin.remove_state("abc")
-    assert mock_redis.get(f"oauth-state-abc") is None
+    assert mock_redis.get("oauth-state-abc") is None
 
 
 class LoginMixinTests(TestCase):
@@ -232,9 +232,9 @@ class LoginMixinTests(TestCase):
     @patch("services.analytics.AnalyticsService.user_signed_in")
     def test_use_marketing_tags_from_cookies(self, user_signed_in_mock):
         owner = OwnerFactory(service_id=89, service="github")
-        self.request.COOKIES[
-            "_marketing_tags"
-        ] = "utm_department=a&utm_campaign=b&utm_medium=c&utm_source=d&utm_content=e&utm_term=f"
+        self.request.COOKIES["_marketing_tags"] = (
+            "utm_department=a&utm_campaign=b&utm_medium=c&utm_source=d&utm_content=e&utm_term=f"
+        )
         self.mixin_instance._get_or_create_owner(
             {
                 "user": {

@@ -1,7 +1,7 @@
-from distutils.util import strtobool
 from typing import List
 
 from ariadne import ObjectType
+from distutils.util import strtobool
 from django.conf import settings
 
 import services.self_hosted as self_hosted

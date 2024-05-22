@@ -97,6 +97,14 @@ class TestRepositoryPermissionsService(TestCase):
             user = OwnerFactory(organizations=[])
             assert self.permissions_service.user_is_activated(user, owner) is False
 
+    def test_user_is_activated_returns_false_if_owner_is_none(self):
+        user = OwnerFactory()
+        assert self.permissions_service.user_is_activated(user, None) is False
+
+    def test_user_is_activated_returns_false_if_user_is_none(self):
+        owner = OwnerFactory()
+        assert self.permissions_service.user_is_activated(None, owner) is False
+
     def test_user_is_activated_returns_true_when_owner_has_legacy_plan(self):
         user = OwnerFactory()
         owner = OwnerFactory(plan="v4-50m")

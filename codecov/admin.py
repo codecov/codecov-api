@@ -16,9 +16,9 @@ class AdminMixin(object):
             for changed_field in form.changed_data:
                 prev_value = getattr(old_obj, changed_field)
                 new_value = getattr(new_obj, changed_field)
-                new_obj.changed_fields[
-                    changed_field
-                ] = f"prev value: {prev_value}, new value: {new_value}"
+                new_obj.changed_fields[changed_field] = (
+                    f"prev value: {prev_value}, new value: {new_value}"
+                )
 
         return super().save_model(request, new_obj, form, change)
 
@@ -46,7 +46,7 @@ class FeatureFlagVariantInline(admin.StackedInline):
 
 
 class FeatureFlagAdmin(admin.ModelAdmin):
-    list_display = ["name", "number_of_variants"]
+    list_display = ["name", "is_active", "number_of_variants", "proportion_percentage"]
     search_fields = ["name"]
     inlines = [FeatureFlagVariantInline]
 
@@ -54,6 +54,11 @@ class FeatureFlagAdmin(admin.ModelAdmin):
         return obj.variants.count()
 
     number_of_variants.short_description = "# of Variants"
+
+    def proportion_percentage(self, obj):
+        return str(round(obj.proportion * 100)) + "%"
+
+    proportion_percentage.short_description = "Experiment Proportion"
 
 
 class FeatureFlagVariantAdmin(admin.ModelAdmin, DynamicArrayMixin):

@@ -9,7 +9,6 @@ def add_version(apps, schema):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("core", "0005_auto_20210916_0313")]
 
     operations = [migrations.RunPython(add_version)]

@@ -9,7 +9,6 @@ def add_version(apps, schema):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("core", "0024_alter_commit_timestamp_alter_commit_updatestamp_and_more")
     ]

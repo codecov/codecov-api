@@ -46,9 +46,7 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         }
-        """ % (
-            current_org.username
-        )
+        """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["pretrialPlan"] == {
             "marketingName": "Developer",

@@ -10,9 +10,8 @@ from django.urls import reverse
 
 from codecov_auth.models import OktaUser
 from codecov_auth.tests.factories import OktaUserFactory, OwnerFactory, UserFactory
-from codecov_auth.views.okta import OktaLoginView
+from codecov_auth.views.okta import OktaLoginView, validate_id_token
 from codecov_auth.views.okta import auth as okta_basic_auth
-from codecov_auth.views.okta import validate_id_token
 
 
 @pytest.fixture
@@ -195,7 +194,6 @@ def test_okta_redirect_to_authorize_invalid_iss(client):
 def test_okta_perform_login(
     client, mocked_okta_token_request, mocked_validate_id_token, db
 ):
-
     state = "test-state"
     session = client.session
     session["okta_oauth_state"] = state

@@ -5,7 +5,6 @@ from shared.django_apps.migration_utils import RiskyRunSQL
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("timeseries", "0011_measurement_measurable_id"),
     ]

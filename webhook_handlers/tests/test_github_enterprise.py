@@ -60,7 +60,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                 ).hexdigest(),
             },
             data=data,
-            format="json"
+            format="json",
         )
 
     def setUp(self):
@@ -466,7 +466,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
     @freeze_time("2024-03-28T00:00:00")
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_creates_new_owner_if_dne(self):
         username, service_id = "newuser", 123456
@@ -509,7 +515,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_creates_new_owner_if_dne_all_repos(self):
         username, service_id = "newuser", 123456
@@ -552,7 +564,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
     @freeze_time("2024-03-28T00:00:00")
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_repositories_creates_new_owner_if_dne(self):
         username, service_id = "newuser", 123456
@@ -648,7 +666,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_repositories_update_existing_ghapp(self):
         # Should set integration_id to null for owner,
@@ -698,7 +722,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_repositories_update_existing_ghapp_all_repos(self):
         # Should set integration_id to null for owner,
@@ -746,7 +776,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_with_other_actions_sets_owner_itegration_id_if_none(
         self,
@@ -789,7 +825,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch(
         "services.task.TaskService.refresh",
-        lambda self, ownerid, username, sync_teams, sync_repos, using_integration, repos_affected: None,
+        lambda self,
+        ownerid,
+        username,
+        sync_teams,
+        sync_repos,
+        using_integration,
+        repos_affected: None,
     )
     def test_installation_repositories_with_other_actions_sets_owner_itegration_id_if_none(
         self,
@@ -1017,7 +1059,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
                 GitHubHTTPHeaders.SIGNATURE: "",
             },
             data={},
-            format="json"
+            format="json",
         )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN

@@ -1,4 +1,5 @@
 type Repository {
+  isFirstPullRequest: Boolean!
   name: String!
   active: Boolean!
   activated: Boolean!
@@ -23,21 +24,21 @@ type Repository {
     after: String
     last: Int
     before: String
-  ): PullConnection
+  ): PullConnection @cost(complexity: 10, multipliers: ["first", "last"])
   commits(
     filters: CommitsSetFilters
     first: Int
     after: String
     last: Int
     before: String
-  ): CommitConnection
+  ): CommitConnection @cost(complexity: 10, multipliers: ["first", "last"])
   branches(
     filters: BranchesSetFilters
     first: Int
     after: String
     last: Int
     before: String
-  ): BranchConnection
+  ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
   flags(
     filters: FlagSetFilters
     orderingDirection: OrderingDirection
@@ -45,7 +46,7 @@ type Repository {
     after: String
     last: Int
     before: String
-  ): FlagConnection!
+  ): FlagConnection! @cost(complexity: 3, multipliers: ["first", "last"])
   defaultBranch: String
   profilingToken: String
   criticalFiles: [CriticalFile!]!
@@ -79,9 +80,7 @@ type Repository {
     filters: ComponentMeasurementsSetFilters
     orderingDirection: OrderingDirection
   ): [ComponentMeasurements!]!
-  componentsYaml(
-    termId: String
-  ): [ComponentsYaml]!
+  componentsYaml(termId: String): [ComponentsYaml]!
 }
 
 type PullConnection {

@@ -20,7 +20,6 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessUploadHandler(object):
-
     ci_verifiers = {
         "appveyor": TokenlessAppveyorHandler,
         "azure_pipelines": TokenlessAzureHandler,

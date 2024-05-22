@@ -551,6 +551,55 @@ def test_uploads_post_github_oidc_auth(
     )
 
 
+def test_uploads_with_bad_token(
+    db,
+    mocker,
+    mock_redis,
+):
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=False,
+    )
+    token = "BadToken"
+
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.uploads",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
+    )
+    response = client.post(
+        url,
+        {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+        },
+        headers={"Authorization": f"token {token}"},
+    )
+    assert response.status_code == 401
+    response_json = response.json()
+    upload = ReportSession.objects.filter(
+        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+    ).exists()
+    assert upload is False
+
+    assert (
+        response_json.get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
+
+
 @override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
 def test_uploads_post_shelter(db, mocker, mock_redis):
     mocker.patch.object(
@@ -606,6 +655,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
+            "endpoint": "create_upload",
             "repo_visibility": "private",
             "is_using_shelter": "yes",
         },
@@ -618,6 +668,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
+            "endpoint": "create_upload",
             "repo_visibility": "private",
             "is_using_shelter": "yes",
         },

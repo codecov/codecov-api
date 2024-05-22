@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       versionName:
-        description: 'Name of version  (ie 23.9.5)'
+        description: "Name of version  (ie 23.9.5)"
         required: true
 
 jobs:
   create-release-pr:
     name: Create PR for Release ${{ github.event.inputs.versionName }}
-    uses: codecov/gha-workflows/.github/workflows/create-release-pr.yml@v1.2.12
+    uses: codecov/gha-workflows/.github/workflows/create-release-pr.yml@v1.2.19
     secrets: inherit

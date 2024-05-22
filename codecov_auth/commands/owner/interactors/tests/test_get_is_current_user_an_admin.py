@@ -1,8 +1,8 @@
-from distutils.util import execute
 from unittest.mock import patch
 
 import pytest
 from asgiref.sync import async_to_sync
+from distutils.util import execute
 from django.test import TransactionTestCase, override_settings
 
 from codecov_auth.tests.factories import GetAdminProviderAdapter, OwnerFactory

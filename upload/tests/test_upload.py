@@ -1,12 +1,12 @@
 import time
 from datetime import datetime, timedelta
 from json import dumps, loads
-from unittest.mock import ANY, Mock, PropertyMock, call, patch
+from unittest.mock import ANY, PropertyMock, patch
 from urllib.parse import urlencode
 
 import pytest
 import requests
-from celery.canvas import Signature
+import rest_framework
 from ddf import G
 from django.core.exceptions import MultipleObjectsReturned
 from django.test import TestCase, override_settings
@@ -19,6 +19,7 @@ from rest_framework.test import APIRequestFactory, APITestCase
 from shared.torngit.exceptions import (
     TorngitClientGeneralError,
     TorngitObjectNotFoundError,
+    TorngitRateLimitError,
 )
 from shared.utils.test_utils import mock_metrics as utils_mock_metrics
 from simplejson import JSONDecodeError
@@ -26,7 +27,6 @@ from simplejson import JSONDecodeError
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
-from core.tests.factories import CommitFactory, PullFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     determine_repo_for_upload,
@@ -1837,7 +1837,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
         ]
 
     @patch.object(requests, "get")
-    def test_travis_failed_requests_connection_error(self, mock_get):
+    def test_travis_failed_requests_connection_error_ex(self, mock_get):
         mock_get.side_effect = [
             Exception("Not found"),
             requests.exceptions.HTTPError("Not found"),
@@ -2629,7 +2629,10 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
 
     @patch.object(requests, "get")
     def test_circleci_invalid_stop_time(self, mock_get):
-        expected_response = {"vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a"}
+        expected_response = {
+            "vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a",
+            "stop_time": "",
+        }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.json.return_value = expected_response
 
@@ -2648,7 +2651,7 @@ class UploadHandlerCircleciTokenlessTest(TestCase):
         ]
 
     @patch.object(requests, "get")
-    def test_circleci_invalid_stop_time(self, mock_get):
+    def test_circleci_invalid_stop_time_gh(self, mock_get):
         expected_response = {
             "vcs_revision": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "vcs_type": "github",
@@ -2745,6 +2748,44 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             == "Unable to locate build via Github Actions API. Please upload with the Codecov repository upload token to resolve issue."
         )
         mock_get.assert_called_with("12.34")
+
+    @freeze_time("2024-04-25T00:00:00")
+    @patch("upload.tokenless.github_actions.get", new_callable=PropertyMock)
+    def test_github_actions_rate_limit_error(self, mock_get_torngit):
+        mock_get = mock_get_torngit.return_value.get_workflow_run
+        in_10_s = datetime.now() + timedelta(seconds=10)
+        mock_get.side_effect = [
+            TorngitRateLimitError("error", "err msg", in_10_s.timestamp(), 20)
+        ]
+
+        params = {"build": "12.34", "owner": "owner", "repo": "repo"}
+
+        with self.assertRaises(rest_framework.exceptions.Throttled) as e:
+            TokenlessUploadHandler("github_actions", params).verify_upload()
+        self.assertEqual(
+            str(e.exception.detail),
+            "Rate limit reached. Please upload with the Codecov repository upload token to resolve issue. Expected time to availability: 10s.",
+        )
+
+        mock_get.reset_mock()
+        mock_get.side_effect = [TorngitRateLimitError("error", "err msg", None, 20)]
+
+        with self.assertRaises(rest_framework.exceptions.Throttled) as e:
+            TokenlessUploadHandler("github_actions", params).verify_upload()
+        self.assertEqual(
+            str(e.exception.detail),
+            "Rate limit reached. Please upload with the Codecov repository upload token to resolve issue. Expected time to availability: 20s.",
+        )
+
+        mock_get.reset_mock()
+        mock_get.side_effect = [TorngitRateLimitError("error", "err msg", None, None)]
+
+        with self.assertRaises(rest_framework.exceptions.Throttled) as e:
+            TokenlessUploadHandler("github_actions", params).verify_upload()
+        self.assertEqual(
+            str(e.exception.detail),
+            "Rate limit reached. Please upload with the Codecov repository upload token to resolve issue.",
+        )
 
     @patch(
         "upload.tokenless.github_actions.TokenlessGithubActionsHandler.get_build",

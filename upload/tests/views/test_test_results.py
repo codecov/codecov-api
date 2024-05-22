@@ -14,6 +14,7 @@ from services.task import TaskService
 
 def test_upload_test_results(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
+    mock_sentry_metrics = mocker.patch("upload.views.test_results.metrics.incr")
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
@@ -37,6 +38,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
             "service": "test-service",
         },
         format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
     )
     assert res.status_code == 201
 
@@ -88,6 +90,17 @@ def test_upload_test_results(db, client, mocker, mock_redis):
         countdown=4,
         report_code=None,
         report_type="test_results",
+    )
+    mock_sentry_metrics.assert_called_with(
+        "upload",
+        tags={
+            "agent": "cli",
+            "version": "0.4.7",
+            "action": "test_results",
+            "endpoint": "test_results",
+            "repo_visibility": "private",
+            "is_using_shelter": "no",
+        },
     )
 
 
@@ -148,6 +161,30 @@ def test_test_results_github_oidc_token(
         format="json",
     )
     assert res.status_code == 201
+
+
+def test_test_results_no_auth(db, client, mocker, mock_redis):
+    owner = OwnerFactory(service="github", username="codecov")
+    repository = RepositoryFactory.create(author=owner)
+    token = "BAD"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {token}")
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
+            "slug": f"{repository.author.username}::::{repository.name}",
+        },
+        format="json",
+    )
+    assert res.status_code == 401
+    assert (
+        res.json().get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
 
 
 def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
