@@ -37,6 +37,7 @@ from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
 from utils.github import get_github_integration_token
+
 from .constants import ci, global_upload_token_providers
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
