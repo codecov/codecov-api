@@ -73,6 +73,15 @@ class UpdateRepositoryTests(GraphQLTestHelper, TransactionTestCase):
 
         assert data == {"updateRepository": None}
 
+    def test_when_authenticated_branch_does_not_exist(self):
+        data = self.gql_request(
+            query,
+            owner=self.org,
+            variables={"input": {"branch": "Dne", "repoName": "gazebo"}},
+        )
+
+        assert data["updateRepository"]["error"]["__typename"] == "ValidationError"
+
     def test_when_unauthenticated(self):
         data = self.gql_request(
             query,
