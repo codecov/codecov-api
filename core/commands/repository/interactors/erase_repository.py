@@ -1,19 +1,19 @@
-from django.conf import settings
-
 import services.self_hosted as self_hosted
 from api.shared.permissions import UserIsAdminPermissions
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov.db import sync_to_async
+from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
 from core.models import Repository
+from django.conf import settings
 from services.task.task import TaskService
 
 
 class EraseRepositoryInteractor(BaseInteractor):
     def validate_owner(self, owner: Owner):
-        if not self.current_user.is_authenticated:
-            raise Unauthenticated()
+        if not current_user_part_of_org(self.current_owner, owner):
+            raise Unauthorized()
 
         if settings.IS_ENTERPRISE:
             if not self_hosted.is_admin_owner(self.current_owner):

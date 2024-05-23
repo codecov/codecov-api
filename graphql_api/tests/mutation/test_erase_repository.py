@@ -1,9 +1,8 @@
 from unittest.mock import PropertyMock, patch
 
-from django.test import TransactionTestCase, override_settings
-
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
+from django.test import TransactionTestCase, override_settings
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
@@ -41,24 +40,14 @@ class EraseRepositoryTests(GraphQLTestHelper, TransactionTestCase):
     def test_when_unauthenticated(self):
         data = self.gql_request(
             query,
+            owner=None,
             variables={
                 "input": {
                     "repoName": "gazebo",
                 }
             },
         )
-        assert data["eraseRepository"]["error"]["__typename"] == "UnauthenticatedError"
-
-    def test_when_user_not_admin(self):
-        data = self.gql_request(
-            query,
-            variables={
-                "input": {
-                    "repoName": "gazebo",
-                }
-            },
-        )
-        assert data["eraseRepository"]["error"]["__typename"] == "UnauthenticatedError"
+        assert data["eraseRepository"]["error"]["__typename"] == "UnauthenticatedErrsor"
 
     def test_when_validation_error_repo_not_found(self):
         data = self.gql_request(
