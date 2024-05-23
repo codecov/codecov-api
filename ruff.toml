@@ -37,8 +37,8 @@ target-version = "py312"
 
 [lint]
 # Currently only enabled for F541 and I: https://docs.astral.sh/ruff/rules/
-select = ["F541", "I"]
-ignore = []
+select = ["F", "I"]
+ignore = ["F841", "F401", "F405", "F403"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 # The preferred method (for now) w.r.t. fixable rules is to manually update the makefile

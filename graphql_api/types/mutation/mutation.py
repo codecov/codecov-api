@@ -1,7 +1,5 @@
 from ariadne import MutationType
 
-from graphql_api.types.mutation.start_trial.start_trial import resolve_start_trial
-
 from .activate_measurements import (
     error_activate_measurements,
     resolve_activate_measurements,
@@ -42,6 +40,10 @@ from .update_default_organization import (
     resolve_update_default_organization,
 )
 from .update_profile import error_update_profile, resolve_update_profile
+from .update_self_hosted_settings import (
+    error_update_self_hosted_settings,
+    resolve_update_self_hosted_settings,
+)
 
 mutation_bindable = MutationType()
 
@@ -71,6 +73,8 @@ mutation_bindable.field("deleteComponentMeasurements")(
     resolve_delete_component_measurements
 )
 mutation_bindable.field("eraseRepository")(resolve_erase_repository)
+mutation_bindable.field("updateSelfHostedSettings")(resolve_update_self_hosted_settings)
+
 
 mutation_resolvers = [
     mutation_bindable,
@@ -93,4 +97,5 @@ mutation_resolvers = [
     error_start_trial,
     error_cancel_trial,
     error_erase_repository,
+    error_update_self_hosted_settings,
 ]

@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
-from django.utils import timezone
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory

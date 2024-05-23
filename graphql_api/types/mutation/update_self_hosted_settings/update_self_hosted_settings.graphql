@@ -1,0 +1,9 @@
+union UpdateSelfHostedSettingsError = UnauthenticatedError | ValidationError
+
+type UpdateSelfHostedSettingsPayload {
+  error: UpdateSelfHostedSettingsError
+}
+
+input UpdateSelfHostedSettingsInput {
+  shouldAutoActivate: Boolean!
+}
