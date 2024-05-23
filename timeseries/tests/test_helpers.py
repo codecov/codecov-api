@@ -4,7 +4,6 @@ from unittest.mock import call, patch
 import pytest
 from django.conf import settings
 from django.test import TransactionTestCase
-from django.utils import timezone
 from freezegun import freeze_time
 from freezegun.api import FakeDatetime
 from shared.reports.resources import Report, ReportFile, ReportLine

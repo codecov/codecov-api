@@ -4,7 +4,6 @@ from typing import Dict, Optional
 
 from asgiref.sync import async_to_sync
 from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
-from shared.yaml.user_yaml import UserYaml
 from shared.yaml.validation import validate_yaml
 from yaml import safe_load
 

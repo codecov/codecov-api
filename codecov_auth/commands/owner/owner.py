@@ -18,6 +18,7 @@ from .interactors.start_trial import StartTrialInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
 from .interactors.update_profile import UpdateProfileInteractor
+from .interactors.update_self_hosted_settings import UpdateSelfHostedSettingsInteractor
 
 
 class OwnerCommands(BaseCommand):
@@ -82,3 +83,6 @@ class OwnerCommands(BaseCommand):
         return self.get_interactor(CancelTrialInteractor).execute(
             org_username=org_username
         )
+
+    def update_self_hosted_settings(self, input) -> None:
+        return self.get_interactor(UpdateSelfHostedSettingsInteractor).execute(input)

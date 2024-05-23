@@ -22,13 +22,14 @@ SCHEDULE_RELEASE_OFFSET = 10
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
+    stripe.api_version = "2024-04-10"
 
 
 def _log_stripe_error(method):
     def catch_and_raise(*args, **kwargs):
         try:
             return method(*args, **kwargs)
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             log.warning(e.user_message)
             raise
 
@@ -90,7 +91,7 @@ class StripeService(AbstractPaymentService):
 
         self.requesting_user = requesting_user
 
-    def _get_checkout_session_and_subscription_metadata(self, owner):
+    def _get_checkout_session_and_subscription_metadata(self, owner: Owner):
         return {
             "service": owner.service,
             "obo_organization": owner.ownerid,
@@ -107,7 +108,7 @@ class StripeService(AbstractPaymentService):
         )
         try:
             invoice = stripe.Invoice.retrieve(invoice_id)
-        except stripe.error.InvalidRequestError as e:
+        except stripe.InvalidRequestError as e:
             log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:
@@ -126,7 +127,7 @@ class StripeService(AbstractPaymentService):
             return invoice
 
     @_log_stripe_error
-    def list_filtered_invoices(self, owner, limit=10):
+    def list_filtered_invoices(self, owner: Owner, limit=10):
         log.info(f"Fetching invoices from Stripe for ownerid {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info("stripe_customer_id is None, not fetching invoices")
@@ -141,7 +142,7 @@ class StripeService(AbstractPaymentService):
         return list(invoices_filtered_by_status_and_total)
 
     @_log_stripe_error
-    def delete_subscription(self, owner):
+    def delete_subscription(self, owner: Owner):
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
         subscription_schedule_id = subscription.schedule
 
@@ -157,11 +158,13 @@ class StripeService(AbstractPaymentService):
             stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
         stripe.Subscription.modify(
-            owner.stripe_subscription_id, cancel_at_period_end=True, prorate=False
+            owner.stripe_subscription_id,
+            cancel_at_period_end=True,
+            proration_behavior="none",
         )
 
     @_log_stripe_error
-    def get_subscription(self, owner):
+    def get_subscription(self, owner: Owner):
         if not owner.stripe_subscription_id:
             return None
         return stripe.Subscription.retrieve(
@@ -174,7 +177,7 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def get_schedule(self, owner):
+    def get_schedule(self, owner: Owner):
         if not owner.stripe_subscription_id:
             return None
 
@@ -249,7 +252,7 @@ class StripeService(AbstractPaymentService):
             )
 
     def _modify_subscription_schedule(
-        self, owner, subscription, subscription_schedule_id, desired_plan
+        self, owner: Owner, subscription, subscription_schedule_id, desired_plan
     ):
         current_subscription_start_date = subscription["current_period_start"]
         current_subscription_end_date = subscription["current_period_end"]
@@ -294,7 +297,7 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if purchasing more seats.
         """
-        return (
+        return bool(
             owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]
         )
 
@@ -305,7 +308,7 @@ class StripeService(AbstractPaymentService):
         current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
         desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
 
-        return (
+        return bool(
             current_plan_info
             and current_plan_info.billing_rate == PlanBillingRate.MONTHLY.value
             and desired_plan_info
@@ -336,7 +339,7 @@ class StripeService(AbstractPaymentService):
         elif owner.plan in TEAM_PLANS and desired_plan["value"] not in TEAM_PLANS:
             return True
 
-        return is_same_term and is_same_seats
+        return bool(is_same_term and is_same_seats)
 
     def _get_proration_params(self, owner: Owner, desired_plan: dict) -> str:
         if (
@@ -358,7 +361,10 @@ class StripeService(AbstractPaymentService):
     @_log_stripe_error
     def create_checkout_session(self, owner: Owner, desired_plan):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
-        log.info("Creating Stripe Checkout Session for owner: {owner.ownerid}")
+        log.info(
+            "Creating Stripe Checkout Session for owner",
+            extra=dict(owner_id=owner.ownerid),
+        )
 
         if not owner.stripe_customer_id:
             customer_email = owner.email
@@ -371,19 +377,19 @@ class StripeService(AbstractPaymentService):
             billing_address_collection="required",
             payment_method_types=["card"],
             payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
+            client_reference_id=str(owner.ownerid),
             success_url=success_url,
             cancel_url=cancel_url,
             customer=customer,
             customer_email=customer_email,
+            mode="subscription",
+            line_items=[
+                {
+                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_plan["quantity"],
+                }
+            ],
             subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_plan["quantity"],
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
         )

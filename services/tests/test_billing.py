@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import TestCase
-from stripe.error import InvalidRequestError
+from stripe import InvalidRequestError
 
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory
@@ -284,7 +284,9 @@ class StripeServiceTests(TestCase):
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
         self.stripe.delete_subscription(owner)
         modify_mock.assert_called_once_with(
-            stripe_subscription_id, cancel_at_period_end=True, prorate=False
+            stripe_subscription_id,
+            cancel_at_period_end=True,
+            proration_behavior="none",
         )
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == stripe_subscription_id
@@ -320,7 +322,9 @@ class StripeServiceTests(TestCase):
         self.stripe.delete_subscription(owner)
         schedule_release_mock.assert_called_once_with(stripe_schedule_id)
         modify_mock.assert_called_once_with(
-            stripe_subscription_id, cancel_at_period_end=True, prorate=False
+            stripe_subscription_id,
+            cancel_at_period_end=True,
+            proration_behavior="none",
         )
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == stripe_subscription_id
@@ -1004,19 +1008,19 @@ class StripeServiceTests(TestCase):
             billing_address_collection="required",
             payment_method_types=["card"],
             payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
+            client_reference_id=str(owner.ownerid),
             customer_email=owner.email,
             customer=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
+            mode="subscription",
+            line_items=[
+                {
+                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_quantity,
+                }
+            ],
             subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_quantity,
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
                 "metadata": {
                     "service": owner.service,
                     "obo_organization": owner.ownerid,
@@ -1053,19 +1057,19 @@ class StripeServiceTests(TestCase):
             billing_address_collection="required",
             payment_method_types=["card"],
             payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
+            client_reference_id=str(owner.ownerid),
             customer_email=owner.email,
             customer=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
+            mode="subscription",
+            line_items=[
+                {
+                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_quantity,
+                }
+            ],
             subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_quantity,
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
                 "metadata": {
                     "service": owner.service,
                     "obo_organization": owner.ownerid,
@@ -1102,19 +1106,19 @@ class StripeServiceTests(TestCase):
             billing_address_collection="required",
             payment_method_types=["card"],
             payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
+            client_reference_id=str(owner.ownerid),
             customer=owner.stripe_customer_id,
             customer_email=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
+            mode="subscription",
+            line_items=[
+                {
+                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_quantity,
+                }
+            ],
             subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_quantity,
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
                 "metadata": {
                     "service": owner.service,
                     "obo_organization": owner.ownerid,
@@ -1151,19 +1155,19 @@ class StripeServiceTests(TestCase):
             billing_address_collection="required",
             payment_method_types=["card"],
             payment_method_collection="if_required",
-            client_reference_id=owner.ownerid,
+            client_reference_id=str(owner.ownerid),
             customer=owner.stripe_customer_id,
             customer_email=None,
             success_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?success",
             cancel_url=f"{settings.CODECOV_DASHBOARD_URL}/plan/gh/{owner.username}?cancel",
+            mode="subscription",
+            line_items=[
+                {
+                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "quantity": desired_quantity,
+                }
+            ],
             subscription_data={
-                "items": [
-                    {
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                        "quantity": desired_quantity,
-                    }
-                ],
-                "payment_behavior": "allow_incomplete",
                 "metadata": {
                     "service": owner.service,
                     "obo_organization": owner.ownerid,

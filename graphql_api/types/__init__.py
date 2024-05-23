@@ -24,7 +24,7 @@ from .component import component, component_bindable
 from .component_comparison import component_comparison, component_comparison_bindable
 from .config import config, config_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
-from .enums import enum_types, enums
+from .enums import enum_types
 from .file import commit_file, file_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
