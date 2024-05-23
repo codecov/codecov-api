@@ -5,7 +5,6 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import OwnerFactory
 from plan.constants import PlanName, TrialStatus
 
 from .helper import GraphQLTestHelper

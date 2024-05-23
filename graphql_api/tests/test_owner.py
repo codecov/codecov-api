@@ -16,7 +16,7 @@ from codecov_auth.tests.factories import (
     OwnerFactory,
     UserFactory,
 )
-from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
+from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
