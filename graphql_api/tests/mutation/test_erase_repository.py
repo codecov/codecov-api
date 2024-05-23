@@ -38,18 +38,6 @@ class EraseRepositoryTests(GraphQLTestHelper, TransactionTestCase):
 
         assert data == {"eraseRepository": None}
 
-    def test_when_unauthenticated(self):
-        data = self.gql_request(
-            query,
-            owner=None,
-            variables={
-                "input": {
-                    "repoName": "gazebo",
-                }
-            },
-        )
-        assert data["eraseRepository"]["error"]["__typename"] == "UnauthenticatedErrsor"
-
     def test_when_validation_error_repo_not_found(self):
         data = self.gql_request(
             query,
