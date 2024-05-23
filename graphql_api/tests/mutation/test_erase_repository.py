@@ -1,8 +1,9 @@
 from unittest.mock import PropertyMock, patch
 
+from django.test import TransactionTestCase, override_settings
+
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
-from django.test import TransactionTestCase, override_settings
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """

@@ -1,8 +1,9 @@
 import pytest
 from asgiref.sync import async_to_sync
+from django.test import TransactionTestCase
+
 from codecov.commands.exceptions import Unauthorized
 from codecov_auth.tests.factories import OwnerFactory
-from django.test import TransactionTestCase
 
 from ..erase_repository import EraseRepositoryInteractor
 
