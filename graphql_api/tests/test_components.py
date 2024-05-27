@@ -1334,11 +1334,13 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         ) {
             owner(username: $name) {
                 repository: repository(name: $repo) {
-                    components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
-                        __typename
-                        ... on ComponentMeasurements {
-                            name
-                            componentId
+                    ... on Repository {
+                        components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+                            __typename
+                            ... on ComponentMeasurements {
+                                name
+                                componentId
+                            }
                         }
                     }
                 }
