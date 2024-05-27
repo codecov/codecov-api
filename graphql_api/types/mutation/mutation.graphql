@@ -26,4 +26,5 @@ type Mutation {
   saveTermsAgreement(input: SaveTermsAgreementInput!): SaveTermsAgreementPayload
   deleteComponentMeasurements(input: DeleteComponentMeasurementsInput!): DeleteComponentMeasurementsPayload
   updateSelfHostedSettings(input: UpdateSelfHostedSettingsInput!): UpdateSelfHostedSettingsPayload
+  regenerateRepositoryUploadToken(input: RegenerateRepositoryUploadTokenInput!): RegenerateRepositoryUploadTokenPayload
 }

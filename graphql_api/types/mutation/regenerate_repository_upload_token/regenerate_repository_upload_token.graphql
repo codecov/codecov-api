@@ -1,0 +1,4 @@
+type RegenerateRepositoryUploadTokenPayload {
+    repoName: String
+    error: ValidationError
+}

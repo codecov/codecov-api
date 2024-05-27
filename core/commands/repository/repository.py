@@ -9,11 +9,23 @@ from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
 from .interactors.regenerate_repository_token import RegenerateRepositoryTokenInteractor
+from .interactors.regenerate_repository_upload_token import (
+    RegenerateRepositoryUploadTokenInteractor,
+)
 
 
 class RepositoryCommands(BaseCommand):
     def fetch_repository(self, owner, name):
         return self.get_interactor(FetchRepositoryInteractor).execute(owner, name)
+
+    def regenerate_repository_update_token(
+        self,
+        repo_name: str,
+        owner: Owner,
+    ):
+        return self.get_interactor(RegenerateRepositoryUploadTokenInteractor).execute(
+            repo_name, owner
+        )
 
     def get_upload_token(self, repository):
         return self.get_interactor(GetUploadTokenInteractor).execute(repository)
