@@ -129,6 +129,7 @@ async def resolve_repository(owner, info, name):
     info.context["profiling_summary"] = ProfilingSummary(repository)
     return repository
 
+
 @owner_bindable.field("numberOfUploads")
 @require_part_of_org
 async def resolve_number_of_uploads(owner, info, **kwargs):
