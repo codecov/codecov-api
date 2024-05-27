@@ -1,13 +1,13 @@
 from django.conf import settings
 from django.contrib.auth import logout
 from django.shortcuts import redirect
-from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 
-@api_view(['GET', 'POST'])
+@api_view(["GET", "POST"])
 def logout_view(request, **kwargs):
-    if request.method == 'POST':
+    if request.method == "POST":
         response = Response(status=205)
     else:
         # Preserving GET logouts until Gazebo is moved off of it.
