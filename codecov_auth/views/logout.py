@@ -1,12 +1,12 @@
 from django.conf import settings
 from django.contrib.auth import logout
-from django.shortcuts import redirect
+from django.shortcuts import HttpResponse, redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 
 @api_view(["GET", "POST"])
-def logout_view(request, **kwargs):
+def logout_view(request, **kwargs) -> HttpResponse:
     if request.method == "POST":
         response = Response(status=205)
     else:
