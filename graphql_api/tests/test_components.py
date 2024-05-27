@@ -777,7 +777,7 @@ query ComponentMeasurements(
     $orderingDirection: OrderingDirection
 ) {
     owner(username: $name) {
-        repository: repositoryDeprecated(name: $repo) {
+        repository: repository(name: $repo) {
             components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
                 __typename
                 ... on ComponentMeasurements {
@@ -1331,7 +1331,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
             $orderingDirection: OrderingDirection
         ) {
             owner(username: $name) {
-                repository: repositoryDeprecated(name: $repo) {
+                repository: repository(name: $repo) {
                     components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
                         __typename
                         ... on ComponentMeasurements {
