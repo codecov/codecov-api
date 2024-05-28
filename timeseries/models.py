@@ -18,6 +18,15 @@ class MeasurementName(Enum):
     COVERAGE = "coverage"
     FLAG_COVERAGE = "flag_coverage"
     COMPONENT_COVERAGE = "component_coverage"
+    # For tracking the entire size of a bundle report by its name
+    BUNDLE_ANALYSIS_REPORT_SIZE = "bundle_analysis_report_size"
+    # For tracking the size of a category of assets of a bundle report by its name
+    BUNDLE_ANALYSIS_JAVASCRIPT_SIZE = "bundle_analysis_javascript_size"
+    BUNDLE_ANALYSIS_STYLESHEET_SIZE = "bundle_analysis_stylesheet_size"
+    BUNDLE_ANALYSIS_FONT_SIZE = "bundle_analysis_font_size"
+    BUNDLE_ANALYSIS_IMAGE_SIZE = "bundle_analysis_image_size"
+    # For tracking individual asset size via its UUID
+    BUNDLE_ANALYSIS_ASSET_SIZE = "bundle_analysis_asset_size"
 
 
 class Measurement(ExportModelOperationsMixin("timeseries.measurement"), models.Model):
@@ -161,7 +170,7 @@ class Dataset(ExportModelOperationsMixin("timeseries.dataset"), models.Model):
             ),
         ]
 
-    def is_backfilled(self):
+    def is_backfilled(self) -> bool:
         """
         Returns `False` for an hour after creation.
 

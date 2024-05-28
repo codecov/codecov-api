@@ -31,7 +31,7 @@ from graphql_api.types.comparison.comparison import (
     MissingHeadReport,
 )
 from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
-from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
+from graphql_api.types.errors import MissingCoverage, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
 from services.bundle_analysis import BundleAnalysisComparison, BundleAnalysisReport
 from services.comparison import Comparison, ComparisonReport

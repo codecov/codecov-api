@@ -68,6 +68,26 @@ class TestConfigType(GraphQLTestHelper, TestCase):
             },
         }
 
+    def test_plan_auto_activate(self):
+        data = self.gql_request("query { config { planAutoActivate }}")
+        assert data == {
+            "config": {
+                "planAutoActivate": None,
+            },
+        }
+
+    @override_settings(IS_ENTERPRISE=True)
+    @patch("services.self_hosted.is_autoactivation_enabled")
+    def test_plan_auto_activate_self_hosted(self, is_autoactivation_enabled):
+        is_autoactivation_enabled.return_value = True
+
+        data = self.gql_request("query { config { planAutoActivate }}")
+        assert data == {
+            "config": {
+                "planAutoActivate": True,
+            },
+        }
+
     def test_seats_limit(self):
         data = self.gql_request("query { config { seatsLimit }}")
         assert data == {
