@@ -103,7 +103,7 @@ class QueryMetricsExtension(Extension):
         Extension hook executed at request's start.
         """
         self.set_type_and_name(query=context["clean_query"])
-        self.start_timestamp = time.perf_counter_ns()
+        self.start_timestamp = time.perf_counter()
         GQL_HIT_COUNTER.labels(
             operation_type=self.operation_type, operation_name=self.operation_name
         ).inc()
@@ -112,7 +112,7 @@ class QueryMetricsExtension(Extension):
         """
         Extension hook executed at request's end.
         """
-        self.end_timestamp = time.perf_counter_ns()
+        self.end_timestamp = time.perf_counter()
         latency = self.end_timestamp - self.start_timestamp
         GQL_REQUEST_LATENCIES.labels(
             operation_type=self.operation_type, operation_name=self.operation_name
