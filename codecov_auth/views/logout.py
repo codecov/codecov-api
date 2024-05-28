@@ -8,7 +8,6 @@ from rest_framework.response import Response
 
 @api_view(["GET", "POST"])
 def logout_view(request: HttpRequest, **kwargs: str) -> HttpResponse:
-    print(kwargs)
     if request.method == "POST":
         response = Response(status=205)
     else:
