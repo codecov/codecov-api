@@ -1,0 +1,66 @@
+type Invoice {
+  id: String!
+  number: String!
+  status: String!
+  created: Int!
+  periodStart: Int!
+  periodEnd: Int!
+  dueDate: Int
+  customerName: String!
+  customerAddress: String!
+  currency: String!
+  amountPaid: Float!
+  amountDue: Float!
+  amountRemaining: Float!
+  total: Float!
+  subtotal: Float!
+  invoicePdf: String!
+  lineItems: [LineItem]!
+  footer: String!
+  customerEmail: String!
+  customerShipping: String!
+  defaultPaymentMethod: PaymentMethod
+}
+
+type Invoices {
+  results: [Invoice]
+}
+
+type LineItem {
+  description: String!
+  amount: Float!
+  currency: String!
+}
+
+type Period {
+  end: Int!
+  start: Int!
+}
+
+type PaymentMethod {
+  card: Card
+  billingDetails: BillingDetails
+}
+
+type Card {
+  brand: String!
+  expMonth: Int!
+  expYear: Int!
+  last4: String!
+}
+
+type BillingDetails {
+  address: Address
+  email: String
+  name: String
+  phone: String
+}
+
+type Address {
+  city: String
+  country: String
+  line1: String
+  line2: String
+  postalCode: String
+  state: String
+}

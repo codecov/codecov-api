@@ -135,6 +135,8 @@ class StripeService(AbstractPaymentService):
         invoices = stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
             "data"
         ]
+
+        print("INVOICES FROM STRIPE", invoices)
         invoices_filtered_by_status = filter(self.filter_invoices_by_status, invoices)
         invoices_filtered_by_status_and_total = filter(
             self.filter_invoices_by_total, invoices_filtered_by_status
