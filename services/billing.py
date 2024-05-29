@@ -366,10 +366,6 @@ class StripeService(AbstractPaymentService):
             extra=dict(owner_id=owner.ownerid),
         )
 
-        customer = None
-        if owner.stripe_customer_id:
-            customer = owner.stripe_customer_id
-
         session = stripe.checkout.Session.create(
             billing_address_collection="required",
             payment_method_types=["card"],
@@ -377,7 +373,7 @@ class StripeService(AbstractPaymentService):
             client_reference_id=str(owner.ownerid),
             success_url=success_url,
             cancel_url=cancel_url,
-            customer=customer,
+            customer=owner.stripe_customer_id,
             mode="subscription",
             line_items=[
                 {
