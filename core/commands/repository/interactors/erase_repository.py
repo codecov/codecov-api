@@ -1,9 +1,8 @@
 from django.conf import settings
 
 import services.self_hosted as self_hosted
-from api.shared.permissions import UserIsAdminPermissions
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov.commands.exceptions import Unauthorized, ValidationError
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
