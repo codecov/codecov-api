@@ -16,7 +16,7 @@ class GetFileContentInteractor(BaseInteractor):
 
             # When a file received from GH that is larger than 1MB the result will be
             # pre-decoded and of string type; no need to decode again in that case
-            if type(content.get("content")) == str:
+            if isinstance(content.get("content"), str):
                 return content.get("content")
             return content.get("content").decode("utf-8")
         # TODO raise this to the API so we can handle it.

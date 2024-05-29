@@ -72,7 +72,7 @@ class GithubWebhookHandler(APIView):
             "webhook_secret",
             default=b"testixik8qdauiab1yiffydimvi72ekq",
         )
-        if type(key) is str:
+        if isinstance(key, str):
             # If "key" comes from k8s secret, it is of type str, so
             # must convert to bytearray for use with hmac
             key = bytes(key, "utf-8")
