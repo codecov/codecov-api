@@ -54,7 +54,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     def get_object(self, request, *args, **kwargs):
         # Validate coverage precision
         precision = self.request.query_params.get("precision", "0")
-        if not precision in self.precisions:
+        if precision not in self.precisions:
             raise NotFound("Coverage precision should be one of [ 0 || 1 || 2 ]")
 
         coverage, coverage_range = self.get_coverage()

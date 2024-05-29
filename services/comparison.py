@@ -226,7 +226,7 @@ class FileComparisonVisitor:
 
         # copied from ReportFile._line, minus dataclass instantiation
         if line:
-            if type(line) is list:
+            if isinstance(line, list):
                 return line
             else:
                 # these are old versions
@@ -675,7 +675,7 @@ class Comparison(object):
                 file_name, self.head_commit.commitid
             )["content"]
             # make sure the file is str utf-8
-            if type(file_content) is not str:
+            if not isinstance(file_content, str):
                 file_content = str(file_content, "utf-8")
             src = file_content.splitlines()
         else:
@@ -1009,7 +1009,7 @@ class ComparisonReport(object):
         try:
             data = archive_service.read_file(self.commit_comparison.report_storage_path)
             return json.loads(data)
-        except:
+        except Exception:
             log.error(
                 "ComparisonReport - couldn't fetch data from storage", exc_info=True
             )

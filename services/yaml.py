@@ -30,7 +30,7 @@ def fetch_commit_yaml(commit: Commit, owner: Owner) -> Optional[Dict]:
         )
         yaml_dict = safe_load(yaml_str)
         return validate_yaml(yaml_dict, show_secrets_for=None)
-    except:
+    except Exception:
         # fetching, parsing, validating the yaml inside the commit can
         # have various exceptions, which we do not care about to get the final
         # yaml used for a commit, as any error here, the codecov.yaml would not
