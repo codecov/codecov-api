@@ -294,7 +294,7 @@ def determine_repo_for_upload(upload_params):
     elif service:
         if not using_global_token:
             # verify CI TODO
-        
+
         # Get repo info from CI TODO
     """
 
