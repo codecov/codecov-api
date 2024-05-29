@@ -136,7 +136,6 @@ class StripeService(AbstractPaymentService):
             "data"
         ]
 
-        print("INVOICES FROM STRIPE", invoices)
         invoices_filtered_by_status = filter(self.filter_invoices_by_status, invoices)
         invoices_filtered_by_status_and_total = filter(
             self.filter_invoices_by_total, invoices_filtered_by_status
