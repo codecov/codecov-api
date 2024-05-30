@@ -33,9 +33,8 @@ repo_query = """{
 
 class UpdateRepositoryTests(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.org = OwnerFactory(
-            username="codecov", service="github", upload_token="token-1"
-        )
+        self.org = OwnerFactory(username="codecov", service="github")
+        self.old_upload_token = self.org.upload_token
         self.repo = RepositoryFactory(author=self.org, name="gazebo", activated=False)
 
     def test_when_authenticated_update_token(self):
@@ -49,7 +48,10 @@ class UpdateRepositoryTests(GraphQLTestHelper, TransactionTestCase):
             repo_query,
             owner=self.org,
         )
-        assert repo_result["me"]["owner"]["repository"]["uploadToken"] != "token-1"
+        assert (
+            repo_result["me"]["owner"]["repository"]["uploadToken"]
+            != self.old_upload_token
+        )
 
         assert data == {"regenerateRepositoryUploadToken": None}
 
