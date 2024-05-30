@@ -9,7 +9,7 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
-    TokenlessCommitAuthentication,
+    TokenlessAuthentication,
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
@@ -30,7 +30,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
-        TokenlessCommitAuthentication,
+        TokenlessAuthentication,
     ]
 
     def get_exception_handler(self):
@@ -42,9 +42,8 @@ class CommitViews(ListCreateAPIView, GetterMixin):
 
     def list(self, request, *args, **kwargs):
         repository = self.get_repo()
-        if (
-            isinstance(self.request.auth, TokenlessCommitAuthentication)
-            and repository.private
+        if repository.private and isinstance(
+            self.request.auth, TokenlessAuthentication
         ):
             raise NotAuthenticated()
         return super().list(request, *args, **kwargs)

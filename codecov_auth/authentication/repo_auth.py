@@ -255,70 +255,10 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
         )
 
 
-tokenless_auth_failed_message = "Not valid tokenless upload"
-
-
-class TokenlessCommitAuthentication(authentication.TokenAuthentication):
-    def _get_info_from_request_path(self, request: HttpRequest) -> Repository:
-        path_info = request.get_full_path_info()
-        # The repo part comes from https://stackoverflow.com/a/22312124
-        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@:_/\-~]+)\/commits"
-        match = re.search(upload_views_prefix_regex, path_info)
-
-        if match is None:
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
-        # Validate provider
-        service = match.group(1)
-        try:
-            service_enum = Service(service)
-            # Currently only Github is supported
-            # TODO [codecov/engineering-team#914]: Extend tokenless support to other providers
-            if service_enum != Service.GITHUB:
-                raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
-        except ValueError:
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
-
-        # Validate that next group exists and decode slug
-        encoded_slug = match.group(2)
-        repo = get_repository_from_string(service_enum, encoded_slug)
-        if repo is None:
-            # Purposefully using the generic message so that we don't tell that
-            # we don't have a certain repo
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
-
-        return repo
-
-    def authenticate(self, request: HttpRequest):
-        # Get the repo
-        repository = self._get_info_from_request_path(request)
-
-        # Tokenless is only for public repos
-        if repository.private is True:
-            raise NotAuthenticated()
-
-        if request.method == "GET":
-            return (
-                RepositoryAsUser(repository),
-                TokenlessAuth(repository),
-            )
-
-        try:
-            body = json.loads(str(request.body, "utf8"))
-            branch = body.get("branch", "")
-        except json.JSONDecodeError:
-            return None
-        else:
-            if ":" in branch:
-                return (
-                    RepositoryAsUser(repository),
-                    TokenlessAuth(repository),
-                )
-            else:
-                return None
-
-
 class TokenlessAuthentication(authentication.TokenAuthentication):
-    def _get_info_from_request_path(self, request) -> Tuple[Repository, Commit]:
+    def _get_info_from_request_path(
+        self, request
+    ) -> tuple[Repository, str | None] | None:
         path_info = request.get_full_path_info()
         # The repo part comes from https://stackoverflow.com/a/22312124
         upload_views_prefix_regex = (
@@ -327,17 +267,14 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         match = re.search(upload_views_prefix_regex, path_info)
 
         if match is None:
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
+            return None, None
+
         # Validate provider
         service = match.group(1)
         try:
             service_enum = Service(service)
-            # Currently only Github is supported
-            # TODO [codecov/engineering-team#914]: Extend tokenless support to other providers
-            if service_enum != Service.GITHUB:
-                raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
         except ValueError:
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
+            return None, None
 
         # Validate that next group exists and decode slug
         encoded_slug = match.group(2)
@@ -346,27 +283,34 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         if repo is None:
             # Purposefully using the generic message so that we don't tell that
             # we don't have a certain repo
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
+            return None, None
 
-        commit_sha = match.group(3)
-        if commit_sha is None:
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
+        commitid = match.group(3)
 
-        commit = Commit.objects.get(commitid=commit_sha)
-        if not commit:
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
+        return repo, commitid
 
-        return repo, commit
+    def get_branch(self, request, commitid=None):
+        if commitid:
+            commit = Commit.objects.get(commitid=commitid)
+            if not commit:
+                return None
+            return commit.branch
+        else:
+            try:
+                body = json.loads(str(request.body, "utf8"))
+            except json.JSONDecodeError:
+                return None
+            else:
+                return body.get("branch")
 
     def authenticate(self, request):
-        # Get the repo
-        repository, commit = self._get_info_from_request_path(request)
+        repository, commitid = self._get_info_from_request_path(request)
 
-        if repository.private:
-            raise exceptions.AuthenticationFailed(tokenless_auth_failed_message)
+        if repository is None or repository.private:
+            return None
 
-        branch = commit.branch
-        if ":" in branch:
+        branch = self.get_branch(request, commitid)
+        if (branch and ":" in branch) or request.method == "GET":
             return (
                 RepositoryAsUser(repository),
                 TokenlessAuth(repository),

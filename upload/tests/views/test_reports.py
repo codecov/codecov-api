@@ -116,8 +116,9 @@ def test_reports_post_no_auth(db, mocker):
     )
     repository.private = False
     token = "BAD"
-    commit = CommitFactory(repository=repository)
     repository.save()
+    commit = CommitFactory(repository=repository)
+    commit.save()
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION="token " + token)
     url = reverse(
@@ -189,14 +190,16 @@ def test_reports_post_tokenless_fail(client, db, mocker):
     response = client.post(
         url,
         data={"code": "code1"},
-        headers={"X-Tokenless": "someone/bad", "X-Tokenless-PR": "4"},
     )
 
     assert (
         url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
     )
     assert response.status_code == 401
-    assert response.json().get("detail") == "Not valid tokenless upload"
+    assert (
+        response.json().get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
 
 
 def test_create_report_already_exists(client, db, mocker):

@@ -331,6 +331,7 @@ def test_uploads_post_tokenless(mock_metrics, db, mocker, mock_redis):
             "state": "uploaded",
             "flags": ["flag1", "flag2"],
             "version": "version",
+            "branch": "someone:branch_name",
         },
     )
     assert response.status_code == 201
