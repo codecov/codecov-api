@@ -485,7 +485,6 @@ class GithubWebhookHandler(APIView):
 
         installation_id = request.data["installation"]["id"]
 
-        # TODO: Consider adding "suspend" action here?
         # https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation
         if action == "deleted":
             if event == GitHubWebhookEvents.INSTALLATION:
@@ -537,6 +536,18 @@ class GithubWebhookHandler(APIView):
                 owner.integration_id = request.data["installation"]["id"]
                 owner.save()
             # Deprecated flow - END
+
+            # We need to understand if users are suspending / not-suspending apps
+            # and if this is related to RepositoryWithoutValidBot errors we see
+            if action in ["suspend", "unsuspend"]:
+                log.info(
+                    "Request to suspend/unsuspend App",
+                    extra=dict(
+                        action=action,
+                        ownerid=owner.ownerid,
+                        installation_id=request.data["installation"]["id"],
+                    ),
+                )
 
             log.info(
                 "Triggering refresh task to sync repos",
