@@ -76,7 +76,7 @@ mutation_bindable.field("deleteComponentMeasurements")(
     resolve_delete_component_measurements
 )
 mutation_bindable.field("updateSelfHostedSettings")(resolve_update_self_hosted_settings)
-mutation_bindable.field("regenrateRepositoryUploadToken")(
+mutation_bindable.field("regenerateRepositoryUploadToken")(
     resolve_regenerate_repository_upload_token
 )
 
