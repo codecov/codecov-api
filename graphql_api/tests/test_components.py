@@ -777,20 +777,22 @@ query ComponentMeasurements(
     $orderingDirection: OrderingDirection
 ) {
     owner(username: $name) {
-        repository: repositoryDeprecated(name: $repo) {
-            components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
-                __typename
-                ... on ComponentMeasurements {
-                    name
-                    percentCovered
-                    percentChange
-                    measurements {
-                        avg
-                        min
-                        max
-                        timestamp
+        repository(name: $repo) {
+            ... on Repository {
+                components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+                    __typename
+                    ... on ComponentMeasurements {
+                        name
+                        percentCovered
+                        percentChange
+                        measurements {
+                            avg
+                            min
+                            max
+                            timestamp
+                        }
+                        lastUploaded
                     }
-                    lastUploaded
                 }
             }
         }
@@ -1331,12 +1333,14 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
             $orderingDirection: OrderingDirection
         ) {
             owner(username: $name) {
-                repository: repositoryDeprecated(name: $repo) {
-                    components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
-                        __typename
-                        ... on ComponentMeasurements {
-                            name
-                            componentId
+                repository: repository(name: $repo) {
+                    ... on Repository {
+                        components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+                            __typename
+                            ... on ComponentMeasurements {
+                                name
+                                componentId
+                            }
                         }
                     }
                 }
