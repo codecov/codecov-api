@@ -19,15 +19,15 @@ mutation($input: RegenerateRepositoryUploadTokenInput!) {
 
 repo_query = """{
     me {
-    	owner {
+      owner {
         repository(name: "gazebo") {
           ... on Repository {
-          	uploadToken
+            uploadToken
           }
         }
       }
     }
-	}
+  }
 """
 
 

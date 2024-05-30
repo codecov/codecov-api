@@ -18,6 +18,7 @@ async def resolve_regenerate_repository_upload_token(_, info, input):
         repo_name=input.get("repo_name"), owner=owner
     )
 
+    return token
 
 error_regenerate_repository_upload_token = UnionType(
     "RegenerateRepositoryUploadTokenError"
