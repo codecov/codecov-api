@@ -1,4 +1,7 @@
 type RegenerateRepositoryUploadTokenPayload {
-    repoName: String
-    error: ValidationError
+  error: ValidationError
+}
+
+input RegenerateRepositoryUploadTokenInput {
+  shouldAutoActivate: Boolean!
 }
