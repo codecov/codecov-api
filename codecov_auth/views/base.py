@@ -61,7 +61,7 @@ class StateMixin(object):
 
     def __init__(self, *args, **kwargs):
         self.redis = get_redis_connection()
-        return super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _session_key(self) -> str:
         return f"{self.service}_oauth_state"

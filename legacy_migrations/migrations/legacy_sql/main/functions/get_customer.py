@@ -85,7 +85,7 @@ def run_sql(schema_editor):
         begin
             select o.service, o.service_id into _service, _service_id
             from owners o where o.ownerid = $1;
-            
+
             if _service = 'gitlab' then
             select get_gitlab_repos_activated($1, _service_id) into _repos_activated;
             else

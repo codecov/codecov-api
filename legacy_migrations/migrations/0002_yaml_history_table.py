@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 migrations.RunSQL(
                     sql="""
                         create index if not exists yaml_history_ownerid_timestamp
-                        on yaml_history (ownerid, timestamp); 
+                        on yaml_history (ownerid, timestamp);
                     """,
                     reverse_sql="drop index if exists yaml_history_ownerid_timestamp;",
                 ),

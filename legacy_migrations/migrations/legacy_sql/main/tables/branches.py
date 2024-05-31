@@ -1,6 +1,6 @@
 def run_sql(schema_editor):
     schema_editor.execute(
-        """  
+        """
         create table branches(
             repoid              int references repos on delete cascade not null,
             updatestamp         timestamptz not null,

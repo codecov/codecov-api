@@ -19,7 +19,7 @@ class RepositoryViewSetMixin(
     OwnerPropertyMixin,
     viewsets.GenericViewSet,
 ):
-    lookup_value_regex = "[\w\.@\:\-~]+"
+    lookup_value_regex = r"[\w\.@\:\-~]+"
     lookup_field = "repo_name"
     accessors = RepoAccessors()
 
