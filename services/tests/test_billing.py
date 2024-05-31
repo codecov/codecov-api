@@ -56,14 +56,14 @@ expected_invoices = [
                     "object": "line_item",
                     "amount": 120,
                     "currency": "usd",
-                    "description": "(10) users-inappm",
+                    "description": "(10) users-pr-inappm",
                     "discountable": True,
                     "livemode": False,
                     "metadata": {},
                     "period": {"end": 1521326190, "start": 1518906990},
                     "plan": {
                         "id": "ivory-freelance-040",
-                        "name": "users-inappm",
+                        "name": "users-pr-inappm",
                         "object": "plan",
                         "active": True,
                         "aggregate_usage": None,
@@ -1174,7 +1174,7 @@ class StripeServiceTests(TestCase):
         owner = OwnerFactory(
             stripe_subscription_id="test-subscription-id",
             stripe_customer_id="test-customer-id",
-            plan="users-inappm",
+            plan="users-pr-inappm",
         )
         self.stripe.apply_cancellation_discount(owner)
 
