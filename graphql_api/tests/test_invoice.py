@@ -51,6 +51,27 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
                     status
                     subtotal
                     total
+                    defaultPaymentMethod {
+                        card {
+                            brand
+                            expMonth
+                            expYear
+                            last4
+                        }
+                        billingDetails {
+                            address {
+                                city
+                                country
+                                line1
+                                line2
+                                postalCode
+                                state
+                            }
+                            email
+                            name
+                            phone
+                        }
+                    }
                 }
             }
         }
@@ -85,4 +106,5 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
             "status": "paid",
             "subtotal": 999,
             "total": 999,
+            "defaultPaymentMethod": None,
         }

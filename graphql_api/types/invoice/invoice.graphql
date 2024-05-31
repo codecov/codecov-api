@@ -39,10 +39,10 @@ type PaymentMethod {
 }
 
 type Card {
-  brand: String!
-  expMonth: Int!
-  expYear: Int!
-  last4: String!
+  brand: String
+  expMonth: Int
+  expYear: Int
+  last4: String
 }
 
 type BillingDetails {
