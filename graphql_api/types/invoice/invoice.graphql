@@ -1,35 +1,31 @@
 type Invoice {
-  id: String!
-  number: String!
-  status: String!
-  created: Int!
-  periodStart: Int!
-  periodEnd: Int!
-  dueDate: Int
-  customerName: String!
-  customerAddress: String!
-  currency: String!
-  amountPaid: Float!
   amountDue: Float!
+  amountPaid: Float!
   amountRemaining: Float!
-  total: Float!
-  subtotal: Float!
-  invoicePdf: String!
-  lineItems: [LineItem]!
-  footer: String!
-  customerEmail: String!
-  customerShipping: String!
+  created: Int!
+  currency: String!
+  customerAddress: String
+  customerEmail: String
+  customerName: String
+  customerShipping: String
   defaultPaymentMethod: PaymentMethod
-}
-
-type Invoices {
-  results: [Invoice]
+  dueDate: Int
+  footer: String
+  id: String!
+  invoicePdf: String
+  lineItems: [LineItem]!
+  number: String
+  periodEnd: Int!
+  periodStart: Int!
+  status: String
+  subtotal: Float!
+  total: Float!
 }
 
 type LineItem {
-  description: String!
   amount: Float!
   currency: String!
+  description: String!
 }
 
 type Period {
@@ -38,8 +34,8 @@ type Period {
 }
 
 type PaymentMethod {
-  card: Card
   billingDetails: BillingDetails
+  card: Card
 }
 
 type Card {
