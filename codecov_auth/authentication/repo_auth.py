@@ -269,29 +269,28 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         if match is None:
             return None, None
 
-        # Validate provider
         service = match.group(1)
+        encoded_slug = match.group(2)
+        commitid = match.group(3)
+
+        # Validate provider
         try:
             service_enum = Service(service)
         except ValueError:
             return None, None
 
         # Validate that next group exists and decode slug
-        encoded_slug = match.group(2)
         repo = get_repository_from_string(service_enum, encoded_slug)
-
         if repo is None:
             # Purposefully using the generic message so that we don't tell that
             # we don't have a certain repo
             return None, None
 
-        commitid = match.group(3)
-
         return repo, commitid
 
     def get_branch(self, request, commitid=None):
         if commitid:
-            commit = Commit.objects.get(commitid=commitid)
+            commit = Commit.objects.filter(commitid=commitid).first()
             if not commit:
                 return None
             return commit.branch
