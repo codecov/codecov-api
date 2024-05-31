@@ -110,3 +110,9 @@ class CommitErrorCode(enum.Enum):
     @classmethod
     def get_codes_from_type(cls, error_type):
         return [item for item in cls if item.error_type == error_type]
+
+
+class CommitStatus(enum.Enum):
+    COMPLETED = "COMPLETED"
+    ERROR = "ERROR"
+    PENDING = "PENDING"

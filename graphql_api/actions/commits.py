@@ -4,6 +4,7 @@ from django.db.models import Prefetch, Q, QuerySet
 from django.db.models.functions import Lower, Substr
 
 from core.models import Commit, Pull, Repository
+from graphql_api.types.enums import CommitStatus
 from reports.models import CommitReport, ReportSession
 
 
@@ -43,6 +44,34 @@ def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
     # )
 
     return sessions
+
+
+def commit_status(
+    commit: Commit, report_type: CommitReport.ReportType
+) -> Optional[CommitStatus]:
+    report = CommitReport.objects.filter(report_type=report_type, commit=commit).first()
+    if not report:
+        return None
+
+    sessions = report.sessions.all()
+    if not sessions:
+        return None
+
+    # Only care about these 3 states, ignoring fully and partially overwritten
+    upload_states = [
+        s.state for s in sessions if s.state in ["processed", "uploaded", "error"]
+    ]
+
+    # Returning commit status in order of priority
+    # If all are processed -> COMPLETED
+    if all(state == "processed" for state in upload_states):
+        return CommitStatus.COMPLETED.value
+    # If one or more error -> ERROR
+    if any(state == "error" for state in upload_states):
+        return CommitStatus.ERROR.value
+    # If one or more uploaded -> PENDING
+    if any(state == "uploaded" for state in upload_states):
+        return CommitStatus.PENDING.value
 
 
 def repo_commits(
@@ -88,6 +117,17 @@ def repo_commits(
     states = filters.get("states")
     if states:
         queryset = queryset.filter(state__in=states)
+
+    coverage_status = filters.get("coverage_status")
+    if coverage_status:
+        to_be_included = []
+        for commit in queryset:
+            if (
+                commit_status(commit, CommitReport.ReportType.COVERAGE)
+                in coverage_status
+            ):
+                to_be_included.append(commit.id)
+        queryset = queryset.filter(id__in=to_be_included)
 
     # We need `deleted is not true` in order for the query to use the right index.
     queryset = queryset.filter(deleted__isnot=True)

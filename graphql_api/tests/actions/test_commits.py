@@ -6,6 +6,8 @@ from django.test import TransactionTestCase
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.actions.commits import repo_commits
+from reports.models import CommitReport
+from reports.tests.factories import CommitReportFactory, UploadFactory
 
 
 class RepoCommitsTests(TransactionTestCase):
@@ -97,3 +99,26 @@ class RepoCommitsTests(TransactionTestCase):
     def test_states(self):
         commits = repo_commits(self.repo, {"states": ["complete", "pending"]})
         assert list(commits) == [self.commits[0], self.commits[2]]
+
+    def test_coverage_status(self):
+        report_0 = CommitReportFactory(
+            commit=self.commits[0], report_type=CommitReport.ReportType.COVERAGE
+        )
+        UploadFactory(report=report_0, state="processed")
+        report_1 = CommitReportFactory(
+            commit=self.commits[1], report_type=CommitReport.ReportType.COVERAGE
+        )
+        UploadFactory(report=report_1, state="uploaded")
+        report_2 = CommitReportFactory(
+            commit=self.commits[2], report_type=CommitReport.ReportType.COVERAGE
+        )
+        UploadFactory(report=report_2, state="error")
+
+        commits = repo_commits(self.repo, {"coverage_status": ["COMPLETED"]})
+        assert list(commits) == [self.commits[0]]
+
+        commits = repo_commits(self.repo, {"coverage_status": ["PENDING"]})
+        assert list(commits) == [self.commits[1]]
+
+        commits = repo_commits(self.repo, {"coverage_status": ["ERROR"]})
+        assert list(commits) == [self.commits[2]]
