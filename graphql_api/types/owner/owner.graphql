@@ -13,7 +13,6 @@ type Owner {
     before: String
   ): RepositoryConnection! @cost(complexity: 25, multipliers: ["first", "last"])
   repository(name: String!): RepositoryResult!
-  repositoryDeprecated(name: String!): Repository
   numberOfUploads: Int
   hasPrivateRepos: Boolean
   isAdmin: Boolean
