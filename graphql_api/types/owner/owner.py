@@ -228,5 +228,6 @@ def resolve_is_current_user_activated(owner, info):
 
 
 @owner_bindable.field("invoices")
+@require_part_of_org
 def resolve_owner_invoices(owner: Owner, info):
     return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)

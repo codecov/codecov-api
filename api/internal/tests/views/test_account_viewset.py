@@ -108,10 +108,10 @@ class AccountViewSetTests(APITestCase):
             "invoice_pdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
             "line_items": [
                 {
-                    "description": "(10) users-inappm",
+                    "description": "(10) users-pr-inappm",
                     "amount": 120,
                     "currency": "usd",
-                    "plan_name": "users-inappm",
+                    "plan_name": "users-pr-inappm",
                     "quantity": 1,
                     "period": {"end": 1521326190, "start": 1518906990},
                 }
@@ -480,13 +480,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_paid_user_plan_billed_monthly(self):
-        self.current_owner.plan = "users-inappm"
+        self.current_owner.plan = "users-pr-inappm"
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Pro",
-            "value": "users-inappm",
+            "value": "users-pr-inappm",
             "billing_rate": "monthly",
             "base_unit_price": 12,
             "benefits": [
@@ -1239,7 +1239,7 @@ class AccountViewSetTests(APITestCase):
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
-        self.current_owner.plan = "users-inappm"
+        self.current_owner.plan = "users-pr-inappm"
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
