@@ -1,6 +1,6 @@
 def run_sql(schema_editor):
     schema_editor.execute(
-        """        
+        """
         create table repos(
             repoid                  serial primary key,
             ownerid                 int references owners on delete cascade not null,
