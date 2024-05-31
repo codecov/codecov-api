@@ -1,6 +1,6 @@
 def run_sql(schema_editor):
     schema_editor.execute(
-        """          
+        """
         create or replace function pulls_drop_flare() returns trigger as $$
         begin
             new.flare = null;

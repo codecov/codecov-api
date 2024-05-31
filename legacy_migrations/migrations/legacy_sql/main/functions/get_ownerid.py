@@ -47,7 +47,7 @@ def run_sql(schema_editor):
 
         create or replace function get_owner(service, citext) returns jsonb as $$
         with data as (
-            select service_id, service, ownerid::text, username, avatar_url, 
+            select service_id, service, ownerid::text, username, avatar_url,
                 updatestamp, plan, name, integration_id, free,
                 plan_activated_users, plan_auto_activate, plan_user_count
             from owners
