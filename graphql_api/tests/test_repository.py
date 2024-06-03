@@ -110,6 +110,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             yaml=self.yaml,
             language="rust",
             languages=["python", "rust"],
+            test_analytics_enabled=True,
         )
         profiling_token = RepositoryTokenFactory(
             repository_id=repo.repoid, token_type="profiling"
@@ -141,6 +142,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "bundleAnalysisEnabled": False,
             "coverageEnabled": False,
             "bot": None,
+            "testAnalyticsEnabled": True,
         }
 
     @freeze_time("2021-01-01")
