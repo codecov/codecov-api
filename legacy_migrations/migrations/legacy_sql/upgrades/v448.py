@@ -12,12 +12,12 @@ def run_sql(schema_editor):
                                 'v4-10m', 'v4-10y', 'v4-20m', 'v4-20y', 'v4-50m', 'v4-50y', 'v4-125m', 'v4-125y', 'v4-300m', 'v4-300y',	--                           'v4-10m', 'v4-10y', 'v4-20m', 'v4-20y', 'v4-50m', 'v4-50y', 'v4-125m', 'v4-125y', 'v4-300m', 'v4-300y',
                                 'users', 'users-inappm', 'users-inappy', 'users-free');	--                           'users', 'users-inappm', 'users-inappy', 'users-free');
         -- alter all enum columns
-        alter table owners	
+        alter table owners
         alter column plan type plans using plan::text::plans;
 
 
         -- drop the old enum
-        drop type plans__;	
+        drop type plans__;
 
 
         ALTER TABLE ONLY owners ALTER COLUMN plan SET DEFAULT 'users-free';	-- ALTER TABLE ONLY owners ALTER COLUMN plan SET DEFAULT 'users-free';

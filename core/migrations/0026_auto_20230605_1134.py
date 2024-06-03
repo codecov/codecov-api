@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             """
-            ALTER TYPE notifications ADD VALUE IF NOT exists 'codecov_slack_app';            
+            ALTER TYPE notifications ADD VALUE IF NOT exists 'codecov_slack_app';
             """
         ),
     ]
