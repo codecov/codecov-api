@@ -21,7 +21,7 @@ def run_sql(schema_editor):
 
         create or replace function get_users(int[]) returns jsonb as $$
         with data as (
-            select service, service_id::text, ownerid::text, username, name, email, avatar_url 
+            select service, service_id::text, ownerid::text, username, name, email, avatar_url
             from owners
             where array[ownerid] <@ $1
             limit array_length($1, 1)
