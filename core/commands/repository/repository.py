@@ -18,13 +18,13 @@ class RepositoryCommands(BaseCommand):
     def fetch_repository(self, owner, name):
         return self.get_interactor(FetchRepositoryInteractor).execute(owner, name)
 
-    def regenerate_repository_update_token(
+    def regenerate_repository_upload_token(
         self,
         repo_name: str,
-        owner: Owner,
+        owner_username: str,
     ):
         return self.get_interactor(RegenerateRepositoryUploadTokenInteractor).execute(
-            repo_name, owner
+            repo_name, owner_username
         )
 
     def get_upload_token(self, repository):

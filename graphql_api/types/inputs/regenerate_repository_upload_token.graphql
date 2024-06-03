@@ -1,0 +1,4 @@
+input RegenerateRepositoryUploadTokenInput {
+  repoName: String!
+  owner: String!
+}

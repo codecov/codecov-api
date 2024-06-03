@@ -3,7 +3,3 @@ union RegenerateRepositoryUploadTokenError = ValidationError
 type RegenerateRepositoryUploadTokenPayload {
   error: ValidationError
 }
-
-input RegenerateRepositoryUploadTokenInput {
-  shouldAutoActivate: Boolean!
-}

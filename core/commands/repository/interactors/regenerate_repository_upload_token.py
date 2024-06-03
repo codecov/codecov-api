@@ -3,7 +3,7 @@ import uuid
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import ValidationError
 from codecov.db import sync_to_async
-from codecov_auth.models import Owner, RepositoryToken
+from codecov_auth.models import Owner
 from core.models import Repository
 
 
@@ -21,5 +21,4 @@ class RegenerateRepositoryUploadTokenInteractor(BaseInteractor):
         if not repo:
             raise ValidationError("Repo not found")
         repo.upload_token = uuid.uuid4()
-
         repo.save()

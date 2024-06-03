@@ -1,5 +1,6 @@
 from ariadne import UnionType, convert_kwargs_to_snake_case
 
+from core.commands.repository.repository import RepositoryCommands
 from graphql_api.helpers.mutation import (
     require_authenticated,
     resolve_union_error_type,
@@ -9,13 +10,11 @@ from graphql_api.helpers.mutation import (
 
 @wrap_error_handling_mutation
 @require_authenticated
-@convert_kwargs_to_snake_case
 async def resolve_regenerate_repository_upload_token(_, info, input):
-    command = info.context["executor"].get_command("repository")
-    owner = info.context["request"].current_owner
-
+    command: RepositoryCommands = info.context["executor"].get_command("repository")
     token = await command.regenerate_repository_upload_token(
-        repo_name=input.get("repo_name"), owner=owner
+        repo_name=input.get("repoName"),
+        owner_username=input.get("owner"),
     )
 
     return token
