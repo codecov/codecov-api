@@ -75,6 +75,7 @@ default_fields = """
     bundleAnalysisEnabled
     coverageEnabled
     bot { username }
+    testAnalyticsEnabled
 """
 
 
