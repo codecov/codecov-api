@@ -907,7 +907,7 @@ class UploadHandlerHelpersTest(TestCase):
 
 
 class UploadHandlerRouteTest(APITestCase):
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(autouse=True)
     def inject_mocker(self, mocker):
         self.mocker = mocker
 

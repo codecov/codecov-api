@@ -21,7 +21,7 @@ webhook_secret = "test-46204fb3-374e-4cfc-8cae-d7ca43371096"
 
 
 class TestGitlabEnterpriseWebhookHandler(APITestCase):
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(autouse=True)
     def inject_mocker(request, mocker):
         request.mocker = mocker
 
