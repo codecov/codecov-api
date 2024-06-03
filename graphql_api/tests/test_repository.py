@@ -542,7 +542,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         res = self.fetch_repository(repo.name)
         assert res["testAnalyticsEnabled"] == True
 
-    def test_repository_get_test_analytics_disabled(self):
+    def test_repository_get_test_analytics_disabled(self) -> None:
         repo = RepositoryFactory(
             author=self.owner, active=True, private=True, test_analytics_enabled=False
         )
