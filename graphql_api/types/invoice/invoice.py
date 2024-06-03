@@ -76,26 +76,14 @@ def resolve_invoice_amount_due(invoice: Invoice, info) -> int:
     return invoice["amount_due"]
 
 
-@invoice_bindable.field("amountRemaining")
-def resolve_invoice_amount_remaining(invoice: Invoice, info) -> int:
-    return invoice["amount_remaining"]
-
-
 @invoice_bindable.field("total")
 def resolve_invoice_total(invoice: Invoice, info) -> int:
     return invoice["total"]
 
 
-# NOTE: This doesn't currently look to be used in gazebo, maybe can remove?
 @invoice_bindable.field("subtotal")
 def resolve_invoice_subtotal(invoice: Invoice, info) -> int:
     return invoice["subtotal"]
-
-
-# NOTE: This doesn't currently look to be used in gazebo, maybe can remove?
-@invoice_bindable.field("invoicePdf")
-def resolve_invoice_pdf(invoice: Invoice, info) -> str | None:
-    return invoice["invoice_pdf"]
 
 
 @invoice_bindable.field("lineItems")
@@ -113,15 +101,6 @@ def resolve_invoice_customer_email(invoice: Invoice, info) -> str | None:
     return invoice["customer_email"]
 
 
-# NOTE: This doesn't currently look to be used in gazebo, maybe can remove?
-@invoice_bindable.field("customerShipping")
-def resolve_invoice_customer_shipping(invoice: Invoice, info) -> str | None:
-    if invoice["customer_shipping"]:
-        return str(invoice["customer_shipping"])
-    return None
-
-
-# NOTE: May need to create a separate type for this; FWIW this doesn't currently work on local
 @invoice_bindable.field("defaultPaymentMethod")
 def resolve_invoice_default_payment_method(
     invoice: Invoice, info
