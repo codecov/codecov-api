@@ -223,7 +223,9 @@ def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
     assert not upload.called
 
 
-def test_update_repo_fields_when_upload_is_triggered(db, client, mocker, mock_redis) -> None:
+def test_update_repo_fields_when_upload_is_triggered(
+    db, client, mocker, mock_redis
+) -> None:
     upload = mocker.patch.object(TaskService, "upload")
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
