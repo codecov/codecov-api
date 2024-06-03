@@ -37,6 +37,7 @@ pytest-cov
 pytest-django
 pytest-mock
 pytest-asyncio
+pytest-xdist
 python-dateutil
 python-json-logger
 python-redis-lock
