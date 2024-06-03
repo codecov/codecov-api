@@ -535,6 +535,20 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         res = self.fetch_repository(repo.name)
         assert res["coverageEnabled"] == True
 
+    def test_repository_get_test_analytics_enabled(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, test_analytics_enabled=True
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["testAnalyticsEnabled"] == True
+
+    def test_repository_get_test_analytics_disabled(self):
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, test_analytics_enabled=False
+        )
+        res = self.fetch_repository(repo.name)
+        assert res["testAnalyticsEnabled"] == False
+
     def test_repository_get_languages_null(self):
         repo = RepositoryFactory(
             author=self.owner, active=True, private=True, languages=None
