@@ -9,7 +9,7 @@ from core.models import Repository
 
 class RegenerateRepositoryUploadTokenInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, repo_name: str, owner_username: str):
+    def execute(self, repo_name: str, owner_username: str) -> uuid:
         author = Owner.objects.filter(
             username=owner_username, service=self.service
         ).first()
@@ -22,3 +22,4 @@ class RegenerateRepositoryUploadTokenInteractor(BaseInteractor):
             raise ValidationError("Repo not found")
         repo.upload_token = uuid.uuid4()
         repo.save()
+        return repo.upload_token

@@ -7,6 +7,7 @@ from graphql_api.tests.helper import GraphQLTestHelper
 query = """
 mutation($input: RegenerateRepositoryUploadTokenInput!) {
   regenerateRepositoryUploadToken(input: $input) {
+    token
     error {
       __typename
       ... on ResolverError {
@@ -17,19 +18,6 @@ mutation($input: RegenerateRepositoryUploadTokenInput!) {
 }
 """
 
-repo_query = """{
-    me {
-      owner {
-        repository(name: "gazebo") {
-          ... on Repository {
-            uploadToken
-          }
-        }
-      }
-    }
-  }
-"""
-
 
 class RegenerateRepositoryUploadTokenTests(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
@@ -37,7 +25,7 @@ class RegenerateRepositoryUploadTokenTests(GraphQLTestHelper, TransactionTestCas
         self.repo = RepositoryFactory(author=self.org, name="gazebo", active=True)
         self.old_repo_token = self.repo.upload_token
 
-    def test_when_authenticated_update_token(self):
+    def test_when_authenticated_updates_token(self):
         user = OwnerFactory(
             organizations=[self.org.ownerid], permission=[self.repo.repoid]
         )
@@ -48,16 +36,7 @@ class RegenerateRepositoryUploadTokenTests(GraphQLTestHelper, TransactionTestCas
             variables={"input": {"repoName": "gazebo", "owner": "codecov"}},
         )
 
-        repo_result = self.gql_request(
-            repo_query,
-            owner=self.org,
-        )
-
-        assert (
-            repo_result["me"]["owner"]["repository"]["uploadToken"]
-            != self.old_repo_token
-        )
-        assert data == {"regenerateRepositoryUploadToken": None}
+        assert data["regenerateRepositoryUploadToken"]["token"] != self.old_repo_token
 
     def test_when_validation_error_repo_not_found(self):
         data = self.gql_request(

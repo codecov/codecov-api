@@ -1,3 +1,4 @@
+import uuid
 from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner
 from core.models import Repository
@@ -22,7 +23,7 @@ class RepositoryCommands(BaseCommand):
         self,
         repo_name: str,
         owner_username: str,
-    ):
+    ) -> uuid:
         return self.get_interactor(RegenerateRepositoryUploadTokenInteractor).execute(
             repo_name, owner_username
         )
