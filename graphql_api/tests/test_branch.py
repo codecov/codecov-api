@@ -46,7 +46,7 @@ query_files = """
                                         percentCovered
                                         ... on PathContentFile {
                                             isCriticalFile
-                                        }  
+                                        }
                                     }
                                 }
                                 ... on MissingHeadReport {

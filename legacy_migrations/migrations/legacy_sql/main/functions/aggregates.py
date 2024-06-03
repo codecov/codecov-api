@@ -66,6 +66,6 @@ def run_sql(schema_editor):
         SFUNC = _agg_report_totals,
         STYPE = text[]
         );
-    
+
     """
     )

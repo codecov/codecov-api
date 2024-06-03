@@ -20,12 +20,12 @@ def run_sql(schema_editor):
 
             if not found then
                 insert into owners (service, service_id, username, name, email, avatar_url, parent_service_id)
-                values ($1, 
-                        (_team.d->>'id')::text, 
-                        (_team.d->>'username')::citext, 
-                        (_team.d->>'name')::text, 
-                        (_team.d->>'email')::text, 
-                        (_team.d->>'avatar_url')::text, 
+                values ($1,
+                        (_team.d->>'id')::text,
+                        (_team.d->>'username')::citext,
+                        (_team.d->>'name')::text,
+                        (_team.d->>'email')::text,
+                        (_team.d->>'avatar_url')::text,
                         (_team.d->>'parent_id')::text
                 )
                 returning ownerid into _ownerid;
