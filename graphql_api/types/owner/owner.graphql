@@ -31,4 +31,5 @@ type Owner {
     repos: [String!]
     isPublic: Boolean
   ): [Measurement!]
+  invoices: [Invoice] @cost(complexity: 100)
 }
