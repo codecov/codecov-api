@@ -22,6 +22,7 @@ from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
+from services.billing import BillingService
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
@@ -130,21 +131,6 @@ async def resolve_repository(owner, info, name):
     return repository
 
 
-@owner_bindable.field("repositoryDeprecated")
-async def resolve_repository_deprecated(owner, info, name):
-    command = info.context["executor"].get_command("repository")
-    repository: Optional[Repository] = await command.fetch_repository(owner, name)
-
-    if repository is not None:
-        current_owner = info.context["request"].current_owner
-        if repository.private:
-            await sync_to_async(activation.try_auto_activate)(owner, current_owner)
-
-        info.context["profiling_summary"] = ProfilingSummary(repository)
-
-    return repository
-
-
 @owner_bindable.field("numberOfUploads")
 @require_part_of_org
 async def resolve_number_of_uploads(owner, info, **kwargs):
@@ -239,3 +225,9 @@ def resolve_is_current_user_activated(owner, info):
         bool(owner.plan_activated_users)
         and current_owner.ownerid in owner.plan_activated_users
     )
+
+
+@owner_bindable.field("invoices")
+@require_part_of_org
+def resolve_owner_invoices(owner: Owner, info):
+    return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)

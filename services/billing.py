@@ -135,6 +135,7 @@ class StripeService(AbstractPaymentService):
         invoices = stripe.Invoice.list(customer=owner.stripe_customer_id, limit=limit)[
             "data"
         ]
+
         invoices_filtered_by_status = filter(self.filter_invoices_by_status, invoices)
         invoices_filtered_by_status_and_total = filter(
             self.filter_invoices_by_total, invoices_filtered_by_status
@@ -366,13 +367,6 @@ class StripeService(AbstractPaymentService):
             extra=dict(owner_id=owner.ownerid),
         )
 
-        if not owner.stripe_customer_id:
-            customer_email = owner.email
-            customer = None
-        else:
-            customer = owner.stripe_customer_id
-            customer_email = None
-
         session = stripe.checkout.Session.create(
             billing_address_collection="required",
             payment_method_types=["card"],
@@ -380,8 +374,7 @@ class StripeService(AbstractPaymentService):
             client_reference_id=str(owner.ownerid),
             success_url=success_url,
             cancel_url=cancel_url,
-            customer=customer,
-            customer_email=customer_email,
+            customer=owner.stripe_customer_id,
             mode="subscription",
             line_items=[
                 {

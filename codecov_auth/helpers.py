@@ -52,7 +52,7 @@ class History:
         if action_flag is None:
             action_flag = CHANGE
 
-        if type(objects) is not list:
+        if not isinstance(objects, list):
             objects = [objects]
 
         if add_traceback:

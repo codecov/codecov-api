@@ -44,25 +44,25 @@ def run_sql(schema_editor):
         begin
             select array(
             with recursive tree as (
-                select ownerid, 
-                service_id, 
+                select ownerid,
+                service_id,
                 array[]::text[] as ancestors_service_id,
                 1 as depth
-                from owners 
-                where parent_service_id is null 
-                and service = 'gitlab' 
+                from owners
+                where parent_service_id is null
+                and service = 'gitlab'
                 and ownerid = $1
                 union all
-                select owners.ownerid, 
-                owners.service_id, 
+                select owners.ownerid,
+                owners.service_id,
                 tree.ancestors_service_id || owners.parent_service_id,
                 depth + 1 as depth
                 from owners, tree
                 where owners.parent_service_id = tree.service_id
                 and depth <= 20
             )
-            select ownerid 
-                from tree 
+            select ownerid
+                from tree
                 where $2 = any(tree.ancestors_service_id)
             ) into _decendents_owner_ids;
 
@@ -84,7 +84,7 @@ def run_sql(schema_editor):
         begin
             select o.service, o.service_id into _service, _service_id
             from owners o where o.ownerid = $1;
-            
+
             if _service = 'gitlab' then
             select get_gitlab_repos_activated($1, _service_id) into _repos_activated;
             else
@@ -147,12 +147,12 @@ def run_sql(schema_editor):
 
             if not found then
                 insert into owners (service, service_id, username, name, email, avatar_url, parent_service_id)
-                values ($1, 
-                        (_team.d->>'id')::text, 
-                        (_team.d->>'username')::citext, 
-                        (_team.d->>'name')::text, 
-                        (_team.d->>'email')::text, 
-                        (_team.d->>'avatar_url')::text, 
+                values ($1,
+                        (_team.d->>'id')::text,
+                        (_team.d->>'username')::citext,
+                        (_team.d->>'name')::text,
+                        (_team.d->>'email')::text,
+                        (_team.d->>'avatar_url')::text,
                         (_team.d->>'parent_id')::text
                 )
                 returning ownerid into _ownerid;

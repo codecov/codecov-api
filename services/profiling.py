@@ -53,7 +53,7 @@ class ProfilingSummary:
         try:
             data = archive_service.read_file(profiling_commit.summarized_location)
             return ProfilingSummaryDataAnalyzer(json.loads(data))
-        except:
+        except Exception:
             log.error(
                 "failed to read summarized profiling data from storage", exc_info=True
             )

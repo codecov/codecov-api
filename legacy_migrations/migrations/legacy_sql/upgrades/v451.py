@@ -9,11 +9,11 @@ def run_sql(schema_editor):
 
         -- Here we're commenting out all plan related migrations below because they break on enterprise
         -- these migrations have been run already for production, but can break some production
-        -- deployments. Specifically the setting of the plan column to a new default causes problems with 
-        -- web's ability to migrate effectively in some scenarios. 
+        -- deployments. Specifically the setting of the plan column to a new default causes problems with
+        -- web's ability to migrate effectively in some scenarios.
 
         -- If you're starting from scratch in dev, you will need to run the below migrations manually,
-        -- or comment out these migrations before starting up codecov.io for the first time. 
+        -- or comment out these migrations before starting up codecov.io for the first time.
 
         -- This isn't ideal, and will hopefully be addressed when we move all migrations to Django.
 

@@ -1,6 +1,6 @@
 def run_sql(schema_editor):
     schema_editor.execute(
-        """                  
+        """
         create table owners(
             ownerid                 serial primary key,
             service                 service not null,

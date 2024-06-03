@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             """
         drop trigger repos_before_update on repos;
-        
+
         create trigger repos_before_update before update on repos
         for each row
         when (new.name is not null and new.name is distinct from old.name)
