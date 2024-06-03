@@ -200,6 +200,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "bundleAnalysisEnabled": False,
             "coverageEnabled": False,
             "bot": None,
+            "testAnalyticsEnabled": False,
         }
 
     @freeze_time("2021-01-01")
