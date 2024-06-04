@@ -1,6 +1,7 @@
 import logging
 import uuid
 
+from django.conf import settings
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
@@ -21,6 +22,7 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
+from timeseries.models import Dataset, MeasurementName
 from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
@@ -142,4 +144,29 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 is_shelter_request=self.is_shelter_request(),
             ),
         )
+
+        if settings.TIMESERIES_ENABLED:
+            supported_bundle_analysis_measurement_types = [
+                MeasurementName.BUNDLE_ANALYSIS_ASSET_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_FONT_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_IMAGE_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_JAVASCRIPT_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_REPORT_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_STYLESHEET_SIZE,
+            ]
+            for measurement_type in supported_bundle_analysis_measurement_types:
+                _, created = Dataset.objects.get_or_create(
+                    name=measurement_type.value,
+                    repository_id=repo.pk,
+                )
+                if created:
+                    log.info(
+                        "Created new timescale dataset for bundle analysis",
+                        extra=dict(
+                            commit=commit.commitid,
+                            repoid=repo.repoid,
+                            measurement_type=measurement_type,
+                        ),
+                    )
+
         return Response({"url": url}, status=201)
