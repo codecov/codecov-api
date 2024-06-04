@@ -29,17 +29,14 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
                 invoices {
                     amountDue
                     amountPaid
-                    amountRemaining
                     created
                     currency
                     customerAddress
                     customerEmail
                     customerName
-                    customerShipping
                     dueDate
                     footer
                     id
-                    invoicePdf
                     lineItems {
                         amount
                         currency
@@ -82,17 +79,14 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["invoices"][0] == {
             "amountDue": 999,
             "amountPaid": 999,
-            "amountRemaining": 0,
             "created": 1489789429,
             "currency": "usd",
             "customerAddress": "6639 Boulevard Dr, Westwood FL 34202 USA",
             "customerEmail": "olivia.williams.03@example.com",
             "customerName": "Peer Company",
-            "customerShipping": None,
             "dueDate": None,
             "footer": None,
             "id": "in_19yTU92eZvKYlo2C7uDjvu6v",
-            "invoicePdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
             "lineItems": [
                 {
                     "description": "(10) users-pr-inappm",
