@@ -29,6 +29,7 @@ class RepositoryCommands(BaseCommand):
     ) -> uuid:
         return self.get_interactor(RegenerateRepositoryUploadTokenInteractor).execute(
             repo_name, owner_username
+        )
 
     def update_repository(
         self,
