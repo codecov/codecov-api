@@ -37,11 +37,11 @@ class InvoiceViewSetTests(APITestCase):
             "invoice_pdf": "https://pay.stripe.com/invoice/acct_1032D82eZvKYlo2C/invst_a7KV10HpLw2QxrihgVyuOkOjMZ/pdf",
             "line_items": [
                 {
-                    "description": "(10) users-inappm",
+                    "description": "(10) users-pr-inappm",
                     "amount": 120,
                     "quantity": 1,
                     "currency": "usd",
-                    "plan_name": "users-inappm",
+                    "plan_name": "users-pr-inappm",
                     "period": {"end": 1521326190, "start": 1518906990},
                 }
             ],

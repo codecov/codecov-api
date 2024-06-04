@@ -6,7 +6,7 @@ from rest_framework.response import Response
 class GraphBadgeAPIMixin(object):
     def get(self, request, *args, **kwargs):
         ext = self.kwargs.get("ext")
-        if not ext in self.extensions:
+        if ext not in self.extensions:
             return Response(
                 {
                     "detail": f"File extension should be one of [ {' || '.join(self.extensions)} ]"

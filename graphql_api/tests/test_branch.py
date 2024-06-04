@@ -46,7 +46,7 @@ query_files = """
                                         percentCovered
                                         ... on PathContentFile {
                                             isCriticalFile
-                                        }  
+                                        }
                                     }
                                 }
                                 ... on MissingHeadReport {
@@ -210,7 +210,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         query = query_branches % (self.org.username, self.repo.name)
         data = self.gql_request(query, variables=variables)
         branches = data["owner"]["repository"]["branches"]["edges"]
-        assert type(branches) == list
+        assert isinstance(branches, list)
         assert len(branches) == 3
         assert branches == [
             {"node": {"name": "test2"}},
@@ -239,7 +239,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         query = query_branches % (self.org.username, self.repo.name, "test2")
         data = self.gql_request(query, variables=variables)
         branches = data["owner"]["repository"]["branches"]["edges"]
-        assert type(branches) == list
+        assert isinstance(branches, list)
         assert len(branches) == 1
         assert branches == [
             {"node": {"name": "test2"}},

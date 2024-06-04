@@ -9,11 +9,14 @@ from codecov.db import sync_to_async
 from graphql_api.types.errors import ProviderError, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
 from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons
-from services.comparison import Comparison, MissingComparisonReport, Segment
+from services.comparison import (
+    Comparison,
+    ImpactedFile,
+    MissingComparisonReport,
+)
 from services.profiling import ProfilingSummary
 
 impacted_file_bindable = ObjectType("ImpactedFile")
-from services.comparison import ImpactedFile
 
 
 @impacted_file_bindable.field("fileName")

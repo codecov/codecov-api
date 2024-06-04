@@ -1,12 +1,14 @@
 import json
 import logging
 import os
-import shutil
 import socket
+import time
 from asyncio import iscoroutine
 from typing import Any, Collection, Optional
 
+import regex
 from ariadne import format_error
+from ariadne.types import Extension
 from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
@@ -14,6 +16,7 @@ from django.http import HttpResponseBadRequest, HttpResponseNotAllowed, JsonResp
 from graphql import DocumentNode
 from sentry_sdk import capture_exception
 from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import Counter, Histogram
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
@@ -23,6 +26,105 @@ from services import ServiceException
 from .schema import schema
 
 log = logging.getLogger(__name__)
+
+GQL_HIT_COUNTER = Counter(
+    "api_gql_counts_hits",
+    "Number of times API GQL endpoint request starts",
+    ["operation_type", "operation_name"],
+)
+
+GQL_ERROR_COUNTER = Counter(
+    "api_gql_counts_errors",
+    "Number of times API GQL endpoint failed with an exception",
+    ["operation_type", "operation_name"],
+)
+
+GQL_REQUEST_LATENCIES = Histogram(
+    "api_gql_timers_full_runtime_seconds",
+    "Total runtime in seconds of this query",
+    ["operation_type", "operation_name"],
+    buckets=[0.05, 0.1, 0.25, 0.5, 0.75, 1, 2, 5, 10, 30],
+)
+
+
+# covers named and 3 unnamed operations (see graphql_api/types/query/query.py)
+GQL_TYPE_AND_NAME_PATTERN = r"^(query|mutation|subscription)(?:\(\$input:|) (\w+)(?:\(| \(|{| {|!)|^(?:{) (me|owner|config)(?:\(| |{)"
+
+
+class QueryMetricsExtension(Extension):
+    """
+    We have named and unnamed operations, we want to collect metrics on both.
+        named operations have an operation_type and operation_name,
+            ex: "query MySession { operation body }"
+            would be tracked as operation_type = query, operation_name = MySession
+        we have `me`, `owner`, and `config` as unnamed operations,
+            ex: "{ owner(username: "%s") { continued operation body } }"
+            this operation would be tracked as operation_type = unknown_type, operation_name = owner
+
+    """
+
+    def __init__(self):
+        self.start_timestamp = None
+        self.end_timestamp = None
+        self.operation_type = None
+        self.operation_name = None
+
+    def set_type_and_name(self, query):
+        operation_type = "unknown_type"  # default value
+        operation_name = "unknown_name"  # default value
+        try:
+            match_obj = regex.match(GQL_TYPE_AND_NAME_PATTERN, query, timeout=2)
+        except TimeoutError:
+            # does not block the rest of the gql request, logs and falls back to default values
+            query_slice = query[:30] if len(query) > 30 else query
+            log.error("Regex Timeout Error", extra=dict(query_slice=query_slice))
+            match_obj = None
+
+        if match_obj:
+            if match_obj.group(1) is not None:
+                operation_type = match_obj.group(1)
+
+            if match_obj.group(2) is not None:
+                operation_name = match_obj.group(2)
+            elif match_obj.group(3) is not None:
+                operation_name = match_obj.group(3)
+
+        self.operation_type = operation_type
+        self.operation_name = operation_name
+        if operation_type == "unknown_type" and operation_name == "unknown_name":
+            query_slice = query[:30] if len(query) > 30 else query
+            log.info(
+                "Could not match gql query format for logging",
+                extra=dict(query_slice=query_slice),
+            )
+
+    def request_started(self, context):
+        """
+        Extension hook executed at request's start.
+        """
+        self.set_type_and_name(query=context["clean_query"])
+        self.start_timestamp = time.perf_counter()
+        GQL_HIT_COUNTER.labels(
+            operation_type=self.operation_type, operation_name=self.operation_name
+        ).inc()
+
+    def request_finished(self, context):
+        """
+        Extension hook executed at request's end.
+        """
+        self.end_timestamp = time.perf_counter()
+        latency = self.end_timestamp - self.start_timestamp
+        GQL_REQUEST_LATENCIES.labels(
+            operation_type=self.operation_type, operation_name=self.operation_name
+        ).observe(latency)
+
+    def has_errors(self, errors, context):
+        """
+        Extension hook executed when GraphQL encountered errors.
+        """
+        GQL_ERROR_COUNTER.labels(
+            operation_type=self.operation_type, operation_name=self.operation_name
+        ).inc(len(errors))
 
 
 class RequestFinalizer:
@@ -41,7 +143,7 @@ class RequestFinalizer:
 
     def _remove_temp_files(self):
         """
-        Some requests causes temporary files to be created in /tmp (eg BundleAnalysis)
+        Some requests cause temporary files to be created in /tmp (eg BundleAnalysis)
         This cleanup step clears all contents of the /tmp directory after each request
         """
         for key in RequestFinalizer.TO_BE_DELETED_FILES:
@@ -66,7 +168,7 @@ class RequestFinalizer:
 
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
-    extensions = []
+    extensions = [QueryMetricsExtension]
 
     def get_validation_rules(
         self,
@@ -84,6 +186,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
 
     validation_rules = get_validation_rules  # type: ignore
 
+    def get_clean_query(self, request_body):
+        # clean up graphql query to remove new lines and extra spaces
+        if "query" in request_body and isinstance(request_body["query"], str):
+            clean_query = request_body["query"].replace("\n", " ")
+            clean_query = clean_query.replace("  ", "").strip()
+            return clean_query
+
     async def get(self, *args, **kwargs):
         if settings.GRAPHQL_PLAYGROUND:
             return await super().get(*args, **kwargs)
@@ -92,17 +201,16 @@ class AsyncGraphqlView(GraphQLAsyncView):
 
     async def post(self, request, *args, **kwargs):
         await self._get_user(request)
-
-        # get request body information
+        # get request body information for logging
         req_body = json.loads(request.body.decode("utf-8")) if request.body else {}
 
-        # get request path information
+        # get request path information for logging
         req_path = request.get_full_path()
 
-        # clean up graphql query to remove new lines and extra spaces
-        if "query" in req_body and isinstance(req_body["query"], str):
-            req_body["query"] = req_body["query"].replace("\n", " ")
-            req_body["query"] = req_body["query"].replace("  ", "").strip()
+        # clean up graphql query for logging, remove new lines and extra spaces
+        cleaned_query = self.get_clean_query(req_body)
+        if cleaned_query:
+            req_body["query"] = cleaned_query
 
         # put everything together for log
         log_data = {
@@ -115,7 +223,6 @@ class AsyncGraphqlView(GraphQLAsyncView):
         log.info("GraphQL Request", extra=log_data)
         sentry_metrics.incr("graphql.info.request_made", tags={"path": req_path})
 
-        # request.user = await get_user(request) or AnonymousUser()
         with RequestFinalizer(request):
             response = await super().post(request, *args, **kwargs)
 
@@ -142,15 +249,17 @@ class AsyncGraphqlView(GraphQLAsyncView):
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
                         )
-                except:
+                except Exception:
                     pass
             return response
 
-    def context_value(self, request):
+    def context_value(self, request, *_):
+        request_body = json.loads(request.body.decode("utf-8")) if request.body else {}
         return {
             "request": request,
             "service": request.resolver_match.kwargs["service"],
             "executor": get_executor_from_request(request),
+            "clean_query": self.get_clean_query(request_body) if request_body else "",
         }
 
     def error_formatter(self, error, debug=False):
