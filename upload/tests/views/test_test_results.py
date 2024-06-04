@@ -221,3 +221,34 @@ def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
     assert res.status_code == 400
     assert res.json() == {"commit": ["This field is required."]}
     assert not upload.called
+
+
+def test_update_repo_fields_when_upload_is_triggered(
+    db, client, mocker, mock_redis
+) -> None:
+    upload = mocker.patch.object(TaskService, "upload")
+    create_presigned_put = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create(active=False, activated=False)
+    commit = CommitFactory.create(repository=repository)
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {repository.upload_token}")
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": commit.commitid,
+            "slug": f"{repository.author.username}::::{repository.name}",
+        },
+        format="json",
+    )
+    assert res.status_code == 201
+
+    repository.refresh_from_db()
+    assert repository.active is True
+    assert repository.activated is True
+    assert repository.test_analytics_enabled is True

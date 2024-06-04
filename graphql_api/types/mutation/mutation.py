@@ -13,6 +13,7 @@ from .delete_component_measurements import (
 )
 from .delete_flag import error_delete_flag, resolve_delete_flag
 from .delete_session import error_delete_session, resolve_delete_session
+from .erase_repository import error_erase_repository, resolve_erase_repository
 from .onboard_user import error_onboard_user, resolve_onboard_user
 from .regenerate_org_upload_token import (
     error_generate_org_upload_token,
@@ -39,6 +40,7 @@ from .update_default_organization import (
     resolve_update_default_organization,
 )
 from .update_profile import error_update_profile, resolve_update_profile
+from .update_repository import error_update_repository, resolve_update_repository
 from .update_self_hosted_settings import (
     error_update_self_hosted_settings,
     resolve_update_self_hosted_settings,
@@ -71,6 +73,8 @@ mutation_bindable.field("cancelTrial")(resolve_cancel_trial)
 mutation_bindable.field("deleteComponentMeasurements")(
     resolve_delete_component_measurements
 )
+mutation_bindable.field("eraseRepository")(resolve_erase_repository)
+mutation_bindable.field("updateRepository")(resolve_update_repository)
 mutation_bindable.field("updateSelfHostedSettings")(resolve_update_self_hosted_settings)
 
 
@@ -94,5 +98,7 @@ mutation_resolvers = [
     error_save_terms_agreement,
     error_start_trial,
     error_cancel_trial,
+    error_erase_repository,
+    error_update_repository,
     error_update_self_hosted_settings,
 ]

@@ -7,6 +7,7 @@ from .create_user_token import gql_create_user_token
 from .delete_component_measurements import gql_delete_component_measurements
 from .delete_flag import gql_delete_flag
 from .delete_session import gql_delete_session
+from .erase_repository import gql_erase_repository
 from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
 from .regenerate_org_upload_token import gql_regenerate_org_upload_token
@@ -19,6 +20,7 @@ from .start_trial import gql_start_trial
 from .sync_with_git_provider import gql_sync_with_git_provider
 from .update_default_organization import gql_update_default_organization
 from .update_profile import gql_update_profile
+from .update_repository import gql_update_repository
 from .update_self_hosted_settings import gql_update_self_hosted_settings
 
 mutation = ariadne_load_local_graphql(__file__, "mutation.graphql")
@@ -40,4 +42,6 @@ mutation = mutation + gql_save_terms_agreement
 mutation = mutation + gql_start_trial
 mutation = mutation + gql_cancel_trial
 mutation = mutation + gql_delete_component_measurements
+mutation = mutation + gql_erase_repository
+mutation = mutation + gql_update_repository
 mutation = mutation + gql_update_self_hosted_settings

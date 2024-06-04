@@ -410,6 +410,13 @@ def resolve_bundle_analysis_enabled(
     return repository.bundle_analysis_enabled
 
 
+@repository_bindable.field("testAnalyticsEnabled")
+def resolve_test_analytics_enabled(
+    repository: Repository, info: GraphQLResolveInfo
+) -> Optional[bool]:
+    return repository.test_analytics_enabled
+
+
 @repository_bindable.field("coverageEnabled")
 def resolve_coverage_enabled(
     repository: Repository, info: GraphQLResolveInfo
