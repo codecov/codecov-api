@@ -25,5 +25,6 @@ type Mutation {
   saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
   saveTermsAgreement(input: SaveTermsAgreementInput!): SaveTermsAgreementPayload
   deleteComponentMeasurements(input: DeleteComponentMeasurementsInput!): DeleteComponentMeasurementsPayload
+  updateRepository(input: UpdateRepositoryInput!): UpdateRepositoryPayload
   updateSelfHostedSettings(input: UpdateSelfHostedSettingsInput!): UpdateSelfHostedSettingsPayload
 }
