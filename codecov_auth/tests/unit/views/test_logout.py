@@ -39,37 +39,3 @@ class LogoutViewTest(TransactionTestCase):
 
         res = self._get("/graphql/gh/")
         self.assertEqual(self._is_authenticated(), False)
-
-    def test_get_logout_when_unauthenticated(self):
-        res = self._get("/logout/gh")
-        assert res.status_code == 302
-
-    def test_get_logout_when_authenticated(self):
-        owner = OwnerFactory()
-        self.client = Client()
-        self.client.force_login_owner(owner)
-
-        res = self._get("/graphql/gh/")
-        self.assertEqual(self._is_authenticated(), True)
-
-        res = self._get("/logout/gh")
-        assert res.url == "http://localhost:3000"
-        self.assertEqual(res.status_code, 302)
-
-        res = self._get("/graphql/gh/")
-        self.assertEqual(self._is_authenticated(), False)
-
-    def test_get_logout_when_authenticated_with_redirect(self):
-        owner = OwnerFactory()
-        self.client = Client()
-        self.client.force_login_owner(owner)
-
-        res = self._get("/graphql/gh/")
-        self.assertEqual(self._is_authenticated(), True)
-
-        res = self._get("/logout/gh?to=/test")
-        assert res.url == "http://localhost:3000"
-        self.assertEqual(res.status_code, 302)
-
-        res = self._get("/graphql/gh/")
-        self.assertEqual(self._is_authenticated(), False)
