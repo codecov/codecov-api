@@ -43,6 +43,7 @@ from .update_default_organization import (
     resolve_update_default_organization,
 )
 from .update_profile import error_update_profile, resolve_update_profile
+from .update_repository import error_update_repository, resolve_update_repository
 from .update_self_hosted_settings import (
     error_update_self_hosted_settings,
     resolve_update_self_hosted_settings,
@@ -75,6 +76,7 @@ mutation_bindable.field("cancelTrial")(resolve_cancel_trial)
 mutation_bindable.field("deleteComponentMeasurements")(
     resolve_delete_component_measurements
 )
+mutation_bindable.field("updateRepository")(resolve_update_repository)
 mutation_bindable.field("updateSelfHostedSettings")(resolve_update_self_hosted_settings)
 mutation_bindable.field("regenerateRepositoryUploadToken")(
     resolve_regenerate_repository_upload_token
@@ -101,6 +103,7 @@ mutation_resolvers = [
     error_save_terms_agreement,
     error_start_trial,
     error_cancel_trial,
+    error_update_repository,
     error_update_self_hosted_settings,
     error_regenerate_repository_upload_token,
 ]

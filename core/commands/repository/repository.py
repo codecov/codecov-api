@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner
@@ -14,6 +15,7 @@ from .interactors.regenerate_repository_token import RegenerateRepositoryTokenIn
 from .interactors.regenerate_repository_upload_token import (
     RegenerateRepositoryUploadTokenInteractor,
 )
+from .interactors.update_repository import UpdateRepositoryInteractor
 
 
 class RepositoryCommands(BaseCommand):
@@ -27,6 +29,16 @@ class RepositoryCommands(BaseCommand):
     ) -> uuid:
         return self.get_interactor(RegenerateRepositoryUploadTokenInteractor).execute(
             repo_name, owner_username
+
+    def update_repository(
+        self,
+        repo_name: str,
+        owner: Owner,
+        default_branch: Optional[str],
+        activated: Optional[bool],
+    ):
+        return self.get_interactor(UpdateRepositoryInteractor).execute(
+            repo_name, owner, default_branch, activated
         )
 
     def get_upload_token(self, repository):

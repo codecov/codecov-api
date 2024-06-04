@@ -22,6 +22,7 @@ from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
+from services.billing import BillingService
 from services.profiling import ProfilingSummary
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
@@ -224,3 +225,9 @@ def resolve_is_current_user_activated(owner, info):
         bool(owner.plan_activated_users)
         and current_owner.ownerid in owner.plan_activated_users
     )
+
+
+@owner_bindable.field("invoices")
+@require_part_of_org
+def resolve_owner_invoices(owner: Owner, info):
+    return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)

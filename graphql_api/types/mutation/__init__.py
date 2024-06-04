@@ -20,6 +20,7 @@ from .start_trial import gql_start_trial
 from .sync_with_git_provider import gql_sync_with_git_provider
 from .update_default_organization import gql_update_default_organization
 from .update_profile import gql_update_profile
+from .update_repository import gql_update_repository
 from .update_self_hosted_settings import gql_update_self_hosted_settings
 
 mutation = ariadne_load_local_graphql(__file__, "mutation.graphql")
@@ -41,5 +42,6 @@ mutation = mutation + gql_save_terms_agreement
 mutation = mutation + gql_start_trial
 mutation = mutation + gql_cancel_trial
 mutation = mutation + gql_delete_component_measurements
+mutation = mutation + gql_update_repository
 mutation = mutation + gql_update_self_hosted_settings
 mutation = mutation + gql_regenerate_repository_upload_token

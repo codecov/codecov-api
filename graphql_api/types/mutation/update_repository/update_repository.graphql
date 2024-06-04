@@ -1,0 +1,11 @@
+union UpdateRepositoryError = UnauthenticatedError | ValidationError | UnauthorizedError
+
+type UpdateRepositoryPayload {
+  error: UpdateRepositoryError
+}
+
+input UpdateRepositoryInput {
+  branch: String
+  activated: Boolean
+  repoName: String!
+}
