@@ -19,16 +19,16 @@ mutation($input: UpdateRepositoryInput!) {
 
 repo_query = """{
     me {
-    	owner {
+        owner {
         repository(name: "gazebo") {
           ... on Repository {
-          	activated
+              activated
             defaultBranch
           }
         }
       }
     }
-	}
+}
 """
 
 
