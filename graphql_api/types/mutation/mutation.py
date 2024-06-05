@@ -23,6 +23,10 @@ from .regenerate_repository_token import (
     error_regenerate_repository_token,
     resolve_regenerate_repository_token,
 )
+from .regenerate_repository_upload_token import (
+    error_regenerate_repository_upload_token,
+    resolve_regenerate_repository_upload_token,
+)
 from .revoke_user_token import error_revoke_user_token, resolve_revoke_user_token
 from .save_sentry_state import error_save_sentry_state, resolve_save_sentry_state
 from .save_terms_agreement import (
@@ -76,6 +80,9 @@ mutation_bindable.field("deleteComponentMeasurements")(
 mutation_bindable.field("eraseRepository")(resolve_erase_repository)
 mutation_bindable.field("updateRepository")(resolve_update_repository)
 mutation_bindable.field("updateSelfHostedSettings")(resolve_update_self_hosted_settings)
+mutation_bindable.field("regenerateRepositoryUploadToken")(
+    resolve_regenerate_repository_upload_token
+)
 
 
 mutation_resolvers = [
@@ -101,4 +108,5 @@ mutation_resolvers = [
     error_erase_repository,
     error_update_repository,
     error_update_self_hosted_settings,
+    error_regenerate_repository_upload_token,
 ]

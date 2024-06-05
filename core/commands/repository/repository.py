@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional
 
 from codecov.commands.base import BaseCommand
@@ -12,12 +13,24 @@ from .interactors.fetch_repository import FetchRepositoryInteractor
 from .interactors.get_repository_token import GetRepositoryTokenInteractor
 from .interactors.get_upload_token import GetUploadTokenInteractor
 from .interactors.regenerate_repository_token import RegenerateRepositoryTokenInteractor
+from .interactors.regenerate_repository_upload_token import (
+    RegenerateRepositoryUploadTokenInteractor,
+)
 from .interactors.update_repository import UpdateRepositoryInteractor
 
 
 class RepositoryCommands(BaseCommand):
     def fetch_repository(self, owner, name):
         return self.get_interactor(FetchRepositoryInteractor).execute(owner, name)
+
+    def regenerate_repository_upload_token(
+        self,
+        repo_name: str,
+        owner_username: str,
+    ) -> uuid.UUID:
+        return self.get_interactor(RegenerateRepositoryUploadTokenInteractor).execute(
+            repo_name, owner_username
+        )
 
     def update_repository(
         self,

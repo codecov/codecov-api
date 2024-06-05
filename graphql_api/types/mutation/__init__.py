@@ -12,6 +12,7 @@ from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
 from .regenerate_org_upload_token import gql_regenerate_org_upload_token
 from .regenerate_repository_token import gql_regenerate_repository_token
+from .regenerate_repository_upload_token import gql_regenerate_repository_upload_token
 from .revoke_user_token import gql_revoke_user_token
 from .save_sentry_state import gql_save_sentry_state
 from .save_terms_agreement import gql_save_terms_agreement
@@ -45,3 +46,4 @@ mutation = mutation + gql_delete_component_measurements
 mutation = mutation + gql_erase_repository
 mutation = mutation + gql_update_repository
 mutation = mutation + gql_update_self_hosted_settings
+mutation = mutation + gql_regenerate_repository_upload_token
