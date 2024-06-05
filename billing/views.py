@@ -62,22 +62,31 @@ class StripeWebhookHandler(APIView):
         self._log_updated(updated)
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
-        log.info(
-            "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
-            extra=dict(
-                stripe_subscription_id=subscription.id,
+        try:
+            log.info(
+                "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
+                extra=dict(
+                    stripe_subscription_id=subscription.id,
+                    stripe_customer_id=subscription.customer,
+                ),
+            )
+            owner: Owner = Owner.objects.get(
                 stripe_customer_id=subscription.customer,
-            ),
-        )
-        owner: Owner = Owner.objects.get(
-            stripe_customer_id=subscription.customer,
-            stripe_subscription_id=subscription.id,
-        )
-        plan_service = PlanService(current_org=owner)
-        plan_service.set_default_plan_data()
-        owner.repository_set.update(active=False, activated=False)
+                stripe_subscription_id=subscription.id,
+            )
+            plan_service = PlanService(current_org=owner)
+            plan_service.set_default_plan_data()
+            owner.repository_set.update(active=False, activated=False)
 
-        self._log_updated(1)
+            self._log_updated(1)
+        except Owner.DoesNotExist:
+            log.info(
+                "Customer Subscription Deleted - Couldn't find owner, subscription likely already deleted",
+                extra=dict(
+                    stripe_subscription_id=subscription.id,
+                    stripe_customer_id=subscription.customer,
+                ),
+            )
 
     def subscription_schedule_created(
         self, schedule: stripe.SubscriptionSchedule
@@ -90,7 +99,7 @@ class StripeWebhookHandler(APIView):
             extra=dict(
                 stripe_customer_id=subscription.customer,
                 stripe_subscription_id=subscription.id,
-                ownerid=subscription.metadata["obo_organization"],
+                ownerid=subscription.metadata.get("obo_organization"),
                 plan=plan_name,
                 quantity=subscription.quantity,
             ),
@@ -114,7 +123,7 @@ class StripeWebhookHandler(APIView):
                 extra=dict(
                     stripe_customer_id=subscription.customer,
                     stripe_subscription_id=subscription.id,
-                    ownerid=subscription.metadata["obo_organization"],
+                    ownerid=subscription.metadata.get("obo_organization"),
                     plan=plan_name,
                     quantity=quantity,
                 ),

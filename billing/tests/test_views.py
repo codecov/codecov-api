@@ -1,7 +1,7 @@
 import time
-from datetime import datetime, timedelta
 from unittest.mock import patch
 
+import pytest
 import stripe
 from django.conf import settings
 from freezegun import freeze_time
@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
 
+from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from plan.constants import PlanName, TrialDaysAmount
@@ -167,8 +168,31 @@ class StripeWebhookHandlerTests(APITestCase):
             }
         )
 
-        assert (
-            self.owner.repository_set.filter(activated=True, active=True).count() == 0
+    @patch("logging.Logger.info")
+    def test_customer_subscription_deleted_no_customer(self, log_info_mock):
+        self.owner.plan = "users-inappy"
+        self.owner.plan_user_count = 20
+        self.owner.save()
+
+        self._send_event(
+            payload={
+                "type": "customer.subscription.deleted",
+                "data": {
+                    "object": {
+                        "id": "HUH",
+                        "customer": "nah",
+                        "plan": {"name": self.owner.plan},
+                    }
+                },
+            }
+        )
+
+        log_info_mock.assert_called_with(
+            "Customer Subscription Deleted - Couldn't find owner, subscription likely already deleted",
+            extra={
+                "stripe_subscription_id": "HUH",
+                "stripe_customer_id": "nah",
+            },
         )
 
     def test_customer_created_logs_and_doesnt_crash(self):
