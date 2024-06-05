@@ -1,0 +1,6 @@
+union RegenerateRepositoryUploadTokenError = ValidationError
+
+type RegenerateRepositoryUploadTokenPayload {
+  token: String
+  error: ValidationError
+}

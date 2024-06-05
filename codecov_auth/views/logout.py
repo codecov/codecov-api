@@ -1,21 +1,16 @@
 from django.conf import settings
 from django.contrib.auth import logout
 from django.http import HttpRequest
-from django.shortcuts import HttpResponse, redirect
+from django.shortcuts import HttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 
-@api_view(["GET", "POST"])
+@api_view(["POST"])
 def logout_view(request: HttpRequest, **kwargs: str) -> HttpResponse:
-    if request.method == "POST":
-        response = Response(status=205)
-    else:
-        # Preserving GET logouts until Gazebo is moved off of it.
-        redirect_url = settings.CODECOV_DASHBOARD_URL
-        response = redirect(redirect_url)
-
     logout(request)
+
+    response = Response(status=205)
     kwargs_cookie = dict(
         domain=settings.COOKIES_DOMAIN, samesite=settings.COOKIE_SAME_SITE
     )
