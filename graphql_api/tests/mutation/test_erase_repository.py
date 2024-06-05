@@ -50,6 +50,17 @@ class EraseRepositoryTests(GraphQLTestHelper, TransactionTestCase):
         )
         assert data["eraseRepository"]["error"]["__typename"] == "ValidationError"
 
+    def test_when_unauthenticated(self):
+        data = self.gql_request(
+            query,
+            variables={
+                "input": {
+                    "repoName": "DNE",
+                }
+            },
+        )
+        assert data["eraseRepository"]["error"]["__typename"] == "UnauthenticatedError"
+
     @override_settings(IS_ENTERPRISE=True)
     @patch("services.self_hosted.is_admin_owner")
     def test_when_not_self_hosted_admin(self, is_admin_owner):
