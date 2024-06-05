@@ -11,4 +11,4 @@ on:
 jobs:
   patch-typing-check:
     name: Run Patch Type Check
-    uses: codecov/gha-workflows/.github/workflows/mypy.yml@v1.2.20
+    uses: codecov/gha-workflows/.github/workflows/mypy.yml@v1.2.21
