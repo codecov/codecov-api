@@ -1,4 +1,4 @@
-from ariadne import UnionType, convert_kwargs_to_snake_case
+from ariadne import UnionType
 
 from core.commands.repository.repository import RepositoryCommands
 from graphql_api.helpers.mutation import (

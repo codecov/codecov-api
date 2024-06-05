@@ -9,7 +9,7 @@ from core.models import Repository
 
 class RegenerateRepositoryUploadTokenInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, repo_name: str, owner_username: str) -> uuid:
+    def execute(self, repo_name: str, owner_username: str) -> uuid.UUID:
         author = Owner.objects.filter(
             username=owner_username, service=self.service
         ).first()
