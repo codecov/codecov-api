@@ -62,16 +62,19 @@ def commit_status(
         s.state for s in sessions if s.state in ["processed", "uploaded", "error"]
     ]
 
-    # Returning commit status in order of priority
-    # If all are processed -> COMPLETED
-    if all(state == "processed" for state in upload_states):
-        return CommitStatus.COMPLETED.value
-    # If one or more error -> ERROR
-    if any(state == "error" for state in upload_states):
+    has_error, has_pending = False, False
+    for state in upload_states:
+        if state == "error":
+            has_error = True
+        if state == "uploaded":
+            has_pending = True
+
+    # Prioritize returning error over pending
+    if has_error:
         return CommitStatus.ERROR.value
-    # If one or more uploaded -> PENDING
-    if any(state == "uploaded" for state in upload_states):
+    if has_pending:
         return CommitStatus.PENDING.value
+    return CommitStatus.COMPLETED.value
 
 
 def repo_commits(
