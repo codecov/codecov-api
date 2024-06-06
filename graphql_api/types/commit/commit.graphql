@@ -27,6 +27,8 @@ type Commit {
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
   totalUploads: Int!
   components(filters: ComponentsFilters): [Component!]!
+  bundleStatus: CommitStatus
+  coverageStatus: CommitStatus
 }
 
 type CommitErrorsConnection {

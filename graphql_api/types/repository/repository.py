@@ -11,7 +11,7 @@ from shared.yaml import UserYaml
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from core.models import Branch, Repository
-from graphql_api.actions.commits import repo_commits
+from graphql_api.actions.commits import commit_status, repo_commits
 from graphql_api.actions.components import (
     component_measurements,
     component_measurements_last_uploaded,
