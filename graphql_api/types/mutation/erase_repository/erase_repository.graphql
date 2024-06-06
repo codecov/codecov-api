@@ -1,4 +1,4 @@
-union EraseRepositoryError = UnauthorizedError | ValidationError
+union EraseRepositoryError = UnauthorizedError | ValidationError | UnauthenticatedError
 
 type EraseRepositoryPayload {
   error: EraseRepositoryError
