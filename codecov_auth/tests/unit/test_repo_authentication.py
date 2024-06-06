@@ -414,47 +414,14 @@ class TestOrgLevelTokenAuthentication(object):
 
 
 class TestTokenlessAuth(object):
-    @pytest.mark.parametrize(
-        "headers",
-        [
-            {},
-        ],
-    )
-    def test_tokenless_missing_headers(self, headers):
-        request = APIRequestFactory().post(
-            "/upload/unknown_provider/owner::::repo/commits/commit_sha/reports/report_code/uploads",
-            headers=headers,
-        )
-        authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is None
-
     def test_tokenless_bad_path(self):
         request = APIRequestFactory().post(
             "/endpoint",
-            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
+            headers={},
         )
         authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is None
-
-    def test_tokenless_unknown_service(self):
-        request = APIRequestFactory().post(
-            "/upload/unknown_provider/owner::::repo/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
-        )
-        authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is None
-
-    def test_tokenless_not_supported_services(self, db):
-        request = APIRequestFactory().post(
-            "/upload/gitlab/owner::::repo/commits/commit_sha/reports/report_code/uploads",
-            headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
-        )
-        authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is None
+        with pytest.raises(exceptions.AuthenticationFailed):
+            _ = authentication.authenticate(request)
 
     def test_tokenless_unknown_repository(self, db):
         request = APIRequestFactory().post(
@@ -462,8 +429,8 @@ class TestTokenlessAuth(object):
             headers={"X-Tokenless": "user-name/repo-forked", "X-Tokenless-PR": "15"},
         )
         authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is None
+        with pytest.raises(exceptions.AuthenticationFailed):
+            _ = authentication.authenticate(request)
 
     @pytest.mark.parametrize(
         "request_uri,repo_slug,commitid",
@@ -525,36 +492,54 @@ class TestTokenlessAuth(object):
         authentication = TokenlessAuthentication()
         assert authentication._get_info_from_request_path(request) == (repo, commitid)
 
-    def test_tokenless_private_repo(self, db):
-        repo = RepositoryFactory()
-        repo.private = True
-        assert repo.private == True
-        assert repo.service == "github"
-        request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/commit_sha/reports/report_code/uploads",
-            {"branch": "fork:branch"},
-            format="json",
-        )
+    @pytest.mark.parametrize("private", [False, True])
+    @pytest.mark.parametrize("branch", ["branch", "fork:branch"])
+    @pytest.mark.parametrize(
+        "existing_commit,commit_branch",
+        [(False, None), (True, "branch"), (True, "fork:branch")],
+    )
+    def test_tokenless_success(
+        self,
+        db,
+        mocker,
+        private,
+        branch,
+        existing_commit,
+        commit_branch,
+    ):
+        repo = RepositoryFactory(private=private)
+
+        if existing_commit:
+            commit = CommitFactory()
+            commit.branch = commit_branch
+            commit.save()
+
+            request = APIRequestFactory().post(
+                f"/upload/github/{repo.author.username}::::{repo.name}/commits/{commit.commitid}/reports/report_code/uploads",
+                {"branch": branch},
+                format="json",
+            )
+
+        else:
+            request = APIRequestFactory().post(
+                f"/upload/github/{repo.author.username}::::{repo.name}/commits",
+                {"branch": branch},
+                format="json",
+            )
+
         authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is None
-
-    @patch("codecov_auth.authentication.repo_auth.RepoProviderService")
-    def test_tokenless_success(self, mock_repo_provider, db, mocker):
-        repo = RepositoryFactory(private=False)
-
-        commit = CommitFactory()
-        commit.branch = "some_user:branch_name"
-        commit.save()
-
-        request = APIRequestFactory().post(
-            f"/upload/github/{repo.author.username}::::{repo.name}/commits/{commit.commitid}/reports/report_code/uploads",
-            {"branch": "fork:branch"},
-            format="json",
+        expected = private is False and (
+            (existing_commit is False and ":" in branch)
+            or (existing_commit is True and ":" in commit_branch)
         )
-        authentication = TokenlessAuthentication()
-        res = authentication.authenticate(request)
-        assert res is not None
-        repo_as_user, auth_class = res
-        assert repo_as_user.is_authenticated()
-        assert isinstance(auth_class, TokenlessAuth)
+
+        if expected:
+            res = authentication.authenticate(request)
+            assert res is not None
+            repo_as_user, auth_class = res
+
+            assert repo_as_user.is_authenticated() is expected
+            assert isinstance(auth_class, TokenlessAuth)
+        else:
+            with pytest.raises(exceptions.AuthenticationFailed):
+                res = authentication.authenticate(request)

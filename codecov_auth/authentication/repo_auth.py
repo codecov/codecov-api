@@ -256,6 +256,9 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
 
 
 class TokenlessAuthentication(authentication.TokenAuthentication):
+    # TODO: replace this with the message from repo_auth_custom_exception_handler
+    auth_failed_message = "Not valid tokenless upload"
+
     def _get_info_from_request_path(
         self, request
     ) -> tuple[Repository, str | None] | None:
@@ -267,7 +270,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         match = re.search(upload_views_prefix_regex, path_info)
 
         if match is None:
-            return None, None
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
 
         service = match.group(1)
         encoded_slug = match.group(2)
@@ -277,14 +280,14 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         try:
             service_enum = Service(service)
         except ValueError:
-            return None, None
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
 
         # Validate that next group exists and decode slug
         repo = get_repository_from_string(service_enum, encoded_slug)
         if repo is None:
             # Purposefully using the generic message so that we don't tell that
             # we don't have a certain repo
-            return None, None
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
 
         return repo, commitid
 
@@ -292,7 +295,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         if commitid:
             commit = Commit.objects.filter(commitid=commitid).first()
             if not commit:
-                return None
+                raise exceptions.AuthenticationFailed(self.auth_failed_message)
             return commit.branch
         else:
             try:
@@ -306,13 +309,14 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         repository, commitid = self._get_info_from_request_path(request)
 
         if repository is None or repository.private:
-            return None
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
 
         branch = self.get_branch(request, commitid)
+
         if (branch and ":" in branch) or request.method == "GET":
             return (
                 RepositoryAsUser(repository),
                 TokenlessAuth(repository),
             )
         else:
-            return None
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
