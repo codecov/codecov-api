@@ -106,7 +106,9 @@ def test_try_to_get_best_possible_bot_token_using_invalid_integration(
 ):
     from shared.github import InvalidInstallationError  # circular imports
 
-    get_github_integration_token.side_effect = InvalidInstallationError()
+    get_github_integration_token.side_effect = InvalidInstallationError(
+        error_cause="installation_not_found"
+    )
     bot = OwnerFactory.create(unencrypted_oauth_token="bornana")
     bot.save()
     owner = OwnerFactory.create(integration_id=12345, bot=bot)

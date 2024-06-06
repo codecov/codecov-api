@@ -2,6 +2,7 @@ from datetime import datetime
 from hashlib import sha1
 from typing import Iterable, List, Optional
 
+import stripe
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
@@ -229,5 +230,15 @@ def resolve_is_current_user_activated(owner, info):
 
 @owner_bindable.field("invoices")
 @require_part_of_org
-def resolve_owner_invoices(owner: Owner, info):
+def resolve_owner_invoices(owner: Owner, info) -> list | None:
     return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)
+
+
+@owner_bindable.field("invoice")
+@require_part_of_org
+def resolve_owner_invoice(
+    owner: Owner,
+    info,
+    invoice_id: str,
+) -> stripe.Invoice | None:
+    return BillingService(requesting_user=owner).get_invoice(owner, invoice_id)

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import sentry_sdk
 import yaml
@@ -11,7 +11,7 @@ import services.path as path_service
 import services.report as report_service
 from codecov.db import sync_to_async
 from core.models import Commit
-from graphql_api.actions.commits import commit_uploads
+from graphql_api.actions.commits import commit_status, commit_uploads
 from graphql_api.actions.comparison import validate_commit_comparison
 from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.bundle_analysis import (
@@ -30,9 +30,14 @@ from graphql_api.types.comparison.comparison import (
     MissingBaseReport,
     MissingHeadReport,
 )
-from graphql_api.types.enums import OrderingDirection, PathContentDisplayType
+from graphql_api.types.enums import (
+    CommitStatus,
+    OrderingDirection,
+    PathContentDisplayType,
+)
 from graphql_api.types.errors import MissingCoverage, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
+from reports.models import CommitReport
 from services.bundle_analysis import BundleAnalysisComparison, BundleAnalysisReport
 from services.comparison import Comparison, ComparisonReport
 from services.components import Component
@@ -328,3 +333,17 @@ def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
         )
 
     return all_components
+
+
+@sentry_sdk.trace
+@commit_bindable.field("bundleStatus")
+@sync_to_async
+def resolve_bundle_status(commit: Commit, info) -> Optional[CommitStatus]:
+    return commit_status(commit, CommitReport.ReportType.BUNDLE_ANALYSIS)
+
+
+@sentry_sdk.trace
+@commit_bindable.field("coverageStatus")
+@sync_to_async
+def resolve_coverage_status(commit: Commit, info) -> Optional[CommitStatus]:
+    return commit_status(commit, CommitReport.ReportType.COVERAGE)
