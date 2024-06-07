@@ -1027,6 +1027,8 @@ class StripeServiceTests(TestCase):
                     "obo": self.user.ownerid,
                 },
             },
+            tax_id_collection={"enabled": True},
+            customer_update=None,
         )
 
     @patch("services.billing.stripe.checkout.Session.create")
@@ -1073,6 +1075,8 @@ class StripeServiceTests(TestCase):
                     "obo": self.user.ownerid,
                 },
             },
+            tax_id_collection={"enabled": True},
+            customer_update={"name": "auto", "address": "auto"},
         )
 
     def test_get_subscription_when_no_subscription(self):

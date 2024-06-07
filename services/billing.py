@@ -385,6 +385,10 @@ class StripeService(AbstractPaymentService):
             subscription_data={
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
+            tax_id_collection={"enabled": True},
+            customer_update={"name": "auto", "address": "auto"}
+            if owner.stripe_customer_id
+            else None,
         )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
