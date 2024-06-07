@@ -480,7 +480,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_is_current_user_activated_admin_activated(self):
         owner = OwnerFactory(
-            username="sample-owner-authorized", admins=[self.owner.ownerid], plan_activated_users=[self.owner.ownerid]
+            username="sample-owner-authorized",
+            admins=[self.owner.ownerid],
+            plan_activated_users=[self.owner.ownerid],
         )
         self.owner.organizations = [owner.ownerid]
         self.owner.save()
@@ -495,7 +497,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_is_current_user_activated_admin_not_activated(self):
         owner = OwnerFactory(
-            username="sample-owner-authorized", admins=[self.owner.ownerid], plan_activated_users=None
+            username="sample-owner-authorized",
+            admins=[self.owner.ownerid],
+            plan_activated_users=None,
         )
         self.owner.organizations = [owner.ownerid]
         self.owner.save()
