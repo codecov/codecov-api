@@ -32,5 +32,5 @@ type Owner {
     isPublic: Boolean
   ): [Measurement!]
   invoices: [Invoice] @cost(complexity: 100)
-  invoice(invoiceId: String!): Invoice
+  invoice(invoice_id: String!): Invoice
 }
