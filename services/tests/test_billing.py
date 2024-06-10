@@ -1140,6 +1140,50 @@ class StripeServiceTests(TestCase):
         self.stripe.update_email_address(owner, "test@gmail.com")
         modify_customer_mock.assert_called_once_with(customer_id, email=email)
 
+    def test_update_billing_address_with_invalid_email(self):
+        owner = OwnerFactory(stripe_subscription_id=None)
+        assert self.stripe.update_billing_address(owner, "gabagool") == None
+
+    def test_update_billing_address_when_no_subscription(self):
+        owner = OwnerFactory(stripe_subscription_id=None)
+        assert (
+            self.stripe.update_billing_address(
+                owner,
+                billing_address={
+                    "line_1": "45 Fremont St.",
+                    "line_2": "",
+                    "city": "San Francisco",
+                    "state": "CA",
+                    "country": "US",
+                    "postal_code": "94105",
+                },
+            )
+            == None
+        )
+
+    @patch("services.billing.stripe.Customer.modify")
+    def test_update_billing_address(self, modify_customer_mock):
+        subscription_id = "sub_abc"
+        customer_id = "cus_abc"
+        owner = OwnerFactory(
+            stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
+        )
+        billing_address = {
+            "line_1": "45 Fremont St.",
+            "line_2": "",
+            "city": "San Francisco",
+            "state": "CA",
+            "country": "US",
+            "postal_code": "94105",
+        }
+        self.stripe.update_billing_address(
+            owner,
+            billing_address=billing_address,
+        )
+        modify_customer_mock.assert_called_once_with(
+            customer_id, address=billing_address
+        )
+
     @patch("services.billing.stripe.Invoice.retrieve")
     def test_get_invoice_not_found(self, retrieve_invoice_mock):
         invoice_id = "abc"
