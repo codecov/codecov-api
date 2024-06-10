@@ -236,6 +236,7 @@ def resolve_owner_invoices(owner: Owner, info) -> list | None:
 
 @owner_bindable.field("invoice")
 @require_part_of_org
+@convert_kwargs_to_snake_case
 def resolve_owner_invoice(
     owner: Owner,
     info,
