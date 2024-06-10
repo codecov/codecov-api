@@ -10,6 +10,7 @@ from .branch.views import BranchViewSet
 from .commit.views import CommitsUploadsViewSet, CommitsViewSet
 from .compare.views import CompareViewSet
 from .component.views import ComponentViewSet
+from .test_results.views import TestResultsView
 from .coverage.views import CoverageViewSet, FlagCoverageViewSet
 from .flag.views import FlagViewSet
 from .owner.views import OwnersViewSet, OwnerViewSet, UserViewSet
@@ -40,6 +41,9 @@ repository_artifacts_router.register(
 repository_artifacts_router.register(r"flags", FlagViewSet, basename="api-v2-flags")
 repository_artifacts_router.register(
     r"components", ComponentViewSet, basename="api-v2-components"
+)
+repository_artifacts_router.register(
+r"test-results", TestResultsView, basename="api-v2-tests-results"
 )
 
 compare_router = RetrieveUpdateDestroyRouter()
