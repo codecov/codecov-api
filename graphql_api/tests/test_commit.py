@@ -16,7 +16,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
-from graphql_api.types.enums import UploadErrorEnum, UploadState
+from graphql_api.types.enums import CommitStatus, UploadErrorEnum, UploadState
 from graphql_api.types.enums.enums import UploadType
 from reports.models import CommitReport
 from reports.tests.factories import (
@@ -1623,3 +1623,147 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         assert (data["owner"]["repository"]["commit"]["totalUploads"]) == 99
         assert len(data["owner"]["repository"]["commit"]["uploads"]["edges"]) == 25
+
+    def test_fetch_commit_status_no_reports(self):
+        query = (
+            query_commit
+            % """
+            coverageStatus
+            bundleStatus
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["coverageStatus"] == None
+        assert commit["bundleStatus"] == None
+
+    def test_fetch_commit_status_no_sessions(self):
+        CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.COVERAGE
+        )
+        CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+        query = (
+            query_commit
+            % """
+            coverageStatus
+            bundleStatus
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["coverageStatus"] == None
+        assert commit["bundleStatus"] == None
+
+    def test_fetch_commit_status_completed(self):
+        coverage_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.COVERAGE
+        )
+        UploadFactory(report=coverage_report, state="processed")
+        UploadFactory(report=coverage_report, state="processed")
+        UploadFactory(report=coverage_report, state="fully_overwritten")
+        UploadFactory(report=coverage_report, state="partially_overwritten")
+
+        ba_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+        UploadFactory(report=ba_report, state="processed")
+        UploadFactory(report=ba_report, state="processed")
+        UploadFactory(report=ba_report, state="fully_overwritten")
+        UploadFactory(report=ba_report, state="partially_overwritten")
+
+        query = (
+            query_commit
+            % """
+            coverageStatus
+            bundleStatus
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["coverageStatus"] == CommitStatus.COMPLETED.value
+        assert commit["bundleStatus"] == CommitStatus.COMPLETED.value
+
+    def test_fetch_commit_status_error(self):
+        coverage_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.COVERAGE
+        )
+        UploadFactory(report=coverage_report, state="processed")
+        UploadFactory(report=coverage_report, state="error")
+        UploadFactory(report=coverage_report, state="uploaded")
+        UploadFactory(report=coverage_report, state="partially_overwritten")
+
+        ba_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+        UploadFactory(report=ba_report, state="processed")
+        UploadFactory(report=ba_report, state="error")
+        UploadFactory(report=ba_report, state="uploaded")
+        UploadFactory(report=ba_report, state="partially_overwritten")
+
+        query = (
+            query_commit
+            % """
+            coverageStatus
+            bundleStatus
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["coverageStatus"] == CommitStatus.ERROR.value
+        assert commit["bundleStatus"] == CommitStatus.ERROR.value
+
+    def test_fetch_commit_status_pending(self):
+        coverage_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.COVERAGE
+        )
+        UploadFactory(report=coverage_report, state="processed")
+        UploadFactory(report=coverage_report, state="processed")
+        UploadFactory(report=coverage_report, state="uploaded")
+        UploadFactory(report=coverage_report, state="partially_overwritten")
+
+        ba_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+        UploadFactory(report=ba_report, state="processed")
+        UploadFactory(report=ba_report, state="processed")
+        UploadFactory(report=ba_report, state="uploaded")
+        UploadFactory(report=ba_report, state="partially_overwritten")
+
+        query = (
+            query_commit
+            % """
+            coverageStatus
+            bundleStatus
+        """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["coverageStatus"] == CommitStatus.PENDING.value
+        assert commit["bundleStatus"] == CommitStatus.PENDING.value

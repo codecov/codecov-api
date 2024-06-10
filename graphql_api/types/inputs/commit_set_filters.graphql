@@ -4,4 +4,5 @@ input CommitsSetFilters {
   pullId: Int
   search: String
   states: [CommitState!]
+  coverageStatus: [CommitStatus!]
 }
