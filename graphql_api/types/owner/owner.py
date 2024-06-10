@@ -217,7 +217,7 @@ def resolve_is_current_user_activated(owner, info):
     if not current_owner:
         return False
 
-    if owner.ownerid == current_owner.ownerid or owner.is_admin(current_owner):
+    if owner.ownerid == current_owner.ownerid:
         return True
     if owner.plan_activated_users is None:
         return False
@@ -236,6 +236,7 @@ def resolve_owner_invoices(owner: Owner, info) -> list | None:
 
 @owner_bindable.field("invoice")
 @require_part_of_org
+@convert_kwargs_to_snake_case
 def resolve_owner_invoice(
     owner: Owner,
     info,

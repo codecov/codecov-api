@@ -113,7 +113,7 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
 
         query = """{
             owner(username: "%s") {
-                invoice(invoice_id: "in_19yTU92eZvKYlo2C7uDjvu6v") {
+                invoice(invoiceId: "in_19yTU92eZvKYlo2C7uDjvu6v") {
                     amountDue
                     amountPaid
                     created
@@ -196,7 +196,7 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
 
         query = """{
             owner(username: "%s") {
-                invoice(invoice_id: "in_19yTU92eZvKYlo2C7uDjvu6v") {
+                invoice(invoiceId: "in_19yTU92eZvKYlo2C7uDjvu6v") {
                     amountDue
                     amountPaid
                     created
