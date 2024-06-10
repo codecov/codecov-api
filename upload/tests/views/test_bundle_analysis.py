@@ -2,6 +2,8 @@ import json
 import re
 from unittest.mock import ANY, patch
 
+import pytest
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -10,8 +12,10 @@ from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService
+from timeseries.models import Dataset, MeasurementName
 
 
+@pytest.mark.django_db(databases={"default", "timeseries"})
 def test_upload_bundle_analysis(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     mock_sentry_metrics = mocker.patch(
@@ -96,6 +100,7 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
     )
 
 
+@pytest.mark.django_db(databases={"default", "timeseries"})
 def test_upload_bundle_analysis_org_token(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     create_presigned_put = mocker.patch(
@@ -120,6 +125,7 @@ def test_upload_bundle_analysis_org_token(db, client, mocker, mock_redis):
     assert res.status_code == 201
 
 
+@pytest.mark.django_db(databases={"default", "timeseries"})
 def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     create_presigned_put = mocker.patch(
@@ -216,6 +222,7 @@ def test_upload_bundle_analysis_invalid_token(db, client, mocker, mock_redis):
     assert not upload.called
 
 
+@pytest.mark.django_db(databases={"default", "timeseries"})
 @patch("upload.helpers.jwt.decode")
 @patch("upload.helpers.PyJWKClient")
 def test_upload_bundle_analysis_github_oidc_auth(
@@ -246,3 +253,98 @@ def test_upload_bundle_analysis_github_oidc_auth(
         format="json",
     )
     assert res.status_code == 201
+
+
+@pytest.mark.django_db(databases={"default", "timeseries"})
+def test_upload_bundle_analysis_measurement_datasets_created(
+    db, client, mocker, mock_redis
+):
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch("upload.views.bundle_analysis.sentry_metrics.incr")
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create()
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {repository.upload_token}")
+
+    res = client.post(
+        reverse("upload-bundle-analysis"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "test-service",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+    assert res.status_code == 201
+
+    supported_bundle_analysis_measurement_types = [
+        MeasurementName.BUNDLE_ANALYSIS_ASSET_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_FONT_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_IMAGE_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_JAVASCRIPT_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_REPORT_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_STYLESHEET_SIZE,
+    ]
+    for measurement_type in supported_bundle_analysis_measurement_types:
+        assert Dataset.objects.filter(
+            name=measurement_type.value,
+            repository_id=repository.pk,
+        ).exists()
+
+
+@override_settings(TIMESERIES_ENABLED=False)
+@pytest.mark.django_db(databases={"default", "timeseries"})
+def test_upload_bundle_analysis_measurement_timeseries_disabled(
+    db, client, mocker, mock_redis
+):
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch("upload.views.bundle_analysis.sentry_metrics.incr")
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create()
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {repository.upload_token}")
+
+    res = client.post(
+        reverse("upload-bundle-analysis"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "test-service",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+    assert res.status_code == 201
+
+    supported_bundle_analysis_measurement_types = [
+        MeasurementName.BUNDLE_ANALYSIS_ASSET_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_FONT_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_IMAGE_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_JAVASCRIPT_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_REPORT_SIZE,
+        MeasurementName.BUNDLE_ANALYSIS_STYLESHEET_SIZE,
+    ]
+    for measurement_type in supported_bundle_analysis_measurement_types:
+        assert not Dataset.objects.filter(
+            name=measurement_type.value,
+            repository_id=repository.pk,
+        ).exists()
