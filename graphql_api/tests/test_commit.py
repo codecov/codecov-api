@@ -1076,7 +1076,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             storage.write_file(get_bucket_name(), storage_path, f)
 
         query = """
-            query FetchCommit($org: String!, $repo: String!, $commit: String!, $filters: BundleAnalysisReportFilters) {
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
                 owner(username: $org) {
                     repository(name: $repo) {
                         ... on Repository {
@@ -1090,7 +1090,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                             name
                                             sizeTotal
                                             loadTimeTotal
-                                            assets(filters: $filters) {
+                                            assets {
                                                 normalizedName
                                             }
                                             asset(name: "not_exist") {
@@ -1136,7 +1136,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "org": self.org.username,
             "repo": self.repo.name,
             "commit": self.commit.commitid,
-            "filters": {"moduleExtensions": []},
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
@@ -1280,13 +1279,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                     __typename
                                     ... on BundleAnalysisReport {
                                         bundle(name: "b5") {
-                                            moduleExtensions
                                             moduleCount
                                             asset(name: "assets/LazyComponent-fcbb0922.js") {
                                                 name
                                                 normalizedName
                                                 extension
-                                                moduleExtensions
                                                 bundleData {
                                                     loadTime {
                                                         threeG
@@ -1333,22 +1330,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         asset_report = bundle_report["asset"]
 
         assert bundle_report is not None
-        assert sorted(bundle_report["moduleExtensions"]) == [
-            "",
-            "css",
-            "html",
-            "js",
-            "svg",
-            "ts",
-            "tsx",
-        ]
         assert bundle_report["moduleCount"] == 7
 
         assert asset_report is not None
         assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
         assert asset_report["normalizedName"] == "assets/LazyComponent-*.js"
         assert asset_report["extension"] == "js"
-        assert set(asset_report["moduleExtensions"]) == set(["", "tsx"])
         assert asset_report["bundleData"] == {
             "loadTime": {
                 "threeG": 320,

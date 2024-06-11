@@ -181,13 +181,8 @@ class BundleReport(object):
     def all_assets(self) -> List[AssetReport]:
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
-    def assets(self, extensions: Optional[List[str]] = None) -> List[AssetReport]:
-        all_assets = self.all_assets
-
-        # TODO: Unimplemented #1192 - Filter by extensions
-        filtered_assets = all_assets
-
-        return filtered_assets
+    def assets(self) -> List[AssetReport]:
+        return self.all_assets
 
     def asset(self, name: str) -> AssetReport:
         for asset_report in self.all_assets:

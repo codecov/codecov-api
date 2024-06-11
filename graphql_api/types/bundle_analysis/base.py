@@ -71,13 +71,6 @@ def resolve_modules(bundle_asset: AssetReport, info) -> List[ModuleReport]:
     return bundle_asset.modules
 
 
-@bundle_asset_bindable.field("moduleExtensions")
-def resolve_bundle_asset_module_extensions(
-    bundle_asset: AssetReport, info
-) -> List[str]:
-    return bundle_asset.module_extensions
-
-
 # ============= Bundle Report Bindable =============
 
 
@@ -98,11 +91,6 @@ def resolve_load_time_total(bundle_report: BundleReport, info) -> float:
     return bundle_report.load_time_total
 
 
-@bundle_report_bindable.field("moduleExtensions")
-def resolve_module_extensions(bundle_report: BundleReport, info) -> List[str]:
-    return bundle_report.module_extensions
-
-
 @bundle_report_bindable.field("moduleCount")
 def resolve_module_count(bundle_report: BundleReport, info) -> int:
     return bundle_report.module_count
@@ -112,10 +100,8 @@ def resolve_module_count(bundle_report: BundleReport, info) -> int:
 def resolve_assets(
     bundle_report: BundleReport,
     info,
-    filters: Optional[Mapping] = None,
 ) -> List[AssetReport]:
-    extensions_filter = filters.get("moduleExtensions", None) if filters else None
-    return list(bundle_report.assets(extensions_filter))
+    return list(bundle_report.assets())
 
 
 @bundle_report_bindable.field("asset")
