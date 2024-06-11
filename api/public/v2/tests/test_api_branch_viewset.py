@@ -64,7 +64,7 @@ class BranchViewsetTests(InternalAPITest):
             )
         )
         assert res.status_code == 200
-        assert res.data["name"] == self.branches[0].name
+        assert res.data["name"] == self.branches[1].name
         assert res.data["head_commit"]["report"]
 
     def test_retrieve_period(self):
