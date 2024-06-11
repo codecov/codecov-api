@@ -29,22 +29,9 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
             totals={"c": "12", "diff": [0, 0, 0, 0, 0, "14"]},
             parent_commit_id=self.parent_commit.commitid,
         )
-
-    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
-    def test_bundle_report_measurements(self, get_storage_service):
-        storage = MemoryStorageService({})
-        get_storage_service.return_value = storage
-
-        head_commit_report = CommitReportFactory(
+        self.head_commit_report = CommitReportFactory(
             commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
         )
-
-        with open("./services/tests/samples/bundle_with_uuid.sqlite", "rb") as f:
-            storage_path = StoragePaths.bundle_report.path(
-                repo_key=ArchiveService.get_archive_hash(self.repo),
-                report_key=head_commit_report.external_id,
-            )
-            storage.write_file(get_bucket_name(), storage_path, f)
 
         measurements_data = [
             # 2024-06-10
@@ -96,6 +83,18 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                 timestamp=item[2],
                 value=item[3],
             )
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_report_measurements(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        with open("./services/tests/samples/bundle_with_uuid.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=self.head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
 
         query = """
             query FetchMeasurements(
@@ -661,5 +660,183 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                     },
                 ],
                 "name": "super",
+            },
+        }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_asset_measurements(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        with open("./services/tests/samples/bundle_with_uuid.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=self.head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchMeasurements(
+                $org: String!,
+                $repo: String!,
+                $commit: String!
+                $interval: MeasurementInterval!
+                $before: DateTime!
+                $after: DateTime!
+                $asset: String!
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name: "super") {
+                                            asset(name: $asset){
+                                                name
+                                                measurements(
+                                                    after: $after
+                                                    interval: $interval
+                                                    before: $before
+                                                ){
+                                                    assetType
+                                                    name
+                                                    size {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
+                                                    }
+                                                    change {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
+                                                    }
+                                                    measurements {
+                                                        avg
+                                                        min
+                                                        max
+                                                        timestamp
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        # Tests can only fetch JS asset
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "interval": "INTERVAL_1_DAY",
+            "after": "2024-06-06",
+            "before": "2024-06-10",
+            "asset": "asset-same-name-diff-modules.js",
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "asset": {
+                    "measurements": {
+                        "assetType": "JAVASCRIPT_SIZE",
+                        "change": {
+                            "loadTime": {
+                                "highSpeed": 2,
+                                "threeG": 106,
+                            },
+                            "size": {
+                                "gzip": 10,
+                                "uncompress": 10000,
+                            },
+                        },
+                        "measurements": [
+                            {
+                                "avg": 4126.0,
+                                "max": 4126.0,
+                                "min": 4126.0,
+                                "timestamp": "2024-06-06T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 14126.0,
+                                "max": 14126.0,
+                                "min": 14126.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                        "name": "asset-*.js",
+                        "size": {
+                            "loadTime": {
+                                "highSpeed": 3,
+                                "threeG": 150,
+                            },
+                            "size": {
+                                "gzip": 14,
+                                "uncompress": 14126,
+                            },
+                        },
+                    },
+                    "name": "asset-same-name-diff-modules.js",
+                },
+            },
+        }
+
+        # Tests non-JS asset can't be fetched
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "interval": "INTERVAL_1_DAY",
+            "after": "2024-06-06",
+            "before": "2024-06-10",
+            "asset": "asset-css-A-TWO.css",
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "asset": {
+                    "measurements": None,
+                    "name": "asset-css-A-TWO.css",
+                },
             },
         }
