@@ -122,20 +122,6 @@ def resolve_name(bundle_report: BundleReport, info: GraphQLResolveInfo) -> str:
     return bundle_report.name
 
 
-# TODO: depreacted with Issue 1199
-@bundle_report_bindable.field("sizeTotal")
-def resolve_size_total(bundle_report: BundleReport, info: GraphQLResolveInfo) -> int:
-    return bundle_report.size_total
-
-
-# TODO: depreacted with Issue 1199
-@bundle_report_bindable.field("loadTimeTotal")
-def resolve_load_time_total(
-    bundle_report: BundleReport, info: GraphQLResolveInfo
-) -> float:
-    return bundle_report.load_time_total
-
-
 @bundle_report_bindable.field("moduleCount")
 def resolve_module_count(bundle_report: BundleReport, info: GraphQLResolveInfo) -> int:
     return bundle_report.module_count

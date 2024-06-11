@@ -44,14 +44,6 @@ def load_report(
     return loader.load(commit_report.external_id)
 
 
-# TODO: depreacted with Issue 1199
-def load_time_conversion(size: int) -> float:
-    """
-    Converts total size in bytes to approximate time (in seconds) to download using a 3G internet (3 Mbps)
-    """
-    return round((8 * size) / (1024 * 1024 * 3), 1)
-
-
 def get_extension(filename: str) -> str:
     """
     Gets the file extension of the file without the dot
@@ -254,11 +246,6 @@ class BundleReport(object):
     def size_total(self) -> int:
         return self.report.total_size()
 
-    # To be deprecated after FE uses BundleData
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.report.total_size())
-
     @cached_property
     def module_extensions(self) -> List[str]:
         extensions = set()
@@ -293,10 +280,6 @@ class BundleAnalysisReport(object):
     @cached_property
     def size_total(self) -> int:
         return sum([bundle.size_total for bundle in self.bundles])
-
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.size_total)
 
 
 @dataclass
@@ -337,16 +320,8 @@ class BundleAnalysisComparison(object):
         return sum([change.size_delta for change in self.comparison.bundle_changes()])
 
     @cached_property
-    def load_time_delta(self) -> float:
-        return load_time_conversion(self.size_delta)
-
-    @cached_property
     def size_total(self) -> int:
         return BundleAnalysisReport(self.head_report).size_total
-
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.size_total)
 
 
 @dataclass
@@ -370,14 +345,6 @@ class BundleComparison(object):
     @cached_property
     def size_total(self) -> int:
         return self.head_bundle_report_size
-
-    @cached_property
-    def load_time_delta(self) -> float:
-        return load_time_conversion(self.bundle_change.size_delta)
-
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.head_bundle_report_size)
 
 
 class BundleAnalysisMeasurementsService(object):
