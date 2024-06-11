@@ -55,7 +55,7 @@ def resolve_bundle_module_name(
 @bundle_module_bindable.field("bundleData")
 def resolve_bundle_module_bundle_data(
     bundle_module: ModuleReport, info: GraphQLResolveInfo
-) -> int:
+) -> BundleData:
     return BundleData(bundle_module.size_total)
 
 
@@ -168,7 +168,7 @@ def resolve_assets(
 @bundle_report_bindable.field("asset")
 def resolve_asset(
     bundle_report: BundleReport, info: GraphQLResolveInfo, name: str
-) -> AssetReport:
+) -> Optional[AssetReport]:
     return bundle_report.asset(name)
 
 
@@ -189,7 +189,7 @@ def resolve_bundle_report_measurements(
     before: datetime,
     after: datetime,
     branch: Optional[str] = None,
-    filters: Optional[Mapping] = None,
+    filters: Mapping = {},
     ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
 ) -> List[BundleAnalysisMeasurementData]:
     if not filters.get("asset_types", []):
