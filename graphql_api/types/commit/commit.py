@@ -198,6 +198,8 @@ def resolve_bundle_analysis_report(
             "request"
         ].bundle_analysis_head_report_db_path = bundle_analysis_report.report.db_path
 
+    info.context["commit"] = commit
+
     return bundle_analysis_report
 
 

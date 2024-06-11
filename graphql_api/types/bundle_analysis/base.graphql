@@ -1,3 +1,12 @@
+enum BundleAnalysisMeasurementsAssetType {
+    REPORT_SIZE
+    JAVASCRIPT_SIZE
+    STYLESHEET_SIZE
+    FONT_SIZE
+    IMAGE_SIZE
+    ASSET_SIZE
+}
+
 type BundleSize {
   gzip: Int!
   uncompress: Int!
@@ -25,6 +34,12 @@ type BundleAsset {
   normalizedName: String!
   modules: [BundleModule]!
   bundleData: BundleData!
+  measurements(
+    interval: MeasurementInterval!
+    before: DateTime!
+    after: DateTime!
+    branch: String
+  ): BundleAnalysisMeasurements
 }
 
 type BundleReport {
@@ -35,4 +50,20 @@ type BundleReport {
   assets: [BundleAsset]!
   asset(name: String!): BundleAsset
   bundleData: BundleData!
+  measurements(
+    interval: MeasurementInterval!
+    before: DateTime!
+    after: DateTime!
+    branch: String
+    orderingDirection: OrderingDirection
+    filters: BundleAnalysisMeasurementsSetFilters
+  ): [BundleAnalysisMeasurements!]
+}
+
+type BundleAnalysisMeasurements{
+    assetType: BundleAnalysisMeasurementsAssetType!
+    name: String
+    size: BundleData
+    change: BundleData
+    measurements: [Measurement!]
 }
