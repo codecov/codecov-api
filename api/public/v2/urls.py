@@ -43,7 +43,7 @@ repository_artifacts_router.register(
     r"components", ComponentViewSet, basename="api-v2-components"
 )
 repository_artifacts_router.register(
-r"test-results", TestResultsView, basename="api-v2-tests-results"
+  r"test-results", TestResultsView, basename="api-v2-tests-results"
 )
 
 compare_router = RetrieveUpdateDestroyRouter()
