@@ -33,7 +33,7 @@ def test_get_gitlab_redirect(client, settings, mock_redis, mocker):
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%2Flogin%2Fgitlab&state={state}"
+        == f"https://gitlab.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%2Flogin%2Fgitlab&state={state}&scope=api"
     )
 
 
