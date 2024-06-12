@@ -42,7 +42,7 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         base_url = urljoin(redirect_info["repo_service"].service_url, "oauth/authorize")
         state = self.generate_state()
 
-        scope = " ".join(settings.GITLAB_SCOPES)
+        scope = settings.GITLAB_SCOPE
         log.info(f"Gitlab oauth with scope: '{scope}'")
 
         query = dict(
