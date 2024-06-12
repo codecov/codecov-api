@@ -12,6 +12,7 @@ from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitError
 
 from codecov_auth.views.base import LoginMixin, StateMixin
+from utils.config import get_config
 
 log = logging.getLogger(__name__)
 
@@ -40,11 +41,16 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         redirect_info = self.redirect_info
         base_url = urljoin(redirect_info["repo_service"].service_url, "oauth/authorize")
         state = self.generate_state()
+
+        scope = settings.GITLAB_SCOPE
+        log.info(f"Gitlab oauth with scope: '{scope}'")
+
         query = dict(
             response_type="code",
             client_id=redirect_info["client_id"],
             redirect_uri=redirect_info["redirect_uri"],
             state=state,
+            scope=scope,
         )
         query_str = urlencode(query)
         return f"{base_url}?{query_str}"

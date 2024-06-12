@@ -82,6 +82,7 @@ class ReportResultsView(
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
     ]
 
     def get_exception_handler(self):

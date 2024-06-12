@@ -451,7 +451,7 @@ GITLAB_CLIENT_SECRET = get_config("gitlab", "client_secret")
 GITLAB_REDIRECT_URI = get_config(
     "gitlab", "redirect_uri", default="https://codecov.io/login/gitlab"
 )
-
+GITLAB_SCOPE = get_config("gitlab", "scope", default="api")
 GITLAB_BOT_KEY = get_config("gitlab", "bot", "key")
 GITLAB_TOKENLESS_BOT_KEY = get_config(
     "gitlab", "bots", "tokenless", "key", default=GITLAB_BOT_KEY

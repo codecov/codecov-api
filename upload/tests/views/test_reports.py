@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -12,13 +13,27 @@ from services.task.task import TaskService
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 
-def test_reports_get_not_allowed(client, mocker):
+def test_reports_get_not_allowed(client, mocker, db):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-    url = reverse("new_upload.reports", args=["service", "the-repo", "commit-sha"])
-    assert url == "/upload/service/the-repo/commits/commit-sha/reports"
-    res = client.get(url)
+    owner = OwnerFactory(service="github")
+    repo = RepositoryFactory(name="the_repo", private=False, author=owner)
+    commit = CommitFactory(repository=repo)
+    commit.branch = "someone:branch"
+    owner.save()
+    repo.save()
+    commit.save()
+    headers = {}
+    url = reverse(
+        "new_upload.reports",
+        args=["github", f"{owner.username}::::the_repo", commit.commitid],
+    )
+    assert (
+        url
+        == f"/upload/github/{owner.username}::::the_repo/commits/{commit.commitid}/reports"
+    )
+    res = client.get(url, **headers)
     assert res.status_code == 405
 
 
@@ -96,117 +111,64 @@ def test_reports_post_github_oidc_auth(
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
 
 
-def test_reports_post_no_auth(db, mocker):
-    repository = RepositoryFactory(
-        name="the_repo", author__username="codecov", author__service="github"
-    )
-    token = "BAD"
-    commit = CommitFactory(repository=repository)
-    repository.save()
-    client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION="token " + token)
-    url = reverse(
-        "new_upload.reports",
-        args=["github", "codecov::::the_repo", commit.commitid],
-    )
-    response = client.post(url, data={"code": "code1"})
-
-    assert (
-        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
-    )
-    assert response.status_code == 401
-    assert (
-        response.json().get("detail")
-        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
-        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
-    )
-
-
-def test_reports_post_tokenless(client, db, mocker):
+@pytest.mark.parametrize("private", [False, True])
+@pytest.mark.parametrize("branch", ["main", "fork:branch", "someone/fork:branch"])
+@pytest.mark.parametrize(
+    "branch_sent",
+    [
+        None,
+        "branch",
+        "fork:branch",
+        "someone/fork:branch",
+    ],
+)
+def test_reports_post_tokenless(client, db, mocker, private, branch, branch_sent):
     mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
     repository = RepositoryFactory(
         name="the_repo",
         author__username="codecov",
         author__service="github",
-        private=False,
+        private=private,
     )
     commit = CommitFactory(repository=repository)
+    commit.branch = branch
     repository.save()
-
-    fake_provider_service = MagicMock(
-        name="fake_provider_service",
-        get_pull_request=AsyncMock(
-            return_value={
-                "base": {"slug": f"codecov/{repository.name}"},
-                "head": {"slug": f"someone/{repository.name}"},
-            }
-        ),
-    )
-    mocker.patch.object(
-        RepoProviderService, "get_adapter", return_value=fake_provider_service
-    )
+    commit.save()
 
     client = APIClient()
     url = reverse(
         "new_upload.reports",
         args=["github", "codecov::::the_repo", commit.commitid],
     )
+
+    data = {"code": "code1"}
+    if branch_sent:
+        data["branch"] = branch_sent
     response = client.post(
         url,
-        data={"code": "code1"},
-        headers={"X-Tokenless": f"someone/{repository.name}", "X-Tokenless-PR": "4"},
+        data=data,
+        headers={},
     )
 
     assert (
         url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
     )
-    assert response.status_code == 201
-    assert CommitReport.objects.filter(
-        commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
-    ).exists()
-    mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
-    fake_provider_service.get_pull_request.assert_called_with("4")
-
-
-def test_reports_post_tokenless_fail(client, db, mocker):
-    repository = RepositoryFactory(
-        name="the_repo",
-        author__username="codecov",
-        author__service="github",
-        private=False,
-    )
-    commit = CommitFactory(repository=repository)
-    repository.save()
-
-    fake_provider_service = MagicMock(
-        name="fake_provider_service",
-        get_pull_request=AsyncMock(
-            return_value={
-                "base": {"slug": f"codecov/{repository.name}"},
-                "head": {"slug": f"someone/{repository.name}"},
-            }
-        ),
-    )
-    mocker.patch.object(
-        RepoProviderService, "get_adapter", return_value=fake_provider_service
-    )
-
-    client = APIClient()
-    url = reverse(
-        "new_upload.reports",
-        args=["github", "codecov::::the_repo", commit.commitid],
-    )
-    response = client.post(
-        url,
-        data={"code": "code1"},
-        headers={"X-Tokenless": "someone/bad", "X-Tokenless-PR": "4"},
-    )
-
-    assert (
-        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
-    )
-    assert response.status_code == 401
-    assert response.json().get("detail") == "Not valid tokenless upload"
+    if private is False and ":" in branch:
+        assert response.status_code == 201
+        assert CommitReport.objects.filter(
+            commit_id=commit.id,
+            code="code1",
+            report_type=CommitReport.ReportType.COVERAGE,
+        ).exists()
+        mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+    else:
+        assert response.status_code == 401
+        assert not CommitReport.objects.filter(
+            commit_id=commit.id,
+            code="code1",
+            report_type=CommitReport.ReportType.COVERAGE,
+        ).exists()
+        assert response.json().get("detail") == "Not valid tokenless upload"
 
 
 def test_create_report_already_exists(client, db, mocker):
