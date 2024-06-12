@@ -430,6 +430,19 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
+    def update_billing_address(self, owner: Owner, billing_address):
+        log.info(f"Stripe update billing address for owner {owner.ownerid}")
+        if owner.stripe_subscription_id is None:
+            log.info(
+                f"stripe_subscription_id is None, cannot update billing address for owner {owner.ownerid}"
+            )
+            return None
+        stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
+        log.info(
+            f"Stripe successfully updated billing address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+        )
+
+    @_log_stripe_error
     def apply_cancellation_discount(self, owner: Owner):
         if owner.stripe_subscription_id is None:
             log.info(
@@ -492,6 +505,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def update_email_address(self, owner, email_address):
+        pass
+
+    def update_billing_address(self, owner, billing_address):
         pass
 
     def get_schedule(self, owner):
@@ -569,6 +585,14 @@ class BillingService:
         Otherwise returns None.
         """
         return self.payment_service.update_email_address(owner, email_address)
+
+    def update_billing_address(self, owner: Owner, billing_address):
+        """
+        Takes an owner and a billing address. Try to update the owner's billing address
+        to the address passed in. Address should be validated via stripe component prior
+        to hitting this service method. Return None if invalid.
+        """
+        return self.payment_service.update_billing_address(owner, billing_address)
 
     def apply_cancellation_discount(self, owner: Owner):
         return self.payment_service.apply_cancellation_discount(owner)
