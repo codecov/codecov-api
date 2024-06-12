@@ -68,7 +68,7 @@ class RepositoryCommands(BaseCommand):
     def erase_repository(self, repo_name: str, owner: Owner):
         return self.get_interactor(EraseRepositoryInteractor).execute(repo_name, owner)
 
-    def encode_secret_string(self, owner: Owner, repo: Repository, value: str):
+    def encode_secret_string(self, owner: Owner, repo_name: str, value: str):
         return self.get_interactor(EncodeSecretStringInteractor).execute(
-            owner, repo, value
+            owner, repo=repo_name, value=value
         )

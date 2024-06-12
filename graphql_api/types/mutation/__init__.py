@@ -23,6 +23,7 @@ from .update_default_organization import gql_update_default_organization
 from .update_profile import gql_update_profile
 from .update_repository import gql_update_repository
 from .update_self_hosted_settings import gql_update_self_hosted_settings
+from .encode_secret_string import gql_encode_secret_string
 
 mutation = ariadne_load_local_graphql(__file__, "mutation.graphql")
 mutation = mutation + gql_create_api_token
@@ -47,3 +48,4 @@ mutation = mutation + gql_erase_repository
 mutation = mutation + gql_update_repository
 mutation = mutation + gql_update_self_hosted_settings
 mutation = mutation + gql_regenerate_repository_upload_token
+mutation = mutation + gql_encode_secret_string
