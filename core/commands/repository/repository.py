@@ -70,5 +70,5 @@ class RepositoryCommands(BaseCommand):
 
     def encode_secret_string(self, owner: Owner, repo_name: str, value: str):
         return self.get_interactor(EncodeSecretStringInteractor).execute(
-            owner, repo=repo_name, value=value
+            owner, repo_name, value
         )

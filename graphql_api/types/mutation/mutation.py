@@ -13,6 +13,10 @@ from .delete_component_measurements import (
 )
 from .delete_flag import error_delete_flag, resolve_delete_flag
 from .delete_session import error_delete_session, resolve_delete_session
+from .encode_secret_string import (
+    error_encode_secret_string,
+    resolve_encode_secret_string,
+)
 from .erase_repository import error_erase_repository, resolve_erase_repository
 from .onboard_user import error_onboard_user, resolve_onboard_user
 from .regenerate_org_upload_token import (
@@ -83,6 +87,7 @@ mutation_bindable.field("updateSelfHostedSettings")(resolve_update_self_hosted_s
 mutation_bindable.field("regenerateRepositoryUploadToken")(
     resolve_regenerate_repository_upload_token
 )
+mutation_bindable.field("encodeSecretString")(resolve_encode_secret_string)
 
 
 mutation_resolvers = [
@@ -109,4 +114,5 @@ mutation_resolvers = [
     error_update_repository,
     error_update_self_hosted_settings,
     error_regenerate_repository_upload_token,
+    error_encode_secret_string,
 ]

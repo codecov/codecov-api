@@ -7,6 +7,7 @@ from .create_user_token import gql_create_user_token
 from .delete_component_measurements import gql_delete_component_measurements
 from .delete_flag import gql_delete_flag
 from .delete_session import gql_delete_session
+from .encode_secret_string import gql_encode_secret_string
 from .erase_repository import gql_erase_repository
 from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
@@ -23,7 +24,6 @@ from .update_default_organization import gql_update_default_organization
 from .update_profile import gql_update_profile
 from .update_repository import gql_update_repository
 from .update_self_hosted_settings import gql_update_self_hosted_settings
-from .encode_secret_string import gql_encode_secret_string
 
 mutation = ariadne_load_local_graphql(__file__, "mutation.graphql")
 mutation = mutation + gql_create_api_token

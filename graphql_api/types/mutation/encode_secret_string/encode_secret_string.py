@@ -12,12 +12,12 @@ from graphql_api.helpers.mutation import (
 async def resolve_encode_secret_string(_, info, input) -> None:
     command = info.context["executor"].get_command("repository")
     repo_name = input.get("repoName")
-    value = input.get("repoName")
+    value = input.get("value")
     current_owner = info.context["request"].current_owner
-    await command.encode_secret_string(
+    value = command.encode_secret_string(
         repo_name=repo_name, owner=current_owner, value=value
     )
-    return None
+    return {"value": value}
 
 
 error_encode_secret_string = UnionType("EraseRepositoryError")
