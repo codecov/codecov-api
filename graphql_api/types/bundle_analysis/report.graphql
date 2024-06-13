@@ -5,5 +5,5 @@ union BundleAnalysisReportResult =
 type BundleAnalysisReport {
   bundles: [BundleReport]!
   bundleData: BundleData!
-  bundle(name: String!): BundleReport
+  bundle(name: String!, filters: BundleAnalysisReportFilters): BundleReport
 }

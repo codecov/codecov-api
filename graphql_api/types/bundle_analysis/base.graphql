@@ -7,6 +7,20 @@ enum BundleAnalysisMeasurementsAssetType {
     ASSET_SIZE
 }
 
+enum BundleReportGroups {
+  JAVASCRIPT
+  STYLESHEET
+  FONT
+  IMAGE
+  UNKNOWN
+}
+
+enum BundleLoadTypes {
+  ENTRY
+  INITIAL
+  LAZY
+}
+
 type BundleSize {
   gzip: Int!
   uncompress: Int!

@@ -223,8 +223,12 @@ class AssetReport(object):
 
 @dataclass
 class BundleReport(object):
-    def __init__(self, report: SharedBundleReport):
+    def __init__(self, report: SharedBundleReport, filters: Dict[str, List[str]] = {}):
         self.report = report
+
+        # TODO this will be passed to shared.BundleReport in assets and szie_total calls
+        # once shared.BundleReport supports filtering by load and asset types
+        self.filters = filters
 
     @cached_property
     def name(self) -> str:
@@ -268,10 +272,12 @@ class BundleAnalysisReport(object):
         if self.report and self.report.db_session:
             self.report.db_session.close()
 
-    def bundle(self, name: str) -> Optional[BundleReport]:
+    def bundle(
+        self, name: str, filters: Dict[str, List[str]]
+    ) -> Optional[BundleReport]:
         bundle_report = self.report.bundle_report(name)
         if bundle_report:
-            return BundleReport(bundle_report)
+            return BundleReport(bundle_report, filters)
 
     @cached_property
     def bundles(self) -> List[BundleReport]:
