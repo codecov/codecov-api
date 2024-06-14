@@ -49,6 +49,7 @@ from .update_self_hosted_settings import (
     error_update_self_hosted_settings,
     resolve_update_self_hosted_settings,
 )
+from .store_event_metrics import error_store_event_metrics, resolve_store_event_metrics
 
 mutation_bindable = MutationType()
 
@@ -83,7 +84,7 @@ mutation_bindable.field("updateSelfHostedSettings")(resolve_update_self_hosted_s
 mutation_bindable.field("regenerateRepositoryUploadToken")(
     resolve_regenerate_repository_upload_token
 )
-
+mutation_bindable.field("storeEventMetric")(resolve_store_event_metrics)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -109,4 +110,5 @@ mutation_resolvers = [
     error_update_repository,
     error_update_self_hosted_settings,
     error_regenerate_repository_upload_token,
+    error_store_event_metrics,
 ]

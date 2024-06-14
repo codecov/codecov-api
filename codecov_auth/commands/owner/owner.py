@@ -19,7 +19,7 @@ from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
 from .interactors.update_profile import UpdateProfileInteractor
 from .interactors.update_self_hosted_settings import UpdateSelfHostedSettingsInteractor
-
+from .interactors.store_codecov_metric import StoreCodecovMetricInteractor
 
 class OwnerCommands(BaseCommand):
     def create_api_token(self, name):
@@ -86,3 +86,6 @@ class OwnerCommands(BaseCommand):
 
     def update_self_hosted_settings(self, input) -> None:
         return self.get_interactor(UpdateSelfHostedSettingsInteractor).execute(input)
+
+    def store_codecov_metric(self, event: str, json_string: str) -> None:
+        return self.get_interactor(StoreCodecovMetricInteractor).execute(event, json_string)
