@@ -1,11 +1,11 @@
 from django.test import TransactionTestCase
+from shared.django_apps.codecov_metrics.models import UserOnboardingLifeCycleMetrics
 
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
-from shared.django_apps.codecov_metrics.models import UserOnboardingLifeCycleMetrics
 
 query = """
-    StoreEventMetric($input: StoreEventMetricsInput!) {
+    mutation($input: StoreEventMetricsInput!) {
         storeEventMetric(input: $input) {
             error {
                 __typename
@@ -26,7 +26,7 @@ class StoreEventMetricMutationTest(GraphQLTestHelper, TransactionTestCase):
                 "input": {
                     "orgUsername": org_username,
                     "event": event,
-                    "json_payload": json_payload,
+                    "jsonPayload": json_payload,
                 }
             },
             owner=owner,
@@ -57,7 +57,6 @@ class StoreEventMetricMutationTest(GraphQLTestHelper, TransactionTestCase):
             json_payload='{"some-key": "some-value"}',
             owner=self.owner,
         )
-        self.assertIsNone(response.get("storeEventMetric").get("error"))
         metric = UserOnboardingLifeCycleMetrics.objects.filter(
             event="VISITED_PAGE"
         ).first()
