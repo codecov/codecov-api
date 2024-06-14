@@ -5,21 +5,27 @@ from .interactors.create_api_token import CreateApiTokenInteractor
 from .interactors.create_user_token import CreateUserTokenInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
-from .interactors.get_is_current_user_an_admin import GetIsCurrentUserAnAdminInteractor
+from .interactors.get_is_current_user_an_admin import \
+    GetIsCurrentUserAnAdminInteractor
 from .interactors.get_org_upload_token import GetOrgUploadToken
-from .interactors.get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
+from .interactors.get_uploads_number_per_user import \
+    GetUploadsNumberPerUserInteractor
 from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
-from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
+from .interactors.regenerate_org_upload_token import \
+    RegenerateOrgUploadTokenInteractor
 from .interactors.revoke_user_token import RevokeUserTokenInteractor
 from .interactors.save_terms_agreement import SaveTermsAgreementInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.start_trial import StartTrialInteractor
-from .interactors.trigger_sync import TriggerSyncInteractor
-from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
-from .interactors.update_profile import UpdateProfileInteractor
-from .interactors.update_self_hosted_settings import UpdateSelfHostedSettingsInteractor
 from .interactors.store_codecov_metric import StoreCodecovMetricInteractor
+from .interactors.trigger_sync import TriggerSyncInteractor
+from .interactors.update_default_organization import \
+    UpdateDefaultOrganizationInteractor
+from .interactors.update_profile import UpdateProfileInteractor
+from .interactors.update_self_hosted_settings import \
+    UpdateSelfHostedSettingsInteractor
+
 
 class OwnerCommands(BaseCommand):
     def create_api_token(self, name):
@@ -87,5 +93,9 @@ class OwnerCommands(BaseCommand):
     def update_self_hosted_settings(self, input) -> None:
         return self.get_interactor(UpdateSelfHostedSettingsInteractor).execute(input)
 
-    def store_codecov_metric(self, event: str, json_string: str) -> None:
-        return self.get_interactor(StoreCodecovMetricInteractor).execute(event, json_string)
+    def store_codecov_metric(
+        self, org_username: str, event: str, json_string: str
+    ) -> None:
+        return self.get_interactor(StoreCodecovMetricInteractor).execute(
+            org_username, event, json_string
+        )

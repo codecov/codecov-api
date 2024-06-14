@@ -1,18 +1,18 @@
 from ariadne import UnionType
 
 from codecov_auth.commands.owner import OwnerCommands
-from graphql_api.helpers.mutation import (
-    require_authenticated,
-    resolve_union_error_type,
-    wrap_error_handling_mutation,
-)
+from graphql_api.helpers.mutation import (require_authenticated,
+                                          resolve_union_error_type,
+                                          wrap_error_handling_mutation)
 
 
 @wrap_error_handling_mutation
 @require_authenticated
 async def resolve_store_event_metrics(_, info, input) -> None:
     command: OwnerCommands = info.context["executor"].get_command("owner")
-    await command.store_codecov_metric(input.get("event"), input.get("jsonPayload"))
+    await command.store_codecov_metric(
+        input.get("orgUsername"), input.get("event"), input.get("jsonPayload")
+    )
     return None
 
 
