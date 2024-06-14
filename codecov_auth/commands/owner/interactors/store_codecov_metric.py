@@ -1,5 +1,6 @@
 import json
 
+from shared.django_apps.codecov_metrics.models import *
 from shared.django_apps.codecov_metrics.service.codecov_metrics import (
     UserOnboardingMetricsService,
 )
