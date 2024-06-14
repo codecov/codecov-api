@@ -4,7 +4,6 @@ from shared.django_apps.codecov_metrics.service.codecov_metrics import (
     UserOnboardingMetricsService,
 )
 
-import shared.django_apps.codecov_metrics.models
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov.db import sync_to_async
