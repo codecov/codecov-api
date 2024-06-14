@@ -391,7 +391,7 @@ redis==4.4.4
     #   shared
 regex==2023.12.25
     # via -r requirements.in
-requests==2.31.0
+requests==2.32.0
     # via
     #   -r requirements.in
     #   analytics-python
