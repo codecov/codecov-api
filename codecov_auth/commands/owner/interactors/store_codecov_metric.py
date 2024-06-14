@@ -11,13 +11,8 @@ from codecov_auth.models import Owner
 
 
 class StoreCodecovMetricInteractor(BaseInteractor):
-    def validate(self) -> None:
-        if not self.current_user.is_authenticated:
-            raise Unauthenticated()
-
     @sync_to_async
     def execute(self, org_username: str, event: str, json_string: str) -> None:
-        self.validate()
         current_org = Owner.objects.filter(
             username=org_username, service=self.service
         ).first()
