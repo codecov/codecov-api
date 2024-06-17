@@ -93,13 +93,6 @@ def resolve_modules(
     return bundle_asset.modules
 
 
-@bundle_asset_bindable.field("moduleExtensions")
-def resolve_bundle_asset_module_extensions(
-    bundle_asset: AssetReport, info: GraphQLResolveInfo
-) -> List[str]:
-    return bundle_asset.module_extensions
-
-
 @bundle_asset_bindable.field("measurements")
 @convert_kwargs_to_snake_case
 @sync_to_async
@@ -129,27 +122,6 @@ def resolve_name(bundle_report: BundleReport, info: GraphQLResolveInfo) -> str:
     return bundle_report.name
 
 
-# TODO: depreacted with Issue 1199
-@bundle_report_bindable.field("sizeTotal")
-def resolve_size_total(bundle_report: BundleReport, info: GraphQLResolveInfo) -> int:
-    return bundle_report.size_total
-
-
-# TODO: depreacted with Issue 1199
-@bundle_report_bindable.field("loadTimeTotal")
-def resolve_load_time_total(
-    bundle_report: BundleReport, info: GraphQLResolveInfo
-) -> float:
-    return bundle_report.load_time_total
-
-
-@bundle_report_bindable.field("moduleExtensions")
-def resolve_module_extensions(
-    bundle_report: BundleReport, info: GraphQLResolveInfo
-) -> List[str]:
-    return bundle_report.module_extensions
-
-
 @bundle_report_bindable.field("moduleCount")
 def resolve_module_count(bundle_report: BundleReport, info: GraphQLResolveInfo) -> int:
     return bundle_report.module_count
@@ -159,10 +131,8 @@ def resolve_module_count(bundle_report: BundleReport, info: GraphQLResolveInfo) 
 def resolve_assets(
     bundle_report: BundleReport,
     info: GraphQLResolveInfo,
-    filters: Optional[Mapping] = None,
 ) -> List[AssetReport]:
-    extensions_filter = filters.get("moduleExtensions", None) if filters else None
-    return list(bundle_report.assets(extensions_filter))
+    return list(bundle_report.assets())
 
 
 @bundle_report_bindable.field("asset")
