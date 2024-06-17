@@ -226,7 +226,7 @@ class BundleReport(object):
     def __init__(self, report: SharedBundleReport, filters: Dict[str, List[str]] = {}):
         self.report = report
 
-        # TODO this will be passed to shared.BundleReport in assets and szie_total calls
+        # TODO this will be passed to shared.BundleReport in assets and size_total calls
         # once shared.BundleReport supports filtering by load and asset types
         self.filters = filters
 
