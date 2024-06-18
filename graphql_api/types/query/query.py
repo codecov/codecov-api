@@ -3,7 +3,7 @@ from typing import Optional
 from ariadne import ObjectType
 from django.conf import settings
 from graphql import GraphQLResolveInfo
-from sentry_sdk import configure_scope
+from sentry_sdk import Scope
 
 from codecov.commands.exceptions import UnauthorizedGuestAccess
 from codecov.db import sync_to_async
@@ -26,9 +26,9 @@ def configure_sentry_scope(query_name: str):
     # we're configuring this here since it's the main entrypoint into GraphQL resolvers
 
     # https://docs.sentry.io/platforms/python/enriching-events/transaction-name/
-    with configure_scope() as scope:
-        if scope.transaction:
-            scope.transaction.name = f"GraphQL [{query_name}]"
+    scope = Scope.get_current_scope()
+    if scope.transaction:
+        scope.transaction.name = f"GraphQL [{query_name}]"
 
 
 @query_bindable.field("me")

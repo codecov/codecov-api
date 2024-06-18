@@ -395,11 +395,9 @@ if SENTRY_DSN is not None:
         ],
         environment=SENTRY_ENV,
         traces_sample_rate=SENTRY_SAMPLE_RATE,
-        _experiments={
-            "profiles_sample_rate": float(
-                os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
-            ),
-        },
+        profiles_sample_rate=float(
+            os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
+        ),
     )
     if os.getenv("CLUSTER_ENV"):
         sentry_sdk.set_tag("cluster", os.getenv("CLUSTER_ENV"))
