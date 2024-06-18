@@ -403,7 +403,7 @@ class StripeService(AbstractPaymentService):
                 f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}"
             )
             return None
-        # attach the payment method + set ass default on the invoice and subscription
+        # attach the payment method + set as default on the invoice and subscription
         stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
         stripe.Customer.modify(
             owner.stripe_customer_id,
@@ -432,15 +432,33 @@ class StripeService(AbstractPaymentService):
     @_log_stripe_error
     def update_billing_address(self, owner: Owner, billing_address):
         log.info(f"Stripe update billing address for owner {owner.ownerid}")
-        if owner.stripe_subscription_id is None:
+        if owner.stripe_customer_id is None:
             log.info(
-                f"stripe_subscription_id is None, cannot update billing address for owner {owner.ownerid}"
+                f"stripe_customer_id is None, cannot update default billing address for owner {owner.ownerid}"
             )
             return None
-        stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
-        log.info(
-            f"Stripe successfully updated billing address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
-        )
+
+        try:
+            default_payment_method = stripe.Customer.retrieve(
+                owner.stripe_customer_id
+            ).invoice_settings.default_payment_method
+
+            stripe.PaymentMethod.modify(
+                default_payment_method, billing_details={"address": billing_address}
+            )
+
+            stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
+            log.info(
+                f"Stripe successfully updated billing address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            )
+        except Exception:
+            log.error(
+                "Unable to update billing address for customer",
+                extra=dict(
+                    customer_id=owner.stripe_customer_id,
+                    subscription_id=owner.stripe_subscription_id,
+                ),
+            )
 
     @_log_stripe_error
     def apply_cancellation_discount(self, owner: Owner):

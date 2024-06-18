@@ -1105,11 +1105,20 @@ class AccountViewSetTests(APITestCase):
         assert response.data["detail"] == message
 
     @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Customer.retrieve")
+    @patch("services.billing.stripe.PaymentMethod.modify")
     @patch("services.billing.stripe.Customer.modify")
-    def test_update_billing_address(self, modify_customer_mock, retrieve_mock):
+    def test_update_billing_address(
+        self,
+        modify_customer_mock,
+        modify_payment_mock,
+        retrieve_customer_mock,
+        retrieve_sub_mock,
+    ):
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
+        f = open("./services/tests/samples/stripe_invoice.json")
 
         billing_address = {
             "line_1": "45 Fremont St.",
@@ -1119,6 +1128,37 @@ class AccountViewSetTests(APITestCase):
             "country": "US",
             "postal_code": "94105",
         }
+
+        formatted_address = {
+            "line1": "45 Fremont St.",
+            "line2": "",
+            "city": "San Francisco",
+            "state": "CA",
+            "country": "US",
+            "postal_code": "94105",
+        }
+
+        default_payment_method = {
+            "id": "pm_123",
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+            },
+        }
+
+        subscription_params = {
+            "default_payment_method": default_payment_method,
+            "cancel_at_period_end": False,
+            "current_period_end": 1633512445,
+            "latest_invoice": json.load(f)["data"][0],
+            "schedule_id": None,
+            "collection_method": "charge_automatically",
+        }
+
+        retrieve_sub_mock.return_value = MockSubscription(subscription_params)
+
         kwargs = {
             "service": self.current_owner.service,
             "owner_username": self.current_owner.username,
@@ -1128,8 +1168,10 @@ class AccountViewSetTests(APITestCase):
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == status.HTTP_200_OK
 
+        retrieve_customer_mock.assert_called_once()
+        modify_payment_mock.assert_called_once()
         modify_customer_mock.assert_called_once_with(
-            self.current_owner.stripe_customer_id, address=billing_address
+            self.current_owner.stripe_customer_id, address=formatted_address
         )
 
     @patch("api.shared.permissions.get_provider")
