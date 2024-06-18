@@ -1140,18 +1140,26 @@ class StripeServiceTests(TestCase):
         self.stripe.update_email_address(owner, "test@gmail.com")
         modify_customer_mock.assert_called_once_with(customer_id, email=email)
 
-    def test_update_billing_address_with_invalid_email(self):
-        owner = OwnerFactory(stripe_subscription_id=None)
+    @patch("logging.Logger.error")
+    def test_update_billing_address_with_invalid_address(self, log_error_mock):
+        owner = OwnerFactory(stripe_customer_id="123", stripe_subscription_id="123")
         assert self.stripe.update_billing_address(owner, "gabagool") == None
+        log_error_mock.assert_called_with(
+            "Unable to update billing address for customer",
+            extra={
+                "customer_id": "123",
+                "subscription_id": "123",
+            },
+        )
 
-    def test_update_billing_address_when_no_subscription(self):
-        owner = OwnerFactory(stripe_subscription_id=None)
+    def test_update_billing_address_when_no_customer_id(self):
+        owner = OwnerFactory(stripe_customer_id=None)
         assert (
             self.stripe.update_billing_address(
                 owner,
                 billing_address={
-                    "line_1": "45 Fremont St.",
-                    "line_2": "",
+                    "line1": "45 Fremont St.",
+                    "line2": "",
                     "city": "San Francisco",
                     "state": "CA",
                     "country": "US",
@@ -1161,16 +1169,20 @@ class StripeServiceTests(TestCase):
             == None
         )
 
+    @patch("services.billing.stripe.Customer.retrieve")
+    @patch("services.billing.stripe.PaymentMethod.modify")
     @patch("services.billing.stripe.Customer.modify")
-    def test_update_billing_address(self, modify_customer_mock):
+    def test_update_billing_address(
+        self, modify_customer_mock, modify_payment_mock, retrieve_customer_mock
+    ):
         subscription_id = "sub_abc"
         customer_id = "cus_abc"
         owner = OwnerFactory(
             stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
         )
         billing_address = {
-            "line_1": "45 Fremont St.",
-            "line_2": "",
+            "line1": "45 Fremont St.",
+            "line2": "",
             "city": "San Francisco",
             "state": "CA",
             "country": "US",
@@ -1180,6 +1192,9 @@ class StripeServiceTests(TestCase):
             owner,
             billing_address=billing_address,
         )
+
+        retrieve_customer_mock.assert_called_once()
+        modify_payment_mock.assert_called_once()
         modify_customer_mock.assert_called_once_with(
             customer_id, address=billing_address
         )
