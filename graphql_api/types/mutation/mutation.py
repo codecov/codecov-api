@@ -39,6 +39,7 @@ from .save_terms_agreement import (
 )
 from .set_yaml_on_owner import error_set_yaml_error, resolve_set_yaml_on_owner
 from .start_trial import error_start_trial, resolve_start_trial
+from .store_event_metrics import error_store_event_metrics, resolve_store_event_metrics
 from .sync_with_git_provider import (
     error_sync_with_git_provider,
     resolve_sync_with_git_provider,
@@ -89,6 +90,7 @@ mutation_bindable.field("regenerateRepositoryUploadToken")(
 )
 mutation_bindable.field("encodeSecretString")(resolve_encode_secret_string)
 
+mutation_bindable.field("storeEventMetric")(resolve_store_event_metrics)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -115,4 +117,5 @@ mutation_resolvers = [
     error_update_self_hosted_settings,
     error_regenerate_repository_upload_token,
     error_encode_secret_string,
+    error_store_event_metrics,
 ]
