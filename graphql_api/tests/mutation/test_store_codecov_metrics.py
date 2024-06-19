@@ -25,7 +25,7 @@ class StoreEventMetricMutationTest(GraphQLTestHelper, TransactionTestCase):
             variables={
                 "input": {
                     "orgUsername": org_username,
-                    "event": event,
+                    "eventName": event,
                     "jsonPayload": json_payload,
                 }
             },

@@ -6,6 +6,6 @@ type StoreEventMetricsPayload {
 
 input StoreEventMetricsInput {
   orgUsername: String!
-  event: String!
+  eventName: String!
   jsonPayload: String # The input expects a serialized json string
 }

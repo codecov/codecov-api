@@ -13,7 +13,7 @@ from graphql_api.helpers.mutation import (
 async def resolve_store_event_metrics(_, info, input) -> None:
     command: OwnerCommands = info.context["executor"].get_command("owner")
     await command.store_codecov_metric(
-        input.get("orgUsername"), input.get("event"), input.get("jsonPayload")
+        input.get("orgUsername"), input.get("eventName"), input.get("jsonPayload")
     )
     return None
 
