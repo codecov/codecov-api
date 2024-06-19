@@ -44,14 +44,6 @@ def load_report(
     return loader.load(commit_report.external_id)
 
 
-# TODO: depreacted with Issue 1199
-def load_time_conversion(size: int) -> float:
-    """
-    Converts total size in bytes to approximate time (in seconds) to download using a 3G internet (3 Mbps)
-    """
-    return round((8 * size) / (1024 * 1024 * 3), 1)
-
-
 def get_extension(filename: str) -> str:
     """
     Gets the file extension of the file without the dot
@@ -231,8 +223,12 @@ class AssetReport(object):
 
 @dataclass
 class BundleReport(object):
-    def __init__(self, report: SharedBundleReport):
+    def __init__(self, report: SharedBundleReport, filters: Dict[str, List[str]] = {}):
         self.report = report
+
+        # TODO this will be passed to shared.BundleReport in assets and size_total calls
+        # once shared.BundleReport supports filtering by load and asset types
+        self.filters = filters
 
     @cached_property
     def name(self) -> str:
@@ -242,13 +238,8 @@ class BundleReport(object):
     def all_assets(self) -> List[AssetReport]:
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
-    def assets(self, extensions: Optional[List[str]] = None) -> List[AssetReport]:
-        all_assets = self.all_assets
-
-        # TODO: Unimplemented #1192 - Filter by extensions
-        filtered_assets = all_assets
-
-        return filtered_assets
+    def assets(self) -> List[AssetReport]:
+        return self.all_assets
 
     def asset(self, name: str) -> Optional[AssetReport]:
         for asset_report in self.all_assets:
@@ -258,11 +249,6 @@ class BundleReport(object):
     @cached_property
     def size_total(self) -> int:
         return self.report.total_size()
-
-    # To be deprecated after FE uses BundleData
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.report.total_size())
 
     @cached_property
     def module_extensions(self) -> List[str]:
@@ -286,10 +272,12 @@ class BundleAnalysisReport(object):
         if self.report and self.report.db_session:
             self.report.db_session.close()
 
-    def bundle(self, name: str) -> Optional[BundleReport]:
+    def bundle(
+        self, name: str, filters: Dict[str, List[str]]
+    ) -> Optional[BundleReport]:
         bundle_report = self.report.bundle_report(name)
         if bundle_report:
-            return BundleReport(bundle_report)
+            return BundleReport(bundle_report, filters)
 
     @cached_property
     def bundles(self) -> List[BundleReport]:
@@ -298,10 +286,6 @@ class BundleAnalysisReport(object):
     @cached_property
     def size_total(self) -> int:
         return sum([bundle.size_total for bundle in self.bundles])
-
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.size_total)
 
 
 @dataclass
@@ -342,16 +326,8 @@ class BundleAnalysisComparison(object):
         return sum([change.size_delta for change in self.comparison.bundle_changes()])
 
     @cached_property
-    def load_time_delta(self) -> float:
-        return load_time_conversion(self.size_delta)
-
-    @cached_property
     def size_total(self) -> int:
         return BundleAnalysisReport(self.head_report).size_total
-
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.size_total)
 
 
 @dataclass
@@ -375,14 +351,6 @@ class BundleComparison(object):
     @cached_property
     def size_total(self) -> int:
         return self.head_bundle_report_size
-
-    @cached_property
-    def load_time_delta(self) -> float:
-        return load_time_conversion(self.bundle_change.size_delta)
-
-    @cached_property
-    def load_time_total(self) -> float:
-        return load_time_conversion(self.head_bundle_report_size)
 
 
 class BundleAnalysisMeasurementsService(object):

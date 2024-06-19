@@ -707,7 +707,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             query_commit
             % """
             compareWithParent { __typename ... on Comparison { state } }
-            bundleAnalysisCompareWithParent { __typename ... on BundleAnalysisComparison { sizeDelta } }
+            bundleAnalysisCompareWithParent { __typename ... on BundleAnalysisComparison { bundleData { size { uncompress } } } }
             """
         )
         variables = {
@@ -818,17 +818,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             bundleAnalysisCompareWithParent {
                 __typename
                 ... on BundleAnalysisComparison {
-                    sizeDelta
-                    sizeTotal
-                    loadTimeDelta
-                    loadTimeTotal
                     bundles {
                         name
                         changeType
-                        sizeDelta
-                        sizeTotal
-                        loadTimeDelta
-                        loadTimeTotal
                         bundleData {
                             size {
                                 uncompress
@@ -864,58 +856,34 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["bundleAnalysisCompareWithParent"] == {
             "__typename": "BundleAnalysisComparison",
-            "sizeDelta": 36555,
-            "sizeTotal": 201720,
-            "loadTimeDelta": 0.1,
-            "loadTimeTotal": 0.5,
             "bundles": [
                 {
                     "name": "b1",
                     "changeType": "changed",
-                    "sizeDelta": 5,
-                    "sizeTotal": 20,
-                    "loadTimeDelta": 0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 20}},
                     "bundleChange": {"size": {"uncompress": 5}},
                 },
                 {
                     "name": "b2",
                     "changeType": "changed",
-                    "sizeDelta": 50,
-                    "sizeTotal": 200,
-                    "loadTimeDelta": 0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 200}},
                     "bundleChange": {"size": {"uncompress": 50}},
                 },
                 {
                     "name": "b3",
                     "changeType": "added",
-                    "sizeDelta": 1500,
-                    "sizeTotal": 1500,
-                    "loadTimeDelta": 0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 1500}},
                     "bundleChange": {"size": {"uncompress": 1500}},
                 },
                 {
                     "name": "b5",
                     "changeType": "changed",
-                    "sizeDelta": 50000,
-                    "sizeTotal": 200000,
-                    "loadTimeDelta": 0.1,
-                    "loadTimeTotal": 0.5,
                     "bundleData": {"size": {"uncompress": 200000}},
                     "bundleChange": {"size": {"uncompress": 50000}},
                 },
                 {
                     "name": "b4",
                     "changeType": "removed",
-                    "sizeDelta": -15000,
-                    "sizeTotal": 0,
-                    "loadTimeDelta": -0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 0}},
                     "bundleChange": {"size": {"uncompress": -15000}},
                 },
@@ -958,7 +926,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             bundleAnalysisCompareWithParent {
                 __typename
                 ... on BundleAnalysisComparison {
-                    sizeTotal
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
                 }
             }
             """
@@ -1013,7 +985,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             bundleAnalysisCompareWithParent {
                 __typename
                 ... on BundleAnalysisComparison {
-                    sizeTotal
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
                 }
             }
             """
@@ -1076,7 +1052,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             storage.write_file(get_bucket_name(), storage_path, f)
 
         query = """
-            query FetchCommit($org: String!, $repo: String!, $commit: String!, $filters: BundleAnalysisReportFilters) {
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
                 owner(username: $org) {
                     repository(name: $repo) {
                         ... on Repository {
@@ -1084,13 +1060,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                 bundleAnalysisReport {
                                     __typename
                                     ... on BundleAnalysisReport {
-                                        sizeTotal
-                                        loadTimeTotal
                                         bundles {
                                             name
-                                            sizeTotal
-                                            loadTimeTotal
-                                            assets(filters: $filters) {
+                                            assets {
                                                 normalizedName
                                             }
                                             asset(name: "not_exist") {
@@ -1136,20 +1108,15 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "org": self.org.username,
             "repo": self.repo.name,
             "commit": self.commit.commitid,
-            "filters": {"moduleExtensions": []},
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
         assert commit["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
-            "sizeTotal": 201720,
-            "loadTimeTotal": 0.5,
             "bundles": [
                 {
                     "name": "b1",
-                    "sizeTotal": 20,
-                    "loadTimeTotal": 0.0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1171,8 +1138,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
                 {
                     "name": "b2",
-                    "sizeTotal": 200,
-                    "loadTimeTotal": 0.0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1194,8 +1159,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
                 {
                     "name": "b3",
-                    "sizeTotal": 1500,
-                    "loadTimeTotal": 0.0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1217,8 +1180,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
                 {
                     "name": "b5",
-                    "sizeTotal": 200000,
-                    "loadTimeTotal": 0.5,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1280,13 +1241,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                     __typename
                                     ... on BundleAnalysisReport {
                                         bundle(name: "b5") {
-                                            moduleExtensions
                                             moduleCount
                                             asset(name: "assets/LazyComponent-fcbb0922.js") {
                                                 name
                                                 normalizedName
                                                 extension
-                                                moduleExtensions
                                                 bundleData {
                                                     loadTime {
                                                         threeG
@@ -1333,22 +1292,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         asset_report = bundle_report["asset"]
 
         assert bundle_report is not None
-        assert sorted(bundle_report["moduleExtensions"]) == [
-            "",
-            "css",
-            "html",
-            "js",
-            "svg",
-            "ts",
-            "tsx",
-        ]
         assert bundle_report["moduleCount"] == 7
 
         assert asset_report is not None
         assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
         assert asset_report["normalizedName"] == "assets/LazyComponent-*.js"
         assert asset_report["extension"] == "js"
-        assert set(asset_report["moduleExtensions"]) == set(["", "tsx"])
         assert asset_report["bundleData"] == {
             "loadTime": {
                 "threeG": 320,

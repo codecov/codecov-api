@@ -74,8 +74,6 @@ class TestBundleComparison(TestCase):
         assert bundle_comparison.change_type == "added"
         assert bundle_comparison.size_delta == 1000000
         assert bundle_comparison.size_total == 7654321
-        assert bundle_comparison.load_time_delta == 2.5
-        assert bundle_comparison.load_time_total == 19.5
 
 
 class TestBundleAnalysisComparison(TestCase):
@@ -125,8 +123,6 @@ class TestBundleAnalysisComparison(TestCase):
         assert len(bac.bundles) == 5
         assert bac.size_delta == 36555
         assert bac.size_total == 201720
-        assert bac.load_time_delta == 0.1
-        assert bac.load_time_total == 0.5
 
 
 class TestBundleReport(TestCase):
@@ -146,7 +142,6 @@ class TestBundleReport(TestCase):
 
         assert bundle_comparison.name == "bundle1"
         assert bundle_comparison.size_total == 7654321
-        assert bundle_comparison.load_time_total == 19.5
 
 
 class TestBundleAnalysisReport(TestCase):
@@ -179,4 +174,3 @@ class TestBundleAnalysisReport(TestCase):
 
         assert len(bar.bundles) == 4
         assert bar.size_total == 201720
-        assert bar.load_time_total == 0.5

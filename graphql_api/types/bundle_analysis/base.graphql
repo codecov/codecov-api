@@ -7,6 +7,20 @@ enum BundleAnalysisMeasurementsAssetType {
     ASSET_SIZE
 }
 
+enum BundleReportGroups {
+  JAVASCRIPT
+  STYLESHEET
+  FONT
+  IMAGE
+  UNKNOWN
+}
+
+enum BundleLoadTypes {
+  ENTRY
+  INITIAL
+  LAZY
+}
+
 type BundleSize {
   gzip: Int!
   uncompress: Int!
@@ -32,7 +46,6 @@ type BundleAsset {
   name: String!
   extension: String!
   normalizedName: String!
-  moduleExtensions: [String!]!
   modules: [BundleModule]!
   bundleData: BundleData!
   measurements(
@@ -45,11 +58,8 @@ type BundleAsset {
 
 type BundleReport {
   name: String!
-  sizeTotal: Int!
-  loadTimeTotal: Float!
-  moduleExtensions: [String!]!
   moduleCount: Int!
-  assets(filters: BundleAnalysisReportFilters): [BundleAsset]!
+  assets: [BundleAsset]!
   asset(name: String!): BundleAsset
   bundleData: BundleData!
   measurements(
