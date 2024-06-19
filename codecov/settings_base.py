@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     # New Shared Models
     "shared.django_apps.rollouts",
     "shared.django_apps.user_measurements",
+    "shared.django_apps.codecov_metrics",
 ]
 
 MIDDLEWARE = [
