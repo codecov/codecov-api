@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.core import signing
 from django.http.cookie import SimpleCookie
@@ -25,8 +25,19 @@ def test_get_bitbucket_redirect(client, settings, mocker):
     settings.BITBUCKET_CLIENT_ID = "testqmo19ebdkseoby"
     settings.BITBUCKET_CLIENT_SECRET = "testfi8hzehvz453qj8mhv21ca4rf83f"
     url = reverse("bitbucket-login")
+    mock_create_user_onboarding_metric = mocker.patch(
+        "shared.django_apps.codecov_metrics.service.codecov_metrics.UserOnboardingMetricsService.create_user_onboarding_metric"
+    )
+
     res = client.get(url, SERVER_NAME="localhost:8000")
     assert res.status_code == 302
+    expected_call = call(
+        org_id=client.session["current_owner_id"],
+        event="INSTALLED_APP",
+        payload={"login": "github"},
+    )
+    assert mock_create_user_onboarding_metric.call_args_list == [expected_call]
+
     assert "_oauth_request_token" in res.cookies
     cookie = res.cookies["_oauth_request_token"]
     assert cookie.value
