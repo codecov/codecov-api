@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from django.http.cookie import SimpleCookie
@@ -23,12 +24,21 @@ def _get_state_from_redis(mock_redis):
 
 @override_settings(GITHUB_CLIENT_ID="testclientid")
 @pytest.mark.django_db
-def test_get_github_redirect(client, mocker, mock_redis, settings):
+@patch(
+    "shared.django_apps.codecov_metrics.service.codecov_metrics.UserOnboardingMetricsService.create_user_onboarding_metric"
+)
+def test_get_github_redirect(client, mocker, mock_redis, settings, mock_store_metric):
     settings.IS_ENTERPRISE = False
 
     url = reverse("github-login")
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)
+    assert mock_store_metric.assert_called_once_with(
+        owner=client.session["current_owner_id"],
+        event="INSTALLED_APP",
+        payload={"login": "github"},
+    )
+
     assert res.status_code == 302
     assert (
         res.url
