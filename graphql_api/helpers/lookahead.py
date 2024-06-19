@@ -56,7 +56,7 @@ class LookaheadNode:
             if isinstance(selection, FragmentSpreadNode):
                 fragment = self.info.fragments[selection.name.value]
                 for selection in fragment.selection_set.selections:
-                    selections.append(selection)
+                    selections.append(selection)  # noqa: PERF402
             else:
                 selections.append(selection)
         return selections

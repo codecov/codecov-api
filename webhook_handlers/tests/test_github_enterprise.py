@@ -72,7 +72,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     def test_get_repo_paths_dont_crash(self):
         with self.subTest("with ownerid success"):
-            response = self._post_event_data(
+            self._post_event_data(
                 event=GitHubWebhookEvents.REPOSITORY,
                 data={
                     "action": "publicized",
@@ -84,7 +84,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             )
 
         with self.subTest("with not found owner"):
-            response = self._post_event_data(
+            self._post_event_data(
                 event=GitHubWebhookEvents.REPOSITORY,
                 data={
                     "action": "publicized",
@@ -96,7 +96,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             )
 
         with self.subTest("with not found owner and not found repo"):
-            response = self._post_event_data(
+            self._post_event_data(
                 event=GitHubWebhookEvents.REPOSITORY,
                 data={
                     "action": "publicized",
@@ -105,7 +105,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             )
 
         with self.subTest("with owner and not found repo"):
-            response = self._post_event_data(
+            self._post_event_data(
                 event=GitHubWebhookEvents.REPOSITORY,
                 data={
                     "action": "publicized",
@@ -154,8 +154,6 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert self.repo.private == True
 
     def test_repository_deleted_sets_deleted_activated_and_active(self):
-        repository_id = self.repo.repoid
-
         response = self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
             data={"action": "deleted", "repository": {"id": self.repo.service_id}},
@@ -209,7 +207,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             merged=True, repository=self.repo, branch=merged_branch_name
         )
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.PUSH,
             data={
                 "ref": "refs/heads/" + unmerged_branch_name,
@@ -245,7 +243,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             merged=True, repository=self.repo, branch=merged_branch_name
         )
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.PUSH,
             data={
                 "ref": "refs/heads/" + repo_branch,
@@ -300,7 +298,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         commit2 = CommitFactory(merged=False, repository=self.repo)
         unmerged_branch_name = "unmerged"
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.PUSH,
             data={
                 "ref": "refs/heads/" + unmerged_branch_name,
@@ -325,9 +323,8 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         self, set_pending_mock
     ):
         commit1 = CommitFactory(merged=False, repository=self.repo)
-        unmerged_branch_name = "unmerged"
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.PUSH,
             data={
                 "ref": "refs/heads/" + "derp",
@@ -342,7 +339,6 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
     @patch("services.task.TaskService.status_set_pending")
     def test_push_doesnt_trigger_task_if_ci_skipped(self, set_pending_mock):
         commit1 = CommitFactory(merged=False, repository=self.repo, message="[ci skip]")
-        unmerged_branch_name = "unmerged"
 
         response = self._post_event_data(
             event=GitHubWebhookEvents.PUSH,
@@ -432,7 +428,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         valid_actions = ["opened", "closed", "reopened", "synchronize"]
 
         for action in valid_actions:
-            response = self._post_event_data(
+            self._post_event_data(
                 event=GitHubWebhookEvents.PULL_REQUEST,
                 data={
                     "repository": {"id": self.repo.service_id},
@@ -477,7 +473,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
     def test_installation_creates_new_owner_if_dne(self):
         username, service_id = "newuser", 123456
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION,
             data={
                 "installation": {
@@ -526,7 +522,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
     def test_installation_creates_new_owner_if_dne_all_repos(self):
         username, service_id = "newuser", 123456
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION,
             data={
                 "installation": {
@@ -559,7 +555,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert ghapp_installations_set.count() == 1
         installation = ghapp_installations_set.first()
         assert installation.installation_id == 4
-        assert installation.repository_service_ids == None
+        assert installation.repository_service_ids is None
 
     @freeze_time("2024-03-28T00:00:00")
     @patch(
@@ -575,7 +571,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
     def test_installation_repositories_creates_new_owner_if_dne(self):
         username, service_id = "newuser", 123456
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION_REPOSITORIES,
             data={
                 "installation": {
@@ -606,7 +602,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert ghapp_installations_set.count() == 1
         installation = ghapp_installations_set.first()
         assert installation.installation_id == 4
-        assert installation.repository_service_ids == None
+        assert installation.repository_service_ids is None
 
     def test_installation_with_deleted_action_nulls_values(self):
         # Should set integration_id to null for owner,
@@ -633,7 +629,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
         assert owner.github_app_installations.exists()
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION,
             data={
                 "installation": {
@@ -655,12 +651,12 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         repo1.refresh_from_db()
         repo2.refresh_from_db()
 
-        assert owner.integration_id == None
+        assert owner.integration_id is None
         assert repo1.using_integration == False
         assert repo2.using_integration == False
 
-        assert repo1.bot == None
-        assert repo2.bot == None
+        assert repo1.bot is None
+        assert repo2.bot is None
 
         assert not owner.github_app_installations.exists()
 
@@ -697,7 +693,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
         assert owner.github_app_installations.exists()
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION_REPOSITORIES,
             data={
                 "installation": {
@@ -753,7 +749,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
         assert owner.github_app_installations.exists()
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION_REPOSITORIES,
             data={
                 "installation": {
@@ -772,7 +768,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
         installation.refresh_from_db()
         assert installation.installation_id == 12
-        assert installation.repository_service_ids == None
+        assert installation.repository_service_ids is None
 
     @patch(
         "services.task.TaskService.refresh",
@@ -793,7 +789,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         owner.integration_id = None
         owner.save()
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION,
             data={
                 "installation": {
@@ -842,7 +838,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         owner.integration_id = None
         owner.save()
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION_REPOSITORIES,
             data={
                 "installation": {
@@ -867,13 +863,13 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert ghapp_installations_set.count() == 1
         installation = ghapp_installations_set.first()
         assert installation.installation_id == installation_id
-        assert installation.repository_service_ids == None
+        assert installation.repository_service_ids is None
 
     @patch("services.task.TaskService.refresh")
     def test_installation_trigger_refresh_with_other_actions(self, refresh_mock):
         owner = OwnerFactory(service=Service.GITHUB_ENTERPRISE.value)
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.INSTALLATION,
             data={
                 "installation": {
@@ -917,7 +913,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         org.plan_activated_users = [user.ownerid]
         org.save()
 
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.ORGANIZATION,
             data={
                 "action": "member_removed",
@@ -990,7 +986,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         action = "purchased"
         account = {"type": "Organization", "id": 54678, "login": "username"}
         subscription_retrieve_mock.return_value = None
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.MARKETPLACE_PURCHASE,
             data={
                 "action": action,
@@ -1022,7 +1018,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         subscription_retrieve_mock.return_value = MockedSubscription(
             "active", plan, quantity
         )
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.MARKETPLACE_PURCHASE,
             data={
                 "action": action,
@@ -1077,7 +1073,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             service_id=6098,
             service=Service.GITHUB_ENTERPRISE.value,
         )
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
             data={
                 "action": "removed",
@@ -1093,7 +1089,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         member = OwnerFactory(
             permission=None, service_id=6098, service=Service.GITHUB_ENTERPRISE.value
         )
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
             data={
                 "action": "removed",
@@ -1108,7 +1104,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             service_id=6098,
             service=Service.GITHUB_ENTERPRISE.value,
         )
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.MEMBER,
             data={
                 "action": "removed",
@@ -1143,7 +1139,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             service_id=97968493,
             service=Service.GITHUB_ENTERPRISE.value,
         )
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
             data={
                 "action": "publicized",
@@ -1165,7 +1161,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
             service_id=97968493,
             service=Service.GITHUB_ENTERPRISE.value,
         )
-        response = self._post_event_data(
+        self._post_event_data(
             event=GitHubWebhookEvents.REPOSITORY,
             data={
                 "action": "publicized",

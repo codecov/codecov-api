@@ -302,7 +302,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             owner=user,
             variables={"name": repo.name},
         )
-        assert data["me"]["owner"]["repository"]["yaml"] == None
+        assert data["me"]["owner"]["repository"]["yaml"] is None
 
     def test_repository_resolve_bot(self):
         user = OwnerFactory()
@@ -558,7 +558,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner, active=True, private=True, languages=None
         )
         res = self.fetch_repository(repo.name)
-        assert res["languages"] == None
+        assert res["languages"] is None
 
     def test_repository_get_languages_empty(self):
         repo = RepositoryFactory(author=self.owner, active=True, private=True)

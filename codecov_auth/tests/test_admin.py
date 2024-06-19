@@ -227,7 +227,7 @@ class OwnerAdminTest(TestCase):
             "organization_tokens-0-REFRESH": "on",
             "_continue": ["Save and continue editing"],
         }
-        response = self.client.post(request_url, data=fake_data)
+        self.client.post(request_url, data=fake_data)
         mock_refresh.assert_called_with(str(org_token.id))
 
     @patch(
@@ -263,7 +263,7 @@ class OwnerAdminTest(TestCase):
             "organization_tokens-0-token_type": ["upload"],
             "_continue": ["Save and continue editing"],
         }
-        response = self.client.post(request_url, data=fake_data)
+        self.client.post(request_url, data=fake_data)
         mock_refresh.assert_not_called()
 
     def test_start_trial_ui_display(self):
@@ -374,7 +374,7 @@ class SentryUserAdminTest(TestCase):
         sentry_user = SentryUserFactory()
         res = self.client.get(reverse("admin:codecov_auth_sentryuser_changelist"))
         assert res.status_code == 200
-        content = res.content.decode("utf-8")
+        res.content.decode("utf-8")
         assert sentry_user.name in res.content.decode("utf-8")
         assert sentry_user.email in res.content.decode("utf-8")
 

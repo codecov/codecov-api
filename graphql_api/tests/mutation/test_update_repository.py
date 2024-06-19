@@ -53,9 +53,7 @@ class UpdateRepositoryTests(GraphQLTestHelper, TransactionTestCase):
         assert data == {"updateRepository": None}
 
     def test_when_authenticated_update_branch(self):
-        other_branch = BranchFactory.create(
-            name="some other branch", repository=self.repo
-        )
+        BranchFactory.create(name="some other branch", repository=self.repo)
         data = self.gql_request(
             query,
             owner=self.org,

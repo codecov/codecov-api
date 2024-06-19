@@ -53,7 +53,7 @@ class TestResolvePathContent:
 
     def test_returns_none(self):
         type = resolve_path_content_type("string")
-        assert type == None
+        assert type is None
 
 
 class TestIsCriticalFile(TransactionTestCase):

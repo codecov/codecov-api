@@ -419,16 +419,16 @@ class BundleAnalysisMeasurementsService(object):
             branch=self.branch,
         )
 
-        results = []
-        for measurable_id in measurable_ids:
-            results.append(
-                BundleAnalysisMeasurementData(
-                    raw_measurements=list(measurements.get(measurable_id, [])),
-                    asset_type=asset_type,
-                    asset_name=asset_uuid_to_name_mapping.get(measurable_id, None),
-                    interval=self.interval,
-                    after=self.after,
-                    before=self.before,
-                )
+        results = [
+            BundleAnalysisMeasurementData(
+                raw_measurements=list(measurements.get(int(measurable_id), [])),
+                asset_type=asset_type,
+                asset_name=asset_uuid_to_name_mapping.get(measurable_id, None),
+                interval=self.interval,
+                after=self.after,
+                before=self.before,
             )
+            for measurable_id in measurable_ids
+        ]
+
         return results

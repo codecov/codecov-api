@@ -108,7 +108,7 @@ class StripeService(AbstractPaymentService):
         )
         try:
             invoice = stripe.Invoice.retrieve(invoice_id)
-        except stripe.InvalidRequestError as e:
+        except stripe.InvalidRequestError:
             log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:

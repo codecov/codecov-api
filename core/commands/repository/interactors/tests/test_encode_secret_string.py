@@ -30,5 +30,5 @@ class EncodeSecretStringInteractorTest(TransactionTestCase):
             self.execute(owner, repo=None, value="token-1")
 
     def test_user_is_not_authenticated(self):
-        with pytest.raises(Unauthenticated) as e:
+        with pytest.raises(Unauthenticated):
             self.execute(None, repo=None, value="test")

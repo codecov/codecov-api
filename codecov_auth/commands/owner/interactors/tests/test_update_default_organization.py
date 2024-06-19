@@ -48,7 +48,7 @@ class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
         owner_profile: OwnerProfile = OwnerProfile.objects.filter(
             owner_id=self.owner.ownerid
         ).first()
-        assert owner_profile.default_org == None
+        assert owner_profile.default_org is None
 
     def test_update_owners_default_org(self):
         username = self.execute(
