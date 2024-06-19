@@ -8,6 +8,9 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views import View
+from shared.django_apps.codecov_metrics.service.codecov_metrics import (
+    UserOnboardingMetricsService,
+)
 from shared.torngit import Bitbucket
 from shared.torngit.exceptions import TorngitServerFailureError
 
@@ -103,6 +106,9 @@ class BitbucketLoginView(View, LoginMixin):
         response.delete_cookie("_oauth_request_token", domain=settings.COOKIES_DOMAIN)
         self.login_owner(user, request, response)
         log.info("User successfully logged in", extra=dict(ownerid=user.ownerid))
+        UserOnboardingMetricsService.create_user_onboarding_metric(
+            owner=user.ownerid, event="INSTALLED_APP", payload={"login": "bitbucket"}
+        )
         return response
 
     def get(self, request):
