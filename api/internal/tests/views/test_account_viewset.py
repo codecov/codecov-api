@@ -190,6 +190,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": "sub_sched_456",
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -244,6 +245,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -283,6 +285,7 @@ class AccountViewSetTests(APITestCase):
             "schedule_id": "sub_sched_456678999",
             "collection_method": "charge_automatically",
             "trial_end": 1633512445,
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -344,6 +347,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": 1633512445,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -381,6 +385,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -415,6 +420,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -563,6 +569,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_subscription.return_value = MockSubscription(subscription_params)
@@ -588,6 +595,7 @@ class AccountViewSetTests(APITestCase):
             "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
             "collection_method": "charge_automatically",
             "trial_end": None,
+            "tax_ids": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -714,6 +722,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -977,6 +986,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -1155,6 +1165,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_sub_mock.return_value = MockSubscription(subscription_params)
@@ -1363,6 +1374,7 @@ class AccountViewSetTests(APITestCase):
                 "duration_in_months": 6,
                 "created": int(datetime(2023, 1, 1, 0, 0, 0).timestamp()),
             },
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -1408,6 +1420,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)

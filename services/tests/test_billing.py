@@ -1097,6 +1097,7 @@ class StripeServiceTests(TestCase):
                 "latest_invoice",
                 "customer",
                 "customer.invoice_settings.default_payment_method",
+                "customer.tax_ids",
             ],
         )
 
