@@ -107,7 +107,7 @@ class BitbucketLoginView(View, LoginMixin):
         self.login_owner(user, request, response)
         log.info("User successfully logged in", extra=dict(ownerid=user.ownerid))
         UserOnboardingMetricsService.create_user_onboarding_metric(
-            owner=user.ownerid, event="INSTALLED_APP", payload={"login": "bitbucket"}
+            org_id=user.ownerid, event="INSTALLED_APP", payload={"login": "bitbucket"}
         )
         return response
 

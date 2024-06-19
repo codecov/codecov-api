@@ -34,7 +34,7 @@ def test_get_github_redirect(client, mocker, mock_redis, settings, mock_store_me
     res = client.get(url)
     state = _get_state_from_redis(mock_redis)
     assert mock_store_metric.assert_called_once_with(
-        owner=client.session["current_owner_id"],
+        org_id=client.session["current_owner_id"],
         event="INSTALLED_APP",
         payload={"login": "github"},
     )

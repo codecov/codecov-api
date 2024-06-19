@@ -89,7 +89,7 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         self.login_owner(user, request, response)
         self.remove_state(state, delay=5)
         UserOnboardingMetricsService.create_user_onboarding_metric(
-            owner=user.ownerid, event="INSTALLED_APP", payload={"login": "gitlab"}
+            org_id=user.ownerid, event="INSTALLED_APP", payload={"login": "gitlab"}
         )
         return response
 

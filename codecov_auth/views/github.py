@@ -130,7 +130,7 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         self.remove_state(state)
         self.store_access_token_expiry_to_cookie(response)
         UserOnboardingMetricsService.create_user_onboarding_metric(
-            owner=owner.ownerid, event="INSTALLED_APP", payload={"login": "github"}
+            org_id=owner.ownerid, event="INSTALLED_APP", payload={"login": "github"}
         )
         return response
 
