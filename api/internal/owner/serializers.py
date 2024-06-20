@@ -190,6 +190,9 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     current_period_end = serializers.IntegerField()
     customer = StripeCustomerSerializer()
     collection_method = serializers.CharField()
+    tax_ids = serializers.ListField(
+        source="customer.tax_ids.data", read_only=True, allow_null=True
+    )
     trial_end = serializers.IntegerField()
 
 

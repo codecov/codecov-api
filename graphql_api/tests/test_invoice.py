@@ -69,6 +69,10 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
                             phone
                         }
                     }
+                    taxIds {
+                        type
+                        value
+                    }
                 }
             }
         }
@@ -101,6 +105,7 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
             "subtotal": 999,
             "total": 999,
             "defaultPaymentMethod": None,
+            "taxIds": [],
         }
 
     @patch("services.billing.stripe.Invoice.retrieve")
@@ -156,6 +161,10 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
                             phone
                         }
                     }
+                    taxIds {
+                        type
+                        value
+                    }
                 }
             }
         }
@@ -188,6 +197,7 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
             "subtotal": 999,
             "total": 999,
             "defaultPaymentMethod": None,
+            "taxIds": [],
         }
 
     @patch("services.billing.stripe.Invoice.retrieve")
@@ -238,6 +248,10 @@ class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
                             name
                             phone
                         }
+                    }
+                    taxIds {
+                        type
+                        value
                     }
                 }
             }

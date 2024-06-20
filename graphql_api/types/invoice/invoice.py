@@ -115,3 +115,8 @@ def resolve_invoice_default_payment_method(
     invoice: Invoice, info: GraphQLResolveInfo
 ) -> PaymentMethod | None:
     return invoice["default_payment_method"]
+
+
+@invoice_bindable.field("taxIds")
+def resolve_invoice_tax_ids(invoice: Invoice, info: GraphQLResolveInfo) -> list:
+    return invoice["customer_tax_ids"]
