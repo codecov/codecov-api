@@ -129,6 +129,10 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
             ).sign(encryptor.encode(oauth_request_token).decode())
         }
     )
+    mock_create_user_onboarding_metric = mocker.patch(
+        "shared.django_apps.codecov_metrics.service.codecov_metrics.UserOnboardingMetricsService.create_user_onboarding_metric"
+    )
+
     res = client.get(
         url,
         {"oauth_verifier": 8519288973, "oauth_token": "test1daxl4jnhegoh4"},
@@ -143,14 +147,11 @@ def test_get_bitbucket_already_token(client, settings, mocker, db, mock_redis):
     mocked_get.assert_called_with(
         "test6tl3evq7c8vuyn", "testdm61tppb5x0tam7nae3qajhcepzz", "8519288973"
     )
-    mock_create_user_onboarding_metric = mocker.patch(
-        "shared.django_apps.codecov_metrics.service.codecov_metrics.UserOnboardingMetricsService.create_user_onboarding_metric"
-    )
     owner = Owner.objects.get(username="ThiagoCodecov", service="bitbucket")
     expected_call = call(
         org_id=owner.ownerid,
         event="INSTALLED_APP",
-        payload={"login": "github"},
+        payload={"login": "bitbucket"},
     )
     assert mock_create_user_onboarding_metric.call_args_list == [expected_call]
 
