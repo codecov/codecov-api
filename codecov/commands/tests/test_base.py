@@ -10,11 +10,11 @@ from ..base import BaseCommand, BaseInteractor
 def test_base_command():
     command = BaseCommand(None, "github")
     # test command is properly init
-    assert command.current_owner == None
+    assert command.current_owner is None
     assert command.service == "github"
     # test get_interactor
     interactor = command.get_interactor(BaseInteractor)
-    assert interactor.current_owner == None
+    assert interactor.current_owner is None
     assert interactor.current_user == AnonymousUser()
     assert interactor.service == "github"
     # test get_command

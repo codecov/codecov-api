@@ -330,7 +330,7 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert (
-            response.data["files"][0]["lines"] == None
+            response.data["files"][0]["lines"] is None
         )  # None means diff was truncated
 
         comparison.MAX_DIFF_SIZE = previous_max
@@ -397,7 +397,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         response = self._get_comparison()
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["totals"]["base"] == None
+        assert response.data["totals"]["base"] is None
 
     def test_no_raw_reports_returns_404(
         self, adapter_mock, base_report_mock, head_report_mock

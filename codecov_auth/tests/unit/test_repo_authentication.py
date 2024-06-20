@@ -290,7 +290,7 @@ class TestOrgLevelTokenAuthentication(object):
         token = uuid.uuid4()
         authentication = OrgLevelTokenAuthentication()
         res = authentication.authenticate_credentials(token)
-        assert res == None
+        assert res is None
 
     @override_settings(IS_ENTERPRISE=False)
     def test_owner_has_token_but_wrong_one_sent_return_none(self, db, mocker):
@@ -305,7 +305,7 @@ class TestOrgLevelTokenAuthentication(object):
         )
         authentication = OrgLevelTokenAuthentication()
         res = authentication.authenticate(request)
-        assert res == None
+        assert res is None
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
 
     @override_settings(IS_ENTERPRISE=False)

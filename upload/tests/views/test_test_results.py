@@ -105,8 +105,8 @@ def test_upload_test_results(db, client, mocker, mock_redis):
 
 
 def test_test_results_org_token(db, client, mocker, mock_redis):
-    upload = mocker.patch.object(TaskService, "upload")
-    create_presigned_put = mocker.patch(
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
@@ -189,7 +189,7 @@ def test_test_results_no_auth(db, client, mocker, mock_redis):
 
 def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
-    create_presigned_put = mocker.patch(
+    mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
@@ -226,8 +226,8 @@ def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
 def test_update_repo_fields_when_upload_is_triggered(
     db, client, mocker, mock_redis
 ) -> None:
-    upload = mocker.patch.object(TaskService, "upload")
-    create_presigned_put = mocker.patch(
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )

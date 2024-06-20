@@ -132,7 +132,7 @@ class TestBitbucketServerWebhookHandler(APITestCase):
         assert self.pull.state == PullStates.CLOSED
 
     def test_repo_push_branch_deleted(self):
-        branch = BranchFactory(repository=self.repo, name="name-of-branch")
+        BranchFactory(repository=self.repo, name="name-of-branch")
         response = self._post_event_data(
             event=BitbucketServerWebhookEvents.REPO_REFS_CHANGED,
             data={

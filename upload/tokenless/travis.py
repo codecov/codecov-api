@@ -118,7 +118,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             )
 
         # Verify job finished within the last 4 minutes or is still in progress
-        if job["finished_at"] != None:
+        if job["finished_at"] is not None:
             finishTimestamp = job["finished_at"].replace("T", " ").replace("Z", "")
             buildFinishDateObj = datetime.strptime(finishTimestamp, "%Y-%m-%d %H:%M:%S")
             finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)

@@ -86,10 +86,8 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     def test_list_users(self, admin_owners):
         admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
 
-        other_owner = OwnerFactory()
-        other_other_owner = OwnerFactory(
-            oauth_token=None, organizations=[self.owner.ownerid]
-        )
+        OwnerFactory()
+        OwnerFactory(oauth_token=None, organizations=[self.owner.ownerid])
         activated_owner = OwnerFactory(
             oauth_token=None,
             organizations=None,
@@ -128,7 +126,7 @@ class UserViewsetAdminTestCase(UserViewsetTestCase):
     def test_list_users_filter_admin(self, admin_owners):
         admin_owners.return_value = Owner.objects.filter(pk__in=[self.current_owner.pk])
 
-        other_owner = OwnerFactory()
+        OwnerFactory()
 
         res = self.client.get(reverse("selfhosted-users-list"), {"is_admin": True})
         assert res.status_code == 200

@@ -111,7 +111,7 @@ class TestGitlabWebhookHandler(APITestCase):
 
     def test_job_event_commit_not_complete(self):
         commit_sha = "2293ada6b400935a1378653304eaf6221e0fdb8f"
-        commit = CommitFactory(
+        CommitFactory(
             author=self.repo.author,
             repository=self.repo,
             commitid=commit_sha,
@@ -535,7 +535,7 @@ class TestGitlabWebhookHandler(APITestCase):
             username=username,
             permission=[1, 2, 3, 100],
         )
-        repo = RepositoryFactory(
+        RepositoryFactory(
             author=user,
             service_id=project_id,
             active=True,

@@ -626,7 +626,7 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.branch == "test"
             assert commit.pullid == 123
             assert commit.merged == False
-            assert commit.parent_commit_id == None
+            assert commit.parent_commit_id is None
 
         with self.subTest("commit already in database"):
             G(
@@ -654,7 +654,7 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.state == "pending"
             assert commit.branch == "oranges"
             assert commit.pullid == 456
-            assert commit.merged == None
+            assert commit.merged is None
             assert commit.parent_commit_id == "different_parent_commit"
 
         with self.subTest("parent provided"):
@@ -674,8 +674,8 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.repository == repo
             assert commit.state == "pending"
             assert commit.branch == "test"
-            assert commit.pullid == None
-            assert commit.merged == None
+            assert commit.pullid is None
+            assert commit.merged is None
             assert commit.parent_commit_id == parent.commitid
 
     def test_parse_request_headers(self):
@@ -796,9 +796,7 @@ class UploadHandlerHelpersTest(TestCase):
     def test_validate_upload_per_repo_billing_invalid(self):
         redis = MockRedis()
         owner = G(Owner, plan="1m")
-        repo_already_activated = G(
-            Repository, author=owner, private=True, activated=True, active=True
-        )
+        G(Repository, author=owner, private=True, activated=True, active=True)
         repo = G(Repository, author=owner, private=True, activated=False, active=False)
         commit = G(Commit)
 
@@ -824,9 +822,7 @@ class UploadHandlerHelpersTest(TestCase):
             parent_service_id=top_subgroup.service_id,
             service="gitlab",
         )
-        repo_already_activated = G(
-            Repository, author=parent_group, private=True, activated=True, active=True
-        )
+        G(Repository, author=parent_group, private=True, activated=True, active=True)
         repo = G(Repository, author=bottom_subgroup, private=True, activated=False)
         commit = G(Commit)
 

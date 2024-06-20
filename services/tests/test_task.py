@@ -175,9 +175,7 @@ def test_backfill_repo(mocker):
 @freeze_time("2023-06-13T10:01:01.000123")
 def test_backfill_dataset(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
-    mock_route_task = mocker.patch(
-        "services.task.task.route_task", return_value={"queue": "celery"}
-    )
+    mocker.patch("services.task.task.route_task", return_value={"queue": "celery"})
     signature = MagicMock()
     signature_mock.return_value = signature
 

@@ -334,7 +334,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         )
 
     def test_get_inactive_repos(self):
-        new_repo = RepositoryFactory(author=self.org, name="C", private=False)
+        RepositoryFactory(author=self.org, name="C", private=False)
 
         response = self._list(query_params={"active": False})
         self.assertEqual(response.status_code, 200)
@@ -345,7 +345,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         )
 
     def test_get_all_repos(self):
-        new_repo = RepositoryFactory(author=self.org, name="C", private=False)
+        RepositoryFactory(author=self.org, name="C", private=False)
 
         response = self._list()
         self.assertEqual(response.status_code, 200)
@@ -356,7 +356,7 @@ class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
         )
 
     def test_get_all_repos_by_name(self):
-        new_repo = RepositoryFactory(author=self.org, name="C", private=False)
+        RepositoryFactory(author=self.org, name="C", private=False)
 
         response = self._list(query_params={"names": ["A", "B"]})
         self.assertEqual(response.status_code, 200)
@@ -740,7 +740,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         self, mocked_get_permissions
     ):
         mocked_get_permissions.return_value = True, False
-        new_default_branch = "no_write_permissions"
 
         response = self._update(data={"branch": "dev"})
         self.assertEqual(response.status_code, 403)
@@ -851,7 +850,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
                 name=str(i) + "random", author=self.org, private=True, active=True
             )
 
-        inactive_repo = RepositoryFactory(author=self.org, private=True, active=False)
+        RepositoryFactory(author=self.org, private=True, active=False)
 
         activation_data = {"active": True}
         response = self._update(data=activation_data)
@@ -970,7 +969,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
             "Attempted to delete nonexistent webhook"
         )
 
-        response = self._reset_webhook()
+        self._reset_webhook()
 
     @patch("api.internal.repo.views.delete_webhook_on_provider")
     @patch("api.internal.repo.views.create_webhook_on_provider")
@@ -981,7 +980,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
         new_webhook_id = "123"
         create_webhook_mock.return_value = new_webhook_id
 
-        response = self._reset_webhook()
+        self._reset_webhook()
 
         self.repo.refresh_from_db()
         assert self.repo.hookid == new_webhook_id
@@ -1259,7 +1258,7 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
 
         response = self._retrieve()
 
-        assert response.data["latest_commit"] == None
+        assert response.data["latest_commit"] is None
 
     def test_can_retrieve_repo_name_containing_dot(self, mocked_get_permissions):
         mocked_get_permissions.return_value = True, True

@@ -122,14 +122,14 @@ def repo_commits(
         queryset = queryset.filter(state__in=states)
 
     coverage_status = filters.get("coverage_status")
+
     if coverage_status:
-        to_be_included = []
-        for commit in queryset:
-            if (
-                commit_status(commit, CommitReport.ReportType.COVERAGE)
-                in coverage_status
-            ):
-                to_be_included.append(commit.id)
+        to_be_included = [
+            commit.id
+            for commit in queryset
+            if commit_status(commit, CommitReport.ReportType.COVERAGE)
+            in coverage_status
+        ]
         queryset = queryset.filter(id__in=to_be_included)
 
     # We need `deleted is not true` in order for the query to use the right index.

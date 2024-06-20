@@ -435,8 +435,8 @@ class AccountViewSetTests(APITestCase):
         )
         self.current_owner.organizations = [owner.ownerid]
         self.current_owner.save()
-        student_1 = OwnerFactory(organizations=[owner.ownerid], student=True)
-        student_2 = OwnerFactory(organizations=[owner.ownerid], student=True)
+        OwnerFactory(organizations=[owner.ownerid], student=True)
+        OwnerFactory(organizations=[owner.ownerid], student=True)
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
@@ -1423,7 +1423,7 @@ class AccountViewSetTests(APITestCase):
         assert not modify_customer_mock.called
         assert not coupon_create_mock.called
         assert response.status_code == status.HTTP_200_OK
-        assert response.json()["subscription_detail"]["customer"]["discount"] == None
+        assert response.json()["subscription_detail"]["customer"]["discount"] is None
 
     @patch("services.task.TaskService.delete_owner")
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):

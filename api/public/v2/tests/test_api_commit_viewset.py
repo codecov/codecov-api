@@ -91,7 +91,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
 
         author = OwnerFactory()
         repo = RepositoryFactory(author=author, private=False)
-        commit = CommitFactory(repository=repo)
+        CommitFactory(repository=repo)
 
         self.client.logout()
         response = self.client.get(

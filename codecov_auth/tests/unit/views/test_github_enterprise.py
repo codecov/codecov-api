@@ -37,7 +37,7 @@ def test_get_ghe_redirect(client, mocker, mock_redis, settings):
 
 @pytest.mark.django_db
 def test_get_ghe_redirect_with_ghpr_cookie(client, mocker, mock_redis, settings):
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )
@@ -61,7 +61,7 @@ def test_get_ghe_redirect_with_ghpr_cookie(client, mocker, mock_redis, settings)
 
 @pytest.mark.django_db
 def test_get_github_redirect_with_private_url(client, mocker, mock_redis, settings):
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )
@@ -83,7 +83,7 @@ def test_get_github_redirect_with_private_url(client, mocker, mock_redis, settin
 
 
 def test_get_ghe_already_with_code(client, mocker, db, mock_redis, settings):
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )
@@ -214,7 +214,7 @@ def test_get_ghe_already_with_code(client, mocker, db, mock_redis, settings):
 def test_get_ghe_already_with_code_github_error(
     client, mocker, db, mock_redis, settings
 ):
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )
@@ -242,7 +242,7 @@ def test_get_ghe_already_with_code_github_error(
 
 
 def test_state_not_known(client, mocker, db, mock_redis, settings):
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )
@@ -255,7 +255,7 @@ def test_state_not_known(client, mocker, db, mock_redis, settings):
 
 
 def test_get_ghe_already_with_code_with_email(client, mocker, db, mock_redis, settings):
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )
@@ -315,7 +315,7 @@ def test_get_ghe_already_with_code_with_email(client, mocker, db, mock_redis, se
 
 
 def test_get_ghe_already_owner_already_exist(client, mocker, db, mock_redis, settings):
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github_enterprise.get_config",
         side_effect=lambda *args: "https://my.githubenterprise.com",
     )

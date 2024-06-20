@@ -29,7 +29,7 @@ class ReportMixin:
     def flags(self):
         """returns dict(:name=<Flag>)"""
         flags_dict = {}
-        for sid, session in self.sessions.items():
+        for session in self.sessions.values():
             if session.flags is not None:
                 carriedforward = session.session_type.value == "carriedforward"
                 carriedforward_from = session.session_extras.get("carriedforward_from")

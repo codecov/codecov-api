@@ -71,4 +71,4 @@ class HelperMutationTest(SimpleTestCase):
             raise AttributeError()
 
         with self.assertRaises(AttributeError):
-            resolved_value = await resolver()
+            await resolver()
