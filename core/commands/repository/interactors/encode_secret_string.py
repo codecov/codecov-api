@@ -10,12 +10,20 @@ from core.models import Repository
 
 class EncodeSecretStringInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, owner: Owner, repo: Repository, value: str) -> str:
+    def execute(self, owner: Owner, repo_name: str, value: str) -> str:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
+
+        author = Owner.objects.filter(
+            username=owner.username, service=self.service
+        ).first()
+        repo = (
+            Repository.objects.viewable_repos(self.current_owner)
+            .filter(author=author, name=repo_name)
+            .first()
+        )
         if not repo:
             raise ValidationError("Repo not found")
-
         to_encode = "/".join(
             (
                 owner.service,

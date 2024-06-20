@@ -1,3 +1,8 @@
 input BundleAnalysisReportFilters {
-  moduleExtensions: [String!]
+  reportGroups: [BundleReportGroups!]
+  loadTypes: [BundleLoadTypes!]
+}
+
+input BundleAnalysisMeasurementsSetFilters {
+    assetTypes: [BundleAnalysisMeasurementsAssetType!]
 }

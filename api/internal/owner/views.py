@@ -113,8 +113,18 @@ class AccountDetailsViewSet(
         if not billing_address:
             raise ValidationError(detail="No billing_address sent")
         owner = self.get_object()
+
+        formatted_address = {
+            "line1": billing_address["line_1"],
+            "line2": billing_address["line_2"],
+            "city": billing_address["city"],
+            "state": billing_address["state"],
+            "postal_code": billing_address["postal_code"],
+            "country": billing_address["country"],
+        }
+
         billing = BillingService(requesting_user=request.current_owner)
-        billing.update_billing_address(owner, billing_address)
+        billing.update_billing_address(owner, billing_address=formatted_address)
         return Response(self.get_serializer(owner).data)
 
 

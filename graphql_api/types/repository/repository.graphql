@@ -81,7 +81,6 @@ type Repository {
     orderingDirection: OrderingDirection
   ): [ComponentMeasurements!]!
   componentsYaml(termId: String): [ComponentsYaml]!
-  encodedSecretString(value: String!): EncodedSecretString!
   testAnalyticsEnabled: Boolean
 }
 
@@ -116,10 +115,6 @@ type BranchConnection {
 type BranchEdge {
   cursor: String!
   node: Branch!
-}
-
-type EncodedSecretString {
-  value: String!
 }
 
 union RepositoryResult = Repository | NotFoundError | OwnerNotActivatedError

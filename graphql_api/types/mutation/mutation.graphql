@@ -29,4 +29,6 @@ type Mutation {
   updateRepository(input: UpdateRepositoryInput!): UpdateRepositoryPayload
   updateSelfHostedSettings(input: UpdateSelfHostedSettingsInput!): UpdateSelfHostedSettingsPayload
   regenerateRepositoryUploadToken(input: RegenerateRepositoryUploadTokenInput!): RegenerateRepositoryUploadTokenPayload
+  encodeSecretString(input: EncodeSecretStringInput!): EncodeSecretStringPayload
+  storeEventMetric(input: StoreEventMetricsInput!): StoreEventMetricsPayload
 }
