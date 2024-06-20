@@ -91,7 +91,6 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         UserOnboardingMetricsService.create_user_onboarding_metric(
             org_id=user.ownerid, event="INSTALLED_APP", payload={"login": "gitlab"}
         )
-        print("WE PAST THI")
         return response
 
     def get(self, request):
