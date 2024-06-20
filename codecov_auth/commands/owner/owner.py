@@ -15,6 +15,7 @@ from .interactors.revoke_user_token import RevokeUserTokenInteractor
 from .interactors.save_terms_agreement import SaveTermsAgreementInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.start_trial import StartTrialInteractor
+from .interactors.store_codecov_metric import StoreCodecovMetricInteractor
 from .interactors.trigger_sync import TriggerSyncInteractor
 from .interactors.update_default_organization import UpdateDefaultOrganizationInteractor
 from .interactors.update_profile import UpdateProfileInteractor
@@ -86,3 +87,10 @@ class OwnerCommands(BaseCommand):
 
     def update_self_hosted_settings(self, input) -> None:
         return self.get_interactor(UpdateSelfHostedSettingsInteractor).execute(input)
+
+    def store_codecov_metric(
+        self, org_username: str, event: str, json_string: str
+    ) -> None:
+        return self.get_interactor(StoreCodecovMetricInteractor).execute(
+            org_username, event, json_string
+        )
