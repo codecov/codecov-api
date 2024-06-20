@@ -366,7 +366,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
         data = self.gql_request(query, owner=owner)
-        assert data["owner"]["defaultOrgUsername"] == None
+        assert data["owner"]["defaultOrgUsername"] is None
 
     def test_get_default_org_username_for_owner(self):
         organization = OwnerFactory(username="sample-org", service="github")
@@ -398,7 +398,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
         data = self.gql_request(query, owner=owner)
-        assert data["owner"]["defaultOrgUsername"] == None
+        assert data["owner"]["defaultOrgUsername"] is None
 
     def test_owner_without_owner_profile_returns_no_default_org(self):
         owner = OwnerFactory(username="sample-owner", service="github")
@@ -410,7 +410,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
         data = self.gql_request(query, owner=owner)
-        assert data["owner"]["defaultOrgUsername"] == None
+        assert data["owner"]["defaultOrgUsername"] is None
 
     def test_is_current_user_not_activated(self):
         owner = OwnerFactory(username="sample-owner", service="github")

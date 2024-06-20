@@ -250,9 +250,7 @@ class TestBadgeHandler(APITestCase):
 
     def test_unknown_bagde_no_branch(self):
         gh_owner = OwnerFactory(service="github")
-        repo = RepositoryFactory(
-            author=gh_owner, active=True, private=False, name="repo1"
-        )
+        RepositoryFactory(author=gh_owner, active=True, private=False, name="repo1")
         response = self._get(
             kwargs={
                 "service": "gh",
@@ -296,7 +294,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        branch = BranchFactory(repository=repo, name="master")
+        BranchFactory(repository=repo, name="master")
         response = self._get(
             kwargs={
                 "service": "gh",
@@ -340,7 +338,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner, totals=None)
+        CommitFactory(repository=repo, author=gh_owner, totals=None)
         response = self._get(
             kwargs={
                 "service": "gh",
@@ -384,7 +382,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -435,7 +433,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -566,7 +564,7 @@ class TestBadgeHandler(APITestCase):
             name="repo1",
             image_token="12345678",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -616,7 +614,7 @@ class TestBadgeHandler(APITestCase):
             name="repo1",
             image_token="12345678",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -667,28 +665,13 @@ class TestBadgeHandler(APITestCase):
             image_token="12345678",
             branch="branch1",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         commit_2_totals = {
             "C": 0,
             "M": 0,
             "N": 0,
             "b": 0,
             "c": "95.00000",
-            "d": 0,
-            "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
-            "f": 3,
-            "h": 17,
-            "m": 3,
-            "n": 20,
-            "p": 0,
-            "s": 1,
-        }
-        commit_3_totals = {
-            "C": 0,
-            "M": 0,
-            "N": 0,
-            "b": 0,
-            "c": "80.00000",
             "d": 0,
             "diff": [1, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
             "f": 3,
@@ -760,7 +743,7 @@ class TestBadgeHandler(APITestCase):
             image_token="12345678",
             branch="branch1",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         commit_2_totals = {
             "C": 0,
             "M": 0,
@@ -779,9 +762,7 @@ class TestBadgeHandler(APITestCase):
         commit_2 = CommitFactory(
             repository=repo, author=gh_owner, totals=commit_2_totals
         )
-        branch_2 = BranchFactory(
-            repository=repo, name="branch1", head=commit_2.commitid
-        )
+        BranchFactory(repository=repo, name="branch1", head=commit_2.commitid)
         # test default precision
         response = self._get_branch(
             kwargs={
@@ -832,7 +813,7 @@ class TestBadgeHandler(APITestCase):
             image_token="12345678",
             branch="branch1",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         commit_2_totals = {
             "C": 0,
             "M": 0,
@@ -851,9 +832,7 @@ class TestBadgeHandler(APITestCase):
         commit_2 = CommitFactory(
             repository=repo, author=gh_owner, totals=commit_2_totals
         )
-        branch_2 = BranchFactory(
-            repository=repo, name="test/branch1", head=commit_2.commitid
-        )
+        BranchFactory(repository=repo, name="test/branch1", head=commit_2.commitid)
         # test default precision
         response = self._get_branch(
             kwargs={
@@ -900,7 +879,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         full_report_mock.return_value = sample_report()
 
         # test default precision
@@ -953,7 +932,7 @@ class TestBadgeHandler(APITestCase):
             name="repo1",
             branch="not-master",
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -1003,7 +982,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         full_report_mock.return_value = sample_report()
 
         # test default precision
@@ -1054,7 +1033,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         full_report_mock.return_value = sample_report()
         # test default precision
         response = self._get(
@@ -1104,7 +1083,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         full_report_mock.return_value = sample_report()
 
         # test default precision
@@ -1158,7 +1137,7 @@ class TestBadgeHandler(APITestCase):
             name="repo1",
             yaml={"coverage": {"range": [0.0, 0.8]}},
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -1209,7 +1188,7 @@ class TestBadgeHandler(APITestCase):
             name="repo1",
             yaml={"coverage": {}},
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
 
         # test default precision
         response = self._get(
@@ -1257,7 +1236,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         full_report_mock.return_value = None
 
         # test default precision
@@ -1308,7 +1287,7 @@ class TestBadgeHandler(APITestCase):
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
         )
-        commit = CommitFactory(repository=repo, author=gh_owner)
+        CommitFactory(repository=repo, author=gh_owner)
         full_report_mock.return_value = sample_report_no_flags()
 
         # test default precision

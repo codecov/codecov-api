@@ -241,7 +241,7 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
 
         try:
             repository = get_repo_with_github_actions_oidc_token(token)
-        except (ObjectDoesNotExist, PyJWTError) as e:
+        except (ObjectDoesNotExist, PyJWTError):
             return None  # continue to next auth class
 
         log.info(

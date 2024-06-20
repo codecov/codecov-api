@@ -441,13 +441,13 @@ def determine_upload_commit_to_use(upload_params, repository):
             git_commit_data = _get_git_commit_data(
                 adapter, upload_params.get("commit"), token
             )
-        except TorngitObjectNotFoundError as e:
+        except TorngitObjectNotFoundError:
             log.warning(
                 "Unable to fetch commit. Not found",
                 extra=dict(commit=upload_params.get("commit")),
             )
             return upload_params.get("commit")
-        except TorngitClientError as e:
+        except TorngitClientError:
             log.warning(
                 "Unable to fetch commit", extra=dict(commit=upload_params.get("commit"))
             )

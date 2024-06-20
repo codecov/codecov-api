@@ -144,7 +144,7 @@ class ReportServiceTest(TestCase):
     def test_build_report_from_commit_file_not_in_storage(self, read_chunks_mock):
         read_chunks_mock.side_effect = FileNotInStorageError()
         commit = CommitWithReportFactory.create(message="aaaaa", commitid="abf6d4d")
-        assert build_report_from_commit(commit) == None
+        assert build_report_from_commit(commit) is None
 
     @patch("services.archive.ArchiveService.read_chunks")
     def test_build_report_from_commit_cff_and_direct_uploads(self, read_chunks_mock):

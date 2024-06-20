@@ -262,9 +262,7 @@ class LoginMixin(object):
         ]
 
         self._check_enterprise_organizations_membership(user_dict, formatted_orgs)
-        upserted_orgs = []
-        for org in formatted_orgs:
-            upserted_orgs.append(self.get_or_create_org(org))
+        upserted_orgs = [self.get_or_create_org(org) for org in formatted_orgs]
 
         self._check_user_count_limitations(user_dict["user"])
         owner, is_new_user = self._get_or_create_owner(user_dict, request)

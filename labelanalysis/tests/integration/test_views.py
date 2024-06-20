@@ -441,14 +441,6 @@ def test_simple_label_analysis_put_labels_wrong_base_return_404(db, mocker):
     produced_object = LabelAnalysisRequest.objects.get(head_commit=commit)
     assert produced_object == label_analysis
     assert produced_object.requested_labels is None
-    expected_response_json = {
-        "base_commit": base_commit.commitid,
-        "head_commit": commit.commitid,
-        "requested_labels": ["label_1", "label_2", "label_3"],
-        "result": None,
-        "state": "created",
-        "external_id": str(produced_object.external_id),
-    }
     patch_url = reverse(
         "view_label_analysis", kwargs=dict(external_id=produced_object.external_id)
     )

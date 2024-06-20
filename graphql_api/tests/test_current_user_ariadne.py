@@ -259,7 +259,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
 
         repo_1 = RepositoryFactory(author=current_user, name="A")
         repo_2 = RepositoryFactory(author=current_user, name="B")
-        repo_3 = RepositoryFactory(author=current_user, name="C")
+        RepositoryFactory(author=current_user, name="C")
 
         with self.subTest("No ordering (defaults to order by repoid)"):
             with self.subTest("no ordering Direction"):

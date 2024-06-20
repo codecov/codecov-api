@@ -78,6 +78,6 @@ class CancelTrialInteractorTest(TransactionTestCase):
         assert current_user.trial_end_date == now
         assert current_user.trial_status == TrialStatus.EXPIRED.value
         assert current_user.plan == PlanName.BASIC_PLAN_NAME.value
-        assert current_user.plan_activated_users == None
+        assert current_user.plan_activated_users is None
         assert current_user.plan_user_count == 1
-        assert current_user.stripe_subscription_id == None
+        assert current_user.stripe_subscription_id is None

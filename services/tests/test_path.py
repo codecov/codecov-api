@@ -298,7 +298,7 @@ class TestProviderPath(TestCase):
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_provider_path_other_error(self, mock_provider_adapter):
         mock_provider_adapter.side_effect = TorngitClientGeneralError(500, None, None)
-        assert provider_path_exists("foo/bar", self.commit, self.owner) == None
+        assert provider_path_exists("foo/bar", self.commit, self.owner) is None
 
 
 @pytest.mark.usefixtures("sample_report")

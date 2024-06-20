@@ -135,12 +135,12 @@ class UploadHandler(APIView, ShelterMixin):
         try:
             repository = determine_repo_for_upload(upload_params)
             owner = repository.author
-        except ValidationError as e:
+        except ValidationError:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"
             metrics.incr("uploads.rejected", 1)
             return response
-        except MultipleObjectsReturned as e:
+        except MultipleObjectsReturned:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Found too many repos"
             metrics.incr("uploads.rejected", 1)
@@ -264,7 +264,7 @@ class UploadHandler(APIView, ShelterMixin):
                 ),
             )
 
-            headers = parse_headers(request.META, upload_params)
+            parse_headers(request.META, upload_params)
             archive_service = ArchiveService(repository)
 
             # only Shelter requests are allowed to set their own `storage_path`
