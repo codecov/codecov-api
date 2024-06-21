@@ -291,9 +291,11 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
 
         return repo, commitid
 
-    def get_branch(self, request, commitid=None):
-        if commitid:
-            commit = Commit.objects.filter(commitid=commitid).first()
+    def get_branch(self, request, repoid=None, commitid=None):
+        if repoid and commitid:
+            commit = Commit.objects.filter(
+                repository_id=repoid, commitid=commitid
+            ).first()
             if not commit:
                 raise exceptions.AuthenticationFailed(self.auth_failed_message)
             return commit.branch
@@ -311,7 +313,7 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
         if repository is None or repository.private:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
 
-        branch = self.get_branch(request, commitid)
+        branch = self.get_branch(request, repository.repoid, commitid)
 
         if (branch and ":" in branch) or request.method == "GET":
             return (
