@@ -3,7 +3,6 @@ from typing import Iterable, Mapping, Optional
 
 from django.db.models import QuerySet
 
-from codecov_auth.models import Owner
 from core.models import Repository
 from graphql_api.actions.measurements import (
     measurements_by_ids,

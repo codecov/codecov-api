@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase
 
-from codecov_auth.models import Owner, OwnerProfile
+from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import OwnerFactory, UserFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 

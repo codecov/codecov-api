@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from utils.test_utils import Client
 
 

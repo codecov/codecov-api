@@ -1,18 +1,14 @@
-import asyncio
 import logging
 from urllib.parse import urlencode, urljoin
-from uuid import uuid4
 
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.shortcuts import redirect
-from django.urls import reverse
 from django.views import View
 from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitError
 
 from codecov_auth.views.base import LoginMixin, StateMixin
-from utils.config import get_config
 
 log = logging.getLogger(__name__)
 

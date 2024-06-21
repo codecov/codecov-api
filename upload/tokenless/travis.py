@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timedelta
-from json import load
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError

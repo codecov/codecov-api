@@ -1,14 +1,12 @@
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import connection
 from django.http import Http404
 from rest_framework import exceptions
 from rest_framework.exceptions import NotFound
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from shared.reports.resources import Report
 
 import services.report as report_service
 from api.shared.mixins import RepoPropertyMixin

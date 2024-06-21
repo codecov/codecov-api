@@ -1,5 +1,4 @@
 import logging
-from dataclasses import asdict
 
 from django.db.models import F
 from django_filters import rest_framework as django_filters

@@ -1,14 +1,11 @@
 import asyncio
 import logging
 import re
-from contextlib import suppress
-from datetime import datetime
 from json import dumps
 from uuid import uuid4
 
 import minio
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import MultipleObjectsReturned
 from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils import timezone
@@ -16,7 +13,7 @@ from django.utils.decorators import classonlymethod
 from django.utils.encoding import smart_str
 from django.views import View
 from rest_framework import renderers, status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from sentry_sdk import metrics as sentry_metrics

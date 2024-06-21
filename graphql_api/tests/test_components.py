@@ -5,7 +5,6 @@ from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from shared.reports.resources import Report, ReportFile, ReportLine
-from shared.reports.types import ReportTotals
 from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory

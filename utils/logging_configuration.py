@@ -1,7 +1,7 @@
 import json
 from logging import Filter
 
-from pythonjsonlogger.jsonlogger import JsonFormatter, merge_record_extra
+from pythonjsonlogger.jsonlogger import JsonFormatter
 from sentry_sdk import Hub
 
 

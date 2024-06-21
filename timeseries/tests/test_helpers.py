@@ -11,7 +11,6 @@ from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from reports.tests.factories import RepositoryFlagFactory
 from timeseries.helpers import (
     coverage_measurements,
     fill_sparse_measurements,
@@ -19,7 +18,7 @@ from timeseries.helpers import (
     refresh_measurement_summaries,
     repository_coverage_measurements_with_fallback,
 )
-from timeseries.models import Dataset, Interval, Measurement, MeasurementName
+from timeseries.models import Dataset, Interval, MeasurementName
 from timeseries.tests.factories import DatasetFactory, MeasurementFactory
 
 

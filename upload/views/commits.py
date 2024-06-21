@@ -1,6 +1,6 @@
 import logging
 
-from rest_framework.exceptions import NotAuthenticated, ValidationError
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import ListCreateAPIView
 from sentry_sdk import metrics as sentry_metrics
 

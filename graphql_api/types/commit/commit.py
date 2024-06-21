@@ -27,7 +27,6 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.comparison.comparison import (
     MissingBaseCommit,
-    MissingBaseReport,
     MissingHeadReport,
 )
 from graphql_api.types.enums import (

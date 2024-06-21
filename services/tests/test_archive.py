@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from time import time
 from unittest.mock import patch
 
 from django.test import TestCase

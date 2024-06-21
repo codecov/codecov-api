@@ -1,13 +1,5 @@
-import pytest
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
-from codecov.commands.exceptions import (
-    NotFound,
-    Unauthenticated,
-    Unauthorized,
-    ValidationError,
-)
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 

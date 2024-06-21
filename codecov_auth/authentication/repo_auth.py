@@ -1,23 +1,16 @@
 import json
 import logging
 import re
-from datetime import datetime
-from typing import Any, List, Tuple
+from typing import List
 from uuid import UUID
 
-from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
-from django.http.request import HttpRequest
 from django.utils import timezone
 from jwt import PyJWTError
 from rest_framework import authentication, exceptions
-from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
-from rest_framework.response import Response
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.views import exception_handler
-from sentry_sdk import metrics as sentry_metrics
-from shared.metrics import metrics
-from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
 from codecov_auth.models import (
@@ -27,7 +20,6 @@ from codecov_auth.models import (
     TokenTypeChoices,
 )
 from core.models import Commit, Repository
-from services.repo_providers import RepoProviderService
 from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import get_repository_from_string
 from utils import is_uuid

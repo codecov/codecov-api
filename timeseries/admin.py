@@ -3,7 +3,6 @@ from datetime import datetime
 import django.forms as forms
 from django.conf import settings
 from django.contrib import admin, messages
-from django.db import transaction
 from django.db.models import QuerySet
 from django.shortcuts import render
 

@@ -3,7 +3,6 @@ from typing import Optional
 
 from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner
-from core.models import Repository
 from timeseries.models import MeasurementName
 
 from .interactors.activate_measurements import ActivateMeasurementsInteractor

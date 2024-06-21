@@ -3,7 +3,7 @@ from typing import Optional
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from codecov.db import sync_to_async
-from codecov_auth.models import Owner, OwnerProfile, User
+from codecov_auth.models import Owner, OwnerProfile
 from graphql_api.actions.owner import (
     get_owner_login_sessions,
     get_user_tokens,

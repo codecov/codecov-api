@@ -1,5 +1,4 @@
 from ariadne import ObjectType
-from asgiref.sync import async_to_sync
 
 from codecov.db import sync_to_async
 from core.models import Commit, Pull

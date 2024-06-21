@@ -5,12 +5,6 @@ from ariadne import ObjectType, convert_kwargs_to_snake_case
 
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from plan.constants import (
-    MonthlyUploadLimits,
-    PlanBillingRate,
-    PlanMarketingName,
-    PlanName,
-    PlanPrice,
-    TierName,
     TrialStatus,
 )
 from plan.service import PlanService

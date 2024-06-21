@@ -5,7 +5,6 @@ from django.test import TransactionTestCase
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
-import services.comparison as comparison
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory, FlagComparisonFactory

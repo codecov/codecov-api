@@ -1,8 +1,5 @@
 from typing import Optional
 
-from django.conf import settings
-
-import services.self_hosted as self_hosted
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov.db import sync_to_async

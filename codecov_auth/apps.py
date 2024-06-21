@@ -5,4 +5,4 @@ class CodecovAuthConfig(AppConfig):
     name = "codecov_auth"
 
     def ready(self):
-        import codecov_auth.signals
+        pass

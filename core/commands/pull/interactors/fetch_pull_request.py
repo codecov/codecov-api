@@ -1,6 +1,5 @@
 from codecov.commands.base import BaseInteractor
 from codecov.db import sync_to_async
-from core.models import Pull
 
 
 class FetchPullRequestInteractor(BaseInteractor):

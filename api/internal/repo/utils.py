@@ -1,4 +1,3 @@
-from django.conf import settings
 from shared.encryption.yaml_secret import yaml_secret_encryptor
 
 

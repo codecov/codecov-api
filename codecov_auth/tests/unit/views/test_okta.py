@@ -1,4 +1,3 @@
-from http.cookies import SimpleCookie
 from unittest.mock import MagicMock, patch
 
 import jwt

@@ -3,7 +3,7 @@ import uuid
 
 from django.utils import timezone
 from django_filters import rest_framework as django_filters
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, mixins, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response

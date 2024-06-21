@@ -9,7 +9,7 @@ from shared.utils.test_utils import mock_config_helper
 
 from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
-from core.models import Commit, Pull, PullStates, Repository
+from core.models import Commit, PullStates, Repository
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from webhook_handlers.constants import (
     GitLabHTTPHeaders,

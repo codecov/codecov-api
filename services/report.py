@@ -13,7 +13,7 @@ from shared.storage.exceptions import FileNotInStorageError
 from shared.utils.sessions import Session, SessionType
 
 from core.models import Commit
-from reports.models import AbstractTotals, CommitReport, ReportDetails, ReportSession
+from reports.models import AbstractTotals, CommitReport, ReportSession
 from services.archive import ArchiveService
 from utils.config import RUN_ENV
 

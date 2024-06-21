@@ -6,7 +6,7 @@ from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import CheckboxInput, Select
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.utils.html import format_html
 

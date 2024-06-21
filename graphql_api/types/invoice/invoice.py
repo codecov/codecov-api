@@ -1,6 +1,3 @@
-from functools import cached_property
-from typing import List, Optional
-
 from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 from stripe import (

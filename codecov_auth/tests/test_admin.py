@@ -17,9 +17,7 @@ from codecov_auth.tests.factories import (
 from plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
-    TrialStatus,
 )
-from utils.test_utils import APIClient
 
 
 class OwnerAdminTest(TestCase):

@@ -1,8 +1,7 @@
 from django.test import TestCase
 
 from codecov_auth.models import Owner
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory
-from core.tests.factories import PullFactory, RepositoryFactory
+from codecov_auth.tests.factories import OwnerFactory
 
 
 class OwnerManagerTests(TestCase):

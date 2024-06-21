@@ -11,7 +11,6 @@ from shared.bundle_analysis.storage import get_bucket_name
 from shared.reports.types import LineSession
 from shared.storage.memory import MemoryStorageService
 
-import services.comparison as comparison
 from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory

@@ -1,4 +1,3 @@
-import os
 from unittest.mock import call, patch
 from urllib.parse import urlencode
 
