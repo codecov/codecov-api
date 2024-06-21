@@ -512,6 +512,7 @@ class TestTokenlessAuth(object):
         if existing_commit:
             commit = CommitFactory()
             commit.branch = commit_branch
+            commit.repository = repo
             commit.save()
 
             request = APIRequestFactory().post(
