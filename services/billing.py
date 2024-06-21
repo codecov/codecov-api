@@ -397,11 +397,24 @@ class StripeService(AbstractPaymentService):
         return session["id"]
 
     @_log_stripe_error
-    def update_payment_method(self, owner, payment_method):
-        log.info(f"Stripe update payment method for owner {owner.ownerid}")
-        if owner.stripe_subscription_id is None:
-            log.info(
-                f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}"
+    def update_payment_method(self, owner: Owner, payment_method):
+        log.info(
+            "Stripe update payment method for owner",
+            extra=dict(
+                owner_id=owner.ownerid,
+                user_id=self.requesting_user.ownerid,
+                subscription_id=owner.stripe_subscription_id,
+                customer_id=owner.stripe_customer_id,
+            ),
+        )
+        if owner.stripe_subscription_id is None or owner.stripe_customer_id is None:
+            log.warn(
+                "Missing subscription or customer id, returning early",
+                extra=dict(
+                    owner_id=owner.ownerid,
+                    subscription_id=owner.stripe_subscription_id,
+                    customer_id=owner.stripe_customer_id,
+                ),
             )
             return None
         # attach the payment method + set as default on the invoice and subscription
@@ -410,8 +423,17 @@ class StripeService(AbstractPaymentService):
             owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method},
         )
+        stripe.Subscription.modify(
+            owner.stripe_subscription_id, default_payment_method=payment_method
+        )
         log.info(
-            f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            "Successfully updated payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+            extra=dict(
+                owner_id=owner.ownerid,
+                user_id=self.requesting_user.ownerid,
+                subscription_id=owner.stripe_subscription_id,
+                customer_id=owner.stripe_customer_id,
+            ),
         )
 
     @_log_stripe_error
