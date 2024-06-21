@@ -1106,7 +1106,10 @@ class StripeServiceTests(TestCase):
 
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
-    def test_update_payment_method(self, modify_customer_mock, attach_payment_mock):
+    @patch("services.billing.stripe.Subscription.modify")
+    def test_update_payment_method(
+        self, modify_sub_mock, modify_customer_mock, attach_payment_mock
+    ):
         payment_method_id = "pm_1234567"
         subscription_id = "sub_abc"
         customer_id = "cus_abc"
@@ -1119,6 +1122,10 @@ class StripeServiceTests(TestCase):
         )
         modify_customer_mock.assert_called_once_with(
             customer_id, invoice_settings={"default_payment_method": payment_method_id}
+        )
+
+        modify_sub_mock.assert_called_once_with(
+            subscription_id, default_payment_method=payment_method_id
         )
 
     def test_update_email_address_with_invalid_email(self):
