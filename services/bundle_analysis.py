@@ -21,7 +21,7 @@ from shared.storage import get_appropriate_storage_service
 from core.models import Commit, Repository
 from graphql_api.actions.measurements import (
     measurements_by_ids,
-    measurements_last_uploaded_by_before_date,
+    measurements_last_uploaded_before_start_date,
 )
 from reports.models import CommitReport
 from services.archive import ArchiveService
@@ -385,12 +385,10 @@ class BundleAnalysisMeasurementsService(object):
             branch=self.branch,
         )
 
-        print("what on earth", all_measurements)
-
         # Carry over previous available value for start date if its value is null
         for measurable_id, measurements in all_measurements.items():
             if measurements[0]["timestamp_bin"] > self.after:
-                carryover_measurement = measurements_last_uploaded_by_before_date(
+                carryover_measurement = measurements_last_uploaded_before_start_date(
                     repo_id=self.repository.repoid,
                     measurable_name=measurable_name,
                     measurable_ids=[measurable_id],
