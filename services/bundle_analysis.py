@@ -396,24 +396,22 @@ class BundleAnalysisMeasurementsService(object):
                     branch=self.branch,
                 )
 
-                # There isn't any measurements before the start date range, it will just be null
-                if not carryover_measurement:
-                    continue
-
                 # Create a new datapoint in the measurements and prepend it to the existing list
-                value = (
-                    Decimal(carryover_measurement[0]["value"])
-                    if carryover_measurement
-                    else None
-                )
-                carryover = dict(measurements[0])
-                carryover["timestamp_bin"] = self.after
-                carryover["min"] = value
-                carryover["max"] = value
-                carryover["avg"] = value
-                all_measurements[measurable_id] = [carryover] + all_measurements[
-                    measurable_id
-                ]
+                # If there isn't any measurements before the start date range, measurements will be untouched
+                if carryover_measurement:
+                    value = (
+                        Decimal(carryover_measurement[0]["value"])
+                        if carryover_measurement
+                        else None
+                    )
+                    carryover = dict(measurements[0])
+                    carryover["timestamp_bin"] = self.after
+                    carryover["min"] = value
+                    carryover["max"] = value
+                    carryover["avg"] = value
+                    all_measurements[measurable_id] = [carryover] + all_measurements[
+                        measurable_id
+                    ]
 
         return all_measurements
 
