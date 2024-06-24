@@ -51,7 +51,7 @@ class StoreEventMetricMutationTest(GraphQLTestHelper, TransactionTestCase):
         }
 
     def test_authenticated_inserts_into_db(self):
-        response = self._request(
+        self._request(
             org_username="codecov-user",
             event="VISITED_PAGE",
             json_payload='{"some-key": "some-value"}',

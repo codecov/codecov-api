@@ -46,7 +46,7 @@ class TokenlessUploadHandler(object):
         )
         try:
             return self.verifier(self.upload_params).verify()
-        except TypeError as e:
+        except TypeError:
             raise NotFound(
                 "Your CI provider is not compatible with tokenless uploads, please upload using your repository token to resolve this."
             )

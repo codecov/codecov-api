@@ -975,7 +975,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
 
         res = self._request(query)
         # it regenerates the comparison as needed
-        assert res["compareWithBase"] != None
+        assert res["compareWithBase"] is not None
 
         compute_comparisons_mock.assert_called_once
 

@@ -177,7 +177,7 @@ def test_create_report_already_exists(client, db, mocker):
         name="the_repo", author__username="codecov", author__service="github"
     )
     commit = CommitFactory(repository=repository)
-    report = CommitReport.objects.create(commit=commit, code="code")
+    CommitReport.objects.create(commit=commit, code="code")
 
     repository.save()
     client = APIClient()
@@ -401,7 +401,7 @@ def test_report_results_get_unsuccessful(client, db, mocker):
         name="the_repo", author__username="codecov", author__service="github"
     )
     commit = CommitFactory(repository=repository)
-    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    CommitReport.objects.create(commit=commit, code="code")
     repository.save()
 
     client = APIClient()

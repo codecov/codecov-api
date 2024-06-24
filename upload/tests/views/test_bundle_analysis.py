@@ -102,8 +102,8 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
 
 @pytest.mark.django_db(databases={"default", "timeseries"})
 def test_upload_bundle_analysis_org_token(db, client, mocker, mock_redis):
-    upload = mocker.patch.object(TaskService, "upload")
-    create_presigned_put = mocker.patch(
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
@@ -128,7 +128,7 @@ def test_upload_bundle_analysis_org_token(db, client, mocker, mock_redis):
 @pytest.mark.django_db(databases={"default", "timeseries"})
 def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
-    create_presigned_put = mocker.patch(
+    mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
@@ -160,7 +160,7 @@ def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
 
 def test_upload_bundle_analysis_missing_args(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
-    create_presigned_put = mocker.patch(
+    mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
@@ -196,7 +196,7 @@ def test_upload_bundle_analysis_missing_args(db, client, mocker, mock_redis):
 
 def test_upload_bundle_analysis_invalid_token(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
-    create_presigned_put = mocker.patch(
+    mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )

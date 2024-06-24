@@ -90,7 +90,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
             )
 
     def test_user_is_not_authenticated(self):
-        with pytest.raises(Unauthenticated) as e:
+        with pytest.raises(Unauthenticated):
             self.execute(
                 current_user=AnonymousUser(),
                 input={

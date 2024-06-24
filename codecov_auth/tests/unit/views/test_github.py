@@ -55,7 +55,7 @@ def test_get_github_redirect_host_override(client, mocker, mock_redis, settings)
                 return default
         return curr
 
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github.get_config",
         side_effect=fake_config,
     )

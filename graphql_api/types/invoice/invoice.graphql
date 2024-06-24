@@ -17,6 +17,7 @@ type Invoice {
   status: String
   subtotal: Float!
   total: Float!
+  taxIds: [TaxInfo]
 }
 
 type LineItem {
@@ -56,4 +57,9 @@ type Address {
   line2: String
   postalCode: String
   state: String
+}
+
+type TaxInfo {
+  type: String!
+  value: String!
 }
