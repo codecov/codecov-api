@@ -1,3 +1,4 @@
+from unittest.mock import call
 from uuid import UUID
 
 import pytest
@@ -84,7 +85,9 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     session = client.session
     session["gitlab_oauth_state"] = "abc"
     session.save()
-
+    mock_create_user_onboarding_metric = mocker.patch(
+        "shared.django_apps.codecov_metrics.service.codecov_metrics.UserOnboardingMetricsService.create_user_onboarding_metric"
+    )
     url = reverse("gitlab-login")
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gl")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
@@ -94,6 +97,14 @@ def test_get_gitlab_already_with_code(client, mocker, db, settings, mock_redis):
     assert owner.username == "ThiagoCodecov"
     assert owner.service_id == "3124507"
     assert res.url == "http://localhost:3000/gl"
+
+    expected_call = call(
+        org_id=owner.ownerid,
+        event="INSTALLED_APP",
+        payload={"login": "gitlab"},
+    )
+    assert mock_create_user_onboarding_metric.call_args_list == [expected_call]
+
     assert encryptor.decode(owner.oauth_token) == f"{access_token}: :{refresh_token}"
 
 

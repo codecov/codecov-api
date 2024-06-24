@@ -8,6 +8,9 @@ from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.shortcuts import redirect
 from django.views import View
+from shared.django_apps.codecov_metrics.service.codecov_metrics import (
+    UserOnboardingMetricsService,
+)
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitError
 
@@ -126,6 +129,9 @@ class GithubLoginView(LoginMixin, StateMixin, View):
         self.login_owner(owner, request, response)
         self.remove_state(state)
         self.store_access_token_expiry_to_cookie(response)
+        UserOnboardingMetricsService.create_user_onboarding_metric(
+            org_id=owner.ownerid, event="INSTALLED_APP", payload={"login": "github"}
+        )
         return response
 
     def get(self, request):
