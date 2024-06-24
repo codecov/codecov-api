@@ -961,8 +961,13 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
     def test_update_payment_method(
-        self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock
+        self,
+        modify_subscription_mock,
+        modify_customer_mock,
+        attach_payment_mock,
+        retrieve_subscription_mock,
     ):
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
@@ -1006,6 +1011,11 @@ class AccountViewSetTests(APITestCase):
         modify_customer_mock.assert_called_once_with(
             self.current_owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method_id},
+        )
+
+        modify_subscription_mock.assert_called_once_with(
+            self.current_owner.stripe_subscription_id,
+            default_payment_method=payment_method_id,
         )
 
     @patch("services.billing.StripeService.update_payment_method")
