@@ -2104,7 +2104,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
             "commit": self.commit.commitid,
             "orderingDirection": "ASC",
             "interval": "INTERVAL_1_DAY",
-            "after": "2024-06-06",
+            "after": "2024-06-07",
             "before": "2024-06-10",
             "branch": "feat",
             "filters": {},
@@ -2175,12 +2175,6 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                                 "avg": 456.0,
                                 "min": 456.0,
                                 "max": 456.0,
-                                "timestamp": "2024-06-06T00:00:00+00:00",
-                            },
-                            {
-                                "avg": None,
-                                "min": None,
-                                "max": None,
                                 "timestamp": "2024-06-07T00:00:00+00:00",
                             },
                             {
