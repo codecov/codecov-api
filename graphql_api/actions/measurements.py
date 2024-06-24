@@ -34,7 +34,7 @@ def measurements_by_ids(
     )
 
     # group by measurable_id
-    measurements = {}
+    measurements: Mapping[int, Iterable[dict]] = {}
     for measurement in queryset:
         measurable_id = measurement["measurable_id"]
         if measurable_id not in measurements:
@@ -42,6 +42,28 @@ def measurements_by_ids(
         measurements[measurable_id].append(measurement)
 
     return measurements
+
+
+def measurements_last_uploaded_by_before_date(
+    repo_id: int,
+    measurable_name: str,
+    measurable_ids: Iterable[str],
+    start_date: datetime,
+    branch: Optional[str] = None,
+) -> QuerySet:
+    queryset = Measurement.objects.filter(
+        repo_id=repo_id,
+        measurable_id__in=measurable_ids,
+        name=measurable_name,
+        timestamp__lt=start_date,
+    )
+
+    if branch:
+        queryset = queryset.filter(branch=branch)
+
+    return queryset.values("measurable_id", "value").annotate(
+        last_uploaded=Max("timestamp")
+    )
 
 
 def measurements_last_uploaded_by_ids(

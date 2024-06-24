@@ -18,7 +18,10 @@ from shared.bundle_analysis.models import AssetType
 from shared.storage import get_appropriate_storage_service
 
 from core.models import Commit, Repository
-from graphql_api.actions.measurements import measurements_by_ids
+from graphql_api.actions.measurements import (
+    measurements_by_ids,
+    measurements_last_uploaded_by_before_date,
+)
 from reports.models import CommitReport
 from services.archive import ArchiveService
 from timeseries.helpers import fill_sparse_measurements
@@ -79,16 +82,10 @@ class BundleAnalysisMeasurementData(object):
         raw_measurements: List[dict],
         asset_type: BundleAnalysisMeasurementsAssetType,
         asset_name: Optional[str],
-        interval: Interval,
-        after: datetime,
-        before: datetime,
     ):
         self.raw_measurements = raw_measurements
         self.measurement_type = asset_type
         self.measurement_name = asset_name
-        self.interval = interval
-        self.after = after
-        self.before = before
 
     @cached_property
     def asset_type(self) -> str:
@@ -114,9 +111,7 @@ class BundleAnalysisMeasurementData(object):
     def measurements(self) -> Iterable[Dict[str, Any]]:
         if not self.raw_measurements:
             return []
-        return fill_sparse_measurements(
-            self.raw_measurements, self.interval, self.after, self.before
-        )
+        return self.raw_measurements
 
 
 @dataclass
@@ -368,6 +363,45 @@ class BundleAnalysisMeasurementsService(object):
         self.before = before
         self.branch = branch
 
+    def _compute_measurements(
+        self, measurable_name: str, measurable_ids: List[str]
+    ) -> dict[int, Iterable[dict[Any, Any]]]:
+        all_measurements = measurements_by_ids(
+            repository=self.repository,
+            measurable_name=measurable_name,
+            measurable_ids=measurable_ids,
+            interval=self.interval,
+            after=self.after,
+            before=self.before,
+            branch=self.branch,
+        )
+        sparse_measurements = {
+            measurement_id: fill_sparse_measurements(
+                measurements=all_measurements[measurement_id],
+                interval=self.interval,
+                start_date=self.after,
+                end_date=self.before,
+            )
+            for measurement_id in all_measurements
+        }
+
+        # Carry over previous available value for start date if its value is null
+        for measurable_id, measurements in sparse_measurements.items():
+            if measurements[0]["avg"] is None:
+                carryover = measurements_last_uploaded_by_before_date(
+                    repo_id=self.repository.repoid,
+                    measurable_name=measurable_name,
+                    measurable_ids=[measurable_id],
+                    start_date=self.after,
+                    branch=self.branch,
+                )
+                value = carryover[0]["value"] if carryover else None
+                sparse_measurements[measurable_id][0]["avg"] = value
+                sparse_measurements[measurable_id][0]["min"] = value
+                sparse_measurements[measurable_id][0]["max"] = value
+
+        return sparse_measurements
+
     def compute_asset(
         self, asset_report: AssetReport
     ) -> Optional[BundleAnalysisMeasurementData]:
@@ -375,22 +409,15 @@ class BundleAnalysisMeasurementsService(object):
         if asset.asset_type != AssetType.JAVASCRIPT:
             return None
 
-        measurements = measurements_by_ids(
-            repository=self.repository,
+        measurements = self._compute_measurements(
             measurable_name=MeasurementName.BUNDLE_ANALYSIS_ASSET_SIZE.value,
             measurable_ids=[asset.uuid],
-            interval=self.interval,
-            after=self.after,
-            before=self.before,
-            branch=self.branch,
         )
+
         return BundleAnalysisMeasurementData(
             raw_measurements=list(measurements.get(asset.uuid, [])),
             asset_type=BundleAnalysisMeasurementsAssetType.JAVASCRIPT_SIZE,
             asset_name=asset.name,
-            interval=self.interval,
-            after=self.after,
-            before=self.before,
         )
 
     def compute_report(
@@ -409,26 +436,16 @@ class BundleAnalysisMeasurementsService(object):
         else:
             measurable_ids = [bundle_report.name]
 
-        measurements = measurements_by_ids(
-            repository=self.repository,
+        measurements = self._compute_measurements(
             measurable_name=asset_type.value.value,
             measurable_ids=measurable_ids,
-            interval=self.interval,
-            after=self.after,
-            before=self.before,
-            branch=self.branch,
         )
 
-        results = [
+        return [
             BundleAnalysisMeasurementData(
                 raw_measurements=list(measurements.get(measurable_id, [])),
                 asset_type=asset_type,
                 asset_name=asset_uuid_to_name_mapping.get(measurable_id, None),
-                interval=self.interval,
-                after=self.after,
-                before=self.before,
             )
             for measurable_id in measurable_ids
         ]
-
-        return results
