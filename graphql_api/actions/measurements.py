@@ -44,7 +44,7 @@ def measurements_by_ids(
     return measurements
 
 
-def measurements_last_uploaded_by_before_date(
+def measurements_last_uploaded_before_start_date(
     repo_id: int,
     measurable_name: str,
     measurable_ids: Iterable[str],
