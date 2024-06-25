@@ -1097,6 +1097,34 @@ class AccountViewSetTests(APITestCase):
         response = self.client.patch(url, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_update_billing_address_without_name(self):
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        billing_address = {
+            "line_1": "45 Fremont St.",
+            "line_2": "",
+            "city": "San Francisco",
+            "state": "CA",
+            "country": "US",
+            "postal_code": "94105",
+        }
+        data = {"billing_address": billing_address}
+        url = reverse("account_details-update-billing-address", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_update_billing_address_without_address(self):
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        data = {"name": "John Doe"}
+        url = reverse("account_details-update-billing-address", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
     @patch("services.billing.StripeService.update_billing_address")
     def test_update_billing_address_handles_stripe_error(self, stripe_mock):
         code, message = 402, "Oops, nope"
