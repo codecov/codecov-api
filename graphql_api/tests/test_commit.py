@@ -251,9 +251,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         UploadFactory(
             report=self.report, provider="travisci", state=UploadState.UPLOADED.value
         )
-        UploadFactory(
-            report=self.report, provider="travisci", state=''
-        )
+        UploadFactory(report=self.report, provider="travisci", state="")
         query = (
             query_commit
             % """
