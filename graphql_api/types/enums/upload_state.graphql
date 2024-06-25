@@ -4,5 +4,4 @@ enum UploadState {
   PROCESSED
   ERROR
   COMPLETE
-  EMPTY
 }
