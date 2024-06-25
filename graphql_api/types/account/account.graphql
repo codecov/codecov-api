@@ -1,0 +1,3 @@
+type Account {
+  OktaConfig: OktaConfig
+}
