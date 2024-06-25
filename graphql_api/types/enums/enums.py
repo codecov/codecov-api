@@ -60,7 +60,6 @@ class UploadState(enum.Enum):
     PROCESSED = "processed"
     ERROR = "error"
     COMPLETE = "complete"
-    EMPTY = ""
 
 
 class UploadType(enum.Enum):
