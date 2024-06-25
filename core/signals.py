@@ -42,6 +42,7 @@ def update_repository(sender, instance: Repository, **kwargs):
 
 @receiver(post_save, sender=Commit, dispatch_uid="shelter_sync_commit")
 def update_commit(sender, instance: Commit, **kwargs):
+    print("hehehe", instance.__dict__)
     branch = instance.branch
     if branch and ":" in branch:
         pubsub_project_id = settings.SHELTER_PUBSUB_PROJECT_ID
