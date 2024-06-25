@@ -1118,7 +1118,7 @@ class AccountViewSetTests(APITestCase):
             "service": self.current_owner.service,
             "owner_username": self.current_owner.username,
         }
-        data = {"billing_address": billing_address}
+        data = {"name": "John Doe", "billing_address": billing_address}
         url = reverse("account_details-update-billing-address", kwargs=kwargs)
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == code
@@ -1184,7 +1184,7 @@ class AccountViewSetTests(APITestCase):
             "service": self.current_owner.service,
             "owner_username": self.current_owner.username,
         }
-        data = {"billing_address": billing_address}
+        data = {"name": "John Doe", "billing_address": billing_address}
         url = reverse("account_details-update-billing-address", kwargs=kwargs)
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == status.HTTP_200_OK

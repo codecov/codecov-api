@@ -109,6 +109,9 @@ class AccountDetailsViewSet(
     @action(detail=False, methods=["patch"])
     @stripe_safe
     def update_billing_address(self, request, *args, **kwargs):
+        name = request.data.get("name")
+        if not name:
+            raise ValidationError(detail="No name sent")
         billing_address = request.data.get("billing_address")
         if not billing_address:
             raise ValidationError(detail="No billing_address sent")
@@ -124,7 +127,7 @@ class AccountDetailsViewSet(
         }
 
         billing = BillingService(requesting_user=request.current_owner)
-        billing.update_billing_address(owner, billing_address=formatted_address)
+        billing.update_billing_address(owner, name, billing_address=formatted_address)
         return Response(self.get_serializer(owner).data)
 
 
