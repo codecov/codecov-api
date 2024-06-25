@@ -127,7 +127,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = 20
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.deleted",
                 "data": {
@@ -143,8 +143,8 @@ class StripeWebhookHandlerTests(APITestCase):
 
         assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 1
-        assert self.owner.plan_activated_users == None
-        assert self.owner.stripe_subscription_id == None
+        assert self.owner.plan_activated_users is None
+        assert self.owner.stripe_subscription_id is None
 
     def test_customer_subscription_deleted_deactivates_all_repos(self):
         RepositoryFactory(author=self.owner, activated=True, active=True)
@@ -155,7 +155,7 @@ class StripeWebhookHandlerTests(APITestCase):
             self.owner.repository_set.filter(activated=True, active=True).count() == 3
         )
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.deleted",
                 "data": {
@@ -196,7 +196,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
     def test_customer_created_logs_and_doesnt_crash(self):
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.created",
                 "data": {"object": {"id": "FOEKDCDEQ", "email": "test@email.com"}},
@@ -224,8 +224,8 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.stripe_subscription_id == None
-        assert self.owner.stripe_customer_id == None
+        assert self.owner.stripe_subscription_id is None
+        assert self.owner.stripe_customer_id is None
 
     def test_customer_subscription_created_does_nothing_if_plan_not_paid_user_plan(
         self,
@@ -234,7 +234,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.stripe_customer_id = None
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.created",
                 "data": {
@@ -250,8 +250,8 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.stripe_subscription_id == None
-        assert self.owner.stripe_customer_id == None
+        assert self.owner.stripe_subscription_id is None
+        assert self.owner.stripe_customer_id is None
 
     def test_customer_subscription_created_sets_plan_info(self):
         self.owner.stripe_subscription_id = None
@@ -294,10 +294,9 @@ class StripeWebhookHandlerTests(APITestCase):
     ):
         stripe_subscription_id = "FOEKDCDEQ"
         stripe_customer_id = "sdo050493"
-        plan_name = "users-pr-inappy"
         quantity = 20
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.created",
                 "data": {
@@ -357,7 +356,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_auto_activate = False
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.updated",
                 "data": {
@@ -395,7 +394,7 @@ class StripeWebhookHandlerTests(APITestCase):
         RepositoryFactory(author=self.owner, activated=True, active=True)
         assert self.owner.repository_set.count() == 3
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.updated",
                 "data": {
@@ -419,7 +418,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_auto_activate == False
-        assert self.owner.stripe_subscription_id == None
+        assert self.owner.stripe_subscription_id is None
         assert (
             self.owner.repository_set.filter(active=True, activated=True).count() == 0
         )
@@ -572,7 +571,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
         expected_id = "fhjtwoo40"
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "checkout.session.completed",
                 "data": {
@@ -590,7 +589,7 @@ class StripeWebhookHandlerTests(APITestCase):
     @patch("billing.views.stripe.Subscription.modify")
     def test_customer_update_but_not_payment_method(self, subscription_modify_mock):
         payment_method = "pm_123"
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.updated",
                 "data": {
@@ -610,7 +609,7 @@ class StripeWebhookHandlerTests(APITestCase):
     def test_customer_update_payment_method(self, subscription_modify_mock):
         payment_method = "pm_123"
         old_payment_method = "pm_321"
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.updated",
                 "data": {

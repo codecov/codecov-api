@@ -19,6 +19,7 @@ from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import metrics
 from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
+from codecov_auth.authentication.helpers import get_upload_info_from_request_path
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
 from codecov_auth.models import (
     OrganizationLevelToken,
@@ -181,40 +182,37 @@ class GlobalTokenAuthentication(authentication.TokenAuthentication):
     def authenticate(self, request):
         global_tokens = get_global_tokens()
         token = self.get_token(request)
-        repoid = self.get_repoid(request)
-        owner = self.get_owner(request)
-        using_global_token = True if token in global_tokens else False
-        service = global_tokens[token] if using_global_token else None
-
-        if using_global_token:
-            try:
-                repository = Repository.objects.get(
-                    author__service=service,
-                    repoid=repoid,
-                    author__username=owner.username,
-                )
-            except ObjectDoesNotExist:
-                raise exceptions.AuthenticationFailed(
-                    "Could not find a repository, try using repo upload token"
-                )
-        else:
+        using_global_token = token in global_tokens
+        if not using_global_token:
             return None  # continue to next auth class
+
+        service = global_tokens[token]
+        upload_info = get_upload_info_from_request_path(request)
+        if upload_info is None:
+            return None  # continue to next auth class
+        # It's important NOT to use the service returned in upload_info
+        # To avoid someone uploading with GlobalUploadToken to a different service
+        # Than what it configured
+        repository = get_repository_from_string(
+            Service(service), upload_info.encoded_slug
+        )
+        if repository is None:
+            raise exceptions.AuthenticationFailed(
+                "Could not find a repository, try using repo upload token"
+            )
         return (
             RepositoryAsUser(repository),
             LegacyTokenRepositoryAuth(repository, {"token": token}),
         )
 
-    def get_token(self, request):
-        # TODO
-        pass
-
-    def get_repoid(self, request):
-        # TODO
-        pass
-
-    def get_owner(self, request):
-        # TODO
-        pass
+    def get_token(self, request: HttpRequest) -> str | None:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return None
+        if " " in auth_header:
+            _, token = auth_header.split(" ", 1)
+            return token
+        return auth_header
 
 
 class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
@@ -241,7 +239,7 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
 
         try:
             repository = get_repo_with_github_actions_oidc_token(token)
-        except (ObjectDoesNotExist, PyJWTError) as e:
+        except (ObjectDoesNotExist, PyJWTError):
             return None  # continue to next auth class
 
         log.info(
@@ -260,22 +258,13 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
     auth_failed_message = "Not valid tokenless upload"
 
     def _get_info_from_request_path(
-        self, request
-    ) -> tuple[Repository, str | None] | None:
-        path_info = request.get_full_path_info()
-        # The repo part comes from https://stackoverflow.com/a/22312124
-        upload_views_prefix_regex = (
-            r"\/upload\/(\w+)\/([\w\.@:_/\-~]+)\/commits(?:\/([a-f0-9]{40}))?"
-        )
-        match = re.search(upload_views_prefix_regex, path_info)
+        self, request: HttpRequest
+    ) -> tuple[Repository, str | None]:
+        upload_info = get_upload_info_from_request_path(request)
 
-        if match is None:
+        if upload_info is None:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
-
-        service = match.group(1)
-        encoded_slug = match.group(2)
-        commitid = match.group(3)
-
+        service, encoded_slug, commitid = upload_info
         # Validate provider
         try:
             service_enum = Service(service)

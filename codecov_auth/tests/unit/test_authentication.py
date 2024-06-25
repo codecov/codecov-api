@@ -103,7 +103,7 @@ class SuperTokenAuthenticationTests(TestCase):
 
         authenticator = SuperTokenAuthentication()
         result = authenticator.authenticate(request)
-        assert result == None
+        assert result is None
 
     def test_bearer_token_default_token_envar(self):
         super_token = "0ae68e58-79f8-4341-9531-55aada05a251"
@@ -111,7 +111,7 @@ class SuperTokenAuthenticationTests(TestCase):
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
         result = authenticator.authenticate(request)
-        assert result == None
+        assert result is None
 
     def test_bearer_token_default_token_envar_and_same_string_as_header(self):
         super_token = settings.SUPER_API_TOKEN

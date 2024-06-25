@@ -8,6 +8,9 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views import View
+from shared.django_apps.codecov_metrics.service.codecov_metrics import (
+    UserOnboardingMetricsService,
+)
 from shared.torngit import Gitlab
 from shared.torngit.exceptions import TorngitError
 
@@ -85,6 +88,9 @@ class GitlabLoginView(LoginMixin, StateMixin, View):
         response = redirect(redirection_url)
         self.login_owner(user, request, response)
         self.remove_state(state, delay=5)
+        UserOnboardingMetricsService.create_user_onboarding_metric(
+            org_id=user.ownerid, event="INSTALLED_APP", payload={"login": "gitlab"}
+        )
         return response
 
     def get(self, request):

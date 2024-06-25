@@ -190,6 +190,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": "sub_sched_456",
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -244,6 +245,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -283,6 +285,7 @@ class AccountViewSetTests(APITestCase):
             "schedule_id": "sub_sched_456678999",
             "collection_method": "charge_automatically",
             "trial_end": 1633512445,
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -344,6 +347,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": 1633512445,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -381,6 +385,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -415,6 +420,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -435,8 +441,8 @@ class AccountViewSetTests(APITestCase):
         )
         self.current_owner.organizations = [owner.ownerid]
         self.current_owner.save()
-        student_1 = OwnerFactory(organizations=[owner.ownerid], student=True)
-        student_2 = OwnerFactory(organizations=[owner.ownerid], student=True)
+        OwnerFactory(organizations=[owner.ownerid], student=True)
+        OwnerFactory(organizations=[owner.ownerid], student=True)
         response = self._retrieve(
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
@@ -563,6 +569,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_subscription.return_value = MockSubscription(subscription_params)
@@ -588,6 +595,7 @@ class AccountViewSetTests(APITestCase):
             "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
             "collection_method": "charge_automatically",
             "trial_end": None,
+            "tax_ids": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -714,6 +722,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -952,8 +961,13 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
     def test_update_payment_method(
-        self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock
+        self,
+        modify_subscription_mock,
+        modify_customer_mock,
+        attach_payment_mock,
+        retrieve_subscription_mock,
     ):
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
@@ -977,6 +991,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -996,6 +1011,11 @@ class AccountViewSetTests(APITestCase):
         modify_customer_mock.assert_called_once_with(
             self.current_owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method_id},
+        )
+
+        modify_subscription_mock.assert_called_once_with(
+            self.current_owner.stripe_subscription_id,
+            default_payment_method=payment_method_id,
         )
 
     @patch("services.billing.StripeService.update_payment_method")
@@ -1155,6 +1175,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_sub_mock.return_value = MockSubscription(subscription_params)
@@ -1363,6 +1384,7 @@ class AccountViewSetTests(APITestCase):
                 "duration_in_months": 6,
                 "created": int(datetime(2023, 1, 1, 0, 0, 0).timestamp()),
             },
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -1408,6 +1430,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -1423,7 +1446,7 @@ class AccountViewSetTests(APITestCase):
         assert not modify_customer_mock.called
         assert not coupon_create_mock.called
         assert response.status_code == status.HTTP_200_OK
-        assert response.json()["subscription_detail"]["customer"]["discount"] == None
+        assert response.json()["subscription_detail"]["customer"]["discount"] is None
 
     @patch("services.task.TaskService.delete_owner")
     def test_destroy_triggers_delete_owner_task(self, delete_owner_mock):

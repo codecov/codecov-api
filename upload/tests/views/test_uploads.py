@@ -76,7 +76,7 @@ def test_uploads_get_not_allowed(client, db, mocker):
     repository = RepositoryFactory(
         name="the-repo", author__username="codecov", author__service="github"
     )
-    commit = CommitFactory(repository=repository, commitid="commit-sha")
+    CommitFactory(repository=repository, commitid="commit-sha")
     owner = repository.author
     client = APIClient()
     client.force_authenticate(user=owner)
@@ -568,7 +568,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
-    upload_task_mock = mocker.patch(
+    mocker.patch(
         "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
     mock_sentry_metrics = mocker.patch("upload.views.uploads.sentry_metrics.incr")
@@ -637,7 +637,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
         report_id=commit_report.id, upload_extras={"format_version": "v1"}
     ).first()
     assert response.status_code == 201
-    archive_service = ArchiveService(repository)
+    ArchiveService(repository)
     assert upload.storage_path == "shelter/test/path.txt"
     presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
 

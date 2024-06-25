@@ -390,7 +390,7 @@ redis==4.4.4
     #   shared
 regex==2023.12.25
     # via -r requirements.in
-requests==2.31.0
+requests==2.32.3
     # via
     #   -r requirements.in
     #   analytics-python
@@ -411,7 +411,7 @@ sentry-sdk[celery]==1.44.1
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/ab7b235c720c9a018271768e5bb9745ed18b01f8.tar.gz
+shared @ https://github.com/codecov/shared/archive/a6676d38943592827eb2576f02b81f0ff586ab70.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in

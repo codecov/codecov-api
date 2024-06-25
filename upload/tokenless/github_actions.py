@@ -93,7 +93,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             or build["slug"] != f"{owner}/{repo}"
             or (
                 build["commit_sha"] != self.upload_params.get("commit")
-                and self.upload_params.get("pr") == None
+                and self.upload_params.get("pr") is None
             )
         ):
             self.log_warning(

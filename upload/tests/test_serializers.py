@@ -18,10 +18,10 @@ from upload.serializers import (
 
 
 def get_fake_upload():
-    user_with_no_uplaods = OwnerFactory()
-    user_with_uplaods = OwnerFactory()
-    repo = RepositoryFactory.create(author=user_with_uplaods, private=True)
-    public_repo = RepositoryFactory.create(author=user_with_uplaods, private=False)
+    OwnerFactory()
+    user_with_uploads = OwnerFactory()
+    repo = RepositoryFactory.create(author=user_with_uploads, private=True)
+    RepositoryFactory.create(author=user_with_uploads, private=False)
     commit = CommitFactory.create(repository=repo)
     report = CommitReportFactory.create(commit=commit)
 

@@ -380,7 +380,7 @@ class TestCompareFlagsView(InternalAPITest):
         diff_totals_mock.return_value = ReportTotals()
 
         # should not crash
-        response = self._get_compare_flags(
+        self._get_compare_flags(
             kwargs={
                 "service": self.repo.author.service,
                 "owner_username": self.repo.author.username,

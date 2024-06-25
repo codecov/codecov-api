@@ -29,11 +29,11 @@ class DecodeStateTests(TestCase):
     @override_settings(SENTRY_JWT_SHARED_SECRET="wrong")
     def test_decode_state_wrong_secret(self):
         res = decode_state(self.state)
-        assert res == None
+        assert res is None
 
     def test_decode_state_malformed(self):
         res = decode_state("malformed")
-        assert res == None
+        assert res is None
 
 
 class SaveSentryStateTests(TransactionTestCase):
@@ -70,8 +70,8 @@ class SaveSentryStateTests(TransactionTestCase):
             save_sentry_state(self.owner, MagicMock())
 
         self.owner.refresh_from_db()
-        assert self.owner.sentry_user_id == None
-        assert self.owner.sentry_user_data == None
+        assert self.owner.sentry_user_id is None
+        assert self.owner.sentry_user_data is None
 
     def test_save_sentry_state_duplicate_user_id(self):
         OwnerFactory(sentry_user_id="sentry-user-id")
@@ -79,8 +79,8 @@ class SaveSentryStateTests(TransactionTestCase):
             save_sentry_state(self.owner, MagicMock())
 
         self.owner.refresh_from_db()
-        assert self.owner.sentry_user_id == None
-        assert self.owner.sentry_user_data == None
+        assert self.owner.sentry_user_id is None
+        assert self.owner.sentry_user_data is None
 
 
 class IsSentryUserTests(TestCase):

@@ -37,14 +37,14 @@ def resolve_author(pull, info):
 
 @pull_bindable.field("head")
 def resolve_head(pull, info):
-    if pull.head == None:
+    if pull.head is None:
         return None
     return CommitLoader.loader(info, pull.repository_id).load(pull.head)
 
 
 @pull_bindable.field("comparedTo")
 def resolve_base(pull, info):
-    if pull.compared_to == None:
+    if pull.compared_to is None:
         return None
     return CommitLoader.loader(info, pull.repository_id).load(pull.compared_to)
 

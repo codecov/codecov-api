@@ -105,7 +105,7 @@ class TestBitbucketWebhookHandler(APITestCase):
         assert self.pull.state == PullStates.CLOSED
 
     def test_repo_push_branch_deleted(self):
-        branch = BranchFactory(repository=self.repo, name="name-of-branch")
+        BranchFactory(repository=self.repo, name="name-of-branch")
         response = self._post_event_data(
             event=BitbucketWebhookEvents.REPO_PUSH,
             data={
@@ -284,7 +284,7 @@ class TestBitbucketWebhookHandler(APITestCase):
 
     def test_repo_commit_status_change_commit_skip_processing(self):
         commitid = "9fec847784abb10b2fa567ee63b85bd238955d0e"
-        commit = CommitFactory(
+        CommitFactory(
             commitid=commitid, repository=self.repo, state=Commit.CommitStates.PENDING
         )
         response = self._post_event_data(
@@ -318,7 +318,7 @@ class TestBitbucketWebhookHandler(APITestCase):
     @patch("services.task.TaskService.notify")
     def test_repo_commit_status_change_commit_notifies(self, notify_mock):
         commitid = "9fec847784abb10b2fa567ee63b85bd238955d0e"
-        commit = CommitFactory(
+        CommitFactory(
             commitid=commitid, repository=self.repo, state=Commit.CommitStates.COMPLETE
         )
         response = self._post_event_data(

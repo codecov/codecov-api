@@ -193,5 +193,5 @@ class TestUserIsAdminPermissions(TestCase):
         org = OwnerFactory()
         user = OwnerFactory()
 
-        with self.assertRaises(APIException) as e:
+        with self.assertRaises(APIException):
             self.permissions_class._is_admin_on_provider(user, org)

@@ -89,7 +89,7 @@ class MockLines(object):
 
 class MockReport(object):
     def get(self, file, _else):
-        lines = MockLines()
+        MockLines()
         return MockLines()
 
     def filter(self, **kwargs):
@@ -161,23 +161,22 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         self.repo_2 = RepositoryFactory(
             author=self.org, name="test-repo", private=False
         )
-        commits_in_db = [
-            CommitFactory(
-                repository=self.repo_2,
-                commitid=123,
-                timestamp=datetime.today() - timedelta(days=3),
-            ),
-            CommitFactory(
-                repository=self.repo_2,
-                commitid=456,
-                timestamp=datetime.today() - timedelta(days=1),
-            ),
-            CommitFactory(
-                repository=self.repo_2,
-                commitid=789,
-                timestamp=datetime.today() - timedelta(days=2),
-            ),
-        ]
+
+        CommitFactory(
+            repository=self.repo_2,
+            commitid=123,
+            timestamp=datetime.today() - timedelta(days=3),
+        )
+        CommitFactory(
+            repository=self.repo_2,
+            commitid=456,
+            timestamp=datetime.today() - timedelta(days=1),
+        )
+        CommitFactory(
+            repository=self.repo_2,
+            commitid=789,
+            timestamp=datetime.today() - timedelta(days=2),
+        )
 
         variables = {"org": self.org.username, "repo": self.repo_2.name}
         data = self.gql_request(query, variables=variables)
@@ -208,7 +207,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["parent"] == None
+        assert commit["parent"] is None
 
     def test_fetch_commit_coverage(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
@@ -240,16 +239,16 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         ]
 
     def test_fetch_commit_uploads_state(self):
-        session_one = UploadFactory(
+        UploadFactory(
             report=self.report, provider="circleci", state=UploadState.PROCESSED.value
         )
-        session_two = UploadFactory(
+        UploadFactory(
             report=self.report, provider="travisci", state=UploadState.ERROR.value
         )
-        session_three = UploadFactory(
+        UploadFactory(
             report=self.report, provider="travisci", state=UploadState.COMPLETE.value
         )
-        session_four = UploadFactory(
+        UploadFactory(
             report=self.report, provider="travisci", state=UploadState.UPLOADED.value
         )
         query = (
@@ -320,7 +319,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             order_number=4,
         )
         UploadFlagMembershipFactory(report_session=session_e, flag=flag_d)
-        session_f = UploadFactory(
+        UploadFactory(
             report=self.report,
             upload_type=UploadType.UPLOADED.value,
             order_number=5,
@@ -400,10 +399,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         session = UploadFactory(
             report=self.report, provider="circleci", state=UploadState.ERROR.value
         )
-        error_one = UploadErrorFactory(
+        UploadErrorFactory(
             report_session=session, error_code=UploadErrorEnum.REPORT_EXPIRED.value
         )
-        error_two = UploadErrorFactory(
+        UploadErrorFactory(
             report_session=session, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
         )
 
@@ -459,7 +458,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["repository"]["commit"]["yamlState"] == "DEFAULT"
 
     def test_fetch_commit_ci(self):
-        session_one = UploadFactory(
+        UploadFactory(
             report=self.report,
             provider="circleci",
             job_code=123,
@@ -1380,7 +1379,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"]["changeCoverage"] == None
+        assert commit["compareWithParent"]["changeCoverage"] is None
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
@@ -1588,8 +1587,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["coverageStatus"] == None
-        assert commit["bundleStatus"] == None
+        assert commit["coverageStatus"] is None
+        assert commit["bundleStatus"] is None
 
     def test_fetch_commit_status_no_sessions(self):
         CommitReportFactory(
@@ -1612,8 +1611,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["coverageStatus"] == None
-        assert commit["bundleStatus"] == None
+        assert commit["coverageStatus"] is None
+        assert commit["bundleStatus"] is None
 
     def test_fetch_commit_status_completed(self):
         coverage_report = CommitReportFactory(

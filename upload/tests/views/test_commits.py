@@ -33,7 +33,7 @@ def test_get_repo_with_invalid_service():
 
 def test_get_repo_not_found(db):
     # Making sure that owner has different repos and getting none when the name of the repo isn't correct
-    repository = RepositoryFactory(
+    RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
     upload_views = CommitViews()

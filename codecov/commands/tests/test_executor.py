@@ -16,11 +16,11 @@ def test_get_executor_from_request():
     request.user = AnonymousUser()
     executor = get_executor_from_request(request)
     assert executor.service == "github"
-    assert executor.current_owner == None
+    assert executor.current_owner is None
 
 
 def test_get_executor_from_command():
     command = OwnerCommands(None, "github")
     executor = get_executor_from_command(command)
     assert executor.service == "github"
-    assert executor.current_owner == None
+    assert executor.current_owner is None
