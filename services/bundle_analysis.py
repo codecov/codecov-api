@@ -2,6 +2,7 @@ import enum
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional
 
 from django.utils.functional import cached_property
@@ -18,7 +19,10 @@ from shared.bundle_analysis.models import AssetType
 from shared.storage import get_appropriate_storage_service
 
 from core.models import Commit, Repository
-from graphql_api.actions.measurements import measurements_by_ids
+from graphql_api.actions.measurements import (
+    measurements_by_ids,
+    measurements_last_uploaded_before_start_date,
+)
 from reports.models import CommitReport
 from services.archive import ArchiveService
 from timeseries.helpers import fill_sparse_measurements
@@ -367,6 +371,45 @@ class BundleAnalysisMeasurementsService(object):
         self.before = before
         self.branch = branch
 
+    def _compute_measurements(
+        self, measurable_name: str, measurable_ids: List[str]
+    ) -> dict[int, Iterable[dict[Any, Any]]]:
+        all_measurements = measurements_by_ids(
+            repository=self.repository,
+            measurable_name=measurable_name,
+            measurable_ids=measurable_ids,
+            interval=self.interval,
+            after=self.after,
+            before=self.before,
+            branch=self.branch,
+        )
+
+        # Carry over previous available value for start date if its value is null
+        for measurable_id, measurements in all_measurements.items():
+            if measurements[0]["timestamp_bin"] > self.after:
+                carryover_measurement = measurements_last_uploaded_before_start_date(
+                    repo_id=self.repository.repoid,
+                    measurable_name=measurable_name,
+                    measurable_ids=[measurable_id],
+                    start_date=self.after,
+                    branch=self.branch,
+                )
+
+                # Create a new datapoint in the measurements and prepend it to the existing list
+                # If there isn't any measurements before the start date range, measurements will be untouched
+                if carryover_measurement:
+                    value = Decimal(carryover_measurement[0]["value"])
+                    carryover = dict(measurements[0])
+                    carryover["timestamp_bin"] = self.after
+                    carryover["min"] = value
+                    carryover["max"] = value
+                    carryover["avg"] = value
+                    all_measurements[measurable_id] = [carryover] + all_measurements[
+                        measurable_id
+                    ]
+
+        return all_measurements
+
     def compute_asset(
         self, asset_report: AssetReport
     ) -> Optional[BundleAnalysisMeasurementData]:
@@ -374,15 +417,11 @@ class BundleAnalysisMeasurementsService(object):
         if asset.asset_type != AssetType.JAVASCRIPT:
             return None
 
-        measurements = measurements_by_ids(
-            repository=self.repository,
+        measurements = self._compute_measurements(
             measurable_name=MeasurementName.BUNDLE_ANALYSIS_ASSET_SIZE.value,
             measurable_ids=[asset.uuid],
-            interval=self.interval,
-            after=self.after,
-            before=self.before,
-            branch=self.branch,
         )
+
         return BundleAnalysisMeasurementData(
             raw_measurements=list(measurements.get(asset.uuid, [])),
             asset_type=BundleAnalysisMeasurementsAssetType.JAVASCRIPT_SIZE,
@@ -408,17 +447,12 @@ class BundleAnalysisMeasurementsService(object):
         else:
             measurable_ids = [bundle_report.name]
 
-        measurements = measurements_by_ids(
-            repository=self.repository,
+        measurements = self._compute_measurements(
             measurable_name=asset_type.value.value,
             measurable_ids=measurable_ids,
-            interval=self.interval,
-            after=self.after,
-            before=self.before,
-            branch=self.branch,
         )
 
-        results = [
+        return [
             BundleAnalysisMeasurementData(
                 raw_measurements=list(measurements.get(measurable_id, [])),
                 asset_type=asset_type,
@@ -429,5 +463,3 @@ class BundleAnalysisMeasurementsService(object):
             )
             for measurable_id in measurable_ids
         ]
-
-        return results
