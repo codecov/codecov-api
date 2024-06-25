@@ -399,11 +399,7 @@ class BundleAnalysisMeasurementsService(object):
                 # Create a new datapoint in the measurements and prepend it to the existing list
                 # If there isn't any measurements before the start date range, measurements will be untouched
                 if carryover_measurement:
-                    value = (
-                        Decimal(carryover_measurement[0]["value"])
-                        if carryover_measurement
-                        else None
-                    )
+                    value = Decimal(carryover_measurement[0]["value"])
                     carryover = dict(measurements[0])
                     carryover["timestamp_bin"] = self.after
                     carryover["min"] = value
