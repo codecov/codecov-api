@@ -22,7 +22,7 @@ enum BundleLoadTypes {
 }
 
 type BundleSize {
-  gzip: Int!
+  gzip: Int
   uncompress: Int!
 }
 

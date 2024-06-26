@@ -103,14 +103,14 @@ class BundleAnalysisMeasurementData(object):
         return self.measurement_name
 
     @cached_property
-    def size(self) -> Optional["BundleData"]:
+    def size(self) -> Optional["BundleDataDeprecated"]:
         if len(self.raw_measurements) > 0:
-            return BundleData(self.raw_measurements[-1]["avg"])
+            return BundleDataDeprecated(self.raw_measurements[-1]["avg"])
 
     @cached_property
-    def change(self) -> Optional["BundleData"]:
+    def change(self) -> Optional["BundleDataDeprecated"]:
         if len(self.raw_measurements) > 1:
-            return BundleData(
+            return BundleDataDeprecated(
                 self.raw_measurements[-1]["avg"] - self.raw_measurements[0]["avg"]
             )
 
@@ -146,17 +146,36 @@ class BundleSize:
     Value in Bytes
     """
 
-    # Compression ratio compared to uncompressed size
-    GZIP = 0.001
-    UNCOMPRESS = 1.0
-
-    # Computed size in bytes
-    gzip: int
+    gzip: Optional[int]
     uncompress: int
 
 
-@dataclass
 class BundleData:
+    def __init__(self, size_in_bytes: int, gzip_size_in_bytes: Optional[int] = None):
+        self.size_in_bytes = size_in_bytes
+        self.size_in_bits = size_in_bytes * 8
+        self.gzip_size_in_bytes = gzip_size_in_bytes
+
+    @cached_property
+    def size(self) -> BundleSize:
+        return BundleSize(
+            gzip=self.gzip_size_in_bytes,
+            uncompress=self.size_in_bytes,
+        )
+
+    @cached_property
+    def load_time(self) -> BundleLoadTime:
+        return BundleLoadTime(
+            three_g=int((self.size_in_bits / BundleLoadTime.THREE_G_SPEED) * 1000),
+            high_speed=int((self.size_in_bits / BundleLoadTime.HIGH_SPEED) * 1000),
+        )
+
+
+# TODO: This will be replaced in the near future when we don't want to guess gzip size
+# for anything anymore. If we don't know the gzip value will just be null.
+# This will be replaced by the new BundleData (currently only used by assets' sizes)
+@dataclass
+class BundleDataDeprecated:
     def __init__(self, size_in_bytes: int):
         self.size_in_bytes = size_in_bytes
         self.size_in_bits = size_in_bytes * 8
@@ -164,8 +183,8 @@ class BundleData:
     @cached_property
     def size(self) -> BundleSize:
         return BundleSize(
-            gzip=int(float(self.size_in_bytes) * BundleSize.GZIP),
-            uncompress=int(float(self.size_in_bytes) * BundleSize.UNCOMPRESS),
+            gzip=int(float(self.size_in_bytes) * 0.001),
+            uncompress=self.size_in_bytes,
         )
 
     @cached_property
@@ -215,6 +234,10 @@ class AssetReport(object):
     @cached_property
     def size_total(self) -> int:
         return self.asset.size
+
+    @cached_property
+    def gzip_size_total(self) -> int:
+        return self.asset.gzip_size
 
     @cached_property
     def modules(self) -> List[ModuleReport]:

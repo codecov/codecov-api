@@ -12,6 +12,7 @@ from services.bundle_analysis import (
     BundleAnalysisMeasurementsAssetType,
     BundleAnalysisMeasurementsService,
     BundleData,
+    BundleDataDeprecated,
     BundleLoadTime,
     BundleReport,
     BundleSize,
@@ -30,14 +31,14 @@ bundle_report_bindable = ObjectType("BundleReport")
 
 @bundle_data_bindable.field("size")
 def resolve_bundle_size(
-    bundle_data: BundleData, info: GraphQLResolveInfo
+    bundle_data: BundleDataDeprecated, info: GraphQLResolveInfo
 ) -> BundleSize:
     return bundle_data.size
 
 
 @bundle_data_bindable.field("loadTime")
 def resolve_bundle_load_time(
-    bundle_data: BundleData, info: GraphQLResolveInfo
+    bundle_data: BundleDataDeprecated, info: GraphQLResolveInfo
 ) -> BundleLoadTime:
     return bundle_data.load_time
 
@@ -55,8 +56,8 @@ def resolve_bundle_module_name(
 @bundle_module_bindable.field("bundleData")
 def resolve_bundle_module_bundle_data(
     bundle_module: ModuleReport, info: GraphQLResolveInfo
-) -> BundleData:
-    return BundleData(bundle_module.size_total)
+) -> BundleDataDeprecated:
+    return BundleDataDeprecated(bundle_module.size_total)
 
 
 # ============= Bundle Asset Bindable =============
@@ -83,7 +84,7 @@ def resolve_extension(bundle_asset: AssetReport, info: GraphQLResolveInfo) -> st
 def resolve_bundle_asset_bundle_data(
     bundle_asset: AssetReport, info: GraphQLResolveInfo
 ) -> BundleData:
-    return BundleData(bundle_asset.size_total)
+    return BundleData(bundle_asset.size_total, bundle_asset.gzip_size_total)
 
 
 @bundle_asset_bindable.field("modules")
@@ -145,8 +146,8 @@ def resolve_asset(
 @bundle_report_bindable.field("bundleData")
 def resolve_bundle_data(
     bundle_report: BundleReport, info: GraphQLResolveInfo
-) -> BundleData:
-    return BundleData(bundle_report.size_total)
+) -> BundleDataDeprecated:
+    return BundleDataDeprecated(bundle_report.size_total)
 
 
 @bundle_report_bindable.field("measurements")
