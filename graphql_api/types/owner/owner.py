@@ -10,7 +10,7 @@ import services.activation as activation
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Account
 from core.models import Repository
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -243,3 +243,10 @@ def resolve_owner_invoice(
     invoice_id: str,
 ) -> stripe.Invoice | None:
     return BillingService(requesting_user=owner).get_invoice(owner, invoice_id)
+
+
+@owner_bindable.field("account")
+@require_part_of_org
+def resolve_owner_account(owner: Owner, info) -> dict:
+    account_id = owner.account_id
+    return Account.objects.filter(pk=account_id).first()

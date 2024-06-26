@@ -1,0 +1,7 @@
+type OktaConfig {
+  client_id: String!
+  client_secret: String!
+  url: String!
+  enabled: Boolean!
+  enforced: Boolean!
+}
