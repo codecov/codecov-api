@@ -251,6 +251,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         UploadFactory(
             report=self.report, provider="travisci", state=UploadState.UPLOADED.value
         )
+        UploadFactory(report=self.report, provider="travisci", state="")
         query = (
             query_commit
             % """
@@ -277,6 +278,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"state": UploadState.ERROR.name},
             {"state": UploadState.COMPLETE.name},
             {"state": UploadState.UPLOADED.name},
+            {"state": UploadState.ERROR.name},
         ]
 
     def test_fetch_commit_uploads(self):

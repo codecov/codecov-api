@@ -1,6 +1,4 @@
 import json
-import logging
-from datetime import datetime
 
 from django.conf import settings
 from django.db.models.signals import post_save
@@ -31,7 +29,7 @@ def _get_pubsub_publisher():
 @receiver(
     post_save, sender=OrganizationLevelToken, dispatch_uid="shelter_sync_org_token"
 )
-def update_repository(sender, instance: OrganizationLevelToken, **kwargs):
+def update_org_token(sender, instance: OrganizationLevelToken, **kwargs):
     pubsub_project_id = settings.SHELTER_PUBSUB_PROJECT_ID
     topic_id = settings.SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID
     if pubsub_project_id and topic_id:
