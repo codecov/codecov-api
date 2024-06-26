@@ -49,7 +49,7 @@ sentry-sdk[celery]
 setproctitle
 simplejson
 stripe>=9.6.0
-urllib3>=1.26.17
+urllib3>=1.26.19,<2.0.0
 vcrpy
 whitenoise
 django-autocomplete-light
