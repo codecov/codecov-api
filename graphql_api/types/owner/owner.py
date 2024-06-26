@@ -233,6 +233,13 @@ def resolve_is_current_user_activated(owner, info):
 def resolve_owner_invoices(owner: Owner, info) -> list | None:
     return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)
 
+@owner_bindable.field("isGithubRateLimited")
+@sync_to_async
+def resolve_is_github_rate_limited(owner: Owner, info) -> bool | None:
+    return False
+    # TODO: Update this function to call the new rate limited service to check redis cache
+    # once changes are in shared.
+
 
 @owner_bindable.field("invoice")
 @require_part_of_org
