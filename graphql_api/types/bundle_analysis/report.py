@@ -43,6 +43,7 @@ def resolve_bundle(
     if filters.get("loadTypes"):
         load_types = filters.get("loadTypes")
 
+        # Compute chunk entry boolean
         if BundleLoadTypes.ENTRY in load_types and (
             BundleLoadTypes.INITIAL in load_types or BundleLoadTypes.LAZY in load_types
         ):
@@ -54,6 +55,7 @@ def resolve_bundle(
         ):
             chunk_entry = False
 
+        # Compute chunk initial boolean
         if BundleLoadTypes.INITIAL in load_types and BundleLoadTypes.LAZY in load_types:
             chunk_initial = None
         elif BundleLoadTypes.INITIAL in load_types:
