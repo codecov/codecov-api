@@ -8,6 +8,7 @@ from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from services.components import commit_components, component_filtered_report
+from utils import round_decimals_down
 
 
 @extend_schema(

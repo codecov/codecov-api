@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from api.shared.mixins import RepositoriesMixin
 from api.shared.permissions import ChartPermissions
 from core.models import Commit
+from utils import round_decimals_down
 
 from .filters import apply_default_filters, apply_simple_filters
 from .helpers import (
