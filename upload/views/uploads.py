@@ -22,6 +22,7 @@ from codecov_auth.authentication.repo_auth import (
 )
 from codecov_auth.models import OrganizationLevelToken
 from core.models import Commit, Repository
+from graphql_api.types.enums import UploadState
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
 from services.archive import ArchiveService, MinioEndpoints
@@ -110,6 +111,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         instance: ReportSession = serializer.save(
             report_id=report.id,
             upload_extras={"format_version": "v1"},
+            state=UploadState.UPLOADED.value,
         )
 
         # Inserts mirror upload record into measurements table. CLI hits this endpoint

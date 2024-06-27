@@ -11,6 +11,7 @@ from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
+from graphql_api.types.enums import UploadState
 from reports.models import (
     CommitReport,
     ReportSession,
@@ -229,7 +230,7 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     response = client.post(
         url,
         {
-            "state": "uploaded",
+            # "state": "uploaded",
             "flags": ["flag1", "flag2"],
             "version": "version",
             # this cannot be passed in by default
@@ -238,7 +239,9 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     )
     response_json = response.json()
     upload = ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state=UploadState.UPLOADED.value,
     ).first()
     assert response.status_code == 201
     assert all(
@@ -253,7 +256,9 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     )
 
     assert ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state=UploadState.UPLOADED.value,
     ).exists()
     assert RepositoryFlag.objects.filter(
         repository_id=repository.repoid, flag_name="flag1"
@@ -334,14 +339,14 @@ def test_uploads_post_tokenless(
     )
     if branch_sent is not None:
         data = {
-            "state": "uploaded",
+            # "state": "uploaded",
             "flags": ["flag1", "flag2"],
             "version": "version",
             "branch": branch_sent,
         }
     else:
         data = {
-            "state": "uploaded",
+            # "state": "uploaded",
             "flags": ["flag1", "flag2"],
             "version": "version",
         }
@@ -354,7 +359,9 @@ def test_uploads_post_tokenless(
         assert response.status_code == 201
         response_json = response.json()
         upload = ReportSession.objects.filter(
-            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+            report_id=commit_report.id,
+            upload_extras={"format_version": "v1"},
+            state=UploadState.UPLOADED.value,
         ).first()
         assert all(
             map(
@@ -368,7 +375,9 @@ def test_uploads_post_tokenless(
         )
 
         assert ReportSession.objects.filter(
-            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+            report_id=commit_report.id,
+            upload_extras={"format_version": "v1"},
+            state=UploadState.UPLOADED.value,
         ).exists()
         assert RepositoryFlag.objects.filter(
             repository_id=repository.repoid, flag_name="flag1"
@@ -479,7 +488,7 @@ def test_uploads_post_github_oidc_auth(
     response = client.post(
         url,
         {
-            "state": "uploaded",
+            # "state": "uploaded",
             "flags": ["flag1", "flag2"],
             "version": "version",
         },
@@ -488,7 +497,9 @@ def test_uploads_post_github_oidc_auth(
     assert response.status_code == 201
     response_json = response.json()
     upload = ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state=UploadState.UPLOADED.value,
     ).first()
     assert all(
         map(
@@ -502,7 +513,9 @@ def test_uploads_post_github_oidc_auth(
     )
 
     assert ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state=UploadState.UPLOADED.value,
     ).exists()
     assert RepositoryFlag.objects.filter(
         repository_id=repository.repoid, flag_name="flag1"
@@ -597,7 +610,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
     response = client.post(
         url,
         {
-            "state": "uploaded",
+            # "state": "uploaded",
             "flags": ["flag1", "flag2"],
             "version": "version",
             "storage_path": "shelter/test/path.txt",
@@ -672,7 +685,9 @@ def test_deactivated_repo(db, mocker, mock_redis):
     )
     response = client.post(
         url,
-        {"state": "uploaded"},
+        {
+            # "state": "uploaded"
+        },
         format="json",
     )
     response_json = response.json()
