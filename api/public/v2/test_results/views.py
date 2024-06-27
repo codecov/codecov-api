@@ -62,6 +62,7 @@ class TestResultsView(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Ret
     filter_backends = [DjangoFilterBackend]
     filterset_class = TestResultsFilters
 
+    # once repoid is in prod, use it to filter the queryset
     def get_queryset(self):
         repo = self.repo
         commits = repo.commits.values_list("commitid", flat=True)
@@ -69,20 +70,13 @@ class TestResultsView(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Ret
             return TestInstance.objects.none()
         return TestInstance.objects.filter(commitid__in=commits)
 
+
     @extend_schema(summary="Test results list")
     def list(self, request, *args, **kwargs):
         """
         Returns a list of test results for the specified repository and commit
         """
-        queryset = self.get_queryset()
-        queryset = self.filter_queryset(queryset)
-        serializer = self.serializer_class(queryset, many=True)
-        return Response(serializer.data)
-
-    def filter_queryset(self, queryset):
-        for backend in list(self.filter_backends):
-            queryset = backend().filter_queryset(self.request, queryset, self)
-        return queryset
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
         summary="Test results detail",
