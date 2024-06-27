@@ -473,10 +473,6 @@ GITLAB_ENTERPRISE_TOKENLESS_BOT_KEY = get_config(
 GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")
 GITLAB_ENTERPRISE_API_URL = get_config("gitlab_enterprise", "api_url")
 
-SEGMENT_API_KEY = get_config("setup", "segment", "key", default=None)
-SEGMENT_ENABLED = get_config("setup", "segment", "enabled", default=False) and not bool(
-    get_config("setup", "enterprise_license", default=False)
-)
 
 CORS_ALLOW_HEADERS = (
     list(default_headers)
