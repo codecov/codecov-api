@@ -11,6 +11,7 @@ class TestInstanceSerializer(serializers.ModelSerializer):
     commitid = serializers.CharField(label="commit SHA")
     outcome = serializers.CharField(label="outcome")
     branch = serializers.CharField(label="branch name")
+    repoid = serializers.IntegerField(label="repo id")
 
     class Meta:
         model = TestInstance
@@ -22,5 +23,6 @@ class TestInstanceSerializer(serializers.ModelSerializer):
             "commitid",
             "outcome",
             "branch",
+            "repoid",
         )
         fields = read_only_fields

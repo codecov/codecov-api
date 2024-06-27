@@ -62,14 +62,11 @@ class TestResultsView(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Ret
     filter_backends = [DjangoFilterBackend]
     filterset_class = TestResultsFilters
 
-    # once repoid is in prod, use it to filter the queryset
     def get_queryset(self):
-        repo = self.repo
-        commits = repo.commits.values_list("commitid", flat=True)
-        if not commits:
-            return TestInstance.objects.none()
-        return TestInstance.objects.filter(commitid__in=commits)
-
+        repo = self.repo        
+        if repo.repoid:
+            return TestInstance.objects.filter(repoid=repo.repoid)
+        return TestInstance.objects.none()
 
     @extend_schema(summary="Test results list")
     def list(self, request, *args, **kwargs):
