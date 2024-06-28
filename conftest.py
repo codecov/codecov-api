@@ -5,6 +5,8 @@ import fakeredis
 import pytest
 import vcr
 from django.conf import settings
+from pytest_django.fixtures import _set_suffix_to_test_databases
+from pytest_django.lazy_django import skip_if_no_django
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
@@ -20,6 +22,17 @@ def pytest_configure(config):
     pytest_configure is the canonical way to configure test server for entire testing suite
     """
     pass
+
+
+@pytest.fixture(scope="session")
+def django_db_modify_db_settings_xdist_suffix(request):
+    skip_if_no_django()
+
+    xdist_suffix = getattr(request.config, "workerinput", {}).get("workerid")
+    if xdist_suffix:
+        # 'gw0' -> '1', 'gw1' -> '2', ...
+        suffix = str(int(xdist_suffix.replace("gw", "")) + 1)
+        _set_suffix_to_test_databases(suffix=suffix)
 
 
 @pytest.fixture
@@ -48,7 +61,7 @@ def mock_redis(mocker):
     yield redis_server
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def sample_report(request):
     report = Report()
     first_file = ReportFile("foo/file1.py")
