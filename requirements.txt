@@ -174,7 +174,6 @@ freezegun==1.1.0
     # via -r requirements.in
 google-api-core[grpc]==2.11.1
     # via
-    #   google-api-core
     #   google-cloud-core
     #   google-cloud-pubsub
     #   google-cloud-storage
@@ -341,6 +340,7 @@ pyparsing==2.4.7
     # via
     #   httplib2
     #   packaging
+    #   shared
 pyrsistent==0.18.1
     # via jsonschema
 pytest==8.1.1
@@ -401,9 +401,7 @@ requests==2.32.3
     #   shared
     #   stripe
 rfc3986[idna2008]==1.4.0
-    # via
-    #   httpx
-    #   rfc3986
+    # via httpx
 rsa==4.7.2
     # via google-auth
 s3transfer==0.5.0
@@ -414,7 +412,7 @@ sentry-sdk[celery]==1.44.1
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/a6676d38943592827eb2576f02b81f0ff586ab70.tar.gz
+shared @ https://github.com/codecov/shared/archive/9c226b3b5b51d57723b7e28b98e0480df3b7984a.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
