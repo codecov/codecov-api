@@ -148,7 +148,7 @@ django-prometheus==2.3.1
     # via
     #   -r requirements.in
     #   shared
-djangorestframework==3.14.0
+djangorestframework==3.15.2
     # via
     #   -r requirements.in
     #   drf-spectacular
@@ -202,6 +202,8 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 graphql-core==3.2.3
     # via ariadne
+greenlet==3.0.3
+    # via sqlalchemy
 grpc-google-iam-v1==0.12.6
     # via google-cloud-pubsub
 grpcio==1.62.1
@@ -376,7 +378,6 @@ python-redis-lock==4.0.0
 pytz==2022.1
     # via
     #   -r requirements.in
-    #   djangorestframework
     #   shared
 pyyaml==6.0.1
     # via
