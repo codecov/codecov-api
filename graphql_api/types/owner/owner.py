@@ -247,6 +247,7 @@ def resolve_owner_invoice(
 
 @owner_bindable.field("account")
 @require_part_of_org
+@sync_to_async
 def resolve_owner_account(owner: Owner, info) -> dict:
     account_id = owner.account_id
     return Account.objects.filter(pk=account_id).first()

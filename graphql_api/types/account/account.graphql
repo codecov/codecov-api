@@ -1,3 +1,4 @@
 type Account {
-  OktaConfig: OktaConfig
+  name: String!
+  oktaConfig: OktaConfig
 }

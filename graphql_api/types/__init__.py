@@ -66,6 +66,8 @@ from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 from .user_token import user_token, user_token_bindable
+from .account import account_bindable, account
+from .okta_config import okta_config_bindable, okta_config
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")
@@ -109,6 +111,8 @@ types = [
     upload,
     user_token,
     user,
+    account,
+    okta_config,
 ]
 
 bindables = [
@@ -163,4 +167,6 @@ bindables = [
     upload_error_bindable,
     user_bindable,
     user_token_bindable,
+    account_bindable,
+    okta_config_bindable,
 ]
