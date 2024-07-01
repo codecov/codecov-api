@@ -13,10 +13,10 @@ from shared.upload.utils import UploaderType, insert_coverage_measurement
 from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
+    AccountFactory,
     GetAdminProviderAdapter,
     OwnerFactory,
     UserFactory,
-    AccountFactory,
 )
 from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
@@ -182,7 +182,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "b"}]
 
-    def test_fetch_account(self):
+    def test_fetch_account(self) -> None:
         query = """{
             owner(username: "%s") {
                 account {

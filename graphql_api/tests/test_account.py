@@ -1,15 +1,17 @@
 import asyncio
 from unittest.mock import patch
-from django.test import TestCase
+
 from ariadne import graphql_sync
+from django.test import TestCase, TransactionTestCase, override_settings
+
+from codecov.db import sync_to_async
 from codecov_auth.tests.factories import (
-    OwnerFactory,
     AccountFactory,
     OktaSettingsFactory,
+    OwnerFactory,
 )
+
 from .helper import GraphQLTestHelper
-from django.test import TransactionTestCase, override_settings
-from codecov.db import sync_to_async
 
 
 class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
@@ -24,7 +26,7 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             client_secret="test-client-secret",
         )
 
-    def test_fetch_okta_config(self):
+    def test_fetch_okta_config(self) -> None:
         query = """
             query {
                 owner(username: "%s"){

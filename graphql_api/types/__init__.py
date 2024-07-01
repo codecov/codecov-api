@@ -3,6 +3,7 @@ from ariadne.validation import cost_directive
 from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
+from .account import account, account_bindable
 from .branch import branch, branch_bindable
 from .bundle_analysis import (
     bundle_analysis,
@@ -38,6 +39,7 @@ from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable, tracking_metadata_bindable
 from .measurement import measurement, measurement_bindable
 from .mutation import mutation, mutation_resolvers
+from .okta_config import okta_config, okta_config_bindable
 from .owner import owner, owner_bindable
 from .path_contents import (
     path_content,
@@ -66,8 +68,6 @@ from .session import session, session_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 from .user_token import user_token, user_token_bindable
-from .account import account_bindable, account
-from .okta_config import okta_config_bindable, okta_config
 
 inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")

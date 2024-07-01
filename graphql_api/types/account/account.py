@@ -1,6 +1,7 @@
 from ariadne import ObjectType
-from codecov_auth.models import OktaSettings
+
 from codecov.db import sync_to_async
+from codecov_auth.models import OktaSettings
 from graphql_api.helpers.mutation import require_part_of_org
 
 account_bindable = ObjectType("Account")

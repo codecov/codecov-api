@@ -10,7 +10,7 @@ import services.activation as activation
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
-from codecov_auth.models import Owner, Account
+from codecov_auth.models import Account, Owner
 from core.models import Repository
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql

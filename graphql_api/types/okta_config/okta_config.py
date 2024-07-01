@@ -1,4 +1,5 @@
 from ariadne import ObjectType
+
 from codecov_auth.models import OktaSettings
 
 okta_config_bindable = ObjectType("OktaConfig")

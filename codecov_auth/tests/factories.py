@@ -5,7 +5,9 @@ from django.utils import timezone
 from factory.django import DjangoModelFactory
 
 from codecov_auth.models import (
+    Account,
     DjangoSession,
+    OktaSettings,
     OktaUser,
     OrganizationLevelToken,
     Owner,
@@ -17,8 +19,6 @@ from codecov_auth.models import (
     TokenTypeChoices,
     User,
     UserToken,
-    Account,
-    OktaSettings,
 )
 from plan.constants import TrialStatus
 from utils.encryption import encryptor
