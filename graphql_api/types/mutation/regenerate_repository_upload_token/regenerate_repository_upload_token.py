@@ -13,7 +13,7 @@ from graphql_api.helpers.mutation import (
 async def resolve_regenerate_repository_upload_token(_, info, input):
     command: RepositoryCommands = info.context["executor"].get_command("repository")
     token = await command.regenerate_repository_upload_token(
-        repo_name=input.get("repoName"),
+        repo_name=input.get("repo_name"),
         owner_username=input.get("owner"),
     )
 
