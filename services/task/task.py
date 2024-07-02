@@ -4,8 +4,7 @@ from datetime import datetime, timedelta
 from typing import Iterable, List, Optional, Tuple
 
 import celery
-import sentry_sdk
-from celery import Celery, chain, group, signals, signature
+from celery import Celery, chain, group, signature
 from celery.canvas import Signature
 from django.conf import settings
 from sentry_sdk import set_tag
