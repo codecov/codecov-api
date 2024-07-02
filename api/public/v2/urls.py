@@ -67,7 +67,7 @@ file_report_router.register(
 service_prefix = "<str:service>/"
 owner_prefix = "<str:service>/<str:owner_username>/"
 repo_prefix = "<str:service>/<str:owner_username>/repos/<str:repo_name>/"
-flag_prefix = repo_prefix + "flags/<str:flag_name>/"
+flag_prefix = repo_prefix + "flags/<path:flag_name>/"
 commit_prefix = repo_prefix + "commits/<str:commitid>/"
 
 urlpatterns = [
