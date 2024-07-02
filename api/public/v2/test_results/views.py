@@ -1,24 +1,32 @@
-from rest_framework.response import Response
-from rest_framework import status, viewsets, mixins
-from api.shared.permissions import RepositoryArtifactPermissions
-from reports.models import TestInstance
-from .serializers import TestInstanceSerializer
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
-from api.shared.mixins import RepoPropertyMixin
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import mixins, status, viewsets
+from rest_framework.response import Response
+
+from api.shared.mixins import RepoPropertyMixin
+from api.shared.permissions import RepositoryArtifactPermissions
+from reports.models import TestInstance
+
+from .serializers import TestInstanceSerializer
+
 
 class TestResultsFilters(django_filters.FilterSet):
     commit_id = django_filters.CharFilter(field_name="commitid")
     outcome = django_filters.CharFilter(field_name="outcome")
-    duration_min = django_filters.NumberFilter(field_name="duration_seconds", lookup_expr="gte")
-    duration_max = django_filters.NumberFilter(field_name="duration_seconds", lookup_expr="lte")
+    duration_min = django_filters.NumberFilter(
+        field_name="duration_seconds", lookup_expr="gte"
+    )
+    duration_max = django_filters.NumberFilter(
+        field_name="duration_seconds", lookup_expr="lte"
+    )
     branch = django_filters.CharFilter(field_name="branch")
 
     class Meta:
         model = TestInstance
-        fields = ['commit_id', 'outcome', 'duration_min', 'duration_max', 'branch']
+        fields = ["commit_id", "outcome", "duration_min", "duration_max", "branch"]
+
 
 @extend_schema(
     parameters=[
@@ -56,14 +64,19 @@ class TestResultsFilters(django_filters.FilterSet):
     tags=["Test Results"],
     summary="Retrieve test results",
 )
-class TestResultsView(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin, RepoPropertyMixin):
+class TestResultsView(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    RepoPropertyMixin,
+):
     serializer_class = TestInstanceSerializer
     permission_classes = [RepositoryArtifactPermissions]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TestResultsFilters
 
     def get_queryset(self):
-        repo = self.repo        
+        repo = self.repo
         if repo.repoid:
             return TestInstance.objects.filter(repoid=repo.repoid)
         return TestInstance.objects.none()
