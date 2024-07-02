@@ -1,9 +1,11 @@
 import logging
 import uuid
+from typing import Any, Callable
 
 from django.conf import settings
+from django.http import HttpRequest
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -31,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 class UploadBundleAnalysisPermission(BasePermission):
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         return request.auth is not None and "upload" in request.auth.get_scopes()
 
 
@@ -44,6 +46,7 @@ class UploadSerializer(serializers.Serializer):
     pr = serializers.CharField(required=False, allow_null=True)
     service = serializers.CharField(required=False, allow_null=True)
     branch = serializers.CharField(required=False, allow_null=True)
+    compareSha = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView, ShelterMixin):
@@ -54,10 +57,10 @@ class BundleAnalysisView(APIView, ShelterMixin):
         RepositoryLegacyTokenAuthentication,
     ]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable:
         return repo_auth_custom_exception_handler
 
-    def post(self, request):
+    def post(self, request: HttpRequest) -> Response:
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -72,6 +75,9 @@ class BundleAnalysisView(APIView, ShelterMixin):
             repo = request.user._repository
         else:
             raise NotAuthenticated()
+
+        if repo is None:
+            raise NotFound("Repository not found.")
 
         update_fields = []
         if not repo.active or not repo.activated:
@@ -117,6 +123,8 @@ class BundleAnalysisView(APIView, ShelterMixin):
             # these are used for dispatching the task below
             "commit": commit.commitid,
             "report_code": None,
+            # custom comparison sha for the current uploaded commit sha
+            "bundle_analysis_compare_sha": data.get("compareSha"),
         }
 
         log.info(

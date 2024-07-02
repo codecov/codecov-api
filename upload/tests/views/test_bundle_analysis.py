@@ -16,7 +16,7 @@ from timeseries.models import Dataset, MeasurementName
 
 
 @pytest.mark.django_db(databases={"default", "timeseries"})
-def test_upload_bundle_analysis(db, client, mocker, mock_redis):
+def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     mock_sentry_metrics = mocker.patch(
         "upload.views.bundle_analysis.sentry_metrics.incr"
@@ -41,6 +41,7 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
             "buildURL": "test-build-url",
             "job": "test-job",
             "service": "test-service",
+            "compareSha": "6fd5b89357fc8cdf34d6197549ac7c6d7e5aaaaa",
         },
         format="json",
         headers={"User-Agent": "codecov-cli/0.4.7"},
@@ -73,6 +74,7 @@ def test_upload_bundle_analysis(db, client, mocker, mock_redis):
         "url": f"v1/uploads/{reportid}.json",
         "commit": commit_sha,
         "report_code": None,
+        "bundle_analysis_compare_sha": "6fd5b89357fc8cdf34d6197549ac7c6d7e5aaaaa",
     }
 
     # sets latest upload timestamp
@@ -348,3 +350,31 @@ def test_upload_bundle_analysis_measurement_timeseries_disabled(
             name=measurement_type.value,
             repository_id=repository.pk,
         ).exists()
+
+
+@pytest.mark.django_db(databases={"default", "timeseries"})
+def test_upload_bundle_analysis_no_repo(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create()
+    org_token = OrganizationLevelTokenFactory.create(owner=repository.author)
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {org_token.token}")
+
+    res = client.post(
+        reverse("upload-bundle-analysis"),
+        {
+            "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
+            "slug": "FakeUser::::NonExistentName",
+        },
+        format="json",
+    )
+    assert res.status_code == 404
+    assert res.json() == {"detail": "Repository not found."}
+    assert not upload.called
