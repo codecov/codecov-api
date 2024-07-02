@@ -1,4 +1,5 @@
 type Owner {
+  account: Account
   avatarUrl: String!
   username: String
   isCurrentUserPartOfOrg: Boolean!
