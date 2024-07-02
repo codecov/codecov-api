@@ -82,6 +82,7 @@ type Repository {
   ): [ComponentMeasurements!]!
   componentsYaml(termId: String): [ComponentsYaml]!
   testAnalyticsEnabled: Boolean
+  isGithubRateLimited: Boolean
 }
 
 type PullConnection {

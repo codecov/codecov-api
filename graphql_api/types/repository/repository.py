@@ -536,3 +536,10 @@ def resolve_is_first_pull_request(repository: Repository, info) -> bool:
         return not first_pr.compared_to
 
     return False
+
+@repository_bindable.field("isGithubRateLimited")
+@sync_to_async
+def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
+    return False
+    # TODO: Update this function to call the new rate limited service to check redis cache
+    # once changes are in shared.

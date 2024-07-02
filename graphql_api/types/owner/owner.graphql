@@ -33,4 +33,5 @@ type Owner {
   ): [Measurement!]
   invoices: [Invoice] @cost(complexity: 100)
   invoice(invoiceId: String!): Invoice
+  isGithubRateLimited: Boolean
 }
