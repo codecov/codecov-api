@@ -227,9 +227,12 @@ class StripeWebhookHandler(APIView):
         # This hook will be called after a checkout session completes, updating the subscription created
         # with it
         default_payment_method = subscription.default_payment_method
-        if default_payment_method:
-            billing = BillingService(requesting_user=owner)
-            billing.update_payment_method(owner, default_payment_method)
+        if default_payment_method and owner.stripe_customer_id is not None:
+            stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                invoice_settings={"default_payment_method": default_payment_method }
+            )
 
         subscription_schedule_id = subscription.schedule
         plan_service = PlanService(current_org=owner)
