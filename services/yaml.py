@@ -1,4 +1,5 @@
 import enum
+import logging
 from functools import lru_cache
 from typing import Dict, Optional
 
@@ -14,6 +15,9 @@ from services.repo_providers import RepoProviderService
 
 class YamlStates(enum.Enum):
     DEFAULT = "default"
+
+
+log = logging.getLogger(__name__)
 
 
 def fetch_commit_yaml(commit: Commit, owner: Owner) -> Optional[Dict]:
@@ -35,6 +39,10 @@ def fetch_commit_yaml(commit: Commit, owner: Owner) -> Optional[Dict]:
         # have various exceptions, which we do not care about to get the final
         # yaml used for a commit, as any error here, the codecov.yaml would not
         # be used, so we return None here
+        log.warning(
+            "Was not able to fetch yaml file for commit. Ignoring error and returning None.",
+            extra={"commit_id": commit.commitid},
+        )
         return None
 
 
