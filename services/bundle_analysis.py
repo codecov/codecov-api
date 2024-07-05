@@ -361,8 +361,8 @@ class BundleAnalysisMeasurementsService(object):
         self,
         repository: Repository,
         interval: Interval,
-        after: datetime,
         before: datetime,
+        after: Optional[datetime] = None,
         branch: Optional[str] = None,
     ) -> None:
         self.repository = repository
@@ -386,7 +386,7 @@ class BundleAnalysisMeasurementsService(object):
 
         # Carry over previous available value for start date if its value is null
         for measurable_id, measurements in all_measurements.items():
-            if measurements[0]["timestamp_bin"] > self.after:
+            if self.after is not None and measurements[0]["timestamp_bin"] > self.after:
                 carryover_measurement = measurements_last_uploaded_before_start_date(
                     repo_id=self.repository.repoid,
                     measurable_name=measurable_name,

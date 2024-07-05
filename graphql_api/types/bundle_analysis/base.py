@@ -101,14 +101,14 @@ def resolve_asset_report_measurements(
     info: GraphQLResolveInfo,
     interval: Interval,
     before: datetime,
-    after: datetime,
+    after: Optional[datetime] = None,
     branch: Optional[str] = None,
 ) -> Optional[BundleAnalysisMeasurementData]:
     bundle_analysis_measurements = BundleAnalysisMeasurementsService(
         repository=info.context["commit"].repository,
         interval=interval,
-        after=after,
         before=before,
+        after=after,
         branch=branch,
     )
     return bundle_analysis_measurements.compute_asset(bundle_asset)
@@ -157,7 +157,7 @@ def resolve_bundle_report_measurements(
     info: GraphQLResolveInfo,
     interval: Interval,
     before: datetime,
-    after: datetime,
+    after: Optional[datetime] = None,
     branch: Optional[str] = None,
     filters: Mapping = {},
     ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
@@ -172,8 +172,8 @@ def resolve_bundle_report_measurements(
     bundle_analysis_measurements = BundleAnalysisMeasurementsService(
         repository=info.context["commit"].repository,
         interval=interval,
-        after=after,
         before=before,
+        after=after,
         branch=branch,
     )
 
