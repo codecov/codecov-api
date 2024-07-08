@@ -2,6 +2,7 @@ from datetime import datetime
 from hashlib import sha1
 from typing import Iterable, List, Optional
 
+import shared.rate_limits as rate_limits
 import stripe
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -10,7 +11,7 @@ import services.activation as activation
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
-from codecov_auth.models import Owner
+from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE, Owner
 from core.models import Repository
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -233,12 +234,14 @@ def resolve_is_current_user_activated(owner, info):
 def resolve_owner_invoices(owner: Owner, info) -> list | None:
     return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)
 
+
 @owner_bindable.field("isGithubRateLimited")
 @sync_to_async
 def resolve_is_github_rate_limited(owner: Owner, info) -> bool | None:
-    return False
-    # TODO: Update this function to call the new rate limited service to check redis cache
-    # once changes are in shared.
+    if owner.service != SERVICE_GITHUB or owner.service != SERVICE_GITHUB_ENTERPRISE:
+        return False
+    rate_limit_redis_key = rate_limits.determine_entity_redis_key(owner=owner)
+    return rate_limits.determine_if_entity_is_rate_limited(rate_limit_redis_key)
 
 
 @owner_bindable.field("invoice")
