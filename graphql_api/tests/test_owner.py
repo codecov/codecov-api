@@ -13,6 +13,7 @@ from shared.upload.utils import UploaderType, insert_coverage_measurement
 from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
 from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import (
+    AccountFactory,
     GetAdminProviderAdapter,
     OwnerFactory,
     UserFactory,
@@ -48,7 +49,10 @@ query_repositories = """{
 
 class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.owner = OwnerFactory(username="codecov-user", service="github")
+        self.account = AccountFactory()
+        self.owner = OwnerFactory(
+            username="codecov-user", service="github", account=self.account
+        )
         random_user = OwnerFactory(username="random-user", service="github")
         RepositoryFactory(
             author=self.owner, active=True, activated=True, private=True, name="a"
@@ -177,6 +181,18 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.owner)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == [{"name": "b"}]
+
+    def test_fetch_account(self) -> None:
+        query = """{
+            owner(username: "%s") {
+                account {
+                    name
+                }
+            }
+        }
+        """ % (self.owner.username)
+        data = self.gql_request(query, owner=self.owner)
+        assert data["owner"]["account"]["name"] == self.account.name
 
     def test_fetching_repositories_active_repositories(self):
         query = query_repositories % (
