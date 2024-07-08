@@ -77,7 +77,6 @@ class OwnerFactory(DjangoModelFactory):
     )
     user = factory.SubFactory(UserFactory)
     trial_status = TrialStatus.NOT_STARTED.value
-    account = factory.SubFactory(AccountFactory)
 
 
 class SentryUserFactory(DjangoModelFactory):

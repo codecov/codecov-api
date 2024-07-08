@@ -16,6 +16,7 @@ class SaveOktaConfigInput:
     enforced: bool = False
     org_username: str = None
 
+
 class SaveOktaConfigInteractor(BaseInteractor):
     def validate(self, owner: Owner):
         if not self.current_user.is_authenticated:

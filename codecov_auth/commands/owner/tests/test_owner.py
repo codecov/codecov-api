@@ -122,10 +122,15 @@ class OwnerCommandsTest(TransactionTestCase):
         self.command.regenerate_org_upload_token(owner)
         interactor_mock.assert_called_once_with(owner)
 
-    @patch(
-        "codecov_auth.commands.owner.owner.SaveOktaConfigInteractor.execute"
-    )
+    @patch("codecov_auth.commands.owner.owner.SaveOktaConfigInteractor.execute")
     def test_save_okta_config_delegate_to_interactor(self, interactor_mock):
-        input_dict = {"client_id": "123", "client_secret": "123", "url": "http://example.com", "enabled": True, "enforced": False, "org_username": "codecov-user"}
+        input_dict = {
+            "client_id": "123",
+            "client_secret": "123",
+            "url": "http://example.com",
+            "enabled": True,
+            "enforced": False,
+            "org_username": "codecov-user",
+        }
         self.command.save_okta_config(input_dict)
         interactor_mock.assert_called_once_with(input_dict)
