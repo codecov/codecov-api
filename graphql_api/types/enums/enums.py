@@ -116,3 +116,9 @@ class CommitStatus(enum.Enum):
     COMPLETED = "COMPLETED"
     ERROR = "ERROR"
     PENDING = "PENDING"
+
+
+class BundleLoadTypes(enum.Enum):
+    ENTRY = "ENTRY"
+    INITIAL = "INITIAL"
+    LAZY = "LAZY"

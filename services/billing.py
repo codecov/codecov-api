@@ -70,6 +70,10 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
+    def update_billing_address(self, owner, name, billing_address):
+        pass
+
+    @abstractmethod
     def get_schedule(self, owner):
         pass
 
@@ -453,7 +457,7 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def update_billing_address(self, owner: Owner, billing_address):
+    def update_billing_address(self, owner: Owner, name, billing_address):
         log.info(f"Stripe update billing address for owner {owner.ownerid}")
         if owner.stripe_customer_id is None:
             log.info(
@@ -467,7 +471,8 @@ class StripeService(AbstractPaymentService):
             ).invoice_settings.default_payment_method
 
             stripe.PaymentMethod.modify(
-                default_payment_method, billing_details={"address": billing_address}
+                default_payment_method,
+                billing_details={"name": name, "address": billing_address},
             )
 
             stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
@@ -548,7 +553,7 @@ class EnterprisePaymentService(AbstractPaymentService):
     def update_email_address(self, owner, email_address):
         pass
 
-    def update_billing_address(self, owner, billing_address):
+    def update_billing_address(self, owner, name, billing_address):
         pass
 
     def get_schedule(self, owner):
@@ -627,13 +632,13 @@ class BillingService:
         """
         return self.payment_service.update_email_address(owner, email_address)
 
-    def update_billing_address(self, owner: Owner, billing_address):
+    def update_billing_address(self, owner: Owner, name: str, billing_address):
         """
         Takes an owner and a billing address. Try to update the owner's billing address
         to the address passed in. Address should be validated via stripe component prior
         to hitting this service method. Return None if invalid.
         """
-        return self.payment_service.update_billing_address(owner, billing_address)
+        return self.payment_service.update_billing_address(owner, name, billing_address)
 
     def apply_cancellation_discount(self, owner: Owner):
         return self.payment_service.apply_cancellation_discount(owner)

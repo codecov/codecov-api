@@ -227,11 +227,8 @@ class AssetReport(object):
 
 @dataclass
 class BundleReport(object):
-    def __init__(self, report: SharedBundleReport, filters: Dict[str, List[str]] = {}):
+    def __init__(self, report: SharedBundleReport, filters: Dict[str, Any] = {}):
         self.report = report
-
-        # TODO this will be passed to shared.BundleReport in assets and size_total calls
-        # once shared.BundleReport supports filtering by load and asset types
         self.filters = filters
 
     @cached_property
@@ -243,7 +240,9 @@ class BundleReport(object):
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
     def assets(self) -> List[AssetReport]:
-        return self.all_assets
+        return [
+            AssetReport(asset) for asset in self.report.asset_reports(**self.filters)
+        ]
 
     def asset(self, name: str) -> Optional[AssetReport]:
         for asset_report in self.all_assets:

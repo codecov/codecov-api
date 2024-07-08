@@ -1150,7 +1150,7 @@ class StripeServiceTests(TestCase):
     @patch("logging.Logger.error")
     def test_update_billing_address_with_invalid_address(self, log_error_mock):
         owner = OwnerFactory(stripe_customer_id="123", stripe_subscription_id="123")
-        assert self.stripe.update_billing_address(owner, "gabagool") is None
+        assert self.stripe.update_billing_address(owner, "John Doe", "gabagool") is None
         log_error_mock.assert_called_with(
             "Unable to update billing address for customer",
             extra={
@@ -1164,6 +1164,7 @@ class StripeServiceTests(TestCase):
         assert (
             self.stripe.update_billing_address(
                 owner,
+                name="John Doe",
                 billing_address={
                     "line1": "45 Fremont St.",
                     "line2": "",
@@ -1197,6 +1198,7 @@ class StripeServiceTests(TestCase):
         }
         self.stripe.update_billing_address(
             owner,
+            name="John Doe",
             billing_address=billing_address,
         )
 
@@ -1339,6 +1341,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def update_email_address(self, owner, email_address):
+        pass
+
+    def update_billing_address(self, owner, name, billing_address):
         pass
 
     def get_schedule(self, owner):

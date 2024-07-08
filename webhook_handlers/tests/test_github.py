@@ -915,20 +915,12 @@ class GithubWebhookHandlerTests(APITestCase):
             name=GITHUB_APP_INSTALLATION_DEFAULT_NAME,
             pem_path="some_path",
         )
-
-        owner.integration_id = 12
         owner.save()
-
-        repo1.using_integration, repo2.using_integration = True, True
-        repo1.bot, repo2.bot = owner, owner
-
         repo1.save()
         repo2.save()
-
         installation.save()
 
         assert owner.github_app_installations.exists()
-
         assert installation.is_repo_covered_by_integration(repo2) is False
 
         self._post_event_data(
@@ -975,15 +967,9 @@ class GithubWebhookHandlerTests(APITestCase):
             owner=owner, repository_service_ids=[repo1.service_id], installation_id=12
         )
 
-        owner.integration_id = 12
         owner.save()
-
-        repo1.using_integration, repo2.using_integration = True, True
-        repo1.bot, repo2.bot = owner, owner
-
         repo1.save()
         repo2.save()
-
         installation.save()
 
         assert owner.github_app_installations.exists()
@@ -1041,7 +1027,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
                     {"id": "12343", "node_id": "R_kgDOG2tABC"},
                 ],
-                "action": "added",
+                "action": "suspend",
                 "sender": {"type": "User"},
             },
         )
@@ -1058,6 +1044,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert installation.installation_id == installation_id
         assert installation.app_id == DEFAULT_APP_ID
         assert installation.name == GITHUB_APP_INSTALLATION_DEFAULT_NAME
+        assert installation.is_suspended == True
         assert installation.repository_service_ids == ["12321", "12343"]
 
     @patch(
