@@ -83,7 +83,7 @@ def resolve_extension(bundle_asset: AssetReport, info: GraphQLResolveInfo) -> st
 def resolve_bundle_asset_bundle_data(
     bundle_asset: AssetReport, info: GraphQLResolveInfo
 ) -> BundleData:
-    return BundleData(bundle_asset.size_total)
+    return BundleData(bundle_asset.size_total, bundle_asset.gzip_size_total)
 
 
 @bundle_asset_bindable.field("modules")
