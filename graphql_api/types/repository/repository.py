@@ -550,7 +550,3 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
         return False
     rate_limit_redis_key = rate_limits.determine_entity_redis_key(repository=repository)
     return rate_limits.determine_if_entity_is_rate_limited(rate_limit_redis_key)
-
-    return False
-    # TODO: Update this function to call the new rate limited service to check redis cache
-    # once changes are in shared.

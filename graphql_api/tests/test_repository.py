@@ -754,3 +754,46 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == False
+
+    @patch("shared.rate_limits.determine_entity_redis_key")
+    @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_is_github_rate_limited_on(self, mock_determine_rate_limit):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+        mock_determine_rate_limit.return_value = True
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isGithubRateLimited
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isGithubRateLimited"] == True
+
+    def test_fetch_is_github_rate_limited_not_on_gh_service(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+            service="gitlab",
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isGithubRateLimited
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isGithubRateLimited"] == False
