@@ -2,18 +2,16 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
-from freezegun import freeze_time
-from freezegun.api import FakeDatetime
 
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
-from codecov_auth.models import Account, OktaSettings
+from codecov_auth.models import OktaSettings
 from codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
     OwnerFactory,
 )
 
-from ..save_okta_config import SaveOktaConfigInput, SaveOktaConfigInteractor
+from ..save_okta_config import SaveOktaConfigInteractor
 
 
 class SaveOktaConfigInteractorTest(TransactionTestCase):
@@ -21,12 +19,15 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         self.current_user = OwnerFactory(username="codecov-user")
         self.service = "github"
         self.owner = OwnerFactory(
-            username=self.current_user.username, service=self.service
+            username=self.current_user.username,
+            service=self.service,
+            account=AccountFactory(),
         )
         self.owner_with_admins = OwnerFactory(
             username=self.current_user.username,
             service=self.service,
             admins=[self.current_user.ownerid],
+            account=AccountFactory(),
         )
 
         self.interactor = SaveOktaConfigInteractor(

@@ -1,7 +1,7 @@
 from django.test import TransactionTestCase
 
 from codecov_auth.models import OktaSettings
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import AccountFactory, OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
@@ -19,7 +19,9 @@ class SaveOktaConfigTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.current_user = OwnerFactory(username="codecov-user")
         self.owner = OwnerFactory(
-            username="codecov-owner", admins=[self.current_user.ownerid]
+            username="codecov-owner",
+            admins=[self.current_user.ownerid],
+            account=AccountFactory(),
         )
 
     def test_when_unauthenticated(self):
