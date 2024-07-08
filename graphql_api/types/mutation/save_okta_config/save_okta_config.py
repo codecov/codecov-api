@@ -15,5 +15,6 @@ async def resolve_save_okta_config(_, info, input):
     command = info.context["executor"].get_command("owner")
     return await command.save_okta_config(input)
 
+
 error_save_okta_config = UnionType("SaveOktaConfigError")
 error_save_okta_config.type_resolver(resolve_union_error_type)

@@ -20,13 +20,23 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
     def setUp(self):
         self.current_user = OwnerFactory(username="codecov-user")
         self.service = "github"
-        self.owner = OwnerFactory(username=self.current_user.username, service=self.service)
-        self.owner_with_admins = OwnerFactory(username=self.current_user.username, service=self.service, admins=[self.current_user.ownerid])
+        self.owner = OwnerFactory(
+            username=self.current_user.username, service=self.service
+        )
+        self.owner_with_admins = OwnerFactory(
+            username=self.current_user.username,
+            service=self.service,
+            admins=[self.current_user.ownerid],
+        )
 
-        self.interactor = SaveOktaConfigInteractor(current_owner=self.owner, service=self.service, current_user=self.current_user)
+        self.interactor = SaveOktaConfigInteractor(
+            current_owner=self.owner,
+            service=self.service,
+            current_user=self.current_user,
+        )
 
     @async_to_sync
-    def execute(self, interactor =None, input: dict=None):
+    def execute(self, interactor=None, input: dict = None):
         if not interactor:
             interactor = self.interactor
 
@@ -35,7 +45,11 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
     def test_user_is_not_authenticated(self):
         with pytest.raises(Unauthenticated):
             self.execute(
-                interactor=SaveOktaConfigInteractor(current_owner=None, service=self.service, current_user=AnonymousUser()),
+                interactor=SaveOktaConfigInteractor(
+                    current_owner=None,
+                    service=self.service,
+                    current_user=AnonymousUser(),
+                ),
                 input={
                     "client_id": "some-client-id",
                     "client_secret": "some-client-secret",
@@ -82,7 +96,9 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
             "org_username": self.owner_with_admins.username,
         }
 
-        interactor = SaveOktaConfigInteractor(current_owner=self.current_user, service=self.service)
+        interactor = SaveOktaConfigInteractor(
+            current_owner=self.current_user, service=self.service
+        )
         self.execute(interactor=interactor, input=input_data)
 
         okta_config = OktaSettings.objects.get(account=self.owner_with_admins.account)
@@ -92,7 +108,6 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         assert okta_config.url == input_data["url"]
         assert okta_config.enabled == input_data["enabled"]
         assert okta_config.enforced == input_data["enforced"]
-
 
     def test_update_okta_settings_when_account_exists(self):
         input_data = {
@@ -108,7 +123,9 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         self.owner_with_admins.account = account
         self.owner_with_admins.save()
 
-        interactor = SaveOktaConfigInteractor(current_owner=self.current_user, service=self.service)
+        interactor = SaveOktaConfigInteractor(
+            current_owner=self.current_user, service=self.service
+        )
         self.execute(interactor=interactor, input=input_data)
 
         okta_config = OktaSettings.objects.get(account=self.owner_with_admins.account)
@@ -134,7 +151,9 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         self.owner_with_admins.account = account
         self.owner_with_admins.save()
 
-        interactor = SaveOktaConfigInteractor(current_owner=self.current_user, service=self.service)
+        interactor = SaveOktaConfigInteractor(
+            current_owner=self.current_user, service=self.service
+        )
         self.execute(interactor=interactor, input=input_data)
 
         okta_config = OktaSettings.objects.get(account=self.owner_with_admins.account)
@@ -160,7 +179,9 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         self.owner_with_admins.account = account
         self.owner_with_admins.save()
 
-        interactor = SaveOktaConfigInteractor(current_owner=self.current_user, service=self.service)
+        interactor = SaveOktaConfigInteractor(
+            current_owner=self.current_user, service=self.service
+        )
         self.execute(interactor=interactor, input=input_data)
 
         okta_config = OktaSettings.objects.get(account=self.owner_with_admins.account)
@@ -170,7 +191,3 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         assert okta_config.url is not None
         assert okta_config.enabled == input_data["enabled"]
         assert okta_config.enforced == input_data["enforced"]
-
-
-
-
