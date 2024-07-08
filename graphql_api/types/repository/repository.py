@@ -545,7 +545,7 @@ def resolve_is_first_pull_request(repository: Repository, info) -> bool:
 def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
     if (
         repository.service != SERVICE_GITHUB
-        or repository.service != SERVICE_GITHUB_ENTERPRISE
+        and repository.service != SERVICE_GITHUB_ENTERPRISE
     ):
         return False
     rate_limit_redis_key = rate_limits.determine_entity_redis_key(repository=repository)

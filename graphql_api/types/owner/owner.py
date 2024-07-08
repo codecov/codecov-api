@@ -238,7 +238,7 @@ def resolve_owner_invoices(owner: Owner, info) -> list | None:
 @owner_bindable.field("isGithubRateLimited")
 @sync_to_async
 def resolve_is_github_rate_limited(owner: Owner, info) -> bool | None:
-    if owner.service != SERVICE_GITHUB or owner.service != SERVICE_GITHUB_ENTERPRISE:
+    if owner.service != SERVICE_GITHUB and owner.service != SERVICE_GITHUB_ENTERPRISE:
         return False
     rate_limit_redis_key = rate_limits.determine_entity_redis_key(owner=owner)
     return rate_limits.determine_if_entity_is_rate_limited(rate_limit_redis_key)
