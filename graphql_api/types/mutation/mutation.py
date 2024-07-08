@@ -32,6 +32,7 @@ from .regenerate_repository_upload_token import (
     resolve_regenerate_repository_upload_token,
 )
 from .revoke_user_token import error_revoke_user_token, resolve_revoke_user_token
+from .save_okta_config import error_save_okta_config, resolve_save_okta_config
 from .save_sentry_state import error_save_sentry_state, resolve_save_sentry_state
 from .save_terms_agreement import (
     error_save_terms_agreement,
@@ -92,6 +93,8 @@ mutation_bindable.field("encodeSecretString")(resolve_encode_secret_string)
 
 mutation_bindable.field("storeEventMetric")(resolve_store_event_metrics)
 
+mutation_bindable.field("saveOktaConfig")(resolve_save_okta_config)
+
 mutation_resolvers = [
     mutation_bindable,
     error_create_api_token,
@@ -118,4 +121,5 @@ mutation_resolvers = [
     error_regenerate_repository_upload_token,
     error_encode_secret_string,
     error_store_event_metrics,
+    error_save_okta_config,
 ]

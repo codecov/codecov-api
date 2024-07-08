@@ -1,0 +1,17 @@
+union SaveOktaConfigError =
+    UnauthenticatedError
+  | UnauthorizedError
+  | ValidationError
+
+type SaveOktaConfigPayload {
+  error: SaveOktaConfigError
+}
+
+input SaveOktaConfigInput {
+  clientId: String
+  clientSecret: String
+  url: String
+  enabled: Boolean
+  enforced: Boolean
+  orgUsername: String
+}
