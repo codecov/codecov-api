@@ -43,10 +43,17 @@ def repo_auth_custom_exception_handler(exc, context):
     give the user something better than "Invalid Token" or "Authentication credentials were not provided."
     """
     response = exception_handler(exc, context)
-    if response is not None:
+    # we were having issues with this block, I made it super cautions.
+    # Re-evaluate later whether this is overly cautious.
+    if (
+        response is not None
+        and hasattr(response, "status_code")
+        and response.status_code == 401
+        and hasattr(response, "data")
+    ):
         try:
-            exc_code = response.data["detail"].code
-        except TypeError:
+            exc_code = response.data.get("detail").code
+        except (TypeError, AttributeError):
             return response
         if exc_code == NotAuthenticated.default_code:
             response.data["detail"] = (
