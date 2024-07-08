@@ -12,6 +12,7 @@ from .interactors.is_syncing import IsSyncingInteractor
 from .interactors.onboard_user import OnboardUserInteractor
 from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
 from .interactors.revoke_user_token import RevokeUserTokenInteractor
+from .interactors.save_okta_config import SaveOktaConfigInteractor
 from .interactors.save_terms_agreement import SaveTermsAgreementInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.start_trial import StartTrialInteractor
@@ -94,3 +95,6 @@ class OwnerCommands(BaseCommand):
         return self.get_interactor(StoreCodecovMetricInteractor).execute(
             org_username, event, json_string
         )
+
+    def save_okta_config(self, input) -> None:
+        return self.get_interactor(SaveOktaConfigInteractor).execute(input)
