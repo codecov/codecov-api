@@ -138,6 +138,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
                         "service": "github",
                         "username": "codecov",
                         "name": self.org.name,
+                        "email": self.org.email,
                     },
                     "branch": "master",
                     "totals": {
@@ -194,6 +195,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
                         "service": "github",
                         "username": "codecov",
                         "name": self.org.name,
+                        "email": self.org.email,
                     },
                     "branch": "master",
                     "totals": {
@@ -274,6 +276,7 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
                 "service": "github",
                 "username": "codecov",
                 "name": self.org.name,
+                "email": self.org.email,
             },
             "branch": "master",
             "totals": {

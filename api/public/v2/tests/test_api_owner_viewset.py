@@ -20,6 +20,7 @@ class OwnerViewSetTests(APITestCase):
             "service": owner.service,
             "username": owner.username,
             "name": owner.name,
+            "email": owner.email,
         }
 
     def test_retrieve_returns_owner_with_period_username(self):
@@ -32,6 +33,7 @@ class OwnerViewSetTests(APITestCase):
             "service": owner.service,
             "username": owner.username,
             "name": owner.name,
+            "email": owner.email,
         }
 
     def test_retrieve_returns_404_if_no_matching_username(self):

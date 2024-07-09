@@ -14,7 +14,7 @@ from utils.test_utils import APIClient
 @freeze_time("2022-01-01T00:00:00")
 class RepoViewsetTests(InternalAPITest):
     def setUp(self):
-        self.org = OwnerFactory()
+        self.org = OwnerFactory(email=None)
         self.repo = RepositoryFactory(author=self.org)
         self.commit = CommitFactory(
             repository=self.repo, timestamp=timezone.now() - timedelta(days=1)
@@ -55,6 +55,7 @@ class RepoViewsetTests(InternalAPITest):
                         "service": self.org.service,
                         "username": self.org.username,
                         "name": self.org.name,
+                        "email": self.org.email,
                     },
                     "language": self.repo.language,
                     "branch": "master",
@@ -108,6 +109,7 @@ class RepoViewsetTests(InternalAPITest):
                 "service": self.org.service,
                 "username": self.org.username,
                 "name": self.org.name,
+                "email": self.org.email,
             },
             "language": self.repo.language,
             "branch": "master",

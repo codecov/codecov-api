@@ -6,11 +6,7 @@ from codecov_auth.models import Owner
 class OwnerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Owner
-        fields = (
-            "service",
-            "username",
-            "name",
-        )
+        fields = ("service", "username", "name", "email")
         read_only_fields = fields
 
 
@@ -20,4 +16,4 @@ class UserSerializer(OwnerSerializer):
 
     class Meta:
         model = Owner
-        fields = OwnerSerializer.Meta.fields + ("activated", "is_admin", "email")
+        fields = OwnerSerializer.Meta.fields + ("activated", "is_admin")
