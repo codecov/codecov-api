@@ -157,14 +157,20 @@ class BundleSize:
 
 @dataclass
 class BundleData:
-    def __init__(self, size_in_bytes: int):
+    def __init__(self, size_in_bytes: int, gzip_size_in_bytes: Optional[int] = None):
         self.size_in_bytes = size_in_bytes
         self.size_in_bits = size_in_bytes * 8
+        self.gzip_size_in_bytes = gzip_size_in_bytes
 
     @cached_property
     def size(self) -> BundleSize:
+        gzip_size = (
+            self.gzip_size_in_bytes
+            if self.gzip_size_in_bytes is not None
+            else int(float(self.size_in_bytes) * BundleSize.GZIP)
+        )
         return BundleSize(
-            gzip=int(float(self.size_in_bytes) * BundleSize.GZIP),
+            gzip=gzip_size,
             uncompress=int(float(self.size_in_bytes) * BundleSize.UNCOMPRESS),
         )
 
@@ -215,6 +221,10 @@ class AssetReport(object):
     @cached_property
     def size_total(self) -> int:
         return self.asset.size
+
+    @cached_property
+    def gzip_size_total(self) -> int:
+        return self.asset.gzip_size
 
     @cached_property
     def modules(self) -> List[ModuleReport]:
@@ -361,8 +371,8 @@ class BundleAnalysisMeasurementsService(object):
         self,
         repository: Repository,
         interval: Interval,
-        after: datetime,
         before: datetime,
+        after: Optional[datetime] = None,
         branch: Optional[str] = None,
     ) -> None:
         self.repository = repository
@@ -386,7 +396,7 @@ class BundleAnalysisMeasurementsService(object):
 
         # Carry over previous available value for start date if its value is null
         for measurable_id, measurements in all_measurements.items():
-            if measurements[0]["timestamp_bin"] > self.after:
+            if self.after is not None and measurements[0]["timestamp_bin"] > self.after:
                 carryover_measurement = measurements_last_uploaded_before_start_date(
                     repo_id=self.repository.repoid,
                     measurable_name=measurable_name,

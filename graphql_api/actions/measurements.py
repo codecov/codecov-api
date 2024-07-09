@@ -13,8 +13,8 @@ def measurements_by_ids(
     measurable_name: str,
     measurable_ids: Iterable[str],
     interval: Interval,
-    after: datetime,
     before: datetime,
+    after: Optional[datetime] = None,
     branch: Optional[str] = None,
 ) -> Mapping[int, Iterable[dict]]:
     queryset = MeasurementSummary.agg_by(interval).filter(
@@ -22,9 +22,13 @@ def measurements_by_ids(
         owner_id=repository.author_id,
         repo_id=repository.pk,
         measurable_id__in=measurable_ids,
-        timestamp_bin__gte=aligned_start_date(interval, after),
         timestamp_bin__lte=before,
     )
+
+    if after is not None:
+        queryset = queryset.filter(
+            timestamp_bin__gte=aligned_start_date(interval, after)
+        )
 
     if branch:
         queryset = queryset.filter(branch=branch)
