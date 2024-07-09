@@ -31,6 +31,7 @@ from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.billing import BillingService
 from services.profiling import ProfilingSummary
+from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
 
@@ -245,8 +246,11 @@ def resolve_owner_invoices(owner: Owner, info) -> list | None:
 def resolve_is_github_rate_limited(owner: Owner, info) -> bool | None:
     if owner.service != SERVICE_GITHUB and owner.service != SERVICE_GITHUB_ENTERPRISE:
         return False
+    redis_connection = get_redis_connection()
     rate_limit_redis_key = rate_limits.determine_entity_redis_key(owner=owner)
-    return rate_limits.determine_if_entity_is_rate_limited(rate_limit_redis_key)
+    return rate_limits.determine_if_entity_is_rate_limited(
+        redis_connection, rate_limit_redis_key
+    )
 
 
 @owner_bindable.field("invoice")

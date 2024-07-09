@@ -30,6 +30,7 @@ from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
+from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
@@ -548,5 +549,11 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
         and repository.service != SERVICE_GITHUB_ENTERPRISE
     ):
         return False
-    rate_limit_redis_key = rate_limits.determine_entity_redis_key(repository=repository)
-    return rate_limits.determine_if_entity_is_rate_limited(rate_limit_redis_key)
+    current_owner = info.context["request"].current_owner
+    redis_connection = get_redis_connection()
+    rate_limit_redis_key = rate_limits.determine_entity_redis_key(
+        owner=current_owner, repository=repository
+    )
+    return rate_limits.determine_if_entity_is_rate_limited(
+        redis_connection, rate_limit_redis_key
+    )
