@@ -1,13 +1,16 @@
-from rest_framework.response import Response
-from rest_framework import status, viewsets, mixins
-from api.shared.permissions import RepositoryArtifactPermissions
-from reports.models import TestInstance
-from .serializers import TestInstanceSerializer
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
-from api.shared.mixins import RepoPropertyMixin
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import mixins, status, viewsets
+from rest_framework.response import Response
+
+from api.shared.mixins import RepoPropertyMixin
+from api.shared.permissions import RepositoryArtifactPermissions
+from reports.models import TestInstance
+
+from .serializers import TestInstanceSerializer
+
 
 class TestResultsFilters(django_filters.FilterSet):
     commit_id = django_filters.CharFilter(field_name="commitid")
@@ -63,7 +66,7 @@ class TestResultsView(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.Ret
     filterset_class = TestResultsFilters
 
     def get_queryset(self):
-        repo = self.repo        
+        repo = self.repo
         if repo.repoid:
             return TestInstance.objects.filter(repoid=repo.repoid)
         return TestInstance.objects.none()

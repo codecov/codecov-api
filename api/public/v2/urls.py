@@ -10,13 +10,13 @@ from .branch.views import BranchViewSet
 from .commit.views import CommitsUploadsViewSet, CommitsViewSet
 from .compare.views import CompareViewSet
 from .component.views import ComponentViewSet
-from .test_results.views import TestResultsView
 from .coverage.views import CoverageViewSet, FlagCoverageViewSet
 from .flag.views import FlagViewSet
 from .owner.views import OwnersViewSet, OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
 from .repo.views import RepositoryConfigView, RepositoryViewSet
 from .report.views import FileReportViewSet, ReportViewSet, TotalsViewSet
+from .test_results.views import TestResultsView
 
 urls.handler404 = not_found
 urls.handler500 = server_error
