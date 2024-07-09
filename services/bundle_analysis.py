@@ -261,7 +261,7 @@ class BundleReport(object):
 
     @cached_property
     def size_total(self) -> int:
-        return self.report.total_size()
+        return self.report.total_size(**self.filters)
 
     @cached_property
     def module_extensions(self) -> List[str]:
