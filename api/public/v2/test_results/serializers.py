@@ -14,7 +14,9 @@ class TestInstanceSerializer(serializers.ModelSerializer):
     outcome = serializers.CharField(label="outcome")
     branch = serializers.CharField(label="branch name")
     repoid = serializers.IntegerField(label="repo id")
-    failure_rate = serializers.FloatField(source='test.failure_rate', read_only=True, label="failure rate")
+    failure_rate = serializers.FloatField(
+        source="test.failure_rate", read_only=True, label="failure rate"
+    )
 
     class Meta:
         model = TestInstance
