@@ -112,7 +112,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "sha": self.commit.commitid,
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -148,7 +150,11 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "sha": self.commit.commitid,
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components,
+            variables=variables,
+            owner=OwnerFactory(),
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -229,7 +235,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "sha": self.commit.commitid,
             "filter": {"components": ["Python"]},
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -289,7 +297,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "sha": self.commit.commitid,
             "filter": {"components": ["C", "Golang"]},
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -349,7 +359,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "sha": self.commit.commitid,
             "filter": {"components": ["pYtHoN"]},
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {
