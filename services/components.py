@@ -15,7 +15,7 @@ from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval
 
 
-def commit_components(commit: Commit, owner: Owner) -> List[Component]:
+def commit_components(commit: Commit, owner: Owner | None) -> List[Component]:
     """
     Get the list of components for a commit.
     A request is made to the provider on behalf of the given `owner`

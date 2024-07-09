@@ -2207,3 +2207,218 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                 ],
             },
         }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_report_no_after(self, get_storage_service):
+        measurements_data = [
+            # 2024-06-10
+            ["bundle_analysis_report_size", "super", "2024-06-10T19:07:23", 123],
+            # 2024-06-06
+            ["bundle_analysis_report_size", "super", "2024-06-06T19:07:23", 456],
+        ]
+
+        for item in measurements_data:
+            MeasurementFactory(
+                name=item[0],
+                owner_id=self.org.pk,
+                repo_id=self.repo.pk,
+                branch="feat",
+                measurable_id=item[1],
+                commit_sha=self.commit.pk,
+                timestamp=item[2],
+                value=item[3],
+            )
+
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        with open("./services/tests/samples/bundle_with_uuid.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=self.head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchMeasurements(
+                $org: String!,
+                $repo: String!,
+                $commit: String!
+                $filters: BundleAnalysisMeasurementsSetFilters
+                $orderingDirection: OrderingDirection!
+                $interval: MeasurementInterval!
+                $before: DateTime!
+                $after: DateTime
+                $branch: String!
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name: "super") {
+                                            name
+                                            measurements(
+                                                filters: $filters
+                                                orderingDirection: $orderingDirection
+                                                after: $after
+                                                interval: $interval
+                                                before: $before
+                                                branch: $branch
+                                            ){
+                                                assetType
+                                                name
+                                                size {
+                                                    loadTime {
+                                                        threeG
+                                                        highSpeed
+                                                    }
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
+                                                }
+                                                change {
+                                                    loadTime {
+                                                        threeG
+                                                        highSpeed
+                                                    }
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
+                                                }
+                                                measurements {
+                                                    avg
+                                                    min
+                                                    max
+                                                    timestamp
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "orderingDirection": "ASC",
+            "interval": "INTERVAL_1_DAY",
+            "after": None,
+            "before": "2024-06-10",
+            "branch": "feat",
+            "filters": {},
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "name": "super",
+                "measurements": [
+                    {
+                        "assetType": "ASSET_SIZE",
+                        "name": "asset-*.js",
+                        "size": None,
+                        "change": None,
+                        "measurements": [],
+                    },
+                    {
+                        "assetType": "ASSET_SIZE",
+                        "name": "asset-*.js",
+                        "size": None,
+                        "change": None,
+                        "measurements": [],
+                    },
+                    {
+                        "assetType": "ASSET_SIZE",
+                        "name": "asset-*.js",
+                        "size": None,
+                        "change": None,
+                        "measurements": [],
+                    },
+                    {
+                        "assetType": "FONT_SIZE",
+                        "name": None,
+                        "size": None,
+                        "change": None,
+                        "measurements": [],
+                    },
+                    {
+                        "assetType": "IMAGE_SIZE",
+                        "name": None,
+                        "size": None,
+                        "change": None,
+                        "measurements": [],
+                    },
+                    {
+                        "assetType": "JAVASCRIPT_SIZE",
+                        "name": None,
+                        "size": None,
+                        "change": None,
+                        "measurements": [],
+                    },
+                    {
+                        "assetType": "REPORT_SIZE",
+                        "name": None,
+                        "size": {
+                            "loadTime": {"threeG": 1, "highSpeed": 0},
+                            "size": {"gzip": 0, "uncompress": 123},
+                        },
+                        "change": {
+                            "loadTime": {"threeG": -3, "highSpeed": 0},
+                            "size": {"gzip": 0, "uncompress": -333},
+                        },
+                        "measurements": [
+                            {
+                                "avg": 456.0,
+                                "min": 456.0,
+                                "max": 456.0,
+                                "timestamp": "2024-06-06T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "min": None,
+                                "max": None,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "min": None,
+                                "max": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "min": None,
+                                "max": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 123.0,
+                                "min": 123.0,
+                                "max": 123.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                    },
+                    {
+                        "assetType": "STYLESHEET_SIZE",
+                        "name": None,
+                        "size": None,
+                        "change": None,
+                        "measurements": [],
+                    },
+                ],
+            },
+        }

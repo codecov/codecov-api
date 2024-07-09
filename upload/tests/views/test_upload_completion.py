@@ -1,6 +1,8 @@
 from unittest.mock import patch
 
+from django.http import HttpResponse
 from django.urls import reverse
+from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.tests.factories import CommitFactory, RepositoryFactory
@@ -186,6 +188,48 @@ def test_upload_completion_view_no_auth(db, mocker):
         == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
         "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
     )
+
+
+@patch("codecov_auth.authentication.repo_auth.exception_handler")
+def test_upload_completion_view_repo_auth_custom_exception_handler_error(
+    customized_error, db, mocker
+):
+    mocked_response = HttpResponse(
+        "No content posted.",
+        status=status.HTTP_401_UNAUTHORIZED,
+        content_type="application/json",
+    )
+    mocked_response.data = "invalid"
+    customized_error.return_value = mocked_response
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    token = "BAD"
+    commit = CommitFactory(repository=repository)
+    report = CommitReportFactory(commit=commit)
+    upload1 = UploadFactory(report=report)
+    upload2 = UploadFactory(report=report)
+    repository.save()
+    commit.save()
+    report.save()
+    upload1.save()
+    upload2.save()
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {token}")
+    url = reverse(
+        "new_upload.upload-complete",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+        ],
+    )
+    response = client.post(
+        url,
+    )
+    assert response.status_code == 401
+    assert response == mocked_response
 
 
 @patch("services.task.TaskService.manual_upload_completion_trigger")

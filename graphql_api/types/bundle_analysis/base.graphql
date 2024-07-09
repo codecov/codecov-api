@@ -51,7 +51,7 @@ type BundleAsset {
   measurements(
     interval: MeasurementInterval!
     before: DateTime!
-    after: DateTime!
+    after: DateTime
     branch: String
   ): BundleAnalysisMeasurements
 }
@@ -65,7 +65,7 @@ type BundleReport {
   measurements(
     interval: MeasurementInterval!
     before: DateTime!
-    after: DateTime!
+    after: DateTime
     branch: String
     orderingDirection: OrderingDirection
     filters: BundleAnalysisMeasurementsSetFilters
