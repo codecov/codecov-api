@@ -63,6 +63,7 @@ class PlanService:
         self.current_org.plan_activated_users = None
         self.current_org.plan_user_count = 1
         self.current_org.stripe_subscription_id = None
+        self.current_org.plan_auto_activate = False
         self.current_org.save()
 
     @property

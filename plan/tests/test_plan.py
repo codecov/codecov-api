@@ -305,6 +305,7 @@ class PlanServiceTests(TestCase):
         assert current_org.plan_user_count == 1
         assert current_org.plan_activated_users is None
         assert current_org.stripe_subscription_id is None
+        assert current_org.plan_auto_activate is False
 
     def test_plan_service_returns_if_owner_has_trial_dates(self):
         current_org = OwnerFactory(
