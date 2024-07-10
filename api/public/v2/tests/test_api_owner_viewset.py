@@ -51,6 +51,9 @@ class UserViewSetTests(APITestCase):
     def _list(self, kwargs):
         return self.client.get(reverse("api-v2-users-list", kwargs=kwargs))
 
+    def _detail(self, kwargs):
+        return self.client.get(reverse("api-v2-users-detail", kwargs=kwargs))
+
     def setUp(self):
         self.org = OwnerFactory(service="github")
         self.current_owner = OwnerFactory(service="github", organizations=[self.org.pk])
@@ -77,4 +80,92 @@ class UserViewSetTests(APITestCase):
                 }
             ],
             "total_pages": 1,
+        }
+
+    def test_retrieve_by_username(self):
+        another_user = OwnerFactory(service="github", organizations=[self.org.pk])
+        response = self._detail(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+    def test_retrieve_by_ownerid(self):
+        another_user = OwnerFactory(service="github", organizations=[self.org.pk])
+        response = self._detail(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.ownerid,
+            }
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+    def test_retrieve_cannot_get_details_of_members_of_other_orgs(self):
+        another_org = OwnerFactory(service="github")
+        another_user = OwnerFactory(service="github", organizations=[another_org.pk])
+        kwargs = {
+            "service": self.org.service,
+            "owner_username": self.org.username,
+            "user_username_or_ownerid": another_user.username,
+        }
+        response = self._detail(kwargs=kwargs)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        another_user.organizations.append(self.org.pk)
+        another_user.save()
+
+        response = self._detail(kwargs=kwargs)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+    def test_retrieve_cannot_get_details_if_not_member_of_org(self):
+        another_org = OwnerFactory(service="github")
+        another_user = OwnerFactory(service="github", organizations=[another_org.pk])
+        kwargs = {
+            "service": another_org.service,
+            "owner_username": another_org.username,
+            "user_username_or_ownerid": another_user.username,
+        }
+        response = self._detail(kwargs=kwargs)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        self.current_owner.organizations.append(another_org.pk)
+        self.current_owner.save()
+
+        response = self._detail(kwargs=kwargs)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
         }
