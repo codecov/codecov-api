@@ -160,8 +160,9 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
         assert pull_1.title in pull_titles
         assert pull_2.title in pull_titles
 
-    @freeze_time("2021-02-02")
-    def test_when_repository_has_null_compared_to(self):
+    @freeze_time("2021-02-02 00:00:00")
+    @patch("core.commands.pull.interactors.fetch_pull_request.TaskService")
+    def test_when_repository_has_null_compared_to(self, mock_task_service):
         my_pull = PullFactory(
             repository=self.repository,
             title="test-null-base",
@@ -173,9 +174,10 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             ).commitid,
             compared_to=None,
         )
-        pull = self.fetch_one_pull_request(
-            my_pull.pullid, pull_request_detail_query_with_bundle_analysis
-        )
+        with freeze_time("2021-02-02 06:00:00"):
+            pull = self.fetch_one_pull_request(
+                my_pull.pullid, pull_request_detail_query_with_bundle_analysis
+            )
         assert pull == {
             "title": "test-null-base",
             "state": "OPEN",
@@ -193,9 +195,13 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "behindBy": None,
             "behindByCommit": None,
         }
+        mock_task_service.return_value.pulls_sync.assert_called_with(
+            my_pull.repository.repoid, my_pull.pullid
+        )
 
-    @freeze_time("2021-02-02")
-    def test_when_repository_has_null_author(self):
+    @freeze_time("2021-02-02 00:00:00")
+    @patch("core.commands.pull.interactors.fetch_pull_request.TaskService")
+    def test_when_repository_has_null_author(self, mock_task_service):
         PullFactory(
             repository=self.repository,
             title="dummy-first-pr",
@@ -227,9 +233,11 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "behindBy": None,
             "behindByCommit": None,
         }
+        mock_task_service.return_value.pulls_sync.assert_not_called()
 
     @freeze_time("2021-02-02")
-    def test_when_repository_has_null_head(self):
+    @patch("core.commands.pull.interactors.fetch_pull_request.TaskService")
+    def test_when_repository_has_null_head(self, mock_task_service):
         PullFactory(
             repository=self.repository,
             title="dummy-first-pr",
@@ -261,6 +269,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "behindBy": None,
             "behindByCommit": None,
         }
+        mock_task_service.return_value.pulls_sync.assert_not_called()
 
     @freeze_time("2021-02-02")
     def test_when_pr_is_first_pr_in_repo(self):
