@@ -251,3 +251,12 @@ def resolve_owner_invoice(
 def resolve_owner_account(owner: Owner, info) -> dict:
     account_id = owner.account_id
     return Account.objects.filter(pk=account_id).first()
+
+
+@owner_bindable.field("isUserOktaAuthenticated")
+@sync_to_async
+def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
+    current_user = info.context["request"].user
+    if not current_user.is_authenticated:
+        return False
+    return current_user.is_okta_authenticated_for_org(owner.ownerid)

@@ -705,3 +705,33 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         except GraphQLError as e:
             assert e.message == UnauthorizedGuestAccess.message
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
+
+
+    def test_fetch_current_user_is_okta_authenticated(self):
+        account = AccountFactory()
+        current_user = OwnerFactory(username="sample-user", service="okta")
+        owner = OwnerFactory(username="sample-owner", service="okta", account_id=account.id)
+        current_user.okta_authenticated_accounts = [account.id]
+        current_user.save()
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=current_user)
+        assert data["owner"]["isUserOktaAuthenticated"] == True
+
+    def test_fetch_current_user_is_not_okta_authenticated(self):
+        account = AccountFactory()
+        current_user = OwnerFactory(username="sample-user", service="okta")
+        owner = OwnerFactory(username="sample-owner", service="okta", account_id=account.id)
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=current_user)
+        assert data["owner"]["isUserOktaAuthenticated"] == False
