@@ -42,6 +42,7 @@ class UploadSerializer(serializers.Serializer):
     job = serializers.CharField(required=False)
     flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
+    branch = serializers.CharField(required=False)
     service = serializers.CharField(required=False)
     storage_path = serializers.CharField(required=False)
 
