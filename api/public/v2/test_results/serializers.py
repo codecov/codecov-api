@@ -7,6 +7,7 @@ from reports.models import TestInstance
 
 class TestInstanceSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(label="id")
+    name = serializers.CharField(source="test.name", read_only=True, label="test name")
     test_id = serializers.CharField(label="test id")
     failure_message = serializers.CharField(label="test name")
     duration_seconds = serializers.FloatField(label="duration in seconds")
@@ -16,6 +17,11 @@ class TestInstanceSerializer(serializers.ModelSerializer):
     repoid = serializers.IntegerField(label="repo id")
     failure_rate = serializers.FloatField(
         source="test.failure_rate", read_only=True, label="failure rate"
+    )
+    commits_where_fail = serializers.ListField(
+        source="test.commits_where_fail",
+        read_only=True,
+        label="commits where test failed",
     )
 
     class Meta:
@@ -30,5 +36,7 @@ class TestInstanceSerializer(serializers.ModelSerializer):
             "branch",
             "repoid",
             "failure_rate",
+            "name",
+            "commits_where_fail",
         )
         fields = read_only_fields
