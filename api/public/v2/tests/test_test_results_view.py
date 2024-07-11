@@ -46,6 +46,7 @@ class TestResultsViewsetTests(InternalAPITest):
             "results": [
                 {
                     "id": self.test_instances[0].id,
+                    "name": self.test_instances[0].test.name,
                     "test_id": self.test_instances[0].test_id,
                     "failure_message": self.test_instances[0].failure_message,
                     "duration_seconds": self.test_instances[0].duration_seconds,
@@ -54,9 +55,13 @@ class TestResultsViewsetTests(InternalAPITest):
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
                     "failure_rate": self.test_instances[0].test.failure_rate,
+                    "commits_where_fail": self.test_instances[
+                        0
+                    ].test.commits_where_fail,
                 },
                 {
                     "id": self.test_instances[1].id,
+                    "name": self.test_instances[1].test.name,
                     "test_id": self.test_instances[1].test_id,
                     "failure_message": self.test_instances[1].failure_message,
                     "duration_seconds": self.test_instances[1].duration_seconds,
@@ -65,6 +70,9 @@ class TestResultsViewsetTests(InternalAPITest):
                     "branch": self.test_instances[1].branch,
                     "repoid": self.test_instances[1].repoid,
                     "failure_rate": self.test_instances[1].test.failure_rate,
+                    "commits_where_fail": self.test_instances[
+                        1
+                    ].test.commits_where_fail,
                 },
             ],
             "total_pages": 1,
@@ -88,6 +96,7 @@ class TestResultsViewsetTests(InternalAPITest):
             "results": [
                 {
                     "id": self.test_instances[0].id,
+                    "name": self.test_instances[0].test.name,
                     "test_id": self.test_instances[0].test_id,
                     "failure_message": self.test_instances[0].failure_message,
                     "duration_seconds": self.test_instances[0].duration_seconds,
@@ -96,6 +105,9 @@ class TestResultsViewsetTests(InternalAPITest):
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
                     "failure_rate": self.test_instances[0].test.failure_rate,
+                    "commits_where_fail": self.test_instances[
+                        0
+                    ].test.commits_where_fail,
                 },
             ],
             "total_pages": 1,
@@ -118,6 +130,7 @@ class TestResultsViewsetTests(InternalAPITest):
         assert res.status_code == status.HTTP_200_OK
         assert res.json() == {
             "id": self.test_instances[0].id,
+            "name": self.test_instances[0].test.name,
             "test_id": self.test_instances[0].test_id,
             "failure_message": self.test_instances[0].failure_message,
             "duration_seconds": self.test_instances[0].duration_seconds,
@@ -126,4 +139,5 @@ class TestResultsViewsetTests(InternalAPITest):
             "branch": self.test_instances[0].branch,
             "repoid": self.test_instances[0].repoid,
             "failure_rate": self.test_instances[0].test.failure_rate,
+            "commits_where_fail": self.test_instances[0].test.commits_where_fail,
         }
