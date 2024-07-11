@@ -76,10 +76,7 @@ class TestResultsView(
     filterset_class = TestResultsFilters
 
     def get_queryset(self):
-        repo = self.repo
-        if repo.repoid:
-            return TestInstance.objects.filter(repoid=repo.repoid)
-        return TestInstance.objects.none()
+        return TestInstance.objects.filter(repoid=self.repo.repoid)
 
     @extend_schema(summary="Test results list")
     def list(self, request, *args, **kwargs):
