@@ -18,7 +18,7 @@ from webhook_handlers.constants import (
 
 def get_config_mock(*args, **kwargs):
     if args == ("setup", "enterprise_license"):
-        return True
+        return False
     elif args == ("gitlab", "webhook_validation"):
         return True
     else:
@@ -26,13 +26,14 @@ def get_config_mock(*args, **kwargs):
 
 
 class TestGitlabWebhookHandler(APITestCase):
-    def _post_event_data(self, event, data={}):
+    def _post_event_data(self, event, data):
         return self.client.post(
             reverse("gitlab-webhook"),
             data=data,
             format="json",
             **{
                 GitLabHTTPHeaders.EVENT: event,
+                GitLabHTTPHeaders.TOKEN: self.repo.webhook_secret,
             },
         )
 
@@ -42,7 +43,10 @@ class TestGitlabWebhookHandler(APITestCase):
         self.get_config_mock.side_effect = get_config_mock
 
         self.repo = RepositoryFactory(
-            author=OwnerFactory(service="gitlab"), service_id=123, active=True
+            author=OwnerFactory(service="gitlab"),
+            service_id=123,
+            active=True,
+            webhook_secret="secret",
         )
 
     def tearDown(self):
@@ -57,7 +61,7 @@ class TestGitlabWebhookHandler(APITestCase):
     def test_push_event_no_yaml_cached(self):
         response = self._post_event_data(
             event=GitLabWebhookEvents.PUSH,
-            data={"object_kind": "push", "project_id": self.repo.service_id},
+            data={"event_name": "push", "project_id": self.repo.service_id},
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "No yaml cached yet."
@@ -65,7 +69,7 @@ class TestGitlabWebhookHandler(APITestCase):
     def test_push_event_yaml_cached(self):
         response = self._post_event_data(
             event=GitLabWebhookEvents.PUSH,
-            data={"object_kind": "push", "project_id": self.repo.service_id},
+            data={"event_name": "push", "project_id": self.repo.service_id},
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "No yaml cached yet."
@@ -74,7 +78,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
             data={
-                "object_kind": "build",
+                "event_name": "build",
                 "project_id": self.repo.service_id,
                 "build_status": "pending",
             },
@@ -89,7 +93,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
             data={
-                "object_kind": "build",
+                "event_name": "build",
                 "project_id": self.repo.service_id,
                 "build_status": "success",
             },
@@ -101,7 +105,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
             data={
-                "object_kind": "build",
+                "event_name": "build",
                 "project_id": self.repo.service_id,
                 "build_status": "success",
             },
@@ -121,7 +125,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
             data={
-                "object_kind": "build",
+                "event_name": "build",
                 "project_id": self.repo.service_id,
                 "build_status": "success",
                 "sha": commit_sha,
@@ -143,7 +147,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.JOB,
             data={
-                "object_kind": "build",
+                "event_name": "build",
                 "project_id": self.repo.service_id,
                 "build_status": "success",
                 "sha": commit_sha,
@@ -156,13 +160,19 @@ class TestGitlabWebhookHandler(APITestCase):
         )
 
     def test_merge_request_event_repo_not_found(self):
+        pullid = 2
         response = self._post_event_data(
             event=GitLabWebhookEvents.MERGE_REQUEST,
             data={
-                "object_kind": "merge_request",
-                "object_attributes": {"target_project_id": 1404},
+                "event_name": "merge_request",
+                "object_attributes": {
+                    "action": "open",
+                    "target_project_id": 1404,
+                    "iid": pullid,
+                },
             },
         )
+
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @patch("services.task.TaskService.pulls_sync")
@@ -171,7 +181,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.MERGE_REQUEST,
             data={
-                "object_kind": "merge_request",
+                "event_name": "merge_request",
                 "object_attributes": {
                     "action": "open",
                     "target_project_id": self.repo.service_id,
@@ -195,7 +205,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.MERGE_REQUEST,
             data={
-                "object_kind": "merge_request",
+                "event_name": "merge_request",
                 "object_attributes": {
                     "action": "close",
                     "target_project_id": self.repo.service_id,
@@ -215,7 +225,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.MERGE_REQUEST,
             data={
-                "object_kind": "merge_request",
+                "event_name": "merge_request",
                 "object_attributes": {
                     "action": "merge",
                     "target_project_id": self.repo.service_id,
@@ -234,7 +244,7 @@ class TestGitlabWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.MERGE_REQUEST,
             data={
-                "object_kind": "merge_request",
+                "event_name": "merge_request",
                 "object_attributes": {
                     "action": "update",
                     "target_project_id": self.repo.service_id,
@@ -247,15 +257,7 @@ class TestGitlabWebhookHandler(APITestCase):
 
         pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid=pullid)
 
-    def test_handle_system_hook_not_enterprise(self):
-        def side_effect(*args, **kwargs):
-            if args == ("setup", "enterprise_license"):
-                return None
-            else:
-                return kwargs.get("default")
-
-        self.get_config_mock.side_effect = side_effect
-
+    def test_handle_system_hook_project_create_not_enterprise(self):
         username = "jsmith"
         project_id = 74
         owner = OwnerFactory(service="gitlab", username=username)
@@ -276,44 +278,13 @@ class TestGitlabWebhookHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert response.data.get("detail") == "No enterprise license detected"
 
         new_repo = Repository.objects.filter(
             author__ownerid=owner.ownerid, service_id=project_id
         ).first()
         assert new_repo is None
 
-    def test_handle_system_hook_project_create(self):
-        username = "jsmith"
-        project_id = 74
-        owner = OwnerFactory(service="gitlab", username=username)
-
-        response = self._post_event_data(
-            event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2020-01-21T07:30:54Z",
-                "updated_at": "2020-01-21T07:38:22Z",
-                "event_name": "project_create",
-                "name": "StoreCloud",
-                "owner_email": "johnsmith@gmail.com",
-                "owner_name": "John Smith",
-                "path": "storecloud",
-                "path_with_namespace": f"{username}/storecloud",
-                "project_id": project_id,
-                "project_visibility": "private",
-            },
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository created"
-
-        new_repo = Repository.objects.get(
-            author__ownerid=owner.ownerid, service_id=project_id
-        )
-        assert new_repo is not None
-        assert new_repo.private is True
-        assert new_repo.name == "storecloud"
-
-    def test_handle_system_hook_project_destroy(self):
+    def test_handle_system_hook_project_destroy_not_enterprise(self):
         username = "jsmith"
         project_id = 73
         owner = OwnerFactory(service="gitlab", username=username)
@@ -341,16 +312,15 @@ class TestGitlabWebhookHandler(APITestCase):
                 "project_visibility": "internal",
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository deleted"
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
         repo.refresh_from_db()
-        assert repo.active is False
-        assert repo.activated is False
-        assert repo.deleted is True
-        assert repo.name == "testing-deleted"
+        assert repo.active is True
+        assert repo.activated is True
+        assert repo.deleted is False
+        assert repo.name == "testing"
 
-    def test_handle_system_hook_project_rename(self):
+    def test_handle_system_hook_project_rename_not_enterprise(self):
         username = "jsmith"
         project_id = 73
         owner = OwnerFactory(service="gitlab", username=username)
@@ -379,17 +349,16 @@ class TestGitlabWebhookHandler(APITestCase):
                 "old_path_with_namespace": "jsmith/overscore",
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository renamed"
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
         repo.refresh_from_db()
-        assert repo.name == "underscore"
+        assert repo.name == "overscore"
 
-    def test_handle_system_hook_project_transfer(self):
+    def test_handle_system_hook_project_transfer_not_enterprise(self):
         old_owner_username = "jsmith"
         new_owner_username = "scores"
         project_id = 73
-        new_owner = OwnerFactory(service="gitlab", username=new_owner_username)
+        OwnerFactory(service="gitlab", username=new_owner_username)
         old_owner = OwnerFactory(service="gitlab", username=old_owner_username)
         repo = RepositoryFactory(
             author=old_owner,
@@ -416,14 +385,13 @@ class TestGitlabWebhookHandler(APITestCase):
                 "old_path_with_namespace": f"{old_owner_username}/overscore",
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository transfered"
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
         repo.refresh_from_db()
-        assert repo.name == "underscore"
-        assert repo.author == new_owner
+        assert repo.name == "overscore"
+        assert repo.author == old_owner
 
-    def test_handle_system_hook_user_create(self):
+    def test_handle_system_hook_user_create_not_enterprise(self):
         gl_user_id = 41
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
@@ -437,22 +405,23 @@ class TestGitlabWebhookHandler(APITestCase):
                 "user_id": gl_user_id,
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "User created"
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
-        new_user = Owner.objects.get(service="gitlab", service_id=gl_user_id)
-        assert new_user.name == "John Smith"
-        assert new_user.email == "js@gitlabhq.com"
-        assert new_user.username == "js"
+        new_user = Owner.objects.filter(
+            service="gitlab", service_id=gl_user_id
+        ).exists()
+        assert new_user is False
 
-    def test_handle_system_hook_user_add_to_team_no_existing_permissions(self):
+    def test_handle_system_hook_user_add_to_team_no_existing_permissions_not_enterprise(
+        self,
+    ):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
         user = OwnerFactory(
             service="gitlab", service_id=gl_user_id, username=username, permission=None
         )
-        repo = RepositoryFactory(
+        RepositoryFactory(
             author=user,
             service_id=project_id,
             active=True,
@@ -477,13 +446,11 @@ class TestGitlabWebhookHandler(APITestCase):
                 "project_visibility": "private",
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Permission added"
-
+        assert response.status_code == status.HTTP_403_FORBIDDEN
         user.refresh_from_db()
-        assert user.permission == [repo.repoid]
+        assert user.permission is None  # no change
 
-    def test_handle_system_hook_user_add_to_team(self):
+    def test_handle_system_hook_user_add_to_team_not_enterprise(self):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -518,14 +485,13 @@ class TestGitlabWebhookHandler(APITestCase):
                 "project_visibility": "private",
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Permission added"
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
         user.refresh_from_db()
-        assert len(user.permission) == 5
-        assert repo.repoid in user.permission
+        assert len(user.permission) == 4  # no change
+        assert repo.repoid not in user.permission
 
-    def test_handle_system_hook_user_add_to_team_repo_public(self):
+    def test_handle_system_hook_user_add_to_team_repo_public_not_enterprise(self):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -560,14 +526,11 @@ class TestGitlabWebhookHandler(APITestCase):
                 "project_visibility": "public",
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data is None
-
+        assert response.status_code == status.HTTP_403_FORBIDDEN
         user.refresh_from_db()
-
         assert user.permission == [1, 2, 3, 100]  # no change
 
-    def test_handle_system_hook_user_remove_from_team(self):
+    def test_handle_system_hook_user_remove_from_team_not_enterprise(self):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -602,44 +565,119 @@ class TestGitlabWebhookHandler(APITestCase):
                 "project_visibility": "private",
             },
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Permission removed"
-
+        assert response.status_code == status.HTTP_403_FORBIDDEN
         user.refresh_from_db()
-        assert user.permission == [1, 2, 3]
+        assert user.permission == [1, 2, 3, repo.repoid]
+
+    def _post_event_data_with_token_variable(self, event, data, token):
+        return self.client.post(
+            reverse("gitlab-webhook"),
+            data=data,
+            format="json",
+            **{
+                GitLabHTTPHeaders.EVENT: event,
+                GitLabHTTPHeaders.TOKEN: token,
+            },
+        )
 
     def test_secret_validation(self):
-        owner = OwnerFactory(service="gitlab")
         repo = RepositoryFactory(
-            author=owner,
+            author=OwnerFactory(service="gitlab"),
             service_id=uuid.uuid4(),
             webhook_secret=uuid.uuid4(),
         )
-        owner.permission = [repo.repoid]
-        owner.save()
 
-        response = self.client.post(
-            reverse("gitlab-webhook"),
-            **{
-                GitLabHTTPHeaders.EVENT: "",
-                GitLabHTTPHeaders.TOKEN: "",
-            },
+        response = self._post_event_data_with_token_variable(
+            event="",
             data={
                 "project_id": repo.service_id,
             },
-            format="json",
+            token="",
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        response = self.client.post(
-            reverse("gitlab-webhook"),
-            **{
-                GitLabHTTPHeaders.EVENT: "",
-                GitLabHTTPHeaders.TOKEN: repo.webhook_secret,
-            },
+        response = self._post_event_data_with_token_variable(
+            event="",
             data={
                 "project_id": repo.service_id,
             },
-            format="json",
+            token=repo.webhook_secret,
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_webhook_validation(self):
+        secret = str(uuid.uuid4())
+        repo = RepositoryFactory(
+            author=OwnerFactory(service="gitlab"),
+            service_id=uuid.uuid4(),
+            webhook_secret=None,
+        )
+        # both none
+        response = self._post_event_data_with_token_variable(
+            event="",
+            data={
+                "project_id": repo.service_id,
+            },
+            token="",
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # none on repo
+        response = self._post_event_data_with_token_variable(
+            event="",
+            data={
+                "project_id": repo.service_id,
+            },
+            token=secret,
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # none from webhook
+        repo.webhook_secret = secret
+        repo.save()
+        response = self._post_event_data_with_token_variable(
+            event="",
+            data={
+                "project_id": repo.service_id,
+            },
+            token="",
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @patch("webhook_handlers.views.gitlab.get_config")
+    def test_webhook_validation_off_in_config(self, patched_get_config):
+        patched_get_config.return_value = False
+
+        secret = str(uuid.uuid4())
+        repo = RepositoryFactory(
+            author=OwnerFactory(service="gitlab"),
+            service_id=uuid.uuid4(),
+            webhook_secret=None,
+        )
+        # both none
+        response = self._post_event_data_with_token_variable(
+            event="",
+            data={
+                "project_id": repo.service_id,
+            },
+            token="",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        # none on repo
+        response = self._post_event_data_with_token_variable(
+            event="",
+            data={
+                "project_id": repo.service_id,
+            },
+            token=secret,
+        )
+        assert response.status_code == status.HTTP_200_OK
+        # none from webhook
+        repo.webhook_secret = secret
+        repo.save()
+        response = self._post_event_data_with_token_variable(
+            event="",
+            data={
+                "project_id": repo.service_id,
+            },
+            token="",
         )
         assert response.status_code == status.HTTP_200_OK

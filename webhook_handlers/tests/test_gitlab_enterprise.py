@@ -17,8 +17,6 @@ from webhook_handlers.constants import (
     WebhookHandlerErrorMessages,
 )
 
-webhook_secret = "test-46204fb3-374e-4cfc-8cae-d7ca43371096"
-
 
 class TestGitlabEnterpriseWebhookHandler(APITestCase):
     @pytest.fixture(scope="function", autouse=True)
@@ -31,17 +29,16 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             mocker,
             configs={
                 "setup.enterprise_license": True,
-                "gitlab_enterprise.webhook_secret": webhook_secret,
                 "gitlab_enterprise.webhook_validation": True,
             },
         )
 
-    def _post_event_data(self, event, data={}):
+    def _post_event_data(self, event, data, token=None):
         return self.client.post(
             reverse("gitlab_enterprise-webhook"),
             **{
                 GitLabHTTPHeaders.EVENT: event,
-                GitLabHTTPHeaders.TOKEN: webhook_secret,
+                GitLabHTTPHeaders.TOKEN: token,
             },
             data=data,
             format="json",
@@ -52,11 +49,14 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             author=OwnerFactory(service="gitlab_enterprise"),
             service_id=123,
             active=True,
+            webhook_secret=str(uuid.uuid4()),
         )
 
     def test_unknown_repo(self):
         response = self._post_event_data(
-            event=GitLabWebhookEvents.PUSH, data={"project_id": 1404}
+            event=GitLabWebhookEvents.PUSH,
+            data={"project_id": 1404},
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -64,6 +64,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.PUSH,
             data={"object_kind": "push", "project_id": self.repo.service_id},
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "No yaml cached yet."
@@ -72,6 +73,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         response = self._post_event_data(
             event=GitLabWebhookEvents.PUSH,
             data={"object_kind": "push", "project_id": self.repo.service_id},
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "No yaml cached yet."
@@ -84,6 +86,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "project_id": self.repo.service_id,
                 "build_status": "pending",
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PENDING_STATUSES
@@ -99,6 +102,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "project_id": self.repo.service_id,
                 "build_status": "success",
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PROCESSING
@@ -111,6 +115,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "project_id": self.repo.service_id,
                 "build_status": "success",
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PROCESSING
@@ -132,6 +137,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "build_status": "success",
                 "sha": commit_sha,
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == WebhookHandlerErrorMessages.SKIP_PROCESSING
@@ -154,6 +160,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "build_status": "success",
                 "sha": commit_sha,
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Notify queued."
@@ -168,6 +175,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "object_kind": "merge_request",
                 "object_attributes": {"target_project_id": 1404},
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -184,6 +192,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                     "iid": pullid,
                 },
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Opening pull request in Codecov"
@@ -208,6 +217,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                     "iid": pull.pullid,
                 },
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Pull request closed"
@@ -228,6 +238,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                     "iid": pullid,
                 },
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Pull request merged"
@@ -247,6 +258,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                     "iid": pullid,
                 },
             },
+            token=self.repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Pull request synchronize queued"
@@ -275,14 +287,14 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert response.data.get("detail") == "No enterprise license detected"
 
         new_repo = Repository.objects.filter(
             author__ownerid=owner.ownerid, service_id=project_id
         ).first()
         assert new_repo is None
 
-    def test_handle_system_hook_project_create(self):
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_project_create(self, mock_refresh):
         username = "jsmith"
         project_id = 74
         owner = OwnerFactory(service="gitlab_enterprise", username=username)
@@ -303,14 +315,12 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository created"
-
-        new_repo = Repository.objects.get(
-            author__ownerid=owner.ownerid, service_id=project_id
+        mock_refresh.assert_called_once_with(
+            ownerid=owner.ownerid,
+            username=owner.username,
+            using_integration=False,
+            manual_trigger=False,
         )
-        assert new_repo is not None
-        assert new_repo.private is True
-        assert new_repo.name == "storecloud"
 
     def test_handle_system_hook_project_destroy(self):
         username = "jsmith"
@@ -322,6 +332,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            webhook_secret=str(uuid.uuid4()),
         )
 
         response = self._post_event_data(
@@ -338,6 +349,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "project_id": project_id,
                 "project_visibility": "internal",
             },
+            token=repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Repository deleted"
@@ -358,6 +370,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            webhook_secret=str(uuid.uuid4()),
         )
 
         response = self._post_event_data(
@@ -375,6 +388,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "project_visibility": "internal",
                 "old_path_with_namespace": "jsmith/overscore",
             },
+            token=repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Repository renamed"
@@ -399,6 +413,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            webhook_secret=str(uuid.uuid4()),
         )
 
         response = self._post_event_data(
@@ -416,37 +431,19 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "project_visibility": "internal",
                 "old_path_with_namespace": f"{old_owner_username}/overscore",
             },
+            token=repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository transfered"
+        assert response.data == "Repository transferred"
 
         repo.refresh_from_db()
         assert repo.name == "underscore"
         assert repo.author == new_owner
 
-    def test_handle_system_hook_user_create(self):
-        gl_user_id = 41
-        response = self._post_event_data(
-            event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2012-07-21T07:44:07Z",
-                "updated_at": "2012-07-21T07:38:22Z",
-                "email": "js@gitlabhq.com",
-                "event_name": "user_create",
-                "name": "John Smith",
-                "username": "js",
-                "user_id": gl_user_id,
-            },
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "User created"
-
-        new_user = Owner.objects.get(service="gitlab_enterprise", service_id=gl_user_id)
-        assert new_user.name == "John Smith"
-        assert new_user.email == "js@gitlabhq.com"
-        assert new_user.username == "js"
-
-    def test_handle_system_hook_user_add_to_team_no_existing_permissions(self):
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_user_add_to_team_no_existing_permissions(
+        self, mock_refresh
+    ):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -462,6 +459,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            webhook_secret=str(uuid.uuid4()),
         )
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
@@ -480,14 +478,20 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "user_id": gl_user_id,
                 "project_visibility": "private",
             },
+            token=repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Permission added"
+        assert response.data == "Sync initiated"
 
-        user.refresh_from_db()
-        assert user.permission == [repo.repoid]
+        mock_refresh.assert_called_once_with(
+            ownerid=user.ownerid,
+            username=user.username,
+            using_integration=False,
+            manual_trigger=False,
+        )
 
-    def test_handle_system_hook_user_add_to_team(self):
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_user_add_to_team(self, mock_refresh):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -503,6 +507,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            webhook_secret=str(uuid.uuid4()),
         )
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
@@ -521,13 +526,17 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "user_id": gl_user_id,
                 "project_visibility": "private",
             },
+            token=repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Permission added"
+        assert response.data == "Sync initiated"
 
-        user.refresh_from_db()
-        assert len(user.permission) == 5
-        assert repo.repoid in user.permission
+        mock_refresh.assert_called_once_with(
+            ownerid=user.ownerid,
+            username=user.username,
+            using_integration=False,
+            manual_trigger=False,
+        )
 
     def test_handle_system_hook_user_add_to_team_repo_public(self):
         gl_user_id = 41
@@ -539,12 +548,13 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             username=username,
             permission=[1, 2, 3, 100],
         )
-        RepositoryFactory(
+        repo = RepositoryFactory(
             author=user,
             service_id=project_id,
             active=True,
             activated=True,
             deleted=False,
+            webhook_secret=str(uuid.uuid4()),
         )
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
@@ -563,6 +573,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "user_id": gl_user_id,
                 "project_visibility": "public",
             },
+            token=repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data is None
@@ -571,7 +582,8 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
         assert user.permission == [1, 2, 3, 100]  # no change
 
-    def test_handle_system_hook_user_remove_from_team(self):
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_user_remove_from_team(self, mock_refresh):
         gl_user_id = 41
         project_id = 74
         username = "johnsmith"
@@ -587,6 +599,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            webhook_secret=str(uuid.uuid4()),
         )
         user.permission = [1, 2, 3, repo.repoid]
         user.save()
@@ -608,12 +621,16 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "user_id": gl_user_id,
                 "project_visibility": "private",
             },
+            token=repo.webhook_secret,
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Permission removed"
-
-        user.refresh_from_db()
-        assert user.permission == [1, 2, 3]
+        assert response.data == "Sync initiated"
+        mock_refresh.assert_called_once_with(
+            ownerid=user.ownerid,
+            username=user.username,
+            using_integration=False,
+            manual_trigger=False,
+        )
 
     def test_secret_validation(self):
         owner = OwnerFactory(service="gitlab_enterprise")
