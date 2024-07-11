@@ -54,3 +54,4 @@ vcrpy
 whitenoise
 django-autocomplete-light
 django-better-admin-arrayfield
+certifi>=2024.07.04

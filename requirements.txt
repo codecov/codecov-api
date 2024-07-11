@@ -57,8 +57,9 @@ cerberus==1.3.2
     # via
     #   -r requirements.in
     #   shared
-certifi==2023.7.22
+certifi==2024.7.4
     # via
+    #   -r requirements.in
     #   elastic-apm
     #   httpcore
     #   httpx
