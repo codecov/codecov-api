@@ -97,3 +97,25 @@ class ReportResultsFactory(DjangoModelFactory):
             ReportResults.ReportResultsStates.COMPLETED,
         ]
     )
+
+
+class TestFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = models.Test
+
+    id = factory.Faker("word")
+    repository = factory.SubFactory(RepositoryFactory)
+
+
+class TestInstanceFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = models.TestInstance
+
+    test = factory.SubFactory(TestFactory)
+    duration_seconds = 1.0
+    outcome = "failed"
+    failure_message = "Test failed"
+    branch = "master"
+    repoid = factory.SelfAttribute("test.repository.repoid")
+    commitid = "123456"
+    upload = factory.SubFactory(UploadFactory)
