@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Iterable, List, Mapping, Optional
 
+import shared.rate_limits as rate_limits
 import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
@@ -10,6 +11,7 @@ from shared.yaml import UserYaml
 
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
+from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
 from core.models import Branch, Repository
 from graphql_api.actions.commits import commit_status, repo_commits
 from graphql_api.actions.components import (
@@ -28,6 +30,7 @@ from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
+from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 
@@ -536,3 +539,21 @@ def resolve_is_first_pull_request(repository: Repository, info) -> bool:
         return not first_pr.compared_to
 
     return False
+
+
+@repository_bindable.field("isGithubRateLimited")
+@sync_to_async
+def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
+    if (
+        repository.service != SERVICE_GITHUB
+        and repository.service != SERVICE_GITHUB_ENTERPRISE
+    ):
+        return False
+    current_owner = info.context["request"].current_owner
+    redis_connection = get_redis_connection()
+    rate_limit_redis_key = rate_limits.determine_entity_redis_key(
+        owner=current_owner, repository=repository
+    )
+    return rate_limits.determine_if_entity_is_rate_limited(
+        redis_connection, rate_limit_redis_key
+    )

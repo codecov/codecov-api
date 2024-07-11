@@ -705,3 +705,41 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         except GraphQLError as e:
             assert e.message == UnauthorizedGuestAccess.message
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
+
+    @patch("shared.rate_limits.determine_entity_redis_key")
+    @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_is_github_rate_limited(
+        self, mock_determine_rate_limit, mock_determine_redis_key
+    ):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        query = """{
+            owner(username: "%s") {
+                isGithubRateLimited
+            }
+        }
+
+        """ % (current_org.username)
+        mock_determine_redis_key.return_value = "test"
+        mock_determine_rate_limit.return_value = True
+
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["isGithubRateLimited"] == True
+
+    def test_fetch_is_github_rate_limited_not_on_gh_service(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="bitbucket",
+        )
+        query = """{
+            owner(username: "%s") {
+                isGithubRateLimited
+            }
+        }
+
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org, provider="bb")
+        assert data["owner"]["isGithubRateLimited"] == False
