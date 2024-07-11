@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from rest_framework import status
+from rest_framework.exceptions import ErrorDetail
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
@@ -50,11 +51,11 @@ class OwnerViewSetTests(APITestCase):
     def test_retrieve_returns_404_if_no_matching_username(self):
         response = self._retrieve(kwargs={"service": "github", "owner_username": "fff"})
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data == {"detail": "Not found."}
+        assert response.data == {'detail': ErrorDetail(string='No Owner matches the given query.', code='not_found')}
 
     def test_retrieve_owner_unknown_service_returns_404(self):
         response = self._retrieve(
             kwargs={"service": "not-real", "owner_username": "anything"}
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.data == {"detail": "Service not found: not-real"}
+        assert response.data == {'detail': ErrorDetail(string='No Owner matches the given query.', code='not_found')}
