@@ -1,11 +1,5 @@
-import json
 import logging
-import re
-from typing import Dict, Optional
-from urllib.parse import urlencode
 
-import jwt
-import requests
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.http import HttpRequest, HttpResponse
@@ -14,79 +8,19 @@ from django.views import View
 from requests.auth import HTTPBasicAuth
 
 from codecov_auth.models import OktaUser, User
-from codecov_auth.views.base import LoginMixin, StateMixin
+from codecov_auth.views.base import LoginMixin
+from codecov_auth.views.okta_mixin import ISS_REGEX, OktaLoginMixin, validate_id_token
 from utils.services import get_short_service_name
 
 log = logging.getLogger(__name__)
-iss_regex = re.compile(r"https://[\w\d\-\_]+.okta.com/?")
+
+OKTA_BASIC_AUTH = HTTPBasicAuth(
+    settings.OKTA_OAUTH_CLIENT_ID, settings.OKTA_OAUTH_CLIENT_SECRET
+)
 
 
-def validate_id_token(iss: str, id_token: str) -> dict:
-    res = requests.get(f"{iss}/oauth2/v1/keys")
-    jwks = res.json()
-
-    public_keys = {}
-    for jwk in jwks["keys"]:
-        kid = jwk["kid"]
-        public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
-
-    kid = jwt.get_unverified_header(id_token)["kid"]
-    key = public_keys[kid]
-
-    id_payload = jwt.decode(
-        id_token,
-        key=key,
-        algorithms=["RS256"],
-        audience=settings.OKTA_OAUTH_CLIENT_ID,
-    )
-    assert id_payload["iss"] == iss
-    assert id_payload["aud"] == settings.OKTA_OAUTH_CLIENT_ID
-
-    return id_payload
-
-
-auth = HTTPBasicAuth(settings.OKTA_OAUTH_CLIENT_ID, settings.OKTA_OAUTH_CLIENT_SECRET)
-
-
-class OktaLoginView(LoginMixin, StateMixin, View):
+class OktaLoginView(LoginMixin, OktaLoginMixin, View):
     service = "okta"
-
-    def _fetch_user_data(self, iss: str, code: str, state: str) -> Optional[Dict]:
-        res = requests.post(
-            f"{iss}/oauth2/v1/token",
-            auth=auth,
-            data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": settings.OKTA_OAUTH_REDIRECT_URL,
-                "state": state,
-            },
-        )
-
-        if not self.verify_state(state):
-            log.warning("Invalid state during Okta OAuth")
-            return None
-
-        if res.status_code >= 400:
-            return None
-        return res.json()
-
-    def _redirect_to_consent(self, iss: str) -> HttpResponse:
-        state = self.generate_state()
-        qs = urlencode(
-            dict(
-                response_type="code",
-                client_id=settings.OKTA_OAUTH_CLIENT_ID,
-                scope="openid email profile",
-                redirect_uri=settings.OKTA_OAUTH_REDIRECT_URL,
-                state=state,
-            )
-        )
-        redirect_url = f"{iss}/oauth2/v1/authorize?{qs}"
-        response = redirect(redirect_url)
-        self.store_to_cookie_utm_tags(response)
-
-        return response
 
     def _perform_login(self, request: HttpRequest) -> HttpResponse:
         code = request.GET.get("code")
@@ -101,7 +35,9 @@ class OktaLoginView(LoginMixin, StateMixin, View):
             log.warning("Unable to log in due to missing Okta issuer", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
 
-        user_data = self._fetch_user_data(iss, code, state)
+        user_data = self._fetch_user_data(
+            iss, code, state, settings.OKTA_OAUTH_REDIRECT_URL, OKTA_BASIC_AUTH
+        )
         if user_data is None:
             log.warning("Unable to log in due to problem on Okta", exc_info=True)
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
@@ -121,11 +57,11 @@ class OktaLoginView(LoginMixin, StateMixin, View):
 
         return response
 
-    def _login_user(self, request: HttpRequest, iss: str, user_data: dict):
+    def _login_user(self, request: HttpRequest, iss: str, user_data: dict) -> User:
         id_token = user_data[
             "id_token"
         ]  # this will be present since we requested the `oidc` scope
-        id_payload = validate_id_token(iss, id_token)
+        id_payload = validate_id_token(iss, id_token, settings.OKTA_OAUTH_CLIENT_ID)
 
         okta_id = id_payload["sub"]
         user_email = id_payload["email"]
@@ -133,7 +69,6 @@ class OktaLoginView(LoginMixin, StateMixin, View):
 
         okta_user = OktaUser.objects.filter(okta_id=okta_id).first()
 
-        current_user = None
         if request.user is not None and not request.user.is_anonymous:
             # we're already authenticated
             current_user = request.user
@@ -179,7 +114,7 @@ class OktaLoginView(LoginMixin, StateMixin, View):
         login(request, current_user)
         return current_user
 
-    def get(self, request):
+    def get(self, request) -> HttpResponse:
         if request.GET.get("code"):
             return self._perform_login(request)
         else:
@@ -187,7 +122,11 @@ class OktaLoginView(LoginMixin, StateMixin, View):
             if not iss:
                 log.warning("Missing Okta issuer")
                 return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
-            if not iss_regex.match(iss):
+            if not ISS_REGEX.match(iss):
                 log.warning("Invalid Okta issuer")
                 return redirect(f"{settings.CODECOV_DASHBOARD_URL}/login")
-            return self._redirect_to_consent(iss=iss)
+            return self._redirect_to_consent(
+                iss=iss,
+                client_id=settings.OKTA_OAUTH_CLIENT_ID,
+                oauth_redirect_url=settings.OKTA_OAUTH_REDIRECT_URL,
+            )
