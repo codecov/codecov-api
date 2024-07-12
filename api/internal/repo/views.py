@@ -79,4 +79,3 @@ class RepositoryViewSet(
             if owner.has_legacy_plan and owner.repo_credits <= 0:
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
-

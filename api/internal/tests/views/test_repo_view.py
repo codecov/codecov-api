@@ -57,6 +57,7 @@ class RepositoryViewSetTestSuite(InternalAPITest):
             }
         return self.client.delete(reverse("repos-detail", kwargs=kwargs))
 
+
 class TestRepositoryViewSetList(RepositoryViewSetTestSuite):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
