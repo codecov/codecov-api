@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import jwt
 
-from codecov_auth.views.okta import OKTA_BASIC_AUTH, OktaEnterpriseLoginView
+from codecov_auth.views.okta import OKTA_BASIC_AUTH, OktaLoginView
 from codecov_auth.views.okta_mixin import validate_id_token
 
 private_key = """-----BEGIN PRIVATE KEY-----
@@ -97,8 +97,8 @@ def test_okta_fetch_user_data_invalid_state(client, db):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        with patch.object(OktaEnterpriseLoginView, "verify_state", return_value=False):
-            view = OktaEnterpriseLoginView()
+        with patch.object(OktaLoginView, "verify_state", return_value=False):
+            view = OktaLoginView()
             res = view._fetch_user_data(
                 "https://example.okta.com",
                 "test-code",

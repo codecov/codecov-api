@@ -7,6 +7,7 @@ from django.urls import reverse
 from codecov_auth.models import OktaUser
 from codecov_auth.tests.factories import OktaUserFactory, OwnerFactory, UserFactory
 from codecov_auth.views.okta import OKTA_BASIC_AUTH
+from codecov_auth.views.okta_mixin import OktaIdTokenPayload
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def mocked_okta_token_request(mocker):
                     "refresh_token": "test-refresh-token",
                     "id_token": "test-id-token",
                     "state": "test-state",
-                }
+                },
             ),
         ),
     )
@@ -31,11 +32,13 @@ def mocked_okta_token_request(mocker):
 def mocked_validate_id_token(mocker):
     return mocker.patch(
         "codecov_auth.views.okta.validate_id_token",
-        return_value={
-            "sub": "test-id",
-            "email": "test@example.com",
-            "name": "Some User",
-        },
+        return_value=OktaIdTokenPayload(
+            sub="test-id",
+            email="test@example.com",
+            name="Some User",
+            iss="https://example.com",
+            aud="test-client-id",
+        ),
     )
 
 
