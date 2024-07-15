@@ -83,6 +83,24 @@ type Repository {
   componentsYaml(termId: String): [ComponentsYaml]!
   testAnalyticsEnabled: Boolean
   isGithubRateLimited: Boolean!
+  testResults(
+    ordering: TestResultsOrdering
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
+}
+
+type TestResultConnection {
+  edges: [TestResultEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type TestResultEdge {
+  cursor: String!
+  node: TestResult!
 }
 
 type PullConnection {

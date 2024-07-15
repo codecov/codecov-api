@@ -8,7 +8,7 @@ from django.conf import settings
 from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
 from shared.yaml import UserYaml
-
+from reports.models import Test
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
@@ -556,4 +556,22 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
     )
     return rate_limits.determine_if_entity_is_rate_limited(
         redis_connection, rate_limit_redis_key
+    )
+
+
+@repository_bindable.field("testResults")
+@convert_kwargs_to_snake_case
+async def resolve_test_results(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+    ordering=None,
+    **kwargs,
+):
+    command = info.context["executor"].get_command("repository")
+    queryset = Test.objects.filter(repository=repository)
+    return await queryset_to_connection(
+        queryset,
+        ordering=(ordering.get("parameter"),) if ordering else ("updated_at",),
+        ordering_direction=ordering.get("direction") if ordering else OrderingDirection.DESC,
+        **kwargs,
     )

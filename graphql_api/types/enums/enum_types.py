@@ -25,6 +25,7 @@ from .enums import (
     UploadErrorEnum,
     UploadState,
     UploadType,
+    TestResultsOrderingParameter,
 )
 
 enum_types = [
@@ -50,4 +51,5 @@ enum_types = [
     EnumType("TrialStatus", TrialStatus),
     EnumType("YamlStates", YamlStates),
     EnumType("BundleLoadTypes", BundleLoadTypes),
+    EnumType("TestResultsOrderingParameter", TestResultsOrderingParameter),
 ]

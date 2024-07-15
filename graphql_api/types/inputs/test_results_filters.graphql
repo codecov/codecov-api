@@ -1,0 +1,4 @@
+input TestResultsOrdering {
+  direction: OrderingDirection
+  parameter: TestResultsOrderingParameter
+}

@@ -1,0 +1,6 @@
+type TestResult {
+  updatedAt: DateTime!
+  name: String!
+  commitsFailed: [String!]
+  failureRate: Float
+}

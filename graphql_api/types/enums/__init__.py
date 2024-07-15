@@ -16,4 +16,5 @@ from .enums import (
     UploadErrorEnum,
     UploadState,
     UploadType,
+    TestResultsOrderingParameter,
 )
