@@ -276,7 +276,7 @@ class RepositoryQuerySet(QuerySet):
             author=owner,
             service_id=git_repo.get("service_id") or git_repo.get("id"),
             private=git_repo["private"],
-            branch=git_repo.get("branch") or git_repo.get("default_branch") or "master",
+            branch=git_repo.get("branch") or git_repo.get("default_branch") or "main",
             name=git_repo["name"],
         )
 
