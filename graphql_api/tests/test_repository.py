@@ -12,6 +12,7 @@ from core.tests.factories import (
     RepositoryFactory,
     RepositoryTokenFactory,
 )
+from reports.tests.factories import TestFactory
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -802,3 +803,17 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data["me"]["owner"]["repository"]["isGithubRateLimited"] == False
+
+
+    def test_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        res = self.fetch_repository(repo.name, """testResults { edges { node { name } } }""")
+        assert res["testResults"] == {
+            "edges": [{"node": {"name": test.name}}]
+        }
+
+    def test_test_results_no_tests(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        res = self.fetch_repository(repo.name, """testResults { edges { node { name } } }""")
+        assert res["testResults"] == {"edges": []}

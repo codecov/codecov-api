@@ -8,7 +8,7 @@ from django.conf import settings
 from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
 from shared.yaml import UserYaml
-from reports.models import Test
+
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
@@ -28,6 +28,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from reports.models import Test
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
@@ -567,7 +568,6 @@ async def resolve_test_results(
     ordering=None,
     **kwargs,
 ):
-    command = info.context["executor"].get_command("repository")
     queryset = Test.objects.filter(repository=repository)
     return await queryset_to_connection(
         queryset,

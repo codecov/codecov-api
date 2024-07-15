@@ -12,9 +12,9 @@ from .enums import (
     PullRequestState,
     RepositoryOrdering,
     SyncProvider,
+    TestResultsOrderingParameter,
     TypeProjectOnboarding,
     UploadErrorEnum,
     UploadState,
     UploadType,
-    TestResultsOrderingParameter,
 )
