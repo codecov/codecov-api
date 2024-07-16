@@ -101,7 +101,7 @@ def resolve_bundle_analysis_compare_with_base(
             return MissingBaseCommit()
 
     # Handles a case where the PR was created without any uploads because all bundles
-    # from the build is cached. Instead of showing a "no commit error" we will instead
+    # from the build are cached. Instead of showing a "no commit error" we will instead
     # show the parent bundle report as it implies everything was cached and carried
     # over to the head commit
     head_commit_sha = pull.head if pull.head else pull.compared_to
