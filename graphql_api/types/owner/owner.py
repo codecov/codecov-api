@@ -248,7 +248,7 @@ def resolve_is_github_rate_limited(owner: Owner, info) -> bool | None:
         return False
     redis_connection = get_redis_connection()
     rate_limit_redis_key = rate_limits.determine_entity_redis_key(
-        owner=owner, repo=None
+        owner=owner, repository=None
     )
     return rate_limits.determine_if_entity_is_rate_limited(
         redis_connection, rate_limit_redis_key
