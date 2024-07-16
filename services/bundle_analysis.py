@@ -274,6 +274,10 @@ class BundleReport(object):
     def module_count(self) -> int:
         return len(self.module_extensions)
 
+    @cached_property
+    def is_cached(self) -> bool:
+        return self.report.is_cached()
+
 
 @dataclass
 class BundleAnalysisReport(object):
@@ -299,6 +303,10 @@ class BundleAnalysisReport(object):
     @cached_property
     def size_total(self) -> int:
         return sum([bundle.size_total for bundle in self.bundles])
+
+    @cached_property
+    def is_cached(self) -> bool:
+        return self.report.is_cached()
 
 
 @dataclass

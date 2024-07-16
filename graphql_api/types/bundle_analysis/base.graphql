@@ -70,6 +70,7 @@ type BundleReport {
     orderingDirection: OrderingDirection
     filters: BundleAnalysisMeasurementsSetFilters
   ): [BundleAnalysisMeasurements!]
+  isCached: Boolean!
 }
 
 type BundleAnalysisMeasurements{
