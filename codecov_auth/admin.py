@@ -6,9 +6,15 @@ from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import CheckboxInput, Select
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.utils.html import format_html
+from shared.django_apps.codecov_auth.models import (
+    Account,
+    AccountsUsers,
+    InvoiceBilling,
+    StripeBilling,
+)
 
 from codecov.admin import AdminMixin
 from codecov.commands.exceptions import ValidationError
@@ -96,6 +102,14 @@ def impersonate_owner(self, request, queryset):
 impersonate_owner.short_description = "Impersonate the selected owner"
 
 
+class AccountsUsersInline(admin.TabularInline):
+    model = AccountsUsers
+    max_num = 10
+    extra = 1
+    verbose_name_plural = "Accounts Users (click save to commit changes)"
+    verbose_name = "Account User"
+
+
 @admin.register(User)
 class UserAdmin(AdminMixin, admin.ModelAdmin):
     list_display = (
@@ -103,6 +117,7 @@ class UserAdmin(AdminMixin, admin.ModelAdmin):
         "email",
     )
     readonly_fields = []
+    inlines = [AccountsUsersInline]
     search_fields = (
         "name__iregex",
         "email__iregex",
@@ -190,6 +205,112 @@ class OrgUploadTokenInline(admin.TabularInline):
         return (not has_token) and request.user.is_staff
 
 
+class InvoiceBillingInline(admin.StackedInline):
+    model = InvoiceBilling
+    verbose_name_plural = "Invoice Billing"
+    verbose_name = "Invoice Billing (click save to commit changes)"
+
+
+@admin.register(InvoiceBilling)
+class InvoiceBillingAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("id", "account", "is_active")
+    search_fields = (
+        "account__name",
+        "account__id__iexact",
+        "id__iexact",
+        "account_manager",
+    )
+    search_help_text = (
+        "Search by account name, account id (exact), id (exact), or account_manager"
+    )
+    autocomplete_fields = ("account",)
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+    ]
+
+    fields = readonly_fields + [
+        "account",
+        "account_manager",
+        "invoice_notes",
+        "is_active",
+    ]
+
+
+class StripeBillingInline(admin.StackedInline):
+    model = StripeBilling
+    verbose_name_plural = "Stripe Billing"
+    verbose_name = "Stripe Billing (click save to commit changes)"
+
+
+@admin.register(StripeBilling)
+class StripeBillingAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("id", "account", "is_active")
+    search_fields = (
+        "account__name",
+        "account__id__iexact",
+        "id__iexact",
+        "customer_id__iexact",
+        "subscription_id__iexact",
+    )
+    search_help_text = "Search by account name, account id (exact), id (exact), customer_id (exact), or subscription_id (exact)"
+    autocomplete_fields = ("account",)
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+    ]
+
+    fields = readonly_fields + [
+        "account",
+        "customer_id",
+        "subscription_id",
+        "is_active",
+    ]
+
+
+class OwnerOrgInline(admin.TabularInline):
+    model = Owner
+    max_num = 100
+    extra = 0
+    verbose_name_plural = "Organizations (read only)"
+    verbose_name = "Organization"
+    exclude = ("oauth_token",)
+
+    readonly_fields = [
+        "name",
+        "username",
+        "plan",
+        "plan_activated_users",
+        "service",
+    ]
+
+    fields = [] + readonly_fields
+
+
+@admin.register(Account)
+class AccountAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("name", "is_active")
+    search_fields = ("name__iregex", "id")
+    search_help_text = "Search by name (can use regex), or id (exact)"
+    inlines = [OwnerOrgInline, StripeBillingInline, InvoiceBillingInline]
+
+    readonly_fields = ["id", "created_at", "updated_at", "users"]
+
+    fields = readonly_fields + [
+        "name",
+        "is_active",
+        "plan",
+        "plan_seat_count",
+        "free_seat_count",
+        "plan_auto_activate",
+        "is_delinquent",
+    ]
+
+
 @admin.register(Owner)
 class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
@@ -197,7 +318,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     readonly_fields = []
     search_fields = ("name__iregex", "username__iregex", "email__iregex")
     actions = [impersonate_owner, extend_trial]
-    autocomplete_fields = ("bot",)
+    autocomplete_fields = ("bot", "account")
     inlines = [OrgUploadTokenInline]
 
     readonly_fields = (
@@ -241,6 +362,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "stripe_subscription_id",
         "organizations",
         "max_upload_limit",
+        "account",
     )
 
     def get_form(self, request, obj=None, change=False, **kwargs):
