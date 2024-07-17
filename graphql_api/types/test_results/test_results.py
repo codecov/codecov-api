@@ -4,18 +4,27 @@ from reports.models import Test
 
 test_result_bindable = ObjectType("TestResult")
 
+
 @test_result_bindable.field("name")
-def resolve_name(test: Test, info) -> str:
-    return test.name
+def resolve_name(test, info) -> str:
+    return test["test__name"]
+
 
 @test_result_bindable.field("updatedAt")
-def resolve_updated_at(test: Test, info) -> str:
-    return test.updated_at
+def resolve_updated_at(test, info) -> str:
+    return test["updated_at"]
+
 
 @test_result_bindable.field("commitsFailed")
-def resolve_commits_failed(test: Test, info) -> int or None:
-    return test.commits_where_fail
+def resolve_commits_failed(test, info) -> int | None:
+    return test["commits_where_fail"]
+
 
 @test_result_bindable.field("failureRate")
-def resolve_failure_rate(test: Test, info) -> float or None:
-    return test.failure_rate
+def resolve_failure_rate(test, info) -> float | None:
+    return test["failure_rate"]
+
+
+@test_result_bindable.field("avgDuration")
+def resolve_last_duration(test, info) -> float | None:
+    return test["avg_duration"]

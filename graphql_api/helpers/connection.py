@@ -68,6 +68,38 @@ class Connection:
         }
 
 
+class BetterCursorPaginator(CursorPaginator):
+    """
+    overrides CursorPaginator's position_from_instance method
+    because it assumes that instance's fields are attributes on the
+    instance. This doesn't work with the aggregate_test_results query
+    because since it uses annotate() and values() the instance is actually
+    a dict and the fields are keys in that dict.
+
+    So if getattr fails to find the attribute on the instance then we try getting the "attr"
+    via a dict access
+
+    if the dict access fails then it throws an exception, although it would be a different
+    """
+
+    def position_from_instance(self, instance):
+        position = []
+        for order in self.ordering:
+            parts = order.lstrip("-").split("__")
+            attr = instance
+            while parts:
+                try:
+                    attr = getattr(attr, parts[0])
+                except AttributeError as attr_err:
+                    try:
+                        attr = attr[parts[0]]
+                    except (KeyError, TypeError):
+                        raise attr_err from None
+                parts.pop(0)
+            position.append(str(attr))
+        return position
+
+
 def queryset_to_connection_sync(
     queryset,
     *,
@@ -85,8 +117,9 @@ def queryset_to_connection_sync(
         first = 25
 
     ordering = tuple(field_order(field, ordering_direction) for field in ordering)
-    paginator = CursorPaginator(queryset, ordering=ordering)
+    paginator = BetterCursorPaginator(queryset, ordering=ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)
+
     return Connection(queryset, paginator, page)
 
 

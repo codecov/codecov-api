@@ -34,6 +34,7 @@ from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
+from utils.test_results import aggregate_test_results
 
 repository_bindable = ObjectType("Repository")
 
@@ -568,10 +569,12 @@ async def resolve_test_results(
     ordering=None,
     **kwargs,
 ):
-    queryset = Test.objects.filter(repository=repository)
+    queryset = await sync_to_async(aggregate_test_results)(repoid=repository.repoid)
     return await queryset_to_connection(
         queryset,
-        ordering=(ordering.get("parameter"),) if ordering else ("updated_at",),
-        ordering_direction=ordering.get("direction") if ordering else OrderingDirection.DESC,
+        ordering=(ordering.get("parameter"),) if ordering else ("avg_duration",),
+        ordering_direction=ordering.get("direction")
+        if ordering
+        else OrderingDirection.DESC,
         **kwargs,
     )

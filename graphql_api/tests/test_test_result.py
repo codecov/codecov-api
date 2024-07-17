@@ -1,4 +1,5 @@
 import asyncio
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from ariadne import graphql_sync
@@ -8,12 +9,13 @@ from freezegun import freeze_time
 from codecov.db import sync_to_async
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from reports.tests.factories import TestFactory
+from reports.models import TestInstance
+from reports.tests.factories import TestFactory, TestInstanceFactory
 
 from .helper import GraphQLTestHelper
 
 
-@freeze_time("2019-01-01T00:00:00")
+@freeze_time(datetime.now().isoformat())
 class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="randomOwner")
@@ -23,6 +25,28 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         self.test = TestFactory(
             name="Test Name",
             repository=self.repository,
+        )
+        _ = TestInstanceFactory(
+            test=self.test,
+            outcome=TestInstance.Outcome.FAILURE.value,
+            duration_seconds=1.1,
+            repoid=self.repository.repoid,
+            created_at=datetime.now(),
+        )
+        _ = TestInstanceFactory(
+            test=self.test,
+            outcome=TestInstance.Outcome.FAILURE.value,
+            duration_seconds=1.3,
+            repoid=self.repository.repoid,
+            created_at=datetime.now(),
+        )
+        _ = TestInstanceFactory(
+            test=self.test,
+            outcome=TestInstance.Outcome.PASS.value,
+            duration_seconds=1.5,
+            repoid=self.repository.repoid,
+            created_at=datetime.now(),
+            commitid="456123",
         )
 
     def test_fetch_test_result_name(self) -> None:
@@ -47,8 +71,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testResults"]["edges"][0]["node"]["name"] == self.test.name
-
+        assert (
+            result["owner"]["repository"]["testResults"]["edges"][0]["node"]["name"]
+            == self.test.name
+        )
 
     def test_fetch_test_result_updated_at(self) -> None:
         query = """
@@ -72,8 +98,12 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testResults"]["edges"][0]["node"]["updatedAt"] == "2019-01-01T00:00:00+00:00"
-
+        assert (
+            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
+                "updatedAt"
+            ]
+            == datetime.now(UTC).isoformat()
+        )
 
     def test_fetch_test_result_commits_failed(self) -> None:
         query = """
@@ -97,8 +127,12 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testResults"]["edges"][0]["node"]["commitsFailed"] == self.test.commits_where_fail
-
+        assert (
+            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
+                "commitsFailed"
+            ]
+            == 1
+        )
 
     def test_fetch_test_result_failure_rate(self) -> None:
         query = """
@@ -122,5 +156,38 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testResults"]["edges"][0]["node"]["failureRate"] == self.test.failure_rate
+        assert (
+            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
+                "failureRate"
+            ]
+            == 2 / 3
+        )
 
+    def test_fetch_test_result_avg_duration(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testResults {
+                                edges {
+                                    node {
+                                        avgDuration
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
+                "avgDuration"
+            ]
+            == 1.3
+        )
