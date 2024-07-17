@@ -324,6 +324,8 @@ CSP_DEFAULT_SRC = [
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
 ]
 
+CSP_WORKER_SRC = ["'self'", "blob:"]
+
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
 
