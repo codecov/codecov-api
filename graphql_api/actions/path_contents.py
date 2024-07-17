@@ -14,7 +14,7 @@ def partition_list_into_files_and_directories(
 
     # Separate files and directories
     for item in items:
-        if type(item) == Dir:
+        if isinstance(item, Dir):
             directories.append(item)
         else:
             files.append(item)

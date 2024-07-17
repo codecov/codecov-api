@@ -1,25 +1,18 @@
 import logging
-import uuid
 
 from django.utils import timezone
 from django_filters import rest_framework as django_filters
-from rest_framework import filters, mixins, status
-from rest_framework.decorators import action
+from rest_framework import filters, mixins
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.response import Response
 
 from api.internal.repo.filter import RepositoryOrderingFilter
 from api.shared.repo.filter import RepositoryFilters
 from api.shared.repo.mixins import RepositoryViewSetMixin
-from services.task import TaskService
 
 from .serializers import (
     RepoDetailsSerializer,
-    RepoSerializer,
     RepoWithMetricsSerializer,
-    SecretStringPayloadSerializer,
 )
-from .utils import encode_secret_string
 
 log = logging.getLogger(__name__)
 
@@ -86,41 +79,3 @@ class RepositoryViewSet(
             if owner.has_legacy_plan and owner.repo_credits <= 0:
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
-
-    @action(detail=True, methods=["patch"], url_path="regenerate-upload-token")
-    def regenerate_upload_token(self, request, *args, **kwargs):
-        repo = self.get_object()
-        repo.upload_token = uuid.uuid4()
-        repo.save()
-        return Response(self.get_serializer(repo).data)
-
-    @action(detail=True, methods=["patch"])
-    def erase(self, request, *args, **kwargs):
-        self._assert_is_admin()
-        repo = self.get_object()
-        TaskService().delete_timeseries(repository_id=repo.repoid)
-        TaskService().flush_repo(repository_id=repo.repoid)
-        return Response(RepoSerializer(repo).data)
-
-    @action(detail=True, methods=["post"])
-    def encode(self, request, *args, **kwargs):
-        serializer = SecretStringPayloadSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        owner, repo = self.owner, self.get_object()
-
-        to_encode = "/".join(
-            (
-                owner.service,
-                owner.service_id,
-                repo.service_id,
-                serializer.validated_data["value"],
-            )
-        )
-
-        return Response(
-            SecretStringPayloadSerializer(
-                {"value": encode_secret_string(to_encode)}
-            ).data,
-            status=status.HTTP_201_CREATED,
-        )

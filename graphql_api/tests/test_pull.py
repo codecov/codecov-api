@@ -237,7 +237,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
 
     @freeze_time("2021-02-02")
     @patch("core.commands.pull.interactors.fetch_pull_request.TaskService")
-    def test_when_repository_has_null_head(self, mock_task_service):
+    def test_when_repository_has_null_head_no_parent_report(self, mock_task_service):
         PullFactory(
             repository=self.repository,
             title="dummy-first-pr",
@@ -264,12 +264,83 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
                 "__typename": "MissingHeadCommit",
             },
             "bundleAnalysisCompareWithBase": {
-                "__typename": "MissingHeadCommit",
+                "__typename": "MissingHeadReport",
             },
             "behindBy": None,
             "behindByCommit": None,
         }
         mock_task_service.return_value.pulls_sync.assert_not_called()
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_when_repository_has_null_head_has_parent_report(self, get_storage_service):
+        os.system("rm -rf /tmp/bundle_analysis_*")
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        parent_commit = CommitFactory(repository=self.repository)
+
+        base_commit_report = CommitReportFactory(
+            commit=parent_commit,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+
+        my_pull = PullFactory(
+            repository=self.repository,
+            title="test-pull-request",
+            author=self.owner,
+            head=None,
+            compared_to=base_commit_report.commit.commitid,
+            behind_by=23,
+            behind_by_commit="1089nf898as-jdf09hahs09fgh",
+        )
+
+        with open("./services/tests/samples/base_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repository),
+                report_key=base_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            bundleAnalysisCompareWithBase {
+                __typename
+                ... on BundleAnalysisComparison {
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
+                    bundleChange {
+                        size {
+                            uncompress
+                        }
+                    }
+                }
+            }
+        """
+
+        pull = self.fetch_one_pull_request(my_pull.pullid, query)
+
+        assert pull == {
+            "bundleAnalysisCompareWithBase": {
+                "__typename": "BundleAnalysisComparison",
+                "bundleData": {
+                    "size": {
+                        "uncompress": 165165,
+                    }
+                },
+                "bundleChange": {
+                    "size": {
+                        "uncompress": 0,
+                    }
+                },
+            }
+        }
+
+        for file in os.listdir("/tmp"):
+            assert not file.startswith("bundle_analysis_")
+
+        os.system("rm -rf /tmp/bundle_analysis_*")
 
     @freeze_time("2021-02-02")
     def test_when_pr_is_first_pr_in_repo(self):
