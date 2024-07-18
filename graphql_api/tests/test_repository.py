@@ -821,3 +821,24 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             repo.name, """testResults { edges { node { name } } }"""
         )
         assert res["testResults"] == {"edges": []}
+
+    def test_branch_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="feature",
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { branch: "main"}) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
