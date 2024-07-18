@@ -272,7 +272,7 @@ class BundleReport(object):
 
     @cached_property
     def module_count(self) -> int:
-        return len(self.module_extensions)
+        return sum([len(asset.modules) for asset in self.assets()])
 
     @cached_property
     def is_cached(self) -> bool:
