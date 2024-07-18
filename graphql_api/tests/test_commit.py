@@ -1301,7 +1301,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         asset_report = bundle_report["asset"]
 
         assert bundle_report is not None
-        assert bundle_report["moduleCount"] == 7
+        assert bundle_report["moduleCount"] == 33
 
         assert asset_report is not None
         assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
