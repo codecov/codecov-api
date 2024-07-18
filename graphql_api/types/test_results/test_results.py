@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from ariadne import ObjectType
 
 from reports.models import Test
@@ -11,7 +13,7 @@ def resolve_name(test, info) -> str:
 
 
 @test_result_bindable.field("updatedAt")
-def resolve_updated_at(test, info) -> str:
+def resolve_updated_at(test, info) -> datetime:
     return test["updated_at"]
 
 

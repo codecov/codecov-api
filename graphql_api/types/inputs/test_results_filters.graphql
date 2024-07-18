@@ -1,3 +1,7 @@
+input TestResultsFilters {
+  branch: String
+}
+
 input TestResultsOrdering {
   direction: OrderingDirection
   parameter: TestResultsOrderingParameter

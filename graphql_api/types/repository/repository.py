@@ -567,9 +567,12 @@ async def resolve_test_results(
     repository: Repository,
     info: GraphQLResolveInfo,
     ordering=None,
+    filters=None,
     **kwargs,
 ):
-    queryset = await sync_to_async(aggregate_test_results)(repoid=repository.repoid)
+    queryset = await sync_to_async(aggregate_test_results)(
+        repoid=repository.repoid, branch=filters.get("branch") if filters else None
+    )
     return await queryset_to_connection(
         queryset,
         ordering=(ordering.get("parameter"),) if ordering else ("avg_duration",),

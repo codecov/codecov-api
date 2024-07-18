@@ -84,6 +84,7 @@ type Repository {
   testAnalyticsEnabled: Boolean
   isGithubRateLimited: Boolean!
   testResults(
+    filters: TestResultsFilters
     ordering: TestResultsOrdering
     first: Int
     after: String

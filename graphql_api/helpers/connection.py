@@ -68,7 +68,7 @@ class Connection:
         }
 
 
-class BetterCursorPaginator(CursorPaginator):
+class DictCursorPaginator(CursorPaginator):
     """
     overrides CursorPaginator's position_from_instance method
     because it assumes that instance's fields are attributes on the
@@ -117,7 +117,7 @@ def queryset_to_connection_sync(
         first = 25
 
     ordering = tuple(field_order(field, ordering_direction) for field in ordering)
-    paginator = BetterCursorPaginator(queryset, ordering=ordering)
+    paginator = DictCursorPaginator(queryset, ordering=ordering)
     page = paginator.page(first=first, after=after, last=last, before=before)
 
     return Connection(queryset, paginator, page)
