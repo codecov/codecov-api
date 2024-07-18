@@ -4,9 +4,16 @@ from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from shared.django_apps.codecov_auth.models import (
+    Account,
+    AccountsUsers,
+    InvoiceBilling,
+    StripeBilling,
+)
+from shared.django_apps.codecov_auth.tests.factories import AccountFactory
 
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, UserAdmin
+from codecov_auth.admin import AccountAdmin, OrgUploadTokenInline, OwnerAdmin, UserAdmin
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
@@ -388,3 +395,144 @@ class SentryUserAdminTest(TestCase):
         assert sentry_user.email in res.content.decode("utf-8")
         assert sentry_user.access_token not in res.content.decode("utf-8")
         assert sentry_user.refresh_token not in res.content.decode("utf-8")
+
+
+class AccountAdminTest(TestCase):
+    def setUp(self):
+        staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=staff_user)
+        admin_site = AdminSite()
+        admin_site.register(Account)
+        admin_site.register(StripeBilling)
+        admin_site.register(InvoiceBilling)
+        admin_site.register(AccountsUsers)
+        self.account_admin = AccountAdmin(Account, admin_site)
+
+        self.account = AccountFactory(plan_seat_count=4, free_seat_count=2)
+        self.org_1 = OwnerFactory(account=self.account)
+        self.org_2 = OwnerFactory(account=self.account)
+        self.owner_with_user_1 = OwnerFactory(user=UserFactory())
+        self.owner_with_user_2 = OwnerFactory(user=UserFactory())
+        self.owner_with_user_3 = OwnerFactory(user=UserFactory())
+        self.owner_without_user_1 = OwnerFactory(user=None)
+        self.owner_without_user_2 = OwnerFactory(user=None)
+        self.student = OwnerFactory(user=UserFactory(), student=True)
+        self.org_1.plan_activated_users = [
+            self.owner_with_user_2.ownerid,
+            self.owner_with_user_3.ownerid,
+            self.owner_without_user_1.ownerid,
+            self.student.ownerid,
+            self.owner_without_user_2.ownerid,
+        ]
+        self.org_2.plan_activated_users = [
+            self.owner_with_user_2.ownerid,
+            self.owner_with_user_3.ownerid,
+            self.owner_without_user_1.ownerid,
+            self.student.ownerid,
+            self.owner_with_user_1.ownerid,
+        ]
+        self.org_1.save()
+        self.org_2.save()
+
+    def test_list_page(self):
+        res = self.client.get(reverse("admin:codecov_auth_account_changelist"))
+        self.assertEqual(res.status_code, 200)
+        decoded_res = res.content.decode("utf-8")
+        self.assertIn("column-name", decoded_res)
+        self.assertIn("column-is_active", decoded_res)
+        self.assertIn(
+            '<a href="/admin/codecov_auth/account/add/" class="addlink">', decoded_res
+        )
+        self.assertIn(
+            '<option value="link_users_to_account">Link Users to Account</option>',
+            decoded_res,
+        )
+
+    def test_detail_page(self):
+        res = self.client.get(
+            reverse("admin:codecov_auth_account_change", args=[self.account.pk])
+        )
+        self.assertEqual(res.status_code, 200)
+        decoded_res = res.content.decode("utf-8")
+        self.assertIn(
+            '<option value="users-basic" selected>BASIC_PLAN_NAME</option>', decoded_res
+        )
+        self.assertIn("Organizations (read only)", decoded_res)
+        self.assertIn("Stripe Billing (click save to commit changes)", decoded_res)
+        self.assertIn("Invoice Billing (click save to commit changes)", decoded_res)
+
+    def test_link_users_to_account(self):
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+        self.assertEqual(self.account.accountsusers_set.all().count(), 0)
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[0].message, "Created a User for 2 Owners")
+        self.assertEqual(messages[1].message, "Created 6 AccountsUsers")
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 6)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 6
+        )
+
+        for org in [self.org_1, self.org_2]:
+            for active_owner_id in org.plan_activated_users:
+                owner_obj = Owner.objects.get(pk=active_owner_id)
+                self.assertTrue(
+                    AccountsUsers.objects.filter(
+                        account=self.account, user_id=owner_obj.user_id
+                    ).exists()
+                )
+
+        # another user joins
+        another_owner_with_user = OwnerFactory(user=UserFactory())
+        self.org_1.plan_activated_users.append(another_owner_with_user.ownerid)
+        self.org_1.save()
+        # rerun action to re-sync
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[2].message, "Created a User for 0 Owners")
+        self.assertEqual(messages[3].message, "Created 1 AccountsUsers")
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 7)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 7
+        )
+        self.assertIn(
+            another_owner_with_user.user_id,
+            self.account.accountsusers_set.all().values_list("user_id", flat=True),
+        )
+
+    def test_link_users_to_account_not_enough_seats(self):
+        self.account.plan_seat_count = 1
+        self.account.save()
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[0].message,
+            "Request failed: Account plan does not have enough seats; current plan activated users (non-students): 5, total seats for account: 3",
+        )

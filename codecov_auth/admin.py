@@ -1,3 +1,4 @@
+from gettext import gettext, ngettext
 from typing import Optional
 
 import django.forms as forms
@@ -297,6 +298,7 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("name__iregex", "id")
     search_help_text = "Search by name (can use regex), or id (exact)"
     inlines = [OwnerOrgInline, StripeBillingInline, InvoiceBillingInline]
+    actions = ["link_users_to_account"]
 
     readonly_fields = ["id", "created_at", "updated_at", "users"]
 
@@ -309,6 +311,66 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
         "plan_auto_activate",
         "is_delinquent",
     ]
+
+    @admin.action(description="Link Users to Account")
+    def link_users_to_account(self, request, queryset):
+        for account in queryset:
+            all_plan_activated_user_ids = set()
+            for org in account.organizations.all():
+                all_plan_activated_user_ids.update(set(org.plan_activated_users))
+
+            all_plan_activated_users = Owner.objects.filter(
+                ownerid__in=all_plan_activated_user_ids
+            ).prefetch_related("user")
+            non_student_count = all_plan_activated_users.exclude(student=True).count()
+            total_seats_for_account = account.plan_seat_count + account.free_seat_count
+            if non_student_count > total_seats_for_account:
+                self.message_user(
+                    request,
+                    f"Request failed: Account plan does not have enough seats; "
+                    f"current plan activated users (non-students): {non_student_count}, total seats for account: {total_seats_for_account}",
+                    messages.ERROR,
+                )
+                return
+
+            owners_without_user_objects = all_plan_activated_users.filter(
+                user__isnull=True
+            )
+            userless_owners = []
+            for userless_owner in owners_without_user_objects:
+                new_user = User.objects.create()
+                userless_owner.user = new_user
+                userless_owners.append(userless_owner)
+            total = Owner.objects.bulk_update(userless_owners, ["user"])
+            self.message_user(
+                request,
+                f"Created a User for {total} Owners",
+                messages.INFO,
+            )
+
+            new_accounts_users = []
+            # redo this query to get all Owners and Users
+            all_plan_activated_users = Owner.objects.filter(
+                ownerid__in=all_plan_activated_users
+            ).prefetch_related("user")
+            already_linked_users = AccountsUsers.objects.filter(
+                account=account
+            ).values_list("user_id", flat=True)
+            not_yet_linked_owners = all_plan_activated_users.exclude(
+                user_id__in=already_linked_users
+            )
+            for owner in not_yet_linked_owners:
+                new_account_user = AccountsUsers(
+                    user_id=owner.user_id, account_id=account.id
+                )
+                new_accounts_users.append(new_account_user)
+
+            total = AccountsUsers.objects.bulk_create(new_accounts_users)
+            self.message_user(
+                request,
+                f"Created {len(total)} AccountsUsers",
+                messages.SUCCESS,
+            )
 
 
 @admin.register(Owner)
