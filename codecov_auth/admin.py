@@ -1,4 +1,3 @@
-from gettext import gettext, ngettext
 from typing import Optional
 
 import django.forms as forms
@@ -294,7 +293,7 @@ class OwnerOrgInline(admin.TabularInline):
 
 @admin.register(Account)
 class AccountAdmin(AdminMixin, admin.ModelAdmin):
-    list_display = ("name", "is_active")
+    list_display = ("name", "is_active", "organizations_count", "all_user_count")
     search_fields = ("name__iregex", "id")
     search_help_text = "Search by name (can use regex), or id (exact)"
     inlines = [OwnerOrgInline, StripeBillingInline, InvoiceBillingInline]
