@@ -89,7 +89,7 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
     }
     mocked_manual_trigger.assert_called_once_with(repository.repoid, commit.commitid)
     mock_sentry_metrics.assert_called_with(
-        "upload",
+        "upload_end",
         tags={
             "agent": "cli",
             "version": "0.4.7",

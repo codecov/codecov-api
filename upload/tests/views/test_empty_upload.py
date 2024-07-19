@@ -91,7 +91,7 @@ def test_empty_upload_with_yaml_ignored_files(
         repoid=repository.repoid, commitid=commit.commitid, empty_upload="pass"
     )
     mock_sentry_metrics.assert_called_with(
-        "upload",
+        "upload_end",
         tags={
             "agent": "cli",
             "version": "0.4.7",
