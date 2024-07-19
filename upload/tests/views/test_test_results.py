@@ -92,7 +92,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
         report_type="test_results",
     )
     mock_sentry_metrics.assert_called_with(
-        "upload_end",
+        "upload",
         tags={
             "agent": "cli",
             "version": "0.4.7",

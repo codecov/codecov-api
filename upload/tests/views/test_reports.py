@@ -64,7 +64,7 @@ def test_reports_post(client, db, mocker):
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
     mock_sentry_metrics.assert_called_with(
-        "upload_end",
+        "upload",
         tags={
             "agent": "cli",
             "version": "0.4.7",

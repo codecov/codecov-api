@@ -90,7 +90,7 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
         report_type="bundle_analysis",
     )
     mock_sentry_metrics.assert_called_with(
-        "upload_end",
+        "upload",
         tags={
             "agent": "cli",
             "version": "0.4.7",
