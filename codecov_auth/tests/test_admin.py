@@ -24,9 +24,7 @@ from codecov_auth.tests.factories import (
 from plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
-    TrialStatus,
 )
-from utils.test_utils import APIClient
 
 
 class OwnerAdminTest(TestCase):
@@ -520,6 +518,7 @@ class AccountAdminTest(TestCase):
         )
 
     def test_link_users_to_account_not_enough_seats(self):
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
         self.account.plan_seat_count = 1
         self.account.save()
         res = self.client.post(
@@ -536,3 +535,41 @@ class AccountAdminTest(TestCase):
             messages[0].message,
             "Request failed: Account plan does not have enough seats; current plan activated users (non-students): 5, total seats for account: 3",
         )
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+
+    def test_seat_check(self):
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+        self.account.plan_seat_count = 1
+        self.account.save()
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "seat_check",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[0].message,
+            "Request failed: Account plan does not have enough seats; current plan activated users (non-students): 5, total seats for account: 3",
+        )
+
+        self.account.plan_seat_count = 10
+        self.account.save()
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "seat_check",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[1].message,
+            "Request succeeded: Account plan has enough seats! current plan activated users (non-students): 5, total seats for account: 12",
+        )
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)

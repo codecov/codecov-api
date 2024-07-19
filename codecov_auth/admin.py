@@ -297,7 +297,7 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("name__iregex", "id")
     search_help_text = "Search by name (can use regex), or id (exact)"
     inlines = [OwnerOrgInline, StripeBillingInline, InvoiceBillingInline]
-    actions = ["link_users_to_account"]
+    actions = ["seat_check", "link_users_to_account"]
 
     readonly_fields = ["id", "created_at", "updated_at", "users"]
 
@@ -311,8 +311,14 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
         "is_delinquent",
     ]
 
+    @admin.action(
+        description="Count current plan_activated_users across all Organizations"
+    )
+    def seat_check(self, request, queryset):
+        self.link_users_to_account(request, queryset, dry_run=True)
+
     @admin.action(description="Link Users to Account")
-    def link_users_to_account(self, request, queryset):
+    def link_users_to_account(self, request, queryset, dry_run=False):
         for account in queryset:
             all_plan_activated_user_ids = set()
             for org in account.organizations.all():
@@ -321,6 +327,7 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
             all_plan_activated_users = Owner.objects.filter(
                 ownerid__in=all_plan_activated_user_ids
             ).prefetch_related("user")
+
             non_student_count = all_plan_activated_users.exclude(student=True).count()
             total_seats_for_account = account.plan_seat_count + account.free_seat_count
             if non_student_count > total_seats_for_account:
@@ -329,6 +336,14 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
                     f"Request failed: Account plan does not have enough seats; "
                     f"current plan activated users (non-students): {non_student_count}, total seats for account: {total_seats_for_account}",
                     messages.ERROR,
+                )
+                return
+            if dry_run:
+                self.message_user(
+                    request,
+                    f"Request succeeded: Account plan has enough seats! "
+                    f"current plan activated users (non-students): {non_student_count}, total seats for account: {total_seats_for_account}",
+                    messages.SUCCESS,
                 )
                 return
 
