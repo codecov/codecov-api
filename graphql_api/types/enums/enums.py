@@ -9,6 +9,9 @@ class OrderingParameter(enum.Enum):
     PARTIALS = "partials"
     LINES = "lines"
 
+class TestResultsOrderingParameter(enum.Enum):
+    NAME = "name"
+
 
 class PathContentDisplayType(enum.Enum):
     TREE = "tree"
