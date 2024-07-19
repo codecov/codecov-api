@@ -21,6 +21,7 @@ from .enums import (
     PullRequestState,
     RepositoryOrdering,
     SyncProvider,
+    TestResultsOrderingParameter,
     TypeProjectOnboarding,
     UploadErrorEnum,
     UploadState,
@@ -50,4 +51,5 @@ enum_types = [
     EnumType("TrialStatus", TrialStatus),
     EnumType("YamlStates", YamlStates),
     EnumType("BundleLoadTypes", BundleLoadTypes),
+    EnumType("TestResultsOrderingParameter", TestResultsOrderingParameter),
 ]
