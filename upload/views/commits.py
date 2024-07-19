@@ -60,10 +60,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             repository=repository,
             is_shelter_request=self.is_shelter_request(),
         )
-        sentry_metrics.incr(
-            "upload_start",
-            tags=sentry_tags
-        )
+        sentry_metrics.incr("upload_start", tags=sentry_tags)
         commit = serializer.save(repository=repository)
         log.info(
             "Request to create new commit",
@@ -72,8 +69,5 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         TaskService().update_commit(
             commitid=commit.commitid, repoid=commit.repository.repoid
         )
-        sentry_metrics.incr(
-            "upload_end",
-            tags=sentry_tags
-        )
+        sentry_metrics.incr("upload_end", tags=sentry_tags)
         return commit
