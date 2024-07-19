@@ -166,7 +166,7 @@ class UploadHandler(APIView, ShelterMixin):
         )
 
         sentry_metrics.incr(
-            "upload",
+            "upload_end",
             tags=sentry_tags,
         )
 
