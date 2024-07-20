@@ -352,7 +352,9 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
             )
             userless_owners = []
             for userless_owner in owners_without_user_objects:
-                new_user = User.objects.create()
+                new_user = User.objects.create(
+                    name=userless_owner.name, email=userless_owner.email
+                )
                 userless_owner.user = new_user
                 userless_owners.append(userless_owner)
             total = Owner.objects.bulk_update(userless_owners, ["user"])
