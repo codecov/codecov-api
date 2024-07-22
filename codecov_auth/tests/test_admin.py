@@ -474,7 +474,9 @@ class AccountAdminTest(TestCase):
         self.assertEqual(res.url, "/admin/codecov_auth/account/")
         messages = list(res.wsgi_request._messages)
         self.assertEqual(messages[0].message, "Created a User for 2 Owners")
-        self.assertEqual(messages[1].message, "Created 6 AccountsUsers")
+        self.assertEqual(
+            messages[1].message, "Created 6 AccountsUsers, removed 0 AccountsUsers"
+        )
 
         self.assertEqual(AccountsUsers.objects.all().count(), 6)
         self.assertEqual(
@@ -506,7 +508,9 @@ class AccountAdminTest(TestCase):
         self.assertEqual(res.url, "/admin/codecov_auth/account/")
         messages = list(res.wsgi_request._messages)
         self.assertEqual(messages[2].message, "Created a User for 0 Owners")
-        self.assertEqual(messages[3].message, "Created 1 AccountsUsers")
+        self.assertEqual(
+            messages[3].message, "Created 1 AccountsUsers, removed 0 AccountsUsers"
+        )
 
         self.assertEqual(AccountsUsers.objects.all().count(), 7)
         self.assertEqual(
@@ -573,3 +577,90 @@ class AccountAdminTest(TestCase):
             "Request succeeded: Account plan has enough seats! current plan activated users (non-students): 5, total seats for account: 12",
         )
         self.assertEqual(AccountsUsers.objects.all().count(), 0)
+
+    def test_link_users_to_account_remove_unneeded_account_users(self):
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[0].message, "Created a User for 2 Owners")
+        self.assertEqual(
+            messages[1].message, "Created 6 AccountsUsers, removed 0 AccountsUsers"
+        )
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 6)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 6
+        )
+
+        for org in [self.org_1, self.org_2]:
+            for active_owner_id in org.plan_activated_users:
+                owner_obj = Owner.objects.get(pk=active_owner_id)
+                self.assertTrue(
+                    AccountsUsers.objects.filter(
+                        account=self.account, user_id=owner_obj.user_id
+                    ).exists()
+                )
+
+        # disconnect one of the orgs
+        self.org_2.account = None
+        self.org_2.save()
+
+        # re-sync to remove Account users from org 2 that are not connected to other account orgs (just owner_with_user_1)
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[2].message, "Created a User for 0 Owners")
+        self.assertEqual(
+            messages[3].message, "Created 0 AccountsUsers, removed 1 AccountsUsers"
+        )
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 5)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 5
+        )
+        still_connected = [
+            self.owner_with_user_2,
+            self.owner_with_user_3,
+            self.owner_without_user_1,
+            self.owner_without_user_2,
+            self.student,
+        ]
+        for owner in still_connected:
+            owner.refresh_from_db()
+            self.assertTrue(
+                AccountsUsers.objects.filter(
+                    account=self.account, user_id=owner.user_id
+                ).exists()
+            )
+
+        self.owner_with_user_1.refresh_from_db()  # removed user
+        # no longer connected to account
+        self.assertFalse(
+            AccountsUsers.objects.filter(
+                account=self.account, user_id=self.owner_with_user_1.user_id
+            ).exists()
+        )
+        # still connected to org
+        self.assertIn(
+            self.owner_with_user_1.ownerid,
+            Owner.objects.get(pk=self.org_2.pk).plan_activated_users,
+        )
+        # user object still exists, with no account connections
+        self.assertIsNotNone(self.owner_with_user_1.user_id)
+        self.assertFalse(
+            AccountsUsers.objects.filter(user=self.owner_with_user_1.user).exists()
+        )
