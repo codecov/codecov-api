@@ -303,7 +303,7 @@ def test_reports_results_post_successful_github_oidc_auth(
     ).exists()
     mocked_task.assert_called_once()
     mock_sentry_metrics.assert_called_with(
-        "upload",
+        "upload_end",
         tags={
             "agent": "cli",
             "version": "0.4.7",

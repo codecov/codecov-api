@@ -309,7 +309,7 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
     assert expected_response == response_json
     mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
     mock_sentry_metrics.assert_called_with(
-        "upload",
+        "upload_end",
         tags={
             "agent": "cli",
             "version": "0.4.7",

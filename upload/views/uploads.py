@@ -67,10 +67,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
 
     def perform_create(self, serializer: UploadSerializer):
         repository: Repository = self.get_repo()
-        validate_activated_repo(repository)
-        commit: Commit = self.get_commit(repository)
-        report: CommitReport = self.get_report(commit)
-
         sentry_tags = generate_upload_sentry_metrics_tags(
             action="coverage",
             endpoint="create_upload",
@@ -78,11 +74,13 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             repository=repository,
             is_shelter_request=self.is_shelter_request(),
         )
-
         sentry_metrics.incr(
-            "upload",
+            "upload_start",
             tags=sentry_tags,
         )
+        validate_activated_repo(repository)
+        commit: Commit = self.get_commit(repository)
+        report: CommitReport = self.get_report(commit)
 
         sentry_metrics.set(
             "upload_set",
@@ -136,6 +134,10 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             instance.storage_path = path
             instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
+        sentry_metrics.incr(
+            "upload_end",
+            tags=sentry_tags,
+        )
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
         self.send_analytics_data(commit, instance, version)

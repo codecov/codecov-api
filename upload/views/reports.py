@@ -90,6 +90,14 @@ class ReportResultsView(
 
     def perform_create(self, serializer):
         repository = self.get_repo()
+        sentry_tags = generate_upload_sentry_metrics_tags(
+            action="coverage",
+            endpoint="create_report_results",
+            request=self.request,
+            repository=repository,
+            is_shelter_request=self.is_shelter_request(),
+        )
+        sentry_metrics.incr("upload_start", tags=sentry_tags)
         commit = self.get_commit(repository)
         report = self.get_report(commit)
         instance = ReportResults.objects.filter(report=report).first()
@@ -105,16 +113,7 @@ class ReportResultsView(
             repoid=repository.repoid,
             report_code=report.code,
         )
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                endpoint="create_report_results",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-            ),
-        )
+        sentry_metrics.incr("upload_end", tags=sentry_tags)
         return instance
 
     def get_object(self):
