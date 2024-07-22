@@ -126,7 +126,7 @@ class ReportResultsView(
             report_code=report.code,
         )
         sentry_metrics.incr(
-            "upload_end",
+            "upload",
             tags=generate_upload_sentry_metrics_tags(
                 action="coverage",
                 endpoint="create_report_results",
