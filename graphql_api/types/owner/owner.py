@@ -272,3 +272,9 @@ def resolve_owner_invoice(
 def resolve_owner_account(owner: Owner, info) -> dict:
     account_id = owner.account_id
     return Account.objects.filter(pk=account_id).first()
+
+
+@owner_bindable.field("delinquent")
+@require_part_of_org
+def resolve_delinquent(owner: Owner, info) -> bool | None:
+    return owner.delinquent
