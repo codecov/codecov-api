@@ -66,18 +66,17 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer: UploadSerializer):
-        repository: Repository = self.get_repo()
-        sentry_tags = generate_upload_sentry_metrics_tags(
-            action="coverage",
-            endpoint="create_upload",
-            request=self.request,
-            repository=repository,
-            is_shelter_request=self.is_shelter_request(),
-        )
         sentry_metrics.incr(
-            "upload_start",
-            tags=sentry_tags,
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
         )
+        repository: Repository = self.get_repo()
         validate_activated_repo(repository)
         commit: Commit = self.get_commit(repository)
         report: CommitReport = self.get_report(commit)
@@ -85,7 +84,13 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         sentry_metrics.set(
             "upload_set",
             repository.author.ownerid,
-            tags=sentry_tags,
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
 
         version = (
@@ -135,8 +140,15 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
         sentry_metrics.incr(
-            "upload_end",
-            tags=sentry_tags,
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+            ),
         )
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)

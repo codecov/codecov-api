@@ -77,6 +77,16 @@ class UploadHandler(APIView, ShelterMixin):
 
     def post(self, request, *args, **kwargs):
         # Extract the version
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         version = self.kwargs["version"]
 
         log.info(
@@ -157,23 +167,28 @@ class UploadHandler(APIView, ShelterMixin):
             ),
         )
 
-        sentry_tags = generate_upload_sentry_metrics_tags(
-            action="coverage",
-            endpoint="legacy_upload",
-            request=self.request,
-            repository=repository,
-            is_shelter_request=self.is_shelter_request(),
-        )
-
         sentry_metrics.incr(
-            "upload_end",
-            tags=sentry_tags,
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+            ),
         )
 
         sentry_metrics.set(
             "upload_set",
             repository.author.ownerid,
-            tags=sentry_tags,
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
 
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
