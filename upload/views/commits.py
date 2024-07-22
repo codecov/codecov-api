@@ -52,15 +52,17 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        repository = self.get_repo()
-        sentry_tags = generate_upload_sentry_metrics_tags(
-            action="coverage",
-            endpoint="create_commit",
-            request=self.request,
-            repository=repository,
-            is_shelter_request=self.is_shelter_request(),
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_commit",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
         )
-        sentry_metrics.incr("upload_start", tags=sentry_tags)
+        repository = self.get_repo()
         commit = serializer.save(repository=repository)
         log.info(
             "Request to create new commit",
@@ -69,5 +71,15 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         TaskService().update_commit(
             commitid=commit.commitid, repoid=commit.repository.repoid
         )
-        sentry_metrics.incr("upload_end", tags=sentry_tags)
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_commit",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+            ),
+        )
         return commit

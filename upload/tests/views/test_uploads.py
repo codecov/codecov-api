@@ -609,7 +609,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
     )
 
     mock_sentry_metrics.assert_called_with(
-        "upload_end",
+        "upload",
         tags={
             "agent": "cli",
             "version": "0.4.7",
@@ -617,6 +617,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
             "endpoint": "create_upload",
             "repo_visibility": "private",
             "is_using_shelter": "yes",
+            "position": "end",
         },
     )
 
