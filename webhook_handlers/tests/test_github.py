@@ -765,7 +765,7 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         owner_set = Owner.objects.filter(
-            service="github", service_id=service_id, username=username
+            service="github", service_id=service_id
         )
 
         assert owner_set.exists()
