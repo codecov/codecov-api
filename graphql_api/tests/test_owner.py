@@ -761,7 +761,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = response.json()
 
         assert data["data"]["owner"]["isUserOktaAuthenticated"] == False
-       
+
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
     @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
