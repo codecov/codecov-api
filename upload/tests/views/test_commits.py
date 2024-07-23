@@ -317,5 +317,6 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
             "endpoint": "create_commit",
             "repo_visibility": "public",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )

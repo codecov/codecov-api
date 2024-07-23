@@ -35,4 +35,5 @@ type Owner {
   invoices: [Invoice] @cost(complexity: 100)
   invoice(invoiceId: String!): Invoice
   isUserOktaAuthenticated: Boolean!
+  isGithubRateLimited: Boolean
 }

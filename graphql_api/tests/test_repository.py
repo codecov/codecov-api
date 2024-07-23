@@ -12,6 +12,7 @@ from core.tests.factories import (
     RepositoryFactory,
     RepositoryTokenFactory,
 )
+from reports.tests.factories import TestFactory, TestInstanceFactory
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -754,3 +755,90 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == False
+
+    @patch("shared.rate_limits.determine_entity_redis_key")
+    @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_is_github_rate_limited(
+        self, mock_determine_rate_limit, mock_determine_redis_key
+    ):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        mock_determine_redis_key.return_value = "test"
+        mock_determine_rate_limit.return_value = True
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isGithubRateLimited
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isGithubRateLimited"] == True
+
+    def test_fetch_is_github_rate_limited_not_on_gh_service(self):
+        owner = OwnerFactory(service="gitlab")
+        repo = RepositoryFactory(
+            author=owner,
+            author__service="gitlab",
+            service_id=12345,
+            active=True,
+        )
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isGithubRateLimited
+            """,
+            owner=owner,
+            variables={"name": repo.name},
+            provider="gitlab",
+        )
+
+        assert data["me"]["owner"]["repository"]["isGithubRateLimited"] == False
+
+    def test_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test, created_at=datetime.datetime.now(), repoid=repo.repoid
+        )
+        res = self.fetch_repository(
+            repo.name, """testResults { edges { node { name } } }"""
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
+
+    def test_test_results_no_tests(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        res = self.fetch_repository(
+            repo.name, """testResults { edges { node { name } } }"""
+        )
+        assert res["testResults"] == {"edges": []}
+
+    def test_branch_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="feature",
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { branch: "main"}) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}

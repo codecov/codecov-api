@@ -1,28 +1,18 @@
 import logging
-import uuid
 
 from django.utils import timezone
 from django_filters import rest_framework as django_filters
-from rest_framework import filters, mixins, status, viewsets
-from rest_framework.decorators import action
+from rest_framework import filters, mixins
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.response import Response
 
 from api.internal.repo.filter import RepositoryOrderingFilter
 from api.shared.repo.filter import RepositoryFilters
 from api.shared.repo.mixins import RepositoryViewSetMixin
-from services.decorators import torngit_safe
-from services.repo_providers import RepoProviderService
-from services.task import TaskService
 
-from .repository_actions import create_webhook_on_provider, delete_webhook_on_provider
 from .serializers import (
     RepoDetailsSerializer,
-    RepoSerializer,
     RepoWithMetricsSerializer,
-    SecretStringPayloadSerializer,
 )
-from .utils import encode_secret_string
 
 log = logging.getLogger(__name__)
 
@@ -89,59 +79,3 @@ class RepositoryViewSet(
             if owner.has_legacy_plan and owner.repo_credits <= 0:
                 raise PermissionDenied("Private repository limit reached.")
         return super().perform_update(serializer)
-
-    @action(detail=True, methods=["patch"], url_path="regenerate-upload-token")
-    def regenerate_upload_token(self, request, *args, **kwargs):
-        repo = self.get_object()
-        repo.upload_token = uuid.uuid4()
-        repo.save()
-        return Response(self.get_serializer(repo).data)
-
-    @action(detail=True, methods=["patch"])
-    def erase(self, request, *args, **kwargs):
-        self._assert_is_admin()
-        repo = self.get_object()
-        TaskService().delete_timeseries(repository_id=repo.repoid)
-        TaskService().flush_repo(repository_id=repo.repoid)
-        return Response(RepoSerializer(repo).data)
-
-    @action(detail=True, methods=["post"])
-    def encode(self, request, *args, **kwargs):
-        serializer = SecretStringPayloadSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        owner, repo = self.owner, self.get_object()
-
-        to_encode = "/".join(
-            (
-                owner.service,
-                owner.service_id,
-                repo.service_id,
-                serializer.validated_data["value"],
-            )
-        )
-
-        return Response(
-            SecretStringPayloadSerializer(
-                {"value": encode_secret_string(to_encode)}
-            ).data,
-            status=status.HTTP_201_CREATED,
-        )
-
-    @action(detail=True, methods=["put"], url_path="reset-webhook")
-    @torngit_safe
-    def reset_webhook(self, request, *args, **kwargs):
-        repo = self.get_object()
-        repository_service = RepoProviderService().get_adapter(
-            self.request.current_owner, repo
-        )
-
-        if repo.hookid:
-            delete_webhook_on_provider(repository_service, repo)
-            repo.hookid = None
-            repo.save()
-
-        repo.hookid = create_webhook_on_provider(repository_service, repo)
-        repo.save()
-
-        return Response(self.get_serializer(repo).data, status=status.HTTP_200_OK)

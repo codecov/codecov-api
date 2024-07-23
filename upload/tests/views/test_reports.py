@@ -72,6 +72,7 @@ def test_reports_post(client, db, mocker):
             "endpoint": "create_report",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 
