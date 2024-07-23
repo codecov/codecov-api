@@ -843,12 +843,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
-
     def test_resolve_test_results_count(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         TestFactory(repository=repo)
         TestFactory(repository=repo)
-        res = self.fetch_repository(
-            repo.name, """testResultsCount"""
-        )
+        res = self.fetch_repository(repo.name, """testResultsCount""")
         assert res["testResultsCount"] == 2
+
+    def test_resolve_test_results_count_no_tests(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        res = self.fetch_repository(repo.name, """testResultsCount""")
+        assert res["testResultsCount"] == 0
