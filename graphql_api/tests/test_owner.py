@@ -709,23 +709,48 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     def test_fetch_current_user_is_okta_authenticated(self):
         account = AccountFactory()
-        current_user = OwnerFactory(username="sample-user", service="okta")
-        owner = OwnerFactory(username="sample-owner", service="okta", account_id=account.id)
-        current_user.okta_authenticated_accounts = [account.id]
-        current_user.save()
+        owner = OwnerFactory(username="sample-owner", service="github", account=account)
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        session = self.client.session
+        session["okta_signed_in_accounts"] = [account.pk]
+        session.save()
+
+        self.client.force_login(user=user)
+
         query = """{
             owner(username: "%s") {
                 isUserOktaAuthenticated
             }
         }
         """ % (owner.username)
-        data = self.gql_request(query, owner=current_user)
-        assert data["owner"]["isUserOktaAuthenticated"] == True
+
+        response = self.client.post('/graphql/gh', {'query': query}, content_type='application/json')
+        data = response.json()
+
+        assert data["data"]["owner"]["isUserOktaAuthenticated"] == True
+
+
 
     def test_fetch_current_user_is_not_okta_authenticated(self):
         account = AccountFactory()
-        current_user = OwnerFactory(username="sample-user", service="okta")
-        owner = OwnerFactory(username="sample-owner", service="okta", account_id=account.id)
+        owner = OwnerFactory(username="sample-owner", service="github", account=account)
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        session = self.client.session
+        session["okta_signed_in_accounts"] = []
+        session.save()
+
+        self.client.force_login(user=user)
+
         query = """{
             owner(username: "%s") {
                 isUserOktaAuthenticated
@@ -733,5 +758,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
 
-        data = self.gql_request(query, owner=current_user)
-        assert data["owner"]["isUserOktaAuthenticated"] == False
+        response = self.client.post('/graphql/gh', {'query': query}, content_type='application/json')
+        data = response.json()
+
+        assert data["data"]["owner"]["isUserOktaAuthenticated"] == False
