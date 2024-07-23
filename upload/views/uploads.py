@@ -66,28 +66,31 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer: UploadSerializer):
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         repository: Repository = self.get_repo()
         validate_activated_repo(repository)
         commit: Commit = self.get_commit(repository)
         report: CommitReport = self.get_report(commit)
 
-        sentry_tags = generate_upload_sentry_metrics_tags(
-            action="coverage",
-            endpoint="create_upload",
-            request=self.request,
-            repository=repository,
-            is_shelter_request=self.is_shelter_request(),
-        )
-
-        sentry_metrics.incr(
-            "upload",
-            tags=sentry_tags,
-        )
-
         sentry_metrics.set(
             "upload_set",
             repository.author.ownerid,
-            tags=sentry_tags,
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
 
         version = (
@@ -136,6 +139,17 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             instance.storage_path = path
             instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+            ),
+        )
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
         self.send_analytics_data(commit, instance, version)

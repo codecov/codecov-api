@@ -28,11 +28,13 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from reports.models import Test
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
+from utils.test_results import aggregate_test_results
 
 repository_bindable = ObjectType("Repository")
 
@@ -556,4 +558,26 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
     )
     return rate_limits.determine_if_entity_is_rate_limited(
         redis_connection, rate_limit_redis_key
+    )
+
+
+@repository_bindable.field("testResults")
+@convert_kwargs_to_snake_case
+async def resolve_test_results(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+    ordering=None,
+    filters=None,
+    **kwargs,
+):
+    queryset = await sync_to_async(aggregate_test_results)(
+        repoid=repository.repoid, branch=filters.get("branch") if filters else None
+    )
+    return await queryset_to_connection(
+        queryset,
+        ordering=(ordering.get("parameter"),) if ordering else ("avg_duration",),
+        ordering_direction=ordering.get("direction")
+        if ordering
+        else OrderingDirection.DESC,
+        **kwargs,
     )

@@ -1079,6 +1079,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                     uncompress
                                                 }
                                             }
+                                            isCached
                                         }
                                         bundleData {
                                             loadTime {
@@ -1092,7 +1093,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                         }
                                         bundle(name: "not_exist") {
                                             name
+                                            isCached
                                         }
+                                        isCached
                                     }
                                     ... on MissingHeadReport {
                                         message
@@ -1136,6 +1139,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 20,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b2",
@@ -1157,6 +1161,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 200,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b3",
@@ -1178,6 +1183,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 1500,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b5",
@@ -1199,6 +1205,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 200000,
                         },
                     },
+                    "isCached": False,
                 },
             ],
             "bundleData": {
@@ -1212,6 +1219,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
             },
             "bundle": None,
+            "isCached": False,
         }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
@@ -1293,7 +1301,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         asset_report = bundle_report["asset"]
 
         assert bundle_report is not None
-        assert bundle_report["moduleCount"] == 7
+        assert bundle_report["moduleCount"] == 33
 
         assert asset_report is not None
         assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"

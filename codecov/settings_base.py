@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "shared.django_apps.rollouts",
     "shared.django_apps.user_measurements",
     "shared.django_apps.codecov_metrics",
+    "shared.django_apps.bundle_analysis",
 ]
 
 MIDDLEWARE = [
@@ -321,7 +322,10 @@ CSP_DEFAULT_SRC = [
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
+    "blob:",
 ]
+
+CSP_WORKER_SRC = ["'self'", "blob:"]
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
