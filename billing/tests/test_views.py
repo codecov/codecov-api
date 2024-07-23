@@ -83,7 +83,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_invoice_payment_succeeded_sets_owner_delinquent_false(self):
-        self.owner.deliquent = True
+        self.owner.delinquent = True
         self.owner.save()
 
         response = self._send_event(

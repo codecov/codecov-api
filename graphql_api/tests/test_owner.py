@@ -26,6 +26,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
+        delinquent
         orgUploadToken
         ownerid
         isCurrentUserPartOfOrg
@@ -88,6 +89,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.owner)
         assert data == {
             "owner": {
+                "delinquent": None,
                 "orgUploadToken": None,
                 "ownerid": self.owner.ownerid,
                 "isCurrentUserPartOfOrg": True,
@@ -362,6 +364,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_repositories % (self.owner.username, "", "")
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["ownerid"] == self.owner.ownerid
+
+    def test_delinquent(self):
+        query = query_repositories % (self.owner.username, "", "")
+        data = self.gql_request(query, owner=self.owner)
+        assert data["owner"]["delinquent"] == self.owner.delinquent
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
     def test_get_org_upload_token(self, mocker):
