@@ -49,7 +49,7 @@ class StripeWebhookHandler(APIView):
 
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         log.info(
-            "Invoice Payment Failed - Setting Deliquency status True",
+            "Invoice Payment Failed - Setting Delinquency status True",
             extra=dict(
                 stripe_customer_id=invoice.customer,
                 stripe_subscription_id=invoice.subscription,
