@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 import django.forms as forms
@@ -25,6 +26,8 @@ from plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from services.task import TaskService
 from utils.services import get_short_service_name
+
+log = logging.getLogger(__name__)
 
 
 class ExtendTrialForm(forms.Form):
@@ -293,10 +296,11 @@ class OwnerOrgInline(admin.TabularInline):
 
 @admin.register(Account)
 class AccountAdmin(AdminMixin, admin.ModelAdmin):
-    list_display = ("name", "is_active")
+    list_display = ("name", "is_active", "organizations_count", "all_user_count")
     search_fields = ("name__iregex", "id")
     search_help_text = "Search by name (can use regex), or id (exact)"
     inlines = [OwnerOrgInline, StripeBillingInline, InvoiceBillingInline]
+    actions = ["seat_check", "link_users_to_account"]
 
     readonly_fields = ["id", "created_at", "updated_at", "users"]
 
@@ -309,6 +313,120 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
         "plan_auto_activate",
         "is_delinquent",
     ]
+
+    @admin.action(
+        description="Count current plan_activated_users across all Organizations"
+    )
+    def seat_check(self, request, queryset):
+        self.link_users_to_account(request, queryset, dry_run=True)
+
+    @admin.action(description="Link Users to Account")
+    def link_users_to_account(self, request, queryset, dry_run=False):
+        for account in queryset:
+            account_plan_activated_user_ownerids = set()
+            for org in account.organizations.all():
+                account_plan_activated_user_ownerids.update(
+                    set(org.plan_activated_users)
+                )
+
+            account_plan_activated_user_owners = Owner.objects.filter(
+                ownerid__in=account_plan_activated_user_ownerids
+            ).prefetch_related("user")
+
+            non_student_count = account_plan_activated_user_owners.exclude(
+                student=True
+            ).count()
+            total_seats_for_account = account.plan_seat_count + account.free_seat_count
+            if non_student_count > total_seats_for_account:
+                self.message_user(
+                    request,
+                    f"Request failed: Account plan does not have enough seats; "
+                    f"current plan activated users (non-students): {non_student_count}, total seats for account: {total_seats_for_account}",
+                    messages.ERROR,
+                )
+                return
+            if dry_run:
+                self.message_user(
+                    request,
+                    f"Request succeeded: Account plan has enough seats! "
+                    f"current plan activated users (non-students): {non_student_count}, total seats for account: {total_seats_for_account}",
+                    messages.SUCCESS,
+                )
+                return
+
+            owners_without_user_objects = account_plan_activated_user_owners.filter(
+                user__isnull=True
+            )
+            owners_with_new_user_objects = []
+            for userless_owner in owners_without_user_objects:
+                new_user = User.objects.create(
+                    name=userless_owner.name, email=userless_owner.email
+                )
+                userless_owner.user = new_user
+                owners_with_new_user_objects.append(userless_owner)
+            total = Owner.objects.bulk_update(owners_with_new_user_objects, ["user"])
+            self.message_user(
+                request,
+                f"Created a User for {total} Owners",
+                messages.INFO,
+            )
+            if total > 0:
+                log.info(
+                    f"Admin operation for {account} - Created a User for {total} Owners",
+                    extra=dict(
+                        owners_with_new_user_objects=[
+                            str(owner) for owner in owners_with_new_user_objects
+                        ],
+                        account_id=account.id,
+                    ),
+                )
+
+            # redo this query to get all Owners and Users
+            account_plan_activated_user_owners = Owner.objects.filter(
+                ownerid__in=account_plan_activated_user_ownerids
+            ).prefetch_related("user")
+
+            already_linked_account_users = AccountsUsers.objects.filter(account=account)
+
+            not_yet_linked_owners = account_plan_activated_user_owners.exclude(
+                user_id__in=already_linked_account_users.values_list(
+                    "user_id", flat=True
+                )
+            )
+
+            account_users_that_should_be_unlinked = (
+                already_linked_account_users.exclude(
+                    user_id__in=account_plan_activated_user_owners.values_list(
+                        "user_id", flat=True
+                    )
+                )
+            )
+            deleted_ids_for_log = list(
+                account_users_that_should_be_unlinked.values_list("id", flat=True)
+            )
+            deleted_count, _ = account_users_that_should_be_unlinked.delete()
+
+            new_accounts_users = []
+            for owner in not_yet_linked_owners:
+                new_account_user = AccountsUsers(
+                    user_id=owner.user_id, account_id=account.id
+                )
+                new_accounts_users.append(new_account_user)
+            total = AccountsUsers.objects.bulk_create(new_accounts_users)
+            self.message_user(
+                request,
+                f"Created {len(total)} AccountsUsers, removed {deleted_count} AccountsUsers",
+                messages.SUCCESS,
+            )
+            if len(total) > 0 or deleted_count > 0:
+                log.info(
+                    f"Admin operation for {account} - Created {len(total)} AccountsUsers, removed {deleted_count} AccountsUsers",
+                    extra=dict(
+                        new_accounts_users=total,
+                        removed_accounts_users_ids=deleted_ids_for_log,
+                        account_id=account.id,
+                    ),
+                )
 
 
 @admin.register(Owner)
