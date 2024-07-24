@@ -581,3 +581,9 @@ async def resolve_test_results(
         else OrderingDirection.DESC,
         **kwargs,
     )
+
+
+@repository_bindable.field("testResultsCount")
+@sync_to_async
+def resolve_test_results_count(repository: Repository, info: GraphQLResolveInfo) -> int:
+    return Test.objects.filter(repository=repository).count()

@@ -104,6 +104,7 @@ class TestFactory(factory.django.DjangoModelFactory):
         model = models.Test
 
     id = factory.Faker("word")
+    name = factory.Faker("word")
     repository = factory.SubFactory(RepositoryFactory)
 
 
