@@ -643,6 +643,11 @@ class Comparison(object):
         self.head_report
         self.base_report
 
+    def validate_no_diff(self):
+        # make sure head and base reports exist (will throw an error if not)
+        self.head_report_no_diff
+        self.base_report
+
     @cached_property
     def base_commit(self):
         return self._base_commit
@@ -713,13 +718,23 @@ class Comparison(object):
             else:
                 raise e
 
-        # report.apply_diff(self.git_comparison["diff"])
+        report.apply_diff(self.git_comparison["diff"])
         return report
 
     @cached_property
+    def head_report_no_diff(self):
+        try:
+            return report_service.build_report_from_commit(self.head_commit)
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise MissingComparisonReport("Missing head report")
+            else:
+                raise e
+
+    @cached_property
     def has_different_number_of_head_and_base_sessions(self):
-        self.validate()
-        head_sessions = self.head_report.sessions
+        self.validate_no_diff()
+        head_sessions = self.head_report_no_diff.sessions
         base_sessions = self.base_report.sessions
         # We're treating this case as false since considering CFF's complicates the logic
         if self._has_cff_sessions(head_sessions) or self._has_cff_sessions(

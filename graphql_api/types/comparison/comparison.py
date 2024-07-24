@@ -256,7 +256,7 @@ def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport,
     info: GraphQLResolveInfo,
     **kwargs,  # type: ignore
-) -> False:
+) -> bool:
     # TODO: can we remove the need for `info.context["comparison"]` here?
     if "comparison" not in info.context:
         return False
