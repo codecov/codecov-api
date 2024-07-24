@@ -262,9 +262,10 @@ def resolve_has_different_number_of_head_and_base_reports(
         return False
     comparison: Comparison = info.context["comparison"]
     try:
-        return comparison.has_different_number_of_head_and_base_sessions
+        comparison.validate_no_diff()
     except MissingComparisonReport:
         return False
+    return comparison.has_different_number_of_head_and_base_sessions
 
 
 comparison_result_bindable = UnionType("ComparisonResult")
