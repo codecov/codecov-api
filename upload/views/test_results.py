@@ -42,7 +42,7 @@ class UploadSerializer(serializers.Serializer):
     job = serializers.CharField(required=False)
     flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
-    branch = serializers.CharField(required=False)
+    branch = serializers.CharField(required=False, allow_null=True)
     service = serializers.CharField(required=False)
     storage_path = serializers.CharField(required=False)
 
@@ -105,7 +105,7 @@ class TestResultsView(
             commitid=data["commit"],
             repository=repo,
             defaults={
-                "branch": data.get("branch"),
+                "branch": data.get("branch") or repo.branch,
                 "pullid": data.get("pr"),
                 "merged": False if data.get("pr") is not None else None,
                 "state": "pending",
