@@ -842,3 +842,215 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             """testResults(filters: { branch: "main"}) { edges { node { name } } }""",
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
+
+    def test_commits_failed_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            commitid="1",
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            commitid="2",
+        )
+        test_2 = TestFactory(repository=repo)
+        _test_instance_3 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            commitid="3",
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: COMMITS_WHERE_FAIL, direction: ASC }) { edges { node { name commitsFailed } } }""",
+        )
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_2.name, "commitsFailed": 1}},
+                {"node": {"name": test.name, "commitsFailed": 2}},
+            ]
+        }
+
+    def test_desc_commits_failed_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            commitid="1",
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            commitid="2",
+        )
+        test_2 = TestFactory(repository=repo)
+        _test_instance_3 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            commitid="3",
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: COMMITS_WHERE_FAIL, direction: DESC }) { edges { node { name commitsFailed } } }""",
+        )
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test.name, "commitsFailed": 2}},
+                {"node": {"name": test_2.name, "commitsFailed": 1}},
+            ]
+        }
+
+    def test_avg_duration_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            duration_seconds=1,
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            duration_seconds=2,
+        )
+        test_2 = TestFactory(repository=repo)
+        _test_instance_3 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            duration_seconds=3,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: AVG_DURATION, direction: ASC }) { edges { node { name avgDuration } } }""",
+        )
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test.name, "avgDuration": 1.5}},
+                {"node": {"name": test_2.name, "avgDuration":3}},
+            ]
+        }
+
+    def test_desc_avg_duration_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            duration_seconds=1,
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            duration_seconds=2,
+        )
+        test_2 = TestFactory(repository=repo)
+        _test_instance_3 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            duration_seconds=3,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: AVG_DURATION, direction: DESC }) { edges { node { name avgDuration } } }""",
+        )
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_2.name, "avgDuration": 3}},
+                {"node": {"name": test.name, "avgDuration": 1.5}},
+            ]
+        }
+
+    def test_failure_rate_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="pass",
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="failure",
+        )
+        test_2 = TestFactory(repository=repo)
+        _test_instance_3 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="failure",
+        )
+        _test_instance_4 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="failure",
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }) { edges { node { name failureRate } } }""",
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test.name, "failureRate": 0.5}},
+                {"node": {"name": test_2.name, "failureRate": 1.0}},
+            ]
+        }
+
+    def test_desc_failure_rate_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _test_instance_1 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="pass",
+        )
+        _test_instance_2 = TestInstanceFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="failure",
+        )
+        test_2 = TestFactory(repository=repo)
+        _test_instance_3 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="failure",
+        )
+        _test_instance_4 = TestInstanceFactory(
+            test=test_2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            outcome="failure",
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }) { edges { node { name failureRate } } }""",
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_2.name, "failureRate": 1.0}},
+                {"node": {"name": test.name, "failureRate": 0.5 }},
+            ]
+        }
