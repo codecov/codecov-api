@@ -638,9 +638,9 @@ class Comparison(object):
         self._base_commit = base_commit
         self._head_commit = head_commit
 
-    def validate(self, useExisting=False):
+    def validate(self):
         # make sure head and base reports exist (will throw an error if not)
-        self.head_report(useExisting=useExisting)
+        self.head_report
         self.base_report
 
     @cached_property
@@ -703,7 +703,8 @@ class Comparison(object):
             else:
                 raise e
 
-    def head_report(self, useExisting=False):
+    @cached_property
+    def head_report(self):
         try:
             report = report_service.build_report_from_commit(self.head_commit)
         except minio.error.S3Error as e:
@@ -712,14 +713,12 @@ class Comparison(object):
             else:
                 raise e
 
-        if not useExisting:
-            report.apply_diff(self.git_comparison["diff"])
-
+        # report.apply_diff(self.git_comparison["diff"])
         return report
 
     @cached_property
     def has_different_number_of_head_and_base_sessions(self):
-        self.validate(useExisting=True)
+        self.validate()
         head_sessions = self.head_report.sessions
         base_sessions = self.base_report.sessions
         # We're treating this case as false since considering CFF's complicates the logic
