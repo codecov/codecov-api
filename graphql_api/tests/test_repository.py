@@ -938,7 +938,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test.name, "avgDuration": 1.5}},
-                {"node": {"name": test_2.name, "avgDuration":3}},
+                {"node": {"name": test_2.name, "avgDuration": 3}},
             ]
         }
 
@@ -1051,6 +1051,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test_2.name, "failureRate": 1.0}},
-                {"node": {"name": test.name, "failureRate": 0.5 }},
+                {"node": {"name": test.name, "failureRate": 0.5}},
             ]
         }
