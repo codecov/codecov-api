@@ -912,8 +912,8 @@ class ComparisonTests(TestCase):
     ):
         # Only relevant files keys to the session object
         head_report_sessions = {"0": {"st": "carriedforward"}}
-        head_report = SerializableReport(sessions=head_report_sessions)
-        head_report_mock.return_value = head_report
+        head_report_no_diff = SerializableReport(sessions=head_report_sessions)
+        head_report_mock.return_value = head_report_no_diff
         base_report_sessions = {"0": {"st": "carriedforward"}}
         base_report = SerializableReport(sessions=base_report_sessions)
         base_report_mock.return_value = base_report
@@ -926,8 +926,8 @@ class ComparisonTests(TestCase):
     ):
         # Only relevant files keys to the session object
         head_report_sessions = {"0": {"st": "uploaded"}, "1": {"st": "uploaded"}}
-        head_report = SerializableReport(sessions=head_report_sessions)
-        head_report_mock.return_value = head_report
+        head_report_no_diff = SerializableReport(sessions=head_report_sessions)
+        head_report_mock.return_value = head_report_no_diff
         base_report_sessions = {"0": {"st": "uploaded"}}
         base_report = SerializableReport(sessions=base_report_sessions)
         base_report_mock.return_value = base_report
@@ -940,8 +940,8 @@ class ComparisonTests(TestCase):
     ):
         # Only relevant files keys to the session object
         head_report_sessions = {"0": {"st": "uploaded"}}
-        head_report = SerializableReport(sessions=head_report_sessions)
-        head_report_mock.return_value = head_report
+        head_report_no_diff = SerializableReport(sessions=head_report_sessions)
+        head_report_mock.return_value = head_report_no_diff
         base_report_sessions = {"0": {"st": "uploaded"}}
         base_report = SerializableReport(sessions=base_report_sessions)
         base_report_mock.return_value = base_report

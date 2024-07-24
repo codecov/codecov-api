@@ -1589,7 +1589,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             }
         ]
 
-    @patch("services.comparison.Comparison.validate")
+    @patch("services.comparison.Comparison.validate_no_diff")
     def test_has_different_number_of_head_and_base_reports_with_invalid_comparison(
         self, mock_compare_validate
     ):
