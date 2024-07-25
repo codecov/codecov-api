@@ -276,12 +276,12 @@ def resolve_owner_account(owner: Owner, info) -> dict:
 
 @owner_bindable.field("isUserOktaAuthenticated")
 @sync_to_async
+@require_part_of_org
 def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
-    current_owner = info.context["request"].current_owner
     okta_signed_in_accounts = info.context["request"].session.get(
         "okta_signed_in_accounts"
     )
-    if not current_owner.is_authenticated or not okta_signed_in_accounts:
+    if not okta_signed_in_accounts:
         return False
 
     return owner.account_id in okta_signed_in_accounts
