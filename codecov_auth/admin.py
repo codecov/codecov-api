@@ -111,6 +111,8 @@ class AccountsUsersInline(admin.TabularInline):
     extra = 1
     verbose_name_plural = "Accounts Users (click save to commit changes)"
     verbose_name = "Account User"
+    can_delete = False
+    can_edit = False
 
 
 @admin.register(User)
@@ -210,6 +212,8 @@ class OrgUploadTokenInline(admin.TabularInline):
 
 class InvoiceBillingInline(admin.StackedInline):
     model = InvoiceBilling
+    extra = 0
+    can_delete = False
     verbose_name_plural = "Invoice Billing"
     verbose_name = "Invoice Billing (click save to commit changes)"
 
@@ -241,8 +245,18 @@ class InvoiceBillingAdmin(AdminMixin, admin.ModelAdmin):
         "is_active",
     ]
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        field = form.base_fields["account"]
+        field.widget.can_add_related = False
+        field.widget.can_change_related = False
+        field.widget.can_delete_related = False
+        return form
+
 
 class StripeBillingInline(admin.StackedInline):
+    can_delete = False
+    extra = 0
     model = StripeBilling
     verbose_name_plural = "Stripe Billing"
     verbose_name = "Stripe Billing (click save to commit changes)"
@@ -274,6 +288,14 @@ class StripeBillingAdmin(AdminMixin, admin.ModelAdmin):
         "is_active",
     ]
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        field = form.base_fields["account"]
+        field.widget.can_add_related = False
+        field.widget.can_change_related = False
+        field.widget.can_delete_related = False
+        return form
+
 
 class OwnerOrgInline(admin.TabularInline):
     model = Owner
@@ -282,6 +304,7 @@ class OwnerOrgInline(admin.TabularInline):
     verbose_name_plural = "Organizations (read only)"
     verbose_name = "Organization"
     exclude = ("oauth_token",)
+    can_delete = False
 
     readonly_fields = [
         "name",
@@ -492,9 +515,13 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         form.base_fields["uses_invoice"].widget = CheckboxInput()
 
         is_superuser = request.user.is_superuser
-
         if not is_superuser:
             form.base_fields["staff"].disabled = True
+
+        field = form.base_fields["account"]
+        field.widget.can_add_related = False
+        field.widget.can_change_related = False
+        field.widget.can_delete_related = False
 
         return form
 
