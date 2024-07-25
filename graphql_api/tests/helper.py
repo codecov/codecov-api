@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from utils.test_utils import Client
 
 
@@ -21,7 +22,7 @@ class GraphQLTestHelper:
 
             if okta_signed_in_accounts:
                 session = self.client.session
-                session["okta_signed_in_accounts"] = okta_signed_in_accounts
+                session[OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY] = okta_signed_in_accounts
                 session.save()
 
         response = self.client.post(

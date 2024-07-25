@@ -17,6 +17,7 @@ from codecov_auth.models import (
     Account,
     Owner,
 )
+from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -279,7 +280,7 @@ def resolve_owner_account(owner: Owner, info) -> dict:
 @require_part_of_org
 def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
     okta_signed_in_accounts = info.context["request"].session.get(
-        "okta_signed_in_accounts",
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY,
         [],
     )
     if owner.account_id:
