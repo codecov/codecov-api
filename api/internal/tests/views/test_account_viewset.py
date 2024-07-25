@@ -1,5 +1,6 @@
 import json
 import os
+from dataclasses import asdict
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -8,8 +9,15 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    InvoiceBillingFactory,
+    StripeBillingFactory,
+)
+from shared.plan.constants import BASIC_PLAN
 from stripe import StripeError
 
+from api.internal.owner.serializers import PlanSerializer
 from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.models import Service
 from codecov_auth.tests.factories import OwnerFactory, UserFactory
@@ -171,6 +179,7 @@ class AccountViewSetTests(APITestCase):
             "schedule_detail": None,
             "uses_invoice": False,
             "delinquent": None,
+            "account": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -266,6 +275,7 @@ class AccountViewSetTests(APITestCase):
             },
             "uses_invoice": False,
             "delinquent": None,
+            "account": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -369,6 +379,7 @@ class AccountViewSetTests(APITestCase):
             },
             "uses_invoice": False,
             "delinquent": None,
+            "account": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -436,6 +447,7 @@ class AccountViewSetTests(APITestCase):
             "schedule_detail": None,
             "uses_invoice": False,
             "delinquent": None,
+            "account": None,
         }
 
     def test_retrieve_account_gets_account_students(self):
@@ -470,7 +482,174 @@ class AccountViewSetTests(APITestCase):
             "schedule_detail": None,
             "uses_invoice": False,
             "delinquent": None,
+            "account": None,
         }
+
+    def test_retrieve_org_with_account(self):
+        account = AccountFactory(
+            name="Hello World",
+            plan_seat_count=5,
+            free_seat_count=3,
+        )
+        stripe = StripeBillingFactory(is_active=False, account=account)
+        InvoiceBillingFactory(is_active=True, account=account)
+        org_1 = OwnerFactory(
+            account=account, service=Service.GITHUB.value, username="Test"
+        )
+        org_2 = OwnerFactory(
+            account=account,
+            service=Service.GITHUB.value,
+        )
+        activated_owner = OwnerFactory(
+            user=UserFactory(), organizations=[org_1.ownerid, org_2.ownerid]
+        )
+        account.users.add(activated_owner.user)
+        student_owner = OwnerFactory(
+            user=UserFactory(),
+            student=True,
+            organizations=[org_1.ownerid, org_2.ownerid],
+        )
+        account.users.add(student_owner.user)
+        org_1.plan_activated_users.extend(
+            [activated_owner.ownerid, student_owner.ownerid]
+        )
+        org_1.admins = [activated_owner.ownerid]
+        org_1.save()
+        org_2.plan_activated_users.extend(
+            [activated_owner.ownerid, student_owner.ownerid]
+        )
+        org_2.save()
+
+        self.client.force_login_owner(activated_owner)
+        response = self._retrieve(
+            kwargs={"service": Service.GITHUB.value, "owner_username": org_1.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        expected_response = {
+            "activated_user_count": 1,
+            "root_organization": None,
+            "integration_id": org_1.integration_id,
+            "plan_auto_activate": org_1.plan_auto_activate,
+            "inactive_user_count": 0,
+            "plan": {
+                "marketing_name": "Developer",
+                "value": PlanName.BASIC_PLAN_NAME.value,
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 1 user",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 1,
+            },
+            "subscription_detail": None,
+            "checkout_session_id": None,
+            "name": org_1.name,
+            "email": org_1.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": org_1.plan_provider,
+            "activated_student_count": 1,
+            "student_count": 1,
+            "schedule_detail": None,
+            "uses_invoice": False,
+            "delinquent": None,
+            "account": {
+                "name": "Hello World",
+                "is_delinquent": False,
+                "free_seat_count": 3,
+                "plan_seat_count": 5,
+                "total_seat_count": 8,
+                "activated_user_count": 1,
+                "activated_student_count": 1,
+                "all_user_count": 2,
+                "organizations_count": 2,
+                "available_seat_count": 7,
+                "plan": PlanSerializer(account.pretty_plan).data,
+                "plan_auto_activate": True,
+                "stripe_billing": [
+                    {
+                        "customer_id": str(stripe.customer_id),
+                        "subscription_id": stripe.subscription_id,
+                        "is_active": False,
+                    }
+                ],
+                "invoice_billing": [{"account_manager": None, "is_active": True}],
+            },
+        }
+
+        self.assertDictEqual(response.data["account"], expected_response["account"])
+        self.assertDictEqual(response.data, expected_response)
+
+    def test_retrieve_org_with_account_defaults(self):
+        account = AccountFactory()
+        org_1 = OwnerFactory(
+            account=account, service=Service.GITHUB.value, username="Test"
+        )
+        activated_owner = OwnerFactory(
+            user=UserFactory(), organizations=[org_1.ownerid]
+        )
+        account.users.add(activated_owner.user)
+        org_1.plan_activated_users.extend([activated_owner.ownerid])
+        org_1.admins = [activated_owner.ownerid]
+        org_1.save()
+
+        self.client.force_login_owner(activated_owner)
+        response = self._retrieve(
+            kwargs={"service": Service.GITHUB.value, "owner_username": org_1.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        expected_response = {
+            "activated_user_count": 1,
+            "root_organization": None,
+            "integration_id": org_1.integration_id,
+            "plan_auto_activate": org_1.plan_auto_activate,
+            "inactive_user_count": 0,
+            "plan": {
+                "marketing_name": "Developer",
+                "value": PlanName.BASIC_PLAN_NAME.value,
+                "billing_rate": None,
+                "base_unit_price": 0,
+                "benefits": [
+                    "Up to 1 user",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                ],
+                "quantity": 1,
+            },
+            "subscription_detail": None,
+            "checkout_session_id": None,
+            "name": org_1.name,
+            "email": org_1.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": org_1.plan_provider,
+            "activated_student_count": 0,
+            "student_count": 0,
+            "schedule_detail": None,
+            "uses_invoice": False,
+            "delinquent": None,
+            "account": {
+                "name": account.name,
+                "is_delinquent": False,
+                "free_seat_count": 0,
+                "plan_seat_count": 1,
+                "total_seat_count": 1,
+                "activated_user_count": 1,
+                "activated_student_count": 0,
+                "all_user_count": 1,
+                "organizations_count": 1,
+                "available_seat_count": 0,
+                "plan": PlanSerializer(account.pretty_plan).data,
+                "plan_auto_activate": True,
+                "stripe_billing": [],
+                "invoice_billing": [],
+            },
+        }
+
+        self.assertDictEqual(response.data["account"], expected_response["account"])
+        self.assertDictEqual(response.data, expected_response)
 
     def test_account_with_free_user_plan(self):
         self.current_owner.plan = "users-free"

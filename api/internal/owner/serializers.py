@@ -246,18 +246,20 @@ class RootOrganizationSerializer(serializers.Serializer):
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
+    # circular imports
+    from api.internal.account.serializers import BaseAccountSerializer
+
     plan = PlanSerializer(source="pretty_plan")
     checkout_session_id = serializers.SerializerMethodField()
     subscription_detail = serializers.SerializerMethodField()
     root_organization = RootOrganizationSerializer()
     schedule_detail = serializers.SerializerMethodField()
     apply_cancellation_discount = serializers.BooleanField(write_only=True)
+    account = BaseAccountSerializer()
 
     class Meta:
         model = Owner
-
-        read_only_fields = ("integration_id",)
-
+        read_only_fields = ("integration_id", "account")
         fields = read_only_fields + (
             "activated_student_count",
             "activated_user_count",
