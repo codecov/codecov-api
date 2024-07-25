@@ -1,3 +1,6 @@
 enum TestResultsOrderingParameter {
-  NAME
+  AVG_DURATION
+  FAILURE_RATE
+  COMMITS_WHERE_FAIL
+  UPDATED_AT
 }
