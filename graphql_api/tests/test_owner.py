@@ -21,6 +21,7 @@ from codecov_auth.tests.factories import (
 from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
+from utils.test_utils import Client
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -722,11 +723,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         user.organizations = [owner.ownerid]
         user.save()
 
-        session = self.client.session
+        client = Client()
+
+        session = client.session
         session["okta_signed_in_accounts"] = [account.pk]
         session.save()
 
-        self.client.force_login(user=user)
+        client.force_login(user)
 
         query = """{
             owner(username: "%s") {
@@ -735,7 +738,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
 
-        response = self.client.post(
+        response = client.post(
             "/graphql/gh", {"query": query}, content_type="application/json"
         )
         data = response.json()
@@ -751,11 +754,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         user.organizations = [owner.ownerid]
         user.save()
 
-        session = self.client.session
+        client = Client()
+
+        session = client.session
         session["okta_signed_in_accounts"] = []
         session.save()
 
-        self.client.force_login(user=user)
+        client.force_login(user)
 
         query = """{
             owner(username: "%s") {
@@ -764,7 +769,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
 
-        response = self.client.post(
+        response = client.post(
             "/graphql/gh", {"query": query}, content_type="application/json"
         )
         data = response.json()
