@@ -52,7 +52,12 @@ def resolve_repositories(
     **kwargs,
 ):
     current_owner = info.context["request"].current_owner
-    queryset = list_repository_for_owner(current_owner, owner, filters)
+    okta_account_auths: list[int] = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
+    )
+    queryset = list_repository_for_owner(
+        current_owner, owner, filters, okta_account_auths
+    )
     return queryset_to_connection(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
@@ -118,7 +123,12 @@ def resolve_ownerid(owner: Owner, info) -> int:
 @owner_bindable.field("repository")
 async def resolve_repository(owner: Owner, info, name):
     command = info.context["executor"].get_command("repository")
-    repository: Optional[Repository] = await command.fetch_repository(owner, name)
+    okta_authenticated_accounts: list[int] = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
+    )
+    repository: Optional[Repository] = await command.fetch_repository(
+        owner, name, okta_authenticated_accounts
+    )
 
     if repository is None:
         return NotFoundError()
@@ -190,7 +200,15 @@ def resolve_measurements(
 ) -> Iterable[MeasurementSummary]:
     current_owner = info.context["request"].current_owner
 
-    queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
+    okta_authenticated_accounts: list[int] = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
+    )
+
+    queryset = (
+        Repository.objects.filter(author=owner)
+        .viewable_repos(current_owner)
+        .exclude_accounts_enforced_okta(okta_authenticated_accounts)
+    )
 
     if is_public is not None:
         queryset = queryset.filter(private=not is_public)
