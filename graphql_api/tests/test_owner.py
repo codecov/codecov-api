@@ -735,12 +735,12 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
 
-        response = self.client.post('/graphql/gh', {'query': query}, content_type='application/json')
+        response = self.client.post(
+            "/graphql/gh", {"query": query}, content_type="application/json"
+        )
         data = response.json()
 
         assert data["data"]["owner"]["isUserOktaAuthenticated"] == True
-
-
 
     def test_fetch_current_user_is_not_okta_authenticated(self):
         account = AccountFactory()
@@ -764,7 +764,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
 
-        response = self.client.post('/graphql/gh', {'query': query}, content_type='application/json')
+        response = self.client.post(
+            "/graphql/gh", {"query": query}, content_type="application/json"
+        )
         data = response.json()
 
         assert data["data"]["owner"]["isUserOktaAuthenticated"] == False
@@ -806,4 +808,3 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org, provider="bb")
         assert data["owner"]["isGithubRateLimited"] == False
-

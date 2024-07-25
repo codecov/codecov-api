@@ -6,9 +6,13 @@ type Owner {
   delinquent: Boolean
   hashOwnerid: String
   hasPrivateRepos: Boolean
+  invoice(invoiceId: String!): Invoice
+  invoices: [Invoice] @cost(complexity: 100)
   isAdmin: Boolean
   isCurrentUserActivated: Boolean
   isCurrentUserPartOfOrg: Boolean!
+  isGithubRateLimited: Boolean
+  isUserOktaAuthenticated: Boolean!
   measurements(
     interval: MeasurementInterval!
     after: DateTime
@@ -16,10 +20,6 @@ type Owner {
     repos: [String!]
     isPublic: Boolean
   ): [Measurement!]
-  invoices: [Invoice] @cost(complexity: 100)
-  invoice(invoiceId: String!): Invoice
-  isUserOktaAuthenticated: Boolean!
-  isGithubRateLimited: Boolean
   numberOfUploads: Int
   orgUploadToken: String
   ownerid: Int
