@@ -11,12 +11,18 @@ class GraphQLTestHelper:
         owner=None,
         variables=None,
         with_errors=False,
+        okta_signed_in_accounts=[],
     ):
         url = f"/graphql/{provider}"
 
         if owner:
             self.client = Client()
             self.client.force_login_owner(owner)
+
+            if okta_signed_in_accounts:
+                session = self.client.session
+                session["okta_signed_in_accounts"] = okta_signed_in_accounts
+                session.save()
 
         response = self.client.post(
             url,

@@ -279,12 +279,12 @@ def resolve_owner_account(owner: Owner, info) -> dict:
 @require_part_of_org
 def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
     okta_signed_in_accounts = info.context["request"].session.get(
-        "okta_signed_in_accounts"
+        "okta_signed_in_accounts",
+        [],
     )
-    if not okta_signed_in_accounts:
-        return False
-
-    return owner.account_id in okta_signed_in_accounts
+    if owner.account_id:
+        return owner.account_id in okta_signed_in_accounts
+    return False
 
 
 @owner_bindable.field("delinquent")

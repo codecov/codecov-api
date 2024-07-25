@@ -21,7 +21,6 @@ from codecov_auth.tests.factories import (
 from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
-from utils.test_utils import Client
 
 from .helper import GraphQLTestHelper, paginate_connection
 
@@ -723,14 +722,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         user.organizations = [owner.ownerid]
         user.save()
 
-        client = Client()
-
-        session = client.session
-        session["okta_signed_in_accounts"] = [account.pk]
-        session.save()
-
-        client.force_login(user)
-
         query = """{
             owner(username: "%s") {
                 isUserOktaAuthenticated
@@ -738,12 +729,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
 
-        response = client.post(
-            "/graphql/gh", {"query": query}, content_type="application/json"
-        )
-        data = response.json()
-
-        assert data["data"]["owner"]["isUserOktaAuthenticated"] == True
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[account.pk])
+        assert data["owner"]["isUserOktaAuthenticated"] == True
 
     def test_fetch_current_user_is_not_okta_authenticated(self):
         account = AccountFactory()
@@ -754,14 +741,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         user.organizations = [owner.ownerid]
         user.save()
 
-        client = Client()
-
-        session = client.session
-        session["okta_signed_in_accounts"] = []
-        session.save()
-
-        client.force_login(user)
-
         query = """{
             owner(username: "%s") {
                 isUserOktaAuthenticated
@@ -769,12 +748,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (owner.username)
 
-        response = client.post(
-            "/graphql/gh", {"query": query}, content_type="application/json"
-        )
-        data = response.json()
-
-        assert data["data"]["owner"]["isUserOktaAuthenticated"] == False
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[])
+        assert data["owner"]["isUserOktaAuthenticated"] == False
 
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
