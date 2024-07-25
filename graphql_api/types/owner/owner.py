@@ -17,6 +17,7 @@ from codecov_auth.models import (
     Account,
     Owner,
 )
+from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -272,6 +273,19 @@ def resolve_owner_invoice(
 def resolve_owner_account(owner: Owner, info) -> dict:
     account_id = owner.account_id
     return Account.objects.filter(pk=account_id).first()
+
+
+@owner_bindable.field("isUserOktaAuthenticated")
+@sync_to_async
+@require_part_of_org
+def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
+    okta_signed_in_accounts = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY,
+        [],
+    )
+    if owner.account_id:
+        return owner.account_id in okta_signed_in_accounts
+    return False
 
 
 @owner_bindable.field("delinquent")

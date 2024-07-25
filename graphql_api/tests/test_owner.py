@@ -713,6 +713,62 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             assert e.message == UnauthorizedGuestAccess.message
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
 
+    def test_fetch_current_user_is_okta_authenticated(self):
+        account = AccountFactory()
+        owner = OwnerFactory(username="sample-owner", service="github", account=account)
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[account.pk])
+        assert data["owner"]["isUserOktaAuthenticated"] == True
+
+    def test_fetch_current_user_is_not_okta_authenticated(self):
+        account = AccountFactory()
+        owner = OwnerFactory(username="sample-owner", service="github", account=account)
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[])
+        assert data["owner"]["isUserOktaAuthenticated"] == False
+
+    def test_fetch_current_user_is_not_okta_authenticated_no_account(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[])
+        assert data["owner"]["isUserOktaAuthenticated"] == False
+
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
     @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)

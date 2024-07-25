@@ -12,6 +12,7 @@ type Owner {
   isCurrentUserActivated: Boolean
   isCurrentUserPartOfOrg: Boolean!
   isGithubRateLimited: Boolean
+  isUserOktaAuthenticated: Boolean!
   measurements(
     interval: MeasurementInterval!
     after: DateTime

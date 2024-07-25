@@ -14,7 +14,7 @@ from codecov_auth.views.okta_mixin import (
 )
 
 # The key for accessing the Okta signed in accounts list in the session
-OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY = "okta_logged_in_accounts"
+OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY = "okta_signed_in_accounts"
 
 # The key for the currently signing in session in Okta.
 # This is so that the callback can reference the orgs/accounts that we're
