@@ -43,7 +43,7 @@ owner_bindable = ObjectType("Owner")
 @owner_bindable.field("repositories")
 @convert_kwargs_to_snake_case
 def resolve_repositories(
-    owner,
+    owner: Owner,
     info,
     filters=None,
     ordering=RepositoryOrdering.ID,
@@ -68,7 +68,7 @@ def resolve_is_current_user_part_of_org(owner, info):
 
 
 @owner_bindable.field("yaml")
-def resolve_yaml(owner, info):
+def resolve_yaml(owner: Owner, info):
     if owner.yaml is None:
         return
     current_owner = info.context["request"].current_owner
@@ -110,12 +110,12 @@ def resolve_has_private_repos(owner: Owner, info) -> List[PlanData]:
 
 @owner_bindable.field("ownerid")
 @require_part_of_org
-def resolve_ownerid(owner, info) -> int:
+def resolve_ownerid(owner: Owner, info) -> int:
     return owner.ownerid
 
 
 @owner_bindable.field("repository")
-async def resolve_repository(owner, info, name):
+async def resolve_repository(owner: Owner, info, name):
     command = info.context["executor"].get_command("repository")
     repository: Optional[Repository] = await command.fetch_repository(owner, name)
 
@@ -141,14 +141,14 @@ async def resolve_repository(owner, info, name):
 
 @owner_bindable.field("numberOfUploads")
 @require_part_of_org
-async def resolve_number_of_uploads(owner, info, **kwargs):
+async def resolve_number_of_uploads(owner: Owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return await command.get_uploads_number_per_user(owner)
 
 
 @owner_bindable.field("isAdmin")
 @require_part_of_org
-def resolve_is_current_user_an_admin(owner, info):
+def resolve_is_current_user_an_admin(owner: Owner, info):
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
     return command.get_is_current_user_an_admin(owner, current_owner)
@@ -156,14 +156,14 @@ def resolve_is_current_user_an_admin(owner, info):
 
 @owner_bindable.field("hashOwnerid")
 @require_part_of_org
-def resolve_hash_ownerid(owner, info):
+def resolve_hash_ownerid(owner: Owner, info):
     hash_ownerid = sha1(str(owner.ownerid).encode())
     return hash_ownerid.hexdigest()
 
 
 @owner_bindable.field("orgUploadToken")
 @require_part_of_org
-def resolve_org_upload_token(owner, info, **kwargs):
+def resolve_org_upload_token(owner: Owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return command.get_org_upload_token(owner)
 
@@ -215,7 +215,7 @@ def resolve_measurements(
 
 @owner_bindable.field("isCurrentUserActivated")
 @sync_to_async
-def resolve_is_current_user_activated(owner, info):
+def resolve_is_current_user_activated(owner: Owner, info):
     current_user = info.context["request"].user
     if not current_user.is_authenticated:
         return False
@@ -283,3 +283,8 @@ def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
         return False
 
     return owner.account_id in okta_signed_in_accounts
+
+@owner_bindable.field("delinquent")
+@require_part_of_org
+def resolve_delinquent(owner: Owner, info) -> bool | None:
+    return owner.delinquent

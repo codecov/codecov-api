@@ -170,6 +170,7 @@ class AccountViewSetTests(APITestCase):
             "student_count": 0,
             "schedule_detail": None,
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -264,6 +265,7 @@ class AccountViewSetTests(APITestCase):
                 },
             },
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -366,6 +368,7 @@ class AccountViewSetTests(APITestCase):
                 },
             },
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -432,6 +435,7 @@ class AccountViewSetTests(APITestCase):
             "student_count": 0,
             "schedule_detail": None,
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     def test_retrieve_account_gets_account_students(self):
@@ -465,6 +469,7 @@ class AccountViewSetTests(APITestCase):
             "student_count": 3,
             "schedule_detail": None,
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     def test_account_with_free_user_plan(self):
