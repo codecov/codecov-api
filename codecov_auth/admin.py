@@ -457,7 +457,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
-    search_fields = ("name__iregex", "username__iregex", "email__iregex")
+    search_fields = ("name__iregex", "username__iregex", "email__iregex", "ownerid")
     actions = [impersonate_owner, extend_trial]
     autocomplete_fields = ("bot", "account")
     inlines = [OrgUploadTokenInline]
@@ -477,7 +477,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "cache",
         "free",
         "invoice_details",
-        "delinquent",
         "yaml",
         "updatestamp",
         "permission",
@@ -497,6 +496,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "plan_user_count",
         "plan_activated_users",
         "uses_invoice",
+        "delinquent",
         "integration_id",
         "bot",
         "stripe_customer_id",
