@@ -15,7 +15,7 @@ class RegenerateRepositoryUploadTokenInteractor(BaseInteractor):
         ).first()
         repo = (
             Repository.objects.viewable_repos(current_owner)
-            .filter(name=repo_name, active=True)
+            .filter(name=repo_name)
             .first()
         )
         if not repo:
