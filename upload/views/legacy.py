@@ -77,6 +77,7 @@ class UploadHandler(APIView, ShelterMixin):
 
     def post(self, request, *args, **kwargs):
         # Extract the version
+        version = self.kwargs["version"]
         sentry_metrics.incr(
             "upload",
             tags=generate_upload_sentry_metrics_tags(
@@ -85,9 +86,9 @@ class UploadHandler(APIView, ShelterMixin):
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
+                version=version,
             ),
         )
-        version = self.kwargs["version"]
 
         log.info(
             f"Received upload request {version}",
@@ -176,6 +177,7 @@ class UploadHandler(APIView, ShelterMixin):
                 repository=repository,
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
+                version=version,
             ),
         )
 

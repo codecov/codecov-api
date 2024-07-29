@@ -141,6 +141,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 request=self.request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
         if set(changed_files) == set(ignored_changed_files):
