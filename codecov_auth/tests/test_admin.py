@@ -10,10 +10,21 @@ from shared.django_apps.codecov_auth.models import (
     InvoiceBilling,
     StripeBilling,
 )
-from shared.django_apps.codecov_auth.tests.factories import AccountFactory
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    InvoiceBillingFactory,
+    StripeBillingFactory,
+)
 
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.admin import AccountAdmin, OrgUploadTokenInline, OwnerAdmin, UserAdmin
+from codecov_auth.admin import (
+    AccountAdmin,
+    InvoiceBillingAdmin,
+    OrgUploadTokenInline,
+    OwnerAdmin,
+    StripeBillingAdmin,
+    UserAdmin,
+)
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
@@ -341,6 +352,21 @@ class OwnerAdminTest(TestCase):
         assert res.status_code == 302
         assert mock_start_trial_service.called
 
+    def test_account_widget(self):
+        owner = OwnerFactory(user=UserFactory(), plan="users-enterprisey")
+        rf = RequestFactory()
+        get_request = rf.get(f"/admin/codecov_auth/owner/{owner.ownerid}/change/")
+        get_request.user = self.staff_user
+        sample_input = {
+            "change": True,
+            "fields": ["account", "plan", "uses_invoice", "staff"],
+        }
+        form = self.owner_admin.get_form(request=get_request, obj=owner, **sample_input)
+        # admin user cannot create, edit, or delete Account objects from the OwnerAdmin
+        self.assertFalse(form.base_fields["account"].widget.can_add_related)
+        self.assertFalse(form.base_fields["account"].widget.can_change_related)
+        self.assertFalse(form.base_fields["account"].widget.can_delete_related)
+
 
 class UserAdminTest(TestCase):
     def setUp(self):
@@ -664,3 +690,73 @@ class AccountAdminTest(TestCase):
         self.assertFalse(
             AccountsUsers.objects.filter(user=self.owner_with_user_1.user).exists()
         )
+
+
+class StripeBillingAdminTest(TestCase):
+    def setUp(self):
+        self.staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.staff_user)
+        admin_site = AdminSite()
+        admin_site.register(StripeBilling)
+        self.stripe_admin = StripeBillingAdmin(StripeBilling, admin_site)
+        self.account = AccountFactory()
+        self.obj = StripeBillingFactory(account=self.account)
+
+    def test_account_widget(self):
+        rf = RequestFactory()
+        get_request = rf.get(f"/admin/codecov_auth/stripebilling/{self.obj.id}/change/")
+        sample_input = {
+            "change": True,
+            "fields": [
+                "id",
+                "created_at",
+                "updated_at",
+                "account",
+                "customer_id",
+                "subscription_id",
+                "is_active",
+            ],
+        }
+        form = self.stripe_admin.get_form(
+            request=get_request, obj=self.obj, **sample_input
+        )
+        # admin user cannot create, edit, or delete Account objects from the StripeBillingAdmin
+        self.assertFalse(form.base_fields["account"].widget.can_add_related)
+        self.assertFalse(form.base_fields["account"].widget.can_change_related)
+        self.assertFalse(form.base_fields["account"].widget.can_delete_related)
+
+
+class InvoiceBillingAdminTest(TestCase):
+    def setUp(self):
+        self.staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.staff_user)
+        admin_site = AdminSite()
+        admin_site.register(InvoiceBilling)
+        self.invoice_admin = InvoiceBillingAdmin(InvoiceBilling, admin_site)
+        self.account = AccountFactory()
+        self.obj = InvoiceBillingFactory(account=self.account)
+
+    def test_account_widget(self):
+        rf = RequestFactory()
+        get_request = rf.get(
+            f"/admin/codecov_auth/invoicebilling/{self.obj.id}/change/"
+        )
+        sample_input = {
+            "change": True,
+            "fields": [
+                "id",
+                "created_at",
+                "updated_at",
+                "account",
+                "account_manager",
+                "invoice_notes",
+                "is_active",
+            ],
+        }
+        form = self.invoice_admin.get_form(
+            request=get_request, obj=self.obj, **sample_input
+        )
+        # admin user cannot create, edit, or delete Account objects from the InvoiceBillingAdmin
+        self.assertFalse(form.base_fields["account"].widget.can_add_related)
+        self.assertFalse(form.base_fields["account"].widget.can_change_related)
+        self.assertFalse(form.base_fields["account"].widget.can_delete_related)

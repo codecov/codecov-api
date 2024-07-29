@@ -1,9 +1,11 @@
 from typing import Optional
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from graphql import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
 from codecov_auth.models import Owner, OwnerProfile, User
+from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from graphql_api.actions.owner import (
     get_owner_login_sessions,
     get_user_tokens,
@@ -42,13 +44,16 @@ def resolve_owner(user, _):
 @convert_kwargs_to_snake_case
 def resolve_viewable_repositories(
     current_user,
-    _,
+    info: GraphQLResolveInfo,
     filters=None,
     ordering=RepositoryOrdering.ID,
     ordering_direction=OrderingDirection.ASC,
     **kwargs,
 ):
-    queryset = search_repos(current_user, filters)
+    okta_authenticated_accounts: list[int] = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
+    )
+    queryset = search_repos(current_user, filters, okta_authenticated_accounts)
     return queryset_to_connection(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),

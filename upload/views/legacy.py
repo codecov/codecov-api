@@ -397,8 +397,12 @@ class UploadDownloadHandler(View):
         if owner is None:
             raise Http404("Requested report could not be found")
         repo = await RepositoryCommands(
-            self.request.current_owner, self.service
-        ).fetch_repository(owner, self.repo_name)
+            self.request.current_owner,
+            self.service,
+        ).fetch_repository(
+            owner, self.repo_name, [], exclude_okta_enforced_repos=False
+        )  # Okta sign-in is only enforced on the UI for now.
+
         if repo is None:
             raise Http404("Requested report could not be found")
         return repo

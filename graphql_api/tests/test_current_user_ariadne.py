@@ -3,6 +3,10 @@ from http.cookies import SimpleCookie
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    OktaSettingsFactory,
+)
 
 from codecov_auth.models import Owner, OwnerProfile
 from codecov_auth.tests.factories import OwnerFactory, UserFactory
@@ -206,7 +210,23 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_fetching_viewable_repositories(self):
         org_1 = OwnerFactory()
         org_2 = OwnerFactory()
-        current_user = OwnerFactory(organizations=[org_1.ownerid])
+
+        authed_account = AccountFactory()
+        OktaSettingsFactory(account=authed_account, enforced=True)
+        okta_enforced_authenticated = OwnerFactory(account=authed_account)
+
+        unauthed_account = AccountFactory()
+        okta_enforced_org_unauth = OwnerFactory(account=unauthed_account)
+        OktaSettingsFactory(account=unauthed_account, enforced=True)
+
+        current_user = OwnerFactory(
+            organizations=[
+                org_1.ownerid,
+                okta_enforced_authenticated.ownerid,
+                okta_enforced_org_unauth.ownerid,
+            ]
+        )
+
         repos_in_db = [
             RepositoryFactory(private=True, name="0"),
             RepositoryFactory(author=org_1, private=False, name="1"),
@@ -216,8 +236,22 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             RepositoryFactory(private=True, name="5"),
             RepositoryFactory(author=current_user, private=True, name="6"),
             RepositoryFactory(author=current_user, private=False, name="7"),
+            RepositoryFactory(
+                author=okta_enforced_authenticated,
+                private=True,
+                name="okta_enforced_repo_authed",
+            ),
+            RepositoryFactory(
+                author=okta_enforced_org_unauth,
+                private=True,
+                name="okta_enforced_repo_unauthed",
+            ),
         ]
-        current_user.permission = [repos_in_db[2].repoid]
+        current_user.permission = [
+            repos_in_db[2].repoid,
+            repos_in_db[8].repoid,
+            repos_in_db[9].repoid,
+        ]
         current_user.save()
         query = """{
             me {
@@ -231,15 +265,21 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
             }
         }
         """
-        data = self.gql_request(query, owner=current_user)
+        data = self.gql_request(
+            query, owner=current_user, okta_signed_in_accounts=[authed_account.id]
+        )
         repos = paginate_connection(data["me"]["viewableRepositories"])
         repos_name = [repo["name"] for repo in repos]
-        assert sorted(repos_name) == [
-            "1",  # public repo in org of user
-            "2",  # private repo in org of user and in user permission
-            "6",  # personal private repo
-            "7",  # personal public repo
-        ]
+        assert (
+            sorted(repos_name)
+            == [
+                "1",  # public repo in org of user
+                "2",  # private repo in org of user and in user permission
+                "6",  # personal private repo
+                "7",  # personal public repo
+                "okta_enforced_repo_authed",  # private repo in org with Okta Enforced permissions
+            ]
+        )
 
     def test_fetching_viewable_repositories_ordering(self):
         current_user = OwnerFactory()
