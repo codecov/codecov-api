@@ -718,7 +718,6 @@ class Comparison(object):
 
     @cached_property
     def has_different_number_of_head_and_base_sessions(self):
-        self.validate()
         head_sessions = self.head_report.sessions
         base_sessions = self.base_report.sessions
         # We're treating this case as false since considering CFF's complicates the logic
