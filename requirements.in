@@ -4,7 +4,7 @@ ariadne_django
 celery>=5.3.6
 cerberus
 ddtrace
-Django
+Django>=4.2.14
 django-cors-headers
 django-csp
 django-dynamic-fixture
