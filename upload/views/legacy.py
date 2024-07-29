@@ -86,7 +86,7 @@ class UploadHandler(APIView, ShelterMixin):
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
-                version=version,
+                upload_version=version,
             ),
         )
 
