@@ -1,8 +1,14 @@
-from codecov_auth.models import Owner
-from core.models import Repository
+import logging
+from typing import Any
+
+from django.db.models import QuerySet
+from shared.django_apps.codecov_auth.models import Owner
+from shared.django_apps.core.models import Repository
+
+log = logging.getLogger(__name__)
 
 
-def apply_filters_to_queryset(queryset, filters):
+def apply_filters_to_queryset(queryset, filters: dict[str, Any]) -> QuerySet:
     filters = filters or {}
     term = filters.get("term")
     active = filters.get("active")
@@ -24,9 +30,15 @@ def apply_filters_to_queryset(queryset, filters):
     return queryset
 
 
-def list_repository_for_owner(current_owner: Owner, owner: Owner, filters):
+def list_repository_for_owner(
+    current_owner: Owner,
+    owner: Owner,
+    filters: dict[str, Any] | None,
+    okta_account_auths: list[int],
+) -> QuerySet:
     queryset = (
         Repository.objects.viewable_repos(current_owner)
+        .exclude_accounts_enforced_okta(okta_account_auths)
         .with_recent_coverage()
         .with_latest_commit_at()
         .filter(author=owner)
@@ -35,10 +47,13 @@ def list_repository_for_owner(current_owner: Owner, owner: Owner, filters):
     return queryset
 
 
-def search_repos(current_owner, filters):
+def search_repos(
+    current_owner: Owner, filters: dict[str, Any] | None, okta_account_auths: list[int]
+) -> QuerySet:
     authors_from = [current_owner.ownerid] + (current_owner.organizations or [])
     queryset = (
         Repository.objects.viewable_repos(current_owner)
+        .exclude_accounts_enforced_okta(okta_account_auths)
         .with_recent_coverage()
         .with_latest_commit_at()
         .filter(author__ownerid__in=authors_from)
