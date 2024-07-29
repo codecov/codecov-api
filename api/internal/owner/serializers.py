@@ -261,21 +261,22 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         fields = read_only_fields + (
             "activated_student_count",
             "activated_user_count",
+            "apply_cancellation_discount",
             "checkout_session_id",
+            "delinquent",
             "email",
             "inactive_user_count",
             "name",
             "nb_active_private_repos",
-            "plan",
             "plan_auto_activate",
             "plan_provider",
-            "uses_invoice",
+            "plan",
             "repo_total_credits",
             "root_organization",
             "schedule_detail",
             "student_count",
             "subscription_detail",
-            "apply_cancellation_discount",
+            "uses_invoice",
         )
 
     def _get_billing(self):

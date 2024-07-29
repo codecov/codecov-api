@@ -421,7 +421,7 @@ sentry-sdk[celery]==1.44.1
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/c590f459b224ba3c5381bf89449a31873cbcfb3a.tar.gz
+shared @ https://github.com/codecov/shared/archive/c9e07f583a8217a2f61b176a0e15fa6dcce5bc34.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
@@ -510,7 +510,7 @@ xmltodict==0.13.0
     # via ddtrace
 yarl==1.9.4
     # via vcrpy
-zipp==3.17.0
+zipp==3.19.2
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

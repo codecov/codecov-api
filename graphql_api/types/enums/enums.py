@@ -12,7 +12,10 @@ class OrderingParameter(enum.Enum):
 
 
 class TestResultsOrderingParameter(enum.Enum):
-    NAME = "name"
+    AVG_DURATION = "avg_duration"
+    FAILURE_RATE = "failure_rate"
+    COMMITS_WHERE_FAIL = "commits_where_fail"
+    UPDATED_AT = "updated_at"
 
 
 class PathContentDisplayType(enum.Enum):

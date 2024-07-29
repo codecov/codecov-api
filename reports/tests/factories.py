@@ -104,7 +104,9 @@ class TestFactory(factory.django.DjangoModelFactory):
         model = models.Test
 
     id = factory.Faker("word")
+    name = factory.Faker("word")
     repository = factory.SubFactory(RepositoryFactory)
+    commits_where_fail = []
 
 
 class TestInstanceFactory(factory.django.DjangoModelFactory):

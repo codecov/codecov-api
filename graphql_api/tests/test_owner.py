@@ -26,6 +26,7 @@ from .helper import GraphQLTestHelper, paginate_connection
 
 query_repositories = """{
     owner(username: "%s") {
+        delinquent
         orgUploadToken
         ownerid
         isCurrentUserPartOfOrg
@@ -88,6 +89,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.owner)
         assert data == {
             "owner": {
+                "delinquent": None,
                 "orgUploadToken": None,
                 "ownerid": self.owner.ownerid,
                 "isCurrentUserPartOfOrg": True,
@@ -362,6 +364,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = query_repositories % (self.owner.username, "", "")
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["ownerid"] == self.owner.ownerid
+
+    def test_delinquent(self):
+        query = query_repositories % (self.owner.username, "", "")
+        data = self.gql_request(query, owner=self.owner)
+        assert data["owner"]["delinquent"] == self.owner.delinquent
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
     def test_get_org_upload_token(self, mocker):
@@ -705,6 +712,62 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         except GraphQLError as e:
             assert e.message == UnauthorizedGuestAccess.message
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
+
+    def test_fetch_current_user_is_okta_authenticated(self):
+        account = AccountFactory()
+        owner = OwnerFactory(username="sample-owner", service="github", account=account)
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[account.pk])
+        assert data["owner"]["isUserOktaAuthenticated"] == True
+
+    def test_fetch_current_user_is_not_okta_authenticated(self):
+        account = AccountFactory()
+        owner = OwnerFactory(username="sample-owner", service="github", account=account)
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[])
+        assert data["owner"]["isUserOktaAuthenticated"] == False
+
+    def test_fetch_current_user_is_not_okta_authenticated_no_account(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        owner.save()
+
+        user = OwnerFactory(username="sample-user")
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                isUserOktaAuthenticated
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user, okta_signed_in_accounts=[])
+        assert data["owner"]["isUserOktaAuthenticated"] == False
 
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")

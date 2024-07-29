@@ -438,9 +438,12 @@ class GithubWebhookHandler(APIView):
         owner, _ = Owner.objects.get_or_create(
             service=self.service_name,
             service_id=service_id,
-            username=username,
-            defaults={"createstamp": timezone.now()},
+            defaults={
+                "username": username,
+                "createstamp": timezone.now(),
+            },
         )
+
         installation_id = request.data["installation"]["id"]
 
         ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
@@ -479,8 +482,10 @@ class GithubWebhookHandler(APIView):
         owner, _ = Owner.objects.get_or_create(
             service=self.service_name,
             service_id=service_id,
-            username=username,
-            defaults={"createstamp": timezone.now()},
+            defaults={
+                "username": username,
+                "createstamp": timezone.now(),
+            },
         )
 
         installation_id = request.data["installation"]["id"]
