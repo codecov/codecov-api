@@ -787,6 +787,7 @@ def generate_upload_sentry_metrics_tags(
     endpoint: Optional[str] = None,
     repository: Optional[Repository] = None,
     position: Optional[str] = None,
+    version: Optional[str] = None,
 ):
     metrics_tags = dict(
         agent=get_agent_from_headers(request.headers),
@@ -801,5 +802,7 @@ def generate_upload_sentry_metrics_tags(
         )
     if position:
         metrics_tags["position"] = position
+    if version:
+        metrics_tags["version"] = version
 
     return metrics_tags
