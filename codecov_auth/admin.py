@@ -586,3 +586,26 @@ class LogEntryAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(AccountsUsers)
+class AccountsUsersAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("id", "user", "account")
+    search_fields = (
+        "account__name",
+        "account__id__iexact",
+        "id__iexact",
+        "user__id__iexact",
+        "user__name",
+        "user__email",
+    )
+    search_help_text = "Search by account name, account id (exact), id (exact), user id (exact), user's name or email"
+    autocomplete_fields = ("account", "user")
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+    ]
+
+    fields = readonly_fields + ["account", "user"]
