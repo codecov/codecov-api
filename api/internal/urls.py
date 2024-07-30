@@ -8,6 +8,7 @@ from api.internal.compare.views import CompareViewSet
 from api.internal.coverage.views import CoverageViewSet
 from api.internal.enterprise_urls import urlpatterns as enterprise_urlpatterns
 from api.internal.feature.views import FeaturesView
+from api.internal.integrations.views import CheckOwnerView
 from api.internal.owner.views import (
     AccountDetailsViewSet,
     OwnerViewSet,
@@ -59,6 +60,7 @@ urlpatterns += [
     path("<str:service>/<str:owner_username>/", include(owner_artifacts_router.urls)),
     path("<str:service>/<str:owner_username>/", include(account_details_router.urls)),
     path("<str:service>/<str:owner_username>/", include(repository_router.urls)),
+    path('integrations/check_owner/<int:service_id>/', CheckOwnerView.as_view(), name="check-owner"),
     path(
         "<str:service>/<str:owner_username>/<str:repo_name>/",
         include(repository_artifacts_router.urls),
