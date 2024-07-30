@@ -115,14 +115,33 @@ class AccountsUsersInline(admin.TabularInline):
     can_edit = False
 
 
+class OwnerUserInline(admin.TabularInline):
+    model = Owner
+    max_num = 5
+    extra = 0
+    verbose_name_plural = "Owners (read only)"
+    verbose_name = "Owner"
+    exclude = ("oauth_token",)
+    can_delete = False
+
+    readonly_fields = [
+        "name",
+        "username",
+        "email",
+        "service",
+        "student",
+    ]
+
+    fields = [] + readonly_fields
+
+
 @admin.register(User)
 class UserAdmin(AdminMixin, admin.ModelAdmin):
     list_display = (
         "name",
         "email",
     )
-    readonly_fields = []
-    inlines = [AccountsUsersInline]
+    inlines = [AccountsUsersInline, OwnerUserInline]
     search_fields = (
         "name__iregex",
         "email__iregex",
