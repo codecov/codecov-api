@@ -1,5 +1,6 @@
 from django.conf import settings, urls
 from django.urls import include, path
+from api.internal.integrations.views import IntegrationsView
 from rest_framework.exceptions import server_error
 
 from api.internal.branch.views import BranchViewSet
@@ -76,4 +77,5 @@ urlpatterns += [
         include(compare_router.urls),
     ),
     path("features", FeaturesView.as_view(), name="features"),
+    path('integrations/check_owner/<int:service_id>/', IntegrationsView.as_view(), name='check-owner'),
 ]
