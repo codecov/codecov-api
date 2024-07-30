@@ -691,7 +691,7 @@ class Comparison(object):
 
     @property
     def git_comparison(self):
-        return self._fetch_comparison_and_reverse_comparison[0]
+        return self._fetch_comparison
 
     @cached_property
     def base_report(self):
@@ -766,10 +766,9 @@ class Comparison(object):
         return commits_queryset
 
     @cached_property
-    def _fetch_comparison_and_reverse_comparison(self):
+    def _fetch_comparison(self):
         """
-        Fetches comparison and reverse comparison concurrently, then
-        caches the result. Returns (comparison, reverse_comparison).
+        Fetches comparison, and caches the result.
         """
         adapter = RepoProviderService().get_adapter(
             self.user, self.base_commit.repository
@@ -778,12 +777,8 @@ class Comparison(object):
             self.base_commit.commitid, self.head_commit.commitid
         )
 
-        reverse_comparison_coro = adapter.get_compare(
-            self.head_commit.commitid, self.base_commit.commitid
-        )
-
         async def runnable():
-            return await asyncio.gather(comparison_coro, reverse_comparison_coro)
+            return await asyncio.gather(comparison_coro)
 
         return async_to_sync(runnable)()
 
@@ -794,18 +789,6 @@ class Comparison(object):
     def non_carried_forward_flags(self):
         flags_dict = self.head_report.flags
         return [flag for flag, vals in flags_dict.items() if not vals.carriedforward]
-
-    @cached_property
-    def has_unmerged_base_commits(self):
-        """
-        We use reverse comparison to detect if any commits exist in the
-        base reference but not in the head reference. We use this information
-        to show a message in the UI urging the user to integrate the changes
-        in the base reference in order to see accurate coverage information.
-        We compare with 1 because torngit injects the base commit into the commits
-        array because reasons.
-        """
-        return len(self._fetch_comparison_and_reverse_comparison[1]["commits"]) > 1
 
 
 class FlagComparison(object):
@@ -873,7 +856,7 @@ class ImpactedFile:
         """
         Returns `True` if the file has any additions or removals in the diff
         """
-        return (
+        return bool(
             self.added_diff_coverage
             and len(self.added_diff_coverage) > 0
             or self.removed_diff_coverage
@@ -957,7 +940,10 @@ class ImpactedFile:
             and self.head_coverage
             and self.head_coverage.coverage
         ):
-            return float(self.head_coverage.coverage - self.base_coverage.coverage)
+            return float(
+                int(self.head_coverage.coverage or 0)
+                - int(self.base_coverage.coverage or 0)
+            )
 
     @cached_property
     def file_name(self) -> Optional[str]:
