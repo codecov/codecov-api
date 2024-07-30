@@ -7,6 +7,7 @@ from django.db import connection
 from django.db.models import (
     Avg,
     Case,
+    F,
     FloatField,
     Func,
     IntegerField,
@@ -19,6 +20,7 @@ from django.db.models import (
     When,
 )
 from django.db.models.expressions import RawSQL
+from django.db.models.functions import Coalesce
 from shared.django_apps.reports.models import Test, TestInstance
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
@@ -78,20 +80,25 @@ def aggregate_test_results(
                 )
             ),
             updated_at=Max("created_at"),
-            commits_where_fail=ArrayLength(
-                ArrayAgg(
-                    "commitid",
-                    distinct=True,
-                    filter=Q(outcome__in=["failure", "error"]),
-                )
+            commits_where_fail=Coalesce(
+                ArrayLength(
+                    ArrayAgg(
+                        "commitid",
+                        distinct=True,
+                        filter=Q(outcome__in=["failure", "error"]),
+                    )
+                ),
+                0,
+                output_field=IntegerField(),
             ),
             avg_duration=Avg("duration_seconds"),
+            name=F("test__name"),
         )
         .values(
             "failure_rate",
             "commits_where_fail",
             "avg_duration",
-            "test__name",
+            "name",
             "updated_at",
         )
     )

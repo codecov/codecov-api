@@ -573,9 +573,12 @@ async def resolve_test_results(
     queryset = await sync_to_async(aggregate_test_results)(
         repoid=repository.repoid, branch=filters.get("branch") if filters else None
     )
+
     return await queryset_to_connection(
         queryset,
-        ordering=(ordering.get("parameter"),) if ordering else ("avg_duration",),
+        ordering=(ordering.get("parameter"), "name")
+        if ordering
+        else ("avg_duration", "name"),
         ordering_direction=ordering.get("direction")
         if ordering
         else OrderingDirection.DESC,
