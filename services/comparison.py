@@ -713,7 +713,11 @@ class Comparison(object):
             else:
                 raise e
 
-        report.apply_diff(self.git_comparison["diff"])
+        # Return the old report if the github API call fails for any reason
+        try:
+            report.apply_diff(self.git_comparison["diff"])
+        except Exception:
+            pass
         return report
 
     @cached_property
