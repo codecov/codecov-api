@@ -328,6 +328,18 @@ class RepoPullList(InternalAPITest):
         assert content["results"][0] == expected_content["results"][0]
         assert content == expected_content
 
+@patch(get_permissions_method)
+class Integrations(InternalAPITest):
+    def setUp(self):
+        self.org = OwnerFactory(username="codecov", service_id=123)
+    
+    def test_check_owner(self, mock_provider):
+        mock_provider.return_value = True, True
+        response = self.client.get("/internal/integrations/check_owner/123")
+        self.assertEqual(response.status_code, 200)
+        content = self.json_content(response)
+        self.assertEqual(content["exists"], True)
+
 
 @patch(get_permissions_method)
 class RepoPullDetail(InternalAPITest):
