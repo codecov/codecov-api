@@ -184,11 +184,7 @@ def test_test_results_no_auth(db, client, mocker, mock_redis):
         format="json",
     )
     assert res.status_code == 401
-    assert (
-        res.json().get("detail")
-        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
-        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
-    )
+    assert res.json().get("detail") == "Not valid tokenless upload"
 
 
 def test_upload_test_results_missing_args(db, client, mocker, mock_redis):
