@@ -9,7 +9,7 @@ test_result_bindable = ObjectType("TestResult")
 
 @test_result_bindable.field("name")
 def resolve_name(test, info) -> str:
-    return test["test__name"]
+    return test["name"]
 
 
 @test_result_bindable.field("updatedAt")

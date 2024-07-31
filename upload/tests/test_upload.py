@@ -406,7 +406,7 @@ class UploadHandlerHelpersTest(TestCase):
             "using_global_token": False,
             "branch": None,
             "project": "p12",
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "_did_change_merge_commit": False,
             "parent": "123abc",
         }
@@ -2172,11 +2172,57 @@ class UploadHandlerAzureTokenlessTest(TestCase):
             line.strip() for line in expected_error.split("\n")
         ]
 
+    def test_azure_invalid_server_uri(self):
+        expected_error = """Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."""
+
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://dev.azure.com/missing_trailing_slash",
+        }
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler("azure_pipelines", params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split("\n")] == [
+            line.strip() for line in expected_error.split("\n")
+        ]
+
+        params["server_uri"] = "https://missing_trailing_slash.visualstudio.com"
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler("azure_pipelines", params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split("\n")] == [
+            line.strip() for line in expected_error.split("\n")
+        ]
+
+        params["server_uri"] = "https://example.visualstudio.com.attacker.com/"
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler("azure_pipelines", params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split("\n")] == [
+            line.strip() for line in expected_error.split("\n")
+        ]
+
+        params["server_uri"] = "https://dev.azure.com.attacker.com/example"
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler("azure_pipelines", params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split("\n")] == [
+            line.strip() for line in expected_error.split("\n")
+        ]
+
+        params["server_uri"] = "https://dev.azure.attacker.com/example"
+        with pytest.raises(NotFound) as e:
+            TokenlessUploadHandler("azure_pipelines", params).verify_upload()
+        assert [line.strip() for line in e.value.args[0].split("\n")] == [
+            line.strip() for line in expected_error.split("\n")
+        ]
+
     @patch.object(requests, "get")
     def test_azure_http_error(self, mock_get):
         mock_get.side_effect = [requests.exceptions.HTTPError("Not found")]
 
-        params = {"project": "project123", "job": 732059764, "server_uri": "https://"}
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://dev.azure.com/example/",
+        }
 
         expected_error = """Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."""
 
@@ -2190,7 +2236,11 @@ class UploadHandlerAzureTokenlessTest(TestCase):
     def test_azure_connection_error(self, mock_get):
         mock_get.side_effect = [requests.exceptions.ConnectionError("Not found")]
 
-        params = {"project": "project123", "job": 732059764, "server_uri": "https://"}
+        params = {
+            "project": "project123",
+            "job": 732059764,
+            "server_uri": "https://dev.azure.com/example/",
+        }
 
         expected_error = """Unable to locate build via Azure API. Please upload with the Codecov repository upload token to resolve issue."""
 
@@ -2217,7 +2267,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": 732059764,
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2242,7 +2292,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": 732059764,
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2272,7 +2322,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": 732059764,
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2302,7 +2352,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": 732059764,
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2332,7 +2382,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": 732059764,
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2362,7 +2412,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": 732059764,
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2392,7 +2442,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": 732059764,
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2422,7 +2472,11 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
     def test_appveyor_http_error(self, mock_get):
         mock_get.side_effect = [requests.exceptions.HTTPError("Not found")]
 
-        params = {"project": "project123", "job": "732059764", "server_uri": "https://"}
+        params = {
+            "project": "project123",
+            "job": "732059764",
+            "server_uri": "https://dev.azure.com/example/",
+        }
 
         expected_error = """Unable to locate build via Appveyor API. Please upload with the Codecov repository upload token to resolve issue."""
 
@@ -2439,7 +2493,7 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": "something/else/732059764",
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
         }
 
         expected_error = """Unable to locate build via Appveyor API. Please upload with the Codecov repository upload token to resolve issue."""
@@ -2468,7 +2522,7 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": "732059764",
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "20190725.8",
         }
@@ -2499,7 +2553,7 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": "732059764",
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "732059764",
         }
@@ -2526,7 +2580,7 @@ class UploadHandlerAppveyorTokenlessTest(TestCase):
         params = {
             "project": "project123",
             "job": "732059764",
-            "server_uri": "https://",
+            "server_uri": "https://dev.azure.com/example/",
             "commit": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "build": "732059764",
         }
