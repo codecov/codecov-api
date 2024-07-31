@@ -252,7 +252,7 @@ class TestRepoProviderService(InternalAPITest):
         RepoProviderService().get_adapter(
             user, repo, use_ssl=True, token=repo.bot.oauth_token
         )
-        mock_get_provider.call_args == (
+        assert mock_get_provider.call_args == (
             (
                 "github",
                 dict(
@@ -288,7 +288,7 @@ class TestRepoProviderService(InternalAPITest):
         RepoProviderService().get_adapter(
             user, repo, use_ssl=True, token=repo.bot.oauth_token
         )
-        mock_get_provider.call_args == (
+        assert mock_get_provider.call_args == (
             (
                 "github",
                 dict(
