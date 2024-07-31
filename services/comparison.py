@@ -943,8 +943,8 @@ class ImpactedFile:
             and self.head_coverage.coverage
         ):
             return float(
-                int(self.head_coverage.coverage or 0)
-                - int(self.base_coverage.coverage or 0)
+                float(self.head_coverage.coverage or 0)
+                - float(self.base_coverage.coverage or 0)
             )
 
     @cached_property
