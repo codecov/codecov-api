@@ -691,8 +691,7 @@ class Comparison(object):
 
     @property
     def git_comparison(self):
-        val = self._fetch_comparison[0]
-        return val
+        return self._fetch_comparison[0]
 
     @cached_property
     def base_report(self):
