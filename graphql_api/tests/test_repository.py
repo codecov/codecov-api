@@ -810,9 +810,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
     def test_fetch_is_github_rate_limited_but_errors(
         self,
+        mock_log_error,
         mock_determine_rate_limit,
         mock_determine_redis_key,
-        mock_log_error,
     ):
         repo = RepositoryFactory(
             author=self.owner,
@@ -821,7 +821,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             yaml={"component_management": {}},
         )
 
-        mock_determine_redis_key.return_value = Exception("some random error lol")
+        mock_determine_redis_key.side_effect = Exception("some random error lol")
         mock_determine_rate_limit.return_value = True
 
         data = self.gql_request(
@@ -833,17 +833,16 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
 
-        # Check if the log.error was called with the correct parameters
+        assert data["me"]["owner"]["repository"]["isGithubRateLimited"] is None
+
         mock_log_error.assert_called_once_with(
             "Error when checking rate limit",
-            extra=dict(
-                repo_id=repo.repoid,
-                has_owner=True,
-                exc_info=mock_determine_redis_key.side_effect,
-            ),
+            extra={
+                "repo_id": 31,
+                "has_owner": True,
+                "exc_info": mock_determine_redis_key.side_effect,
+            },
         )
-
-        assert data["me"]["owner"]["repository"]["isGithubRateLimited"] is None
 
     def test_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
