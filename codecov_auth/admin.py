@@ -115,14 +115,33 @@ class AccountsUsersInline(admin.TabularInline):
     can_edit = False
 
 
+class OwnerUserInline(admin.TabularInline):
+    model = Owner
+    max_num = 5
+    extra = 0
+    verbose_name_plural = "Owners (read only)"
+    verbose_name = "Owner"
+    exclude = ("oauth_token",)
+    can_delete = False
+
+    readonly_fields = [
+        "name",
+        "username",
+        "email",
+        "service",
+        "student",
+    ]
+
+    fields = [] + readonly_fields
+
+
 @admin.register(User)
 class UserAdmin(AdminMixin, admin.ModelAdmin):
     list_display = (
         "name",
         "email",
     )
-    readonly_fields = []
-    inlines = [AccountsUsersInline]
+    inlines = [AccountsUsersInline, OwnerUserInline]
     search_fields = (
         "name__iregex",
         "email__iregex",
@@ -457,7 +476,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
-    search_fields = ("name__iregex", "username__iregex", "email__iregex")
+    search_fields = ("name__iregex", "username__iregex", "email__iregex", "ownerid")
     actions = [impersonate_owner, extend_trial]
     autocomplete_fields = ("bot", "account")
     inlines = [OrgUploadTokenInline]
@@ -477,7 +496,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "cache",
         "free",
         "invoice_details",
-        "delinquent",
         "yaml",
         "updatestamp",
         "permission",
@@ -497,6 +515,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "plan_user_count",
         "plan_activated_users",
         "uses_invoice",
+        "delinquent",
         "integration_id",
         "bot",
         "stripe_customer_id",
@@ -586,3 +605,26 @@ class LogEntryAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(AccountsUsers)
+class AccountsUsersAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("id", "user", "account")
+    search_fields = (
+        "account__name",
+        "account__id__iexact",
+        "id__iexact",
+        "user__id__iexact",
+        "user__name",
+        "user__email",
+    )
+    search_help_text = "Search by account name, account id (exact), id (exact), user id (exact), user's name or email"
+    autocomplete_fields = ("account", "user")
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+    ]
+
+    fields = readonly_fields + ["account", "user"]
