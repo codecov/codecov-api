@@ -64,7 +64,7 @@ class DatasetAdminTest(TransactionTestCase):
         )
         assert res.status_code == 302
 
-        backfill_dataset.call_count == 2
+        assert backfill_dataset.call_count == 2
         backfill_dataset.assert_any_call(
             self.dataset1,
             start_date=timezone.datetime(2000, 1, 1, tzinfo=timezone.utc),
