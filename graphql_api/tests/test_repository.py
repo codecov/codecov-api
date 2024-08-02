@@ -838,7 +838,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         mock_log_error.assert_called_once_with(
             "Error when checking rate limit",
             extra={
-                "repo_id": 31,
+                "repo_id": repo.repoid,
                 "has_owner": True,
                 "exc_info": mock_determine_redis_key.side_effect,
             },
