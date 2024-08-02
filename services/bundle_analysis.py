@@ -283,11 +283,6 @@ class BundleReport(object):
 class BundleAnalysisReport(object):
     def __init__(self, report: SharedBundleAnalysisReport):
         self.report = report
-        self.cleanup()
-
-    def cleanup(self) -> None:
-        if self.report and self.report.db_session:
-            self.report.db_session.close()
 
     def bundle(
         self, name: str, filters: Dict[str, List[str]]
@@ -323,13 +318,6 @@ class BundleAnalysisComparison(object):
             head_report_key,
         )
         self.head_report = self.comparison.head_report
-        self.cleanup()
-
-    def cleanup(self) -> None:
-        if self.comparison.head_report and self.comparison.head_report.db_session:
-            self.comparison.head_report.db_session.close()
-        if self.comparison.base_report and self.comparison.base_report.db_session:
-            self.comparison.base_report.db_session.close()
 
     @cached_property
     def bundles(self) -> List["BundleComparison"]:
