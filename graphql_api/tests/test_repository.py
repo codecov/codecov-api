@@ -840,7 +840,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             extra={
                 "repo_id": repo.repoid,
                 "has_owner": True,
-                "exc_info": mock_determine_redis_key.side_effect,
             },
         )
 

@@ -563,12 +563,10 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
         return rate_limits.determine_if_entity_is_rate_limited(
             redis_connection, rate_limit_redis_key
         )
-    except Exception as e:
+    except Exception:
         log.error(
             "Error when checking rate limit",
-            extra=dict(
-                repo_id=repository.repoid, has_owner=bool(current_owner), exc_info=e
-            ),
+            extra=dict(repo_id=repository.repoid, has_owner=bool(current_owner)),
         )
         return None
 
