@@ -8,6 +8,11 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    InvoiceBillingFactory,
+    StripeBillingFactory,
+)
 from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
@@ -655,6 +660,26 @@ class AccountViewSetTests(APITestCase):
         assert self.current_owner.plan_auto_activate is False
         assert response.data["plan_auto_activate"] is False
 
+    def test_update_can_set_plan_auto_activate_on_org_with_account(self):
+        self.current_owner.account = AccountFactory()
+        self.current_owner.plan_auto_activate = True
+        self.current_owner.save()
+
+        response = self._update(
+            kwargs={
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
+            },
+            data={"plan_auto_activate": False},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        self.current_owner.refresh_from_db()
+
+        assert self.current_owner.plan_auto_activate is False
+        assert response.data["plan_auto_activate"] is False
+
     def test_update_can_set_plan_to_users_basic(self):
         self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY_LEGACY.value
         self.current_owner.save()
@@ -936,6 +961,48 @@ class AccountViewSetTests(APITestCase):
             assert (
                 response.data["plan"]["non_field_errors"][0]
                 == "Quantity for Team plan cannot exceed 10"
+            )
+
+    def test_update_quantity_must_fail_if_account(self):
+        desired_plans = [
+            {"quantity": 10},
+        ]
+        self.current_owner.account = AccountFactory()
+        self.current_owner.save()
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert (
+                str(response.data["plan"]["non_field_errors"][0])
+                == "You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
+            )
+
+    def test_update_plan_must_fail_if_account(self):
+        desired_plans = [
+            {"value": PlanName.CODECOV_PRO_YEARLY.value},
+        ]
+        self.current_owner.account = AccountFactory()
+        self.current_owner.save()
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert (
+                str(response.data["plan"]["non_field_errors"][0])
+                == "You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
             )
 
     def test_update_quantity_must_be_at_least_2_if_paid_plan(self):
@@ -1498,6 +1565,103 @@ class AccountViewSetTests(APITestCase):
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_retrieve_org_with_account(self):
+        account = AccountFactory(
+            name="Hello World",
+            plan_seat_count=5,
+            free_seat_count=3,
+            plan="users-enterprisey",
+            is_delinquent=False,
+        )
+        InvoiceBillingFactory(is_active=True, account=account)
+        org_1 = OwnerFactory(
+            account=account,
+            service=Service.GITHUB.value,
+            username="Test",
+            delinquent=True,
+            uses_invoice=False,
+        )
+        org_2 = OwnerFactory(
+            account=account,
+            service=Service.GITHUB.value,
+        )
+        activated_owner = OwnerFactory(
+            user=UserFactory(), organizations=[org_1.ownerid, org_2.ownerid]
+        )
+        account.users.add(activated_owner.user)
+        student_owner = OwnerFactory(
+            user=UserFactory(),
+            student=True,
+            organizations=[org_1.ownerid, org_2.ownerid],
+        )
+        account.users.add(student_owner.user)
+        other_activated_owner = OwnerFactory(
+            user=UserFactory(), organizations=[org_2.ownerid]
+        )
+        account.users.add(other_activated_owner.user)
+        other_student_owner = OwnerFactory(
+            user=UserFactory(),
+            student=True,
+            organizations=[org_2.ownerid],
+        )
+        account.users.add(other_student_owner.user)
+        org_1.plan_activated_users = [activated_owner.ownerid, student_owner.ownerid]
+        org_1.admins = [activated_owner.ownerid]
+        org_1.save()
+        org_2.plan_activated_users = [
+            activated_owner.ownerid,
+            student_owner.ownerid,
+            other_activated_owner.ownerid,
+            other_student_owner.ownerid,
+        ]
+        org_2.save()
+
+        self.client.force_login_owner(activated_owner)
+        response = self._retrieve(
+            kwargs={"service": Service.GITHUB.value, "owner_username": org_1.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        # these fields are all overridden by account fields if the org has an account
+        self.assertEqual(org_1.activated_user_count, 1)
+        self.assertEqual(org_1.activated_student_count, 1)
+        self.assertTrue(org_1.delinquent)
+        self.assertFalse(org_1.uses_invoice)
+        self.assertEqual(org_1.plan_user_count, 1)
+        expected_response = {
+            "activated_user_count": 2,
+            "activated_student_count": 2,
+            "delinquent": False,
+            "uses_invoice": True,
+            "plan": {
+                "marketing_name": "Enterprise Cloud",
+                "value": PlanName.ENTERPRISE_CLOUD_YEARLY.value,
+                "billing_rate": "annually",
+                "base_unit_price": 10,
+                "benefits": [
+                    "Configurable # of users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                    "Priority Support",
+                ],
+                "quantity": 5,
+            },
+            "root_organization": None,
+            "integration_id": org_1.integration_id,
+            "plan_auto_activate": org_1.plan_auto_activate,
+            "inactive_user_count": 0,
+            "subscription_detail": None,
+            "checkout_session_id": None,
+            "name": org_1.name,
+            "email": org_1.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": org_1.plan_provider,
+            "student_count": 1,
+            "schedule_detail": None,
+        }
+        self.assertDictEqual(response.data["plan"], expected_response["plan"])
+        self.assertDictEqual(response.data, expected_response)
 
 
 @override_settings(IS_ENTERPRISE=True)
