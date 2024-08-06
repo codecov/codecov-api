@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from django.utils.functional import cached_property
 from shared.bundle_analysis import AssetReport as SharedAssetReport
@@ -84,7 +84,7 @@ class BundleAnalysisMeasurementData(object):
         asset_type: BundleAnalysisMeasurementsAssetType,
         asset_name: Optional[str],
         interval: Interval,
-        after: datetime,
+        after: Optional[datetime],
         before: datetime,
     ):
         self.raw_measurements = raw_measurements
@@ -283,11 +283,6 @@ class BundleReport(object):
 class BundleAnalysisReport(object):
     def __init__(self, report: SharedBundleAnalysisReport):
         self.report = report
-        self.cleanup()
-
-    def cleanup(self) -> None:
-        if self.report and self.report.db_session:
-            self.report.db_session.close()
 
     def bundle(
         self, name: str, filters: Dict[str, List[str]]
@@ -323,13 +318,6 @@ class BundleAnalysisComparison(object):
             head_report_key,
         )
         self.head_report = self.comparison.head_report
-        self.cleanup()
-
-    def cleanup(self) -> None:
-        if self.comparison.head_report and self.comparison.head_report.db_session:
-            self.comparison.head_report.db_session.close()
-        if self.comparison.base_report and self.comparison.base_report.db_session:
-            self.comparison.base_report.db_session.close()
 
     @cached_property
     def bundles(self) -> List["BundleComparison"]:
@@ -391,7 +379,7 @@ class BundleAnalysisMeasurementsService(object):
 
     def _compute_measurements(
         self, measurable_name: str, measurable_ids: List[str]
-    ) -> dict[int, Iterable[dict[Any, Any]]]:
+    ) -> Dict[int, List[Dict[str, Any]]]:
         all_measurements = measurements_by_ids(
             repository=self.repository,
             measurable_name=measurable_name,
