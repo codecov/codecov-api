@@ -99,6 +99,7 @@ def test_empty_upload_with_yaml_ignored_files(
             "endpoint": "empty_upload",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 
