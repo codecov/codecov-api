@@ -64,6 +64,16 @@ class TestResultsView(
         return repo_auth_custom_exception_handler
 
     def post(self, request):
+        metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="test_results",
+                endpoint="test_results",
+                request=request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -100,6 +110,7 @@ class TestResultsView(
                 request=request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
 

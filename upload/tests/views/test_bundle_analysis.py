@@ -98,6 +98,7 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
             "endpoint": "bundle_analysis",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 

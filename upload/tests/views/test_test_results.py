@@ -102,6 +102,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
             "endpoint": "test_results",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 

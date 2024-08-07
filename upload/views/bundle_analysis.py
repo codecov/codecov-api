@@ -61,6 +61,16 @@ class BundleAnalysisView(APIView, ShelterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request: HttpRequest) -> Response:
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="bundle_analysis",
+                endpoint="bundle_analysis",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -136,12 +146,6 @@ class BundleAnalysisView(APIView, ShelterMixin):
             ),
         )
 
-        dispatch_upload_task(
-            task_arguments,
-            repo,
-            get_redis_connection(),
-            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
-        )
         sentry_metrics.incr(
             "upload",
             tags=generate_upload_sentry_metrics_tags(
@@ -150,7 +154,15 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 request=self.request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
+        )
+
+        dispatch_upload_task(
+            task_arguments,
+            repo,
+            get_redis_connection(),
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
         )
 
         if settings.TIMESERIES_ENABLED:

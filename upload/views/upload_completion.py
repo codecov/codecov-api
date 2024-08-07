@@ -34,6 +34,16 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="upload_complete",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         repo = self.get_repo()
         commit = self.get_commit(repo)
         uploads_queryset = ReportSession.objects.filter(
@@ -76,6 +86,7 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
                 request=self.request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
         return Response(
