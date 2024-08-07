@@ -1,14 +1,17 @@
 from codecov.commands.base import BaseInteractor
-from codecov.commands.exceptions import ValidationError
+from codecov.commands.exceptions import Unauthorized, ValidationError
 from codecov.db import sync_to_async
+from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
 from plan.service import PlanService
 
 
 class CancelTrialInteractor(BaseInteractor):
-    def validate(self, owner: Owner):
+    def validate(self, owner: Owner | None):
         if not owner:
             raise ValidationError("Cannot find owner record in the database")
+        if not current_user_part_of_org(self.current_owner, owner):
+            raise Unauthorized()
 
     def _cancel_trial(self, owner: Owner):
         plan_service = PlanService(current_org=owner)
