@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Q
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import constant_time_compare
@@ -169,20 +170,34 @@ class GitLabWebhookHandler(APIView):
             manual_trigger=False,
         )
 
-    def _try_initiate_sync_for_owner_by_username(self, owner_username):
+    def _try_initiate_sync_for_owner(self):
+        owner_email = self.request.data.get("owner_email")
+
+        # email is a strong identifier (GL users must have a unique email)
         try:
             owner = Owner.objects.get(
                 service=self.service_name,
-                username=owner_username,
                 oauth_token__isnull=False,
+                email=owner_email,
             )
-            self._initiate_sync_for_owner(owner)
-        except Owner.DoesNotExist:
-            return
+        except (Owner.DoesNotExist, Owner.MultipleObjectsReturned):
+            # could be the username of the OwnerUser or OwnerOrg. Sync only works with an OwnerUser.
+            owner_username_best_guess = self.request.data.get(
+                "path_with_namespace", ""
+            ).split("/")[0]
+            try:
+                owner = Owner.objects.get(
+                    service=self.service_name,
+                    oauth_token__isnull=False,
+                    username=owner_username_best_guess,
+                )
+            except (Owner.DoesNotExist, Owner.MultipleObjectsReturned):
+                return
+
+        self._initiate_sync_for_owner(owner)
 
     def _handle_system_project_create_hook_event(self):
-        owner_username, _ = self.request.data.get("path_with_namespace").split("/", 2)
-        self._try_initiate_sync_for_owner_by_username(owner_username=owner_username)
+        self._try_initiate_sync_for_owner()
         return Response(data="Sync initiated")
 
     def _handle_system_hook_event(self, repo, event_name):
@@ -199,32 +214,19 @@ class GitLabWebhookHandler(APIView):
             repo.save(update_fields=["deleted", "activated", "active", "name"])
             message = "Repository deleted"
 
-        elif event_name == "project_rename":
-            owner_username, _ = self.request.data.get("path_with_namespace").split("/")
-            self._try_initiate_sync_for_owner_by_username(owner_username=owner_username)
+        elif event_name in ("project_rename", "project_transfer"):
+            self._try_initiate_sync_for_owner()
             message = "Sync initiated"
-
-        elif event_name == "project_transfer":
-            owner_username, repo_name = self.request.data.get(
-                "path_with_namespace"
-            ).split("/")
-            message = "Repository transferred"
-            new_owner = Owner.objects.filter(
-                service=self.service_name, username=owner_username
-            ).first()
-
-            if new_owner:
-                repo.author = new_owner
-                repo.name = repo_name
-                repo.save(update_fields=["author", "name"])
 
         elif (
             event_name in ("user_add_to_team", "user_remove_from_team")
             and self.request.data.get("project_visibility") == "private"
         ):
+            # the payload from these hooks includes the ownerid
+            ownerid = self.request.data.get("user_id")
             user = Owner.objects.filter(
                 service=self.service_name,
-                service_id=self.request.data.get("user_id"),
+                service_id=ownerid,
                 oauth_token__isnull=False,
             ).first()
             message = "Sync initiated"

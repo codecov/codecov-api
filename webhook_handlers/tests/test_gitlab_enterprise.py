@@ -1,4 +1,5 @@
 import uuid
+from unittest import mock
 from unittest.mock import patch
 
 import pytest
@@ -252,9 +253,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
     def test_handle_system_hook_not_enterprise(self):
         mock_config_helper(self.mocker, configs={"setup.enterprise_license": None})
-        username = "jsmith"
-        project_id = 74
-        owner = OwnerFactory(service="gitlab_enterprise", username=username)
+        owner = OwnerFactory(service="gitlab_enterprise", username="jsmith")
 
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
@@ -266,38 +265,45 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
                 "owner_email": "johnsmith@gmail.com",
                 "owner_name": "John Smith",
                 "path": "storecloud",
-                "path_with_namespace": f"{username}/storecloud",
-                "project_id": project_id,
+                "path_with_namespace": f"{owner.username}/storecloud",
+                "project_id": 74,
                 "project_visibility": "private",
             },
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
         new_repo = Repository.objects.filter(
-            author__ownerid=owner.ownerid, service_id=project_id
+            author__ownerid=owner.ownerid, service_id=74
         ).first()
         assert new_repo is None
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     def test_handle_system_hook_project_create(self, mock_refresh_task):
-        username = "jsmith"
-        project_id = 74
-        owner = OwnerFactory(service="gitlab_enterprise", username=username)
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:54Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "project_create",
+            "name": "StoreCloud",
+            "owner_email": "johnsmith@example.com",
+            "owner_name": "John Smith",
+            "owners": [{"name": "John", "email": "user1@example.com"}],
+            "path": "storecloud",
+            "path_with_namespace": "jsmith/storecloud",
+            "project_id": 74,
+            "project_visibility": "private",
+        }
+
+        owner = OwnerFactory(
+            service="gitlab_enterprise",
+            username="jsmith",
+            name=sample_payload_from_gitlab_docs["owner_name"],
+            email=sample_payload_from_gitlab_docs["owner_email"],
+            oauth_token="123",
+        )
 
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2020-01-21T07:30:54Z",
-                "updated_at": "2020-01-21T07:38:22Z",
-                "event_name": "project_create",
-                "name": "StoreCloud",
-                "owner_email": "johnsmith@gmail.com",
-                "owner_name": "John Smith",
-                "path": "storecloud",
-                "path_with_namespace": f"{username}/storecloud",
-                "project_id": project_id,
-                "project_visibility": "private",
-            },
+            data=sample_payload_from_gitlab_docs,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Sync initiated"
@@ -311,12 +317,36 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     def test_handle_system_hook_project_destroy(self, mock_refresh_task):
-        username = "jsmith"
-        project_id = 73
-        owner = OwnerFactory(service="gitlab_enterprise", username=username)
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:58Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "project_destroy",
+            "name": "Underscore",
+            "owner_email": "johnsmith@example.com",
+            "owner_name": "John Smith",
+            "owners": [{"name": "John", "email": "user1@example.com"}],
+            "path": "underscore",
+            "path_with_namespace": "jsmith/underscore",
+            "project_id": 73,
+            "project_visibility": "internal",
+        }
+
+        OwnerFactory(
+            service="gitlab_enterprise",
+            username="jsmith",
+            name=sample_payload_from_gitlab_docs["owner_name"],
+            email=sample_payload_from_gitlab_docs["owner_email"],
+            oauth_token="123",
+        )
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+        )
+
         repo = RepositoryFactory(
-            author=owner,
-            service_id=project_id,
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
             active=True,
             activated=True,
             deleted=False,
@@ -324,18 +354,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2020-01-21T07:30:58Z",
-                "updated_at": "2020-01-21T07:38:22Z",
-                "event_name": "project_destroy",
-                "name": "Underscore",
-                "owner_email": "johnsmith@gmail.com",
-                "owner_name": "John Smith",
-                "path": "underscore",
-                "path_with_namespace": f"{username}/underscore",
-                "project_id": project_id,
-                "project_visibility": "internal",
-            },
+            data=sample_payload_from_gitlab_docs,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Repository deleted"
@@ -349,13 +368,36 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     def test_handle_system_hook_project_rename(self, mock_refresh_task):
-        username = "jsmith"
-        project_id = 73
-        owner = OwnerFactory(service="gitlab_enterprise", username=username)
+        # testing get owner by namespace in payload
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:58Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "project_rename",
+            "name": "Underscore",
+            "path": "underscore",
+            "path_with_namespace": "jsmith/underscore",
+            "project_id": 73,
+            "owner_name": "John Smith",
+            "owner_email": "johnsmith@example.com",
+            "owners": [{"name": "John", "email": "user1@example.com"}],
+            "project_visibility": "internal",
+            "old_path_with_namespace": "jsmith/overscore",
+        }
+
+        owner_user = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token="123",
+            username="jsmith",
+        )
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+        )
+
         RepositoryFactory(
-            author=owner,
-            service_id=project_id,
-            name="overscore",
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
             active=True,
             activated=True,
             deleted=False,
@@ -363,222 +405,188 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2020-01-21T07:30:58Z",
-                "updated_at": "2020-01-21T07:38:22Z",
-                "event_name": "project_rename",
-                "name": "Underscore",
-                "path": "underscore",
-                "path_with_namespace": f"{username}/underscore",
-                "project_id": 73,
-                "owner_name": "John Smith",
-                "owner_email": "johnsmith@gmail.com",
-                "project_visibility": "internal",
-                "old_path_with_namespace": "jsmith/overscore",
-            },
+            data=sample_payload_from_gitlab_docs,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Sync initiated"
 
         mock_refresh_task.assert_called_once_with(
-            ownerid=owner.ownerid,
-            username=owner.username,
+            ownerid=owner_user.ownerid,
+            username=owner_user.username,
             using_integration=False,
             manual_trigger=False,
         )
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     def test_handle_system_hook_project_transfer(self, mock_refresh_task):
-        old_owner_username = "jsmith"
-        new_owner_username = "scores"
-        project_id = 73
-        new_owner = OwnerFactory(
-            service="gitlab_enterprise", username=new_owner_username
-        )
-        old_owner = OwnerFactory(
-            service="gitlab_enterprise", username=old_owner_username
-        )
-        repo = RepositoryFactory(
-            author=old_owner,
-            service_id=project_id,
-            name="overscore",
-            active=True,
-            activated=True,
-            deleted=False,
-        )
+        # moving this repo from one namespace to another
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:58Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "project_transfer",
+            "name": "Underscore",
+            "path": "underscore",
+            "path_with_namespace": "scores/underscore",
+            "project_id": 73,
+            "owner_name": "John Smith",
+            "owner_email": "johnsmith@example.com",
+            "owners": [{"name": "John", "email": "user1@example.com"}],
+            "project_visibility": "internal",
+            "old_path_with_namespace": "jsmith/overscore",
+        }
 
-        response = self._post_event_data(
-            event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2020-01-21T07:30:58Z",
-                "updated_at": "2020-01-21T07:38:22Z",
-                "event_name": "project_transfer",
-                "name": "Underscore",
-                "path": "underscore",
-                "path_with_namespace": f"{new_owner_username}/underscore",
-                "project_id": project_id,
-                "owner_name": "John Smith",
-                "owner_email": "johnsmith@gmail.com",
-                "project_visibility": "internal",
-                "old_path_with_namespace": f"{old_owner_username}/overscore",
-            },
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository transferred"
-
-        mock_refresh_task.assert_not_called()
-
-        repo.refresh_from_db()
-        assert repo.name == "underscore"
-        assert repo.author == new_owner
-
-    @patch("services.refresh.RefreshService.trigger_refresh")
-    def test_handle_system_hook_user_create(self, mock_refresh_task):
-        gl_user_id = 41
-        response = self._post_event_data(
-            event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2012-07-21T07:44:07Z",
-                "updated_at": "2012-07-21T07:38:22Z",
-                "email": "js@gitlabhq.com",
-                "event_name": "user_create",
-                "name": "John Smith",
-                "username": "js",
-                "user_id": gl_user_id,
-            },
-        )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        mock_refresh_task.assert_not_called()
-
-    @patch("services.refresh.RefreshService.trigger_refresh")
-    def test_handle_system_hook_user_add_to_team_no_existing_permissions(
-        self, mock_refresh_task
-    ):
-        gl_user_id = 41
-        project_id = 74
-        username = "johnsmith"
-        user = OwnerFactory(
+        owner_user = OwnerFactory(
             service="gitlab_enterprise",
-            service_id=gl_user_id,
-            username=username,
-            permission=None,
+            name=sample_payload_from_gitlab_docs["owner_name"],
+            email=sample_payload_from_gitlab_docs["owner_email"],
+            oauth_token="123",
         )
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+            username="jsmith",
+        )
+
         RepositoryFactory(
-            author=user,
-            service_id=project_id,
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
             active=True,
             activated=True,
             deleted=False,
         )
+
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2012-07-21T07:30:56Z",
-                "updated_at": "2012-07-21T07:38:22Z",
-                "event_name": "user_add_to_team",
-                "access_level": "Maintainer",
-                "project_id": project_id,
-                "project_name": "StoreCloud",
-                "project_path": "storecloud",
-                "project_path_with_namespace": "jsmith/storecloud",
-                "user_email": "johnsmith@gmail.com",
-                "user_name": "John Smith",
-                "user_username": username,
-                "user_id": gl_user_id,
-                "project_visibility": "private",
-            },
+            data=sample_payload_from_gitlab_docs,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Sync initiated"
 
         mock_refresh_task.assert_called_once_with(
-            ownerid=user.ownerid,
-            username=user.username,
+            ownerid=owner_user.ownerid,
+            username=owner_user.username,
             using_integration=False,
             manual_trigger=False,
         )
 
     @patch("services.refresh.RefreshService.trigger_refresh")
-    def test_handle_system_hook_user_add_to_team(self, mock_refresh_task):
-        gl_user_id = 41
-        project_id = 74
-        username = "johnsmith"
-        user = OwnerFactory(
-            service="gitlab_enterprise",
-            service_id=gl_user_id,
-            username="johnsmith",
-            permission=[1, 2, 3, 100],
+    def test_handle_system_hook_user_create(self, mock_refresh_task):
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:44:07Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "email": "js@gitlabhq.com",
+            "event_name": "user_create",
+            "name": "John Smith",
+            "username": "js",
+            "user_id": 41,
+        }
+        response = self._post_event_data(
+            event=GitLabWebhookEvents.SYSTEM,
+            data=sample_payload_from_gitlab_docs,
         )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        mock_refresh_task.assert_not_called()
+
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_user_add_to_team(self, mock_refresh_task):
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:56Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "user_add_to_team",
+            "access_level": "Maintainer",
+            "project_id": 74,
+            "project_name": "StoreCloud",
+            "project_path": "storecloud",
+            "project_path_with_namespace": "jsmith/storecloud",
+            "user_email": "johnsmith@example.com",
+            "user_name": "John Smith",
+            "user_username": "johnsmith",
+            "user_id": 41,
+            "project_visibility": "private",
+        }
+
+        owner_user = OwnerFactory(
+            service="gitlab_enterprise",
+            name=sample_payload_from_gitlab_docs["user_name"],
+            email=sample_payload_from_gitlab_docs["user_email"],
+            oauth_token="123",
+            username=sample_payload_from_gitlab_docs["user_username"],
+            service_id=sample_payload_from_gitlab_docs["user_id"],
+        )
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+            username="jsmith",
+        )
+
         RepositoryFactory(
-            author=user,
-            service_id=project_id,
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
             active=True,
             activated=True,
             deleted=False,
         )
+
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2012-07-21T07:30:56Z",
-                "updated_at": "2012-07-21T07:38:22Z",
-                "event_name": "user_add_to_team",
-                "access_level": "Maintainer",
-                "project_id": project_id,
-                "project_name": "StoreCloud",
-                "project_path": "storecloud",
-                "project_path_with_namespace": "jsmith/storecloud",
-                "user_email": "johnsmith@gmail.com",
-                "user_name": "John Smith",
-                "user_username": username,
-                "user_id": gl_user_id,
-                "project_visibility": "private",
-            },
+            data=sample_payload_from_gitlab_docs,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Sync initiated"
 
         mock_refresh_task.assert_called_once_with(
-            ownerid=user.ownerid,
-            username=user.username,
+            ownerid=owner_user.ownerid,
+            username=owner_user.username,
             using_integration=False,
             manual_trigger=False,
         )
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     def test_handle_system_hook_user_add_to_team_repo_public(self, mock_refresh_task):
-        gl_user_id = 41
-        project_id = 74
-        username = "johnsmith"
-        user = OwnerFactory(
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:56Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "user_add_to_team",
+            "access_level": "Maintainer",
+            "project_id": 74,
+            "project_name": "StoreCloud",
+            "project_path": "storecloud",
+            "project_path_with_namespace": "jsmith/storecloud",
+            "user_email": "johnsmith@example.com",
+            "user_name": "John Smith",
+            "user_username": "johnsmith",
+            "user_id": 41,
+            "project_visibility": "public",
+        }
+
+        OwnerFactory(
             service="gitlab_enterprise",
-            service_id=gl_user_id,
-            username=username,
-            permission=[1, 2, 3, 100],
+            name=sample_payload_from_gitlab_docs["user_name"],
+            email=sample_payload_from_gitlab_docs["user_email"],
+            oauth_token="123",
+            username=sample_payload_from_gitlab_docs["user_username"],
+            service_id=sample_payload_from_gitlab_docs["user_id"],
         )
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+            username="jsmith",
+        )
+
         RepositoryFactory(
-            author=user,
-            service_id=project_id,
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
             active=True,
             activated=True,
             deleted=False,
         )
+
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2012-07-21T07:30:56Z",
-                "updated_at": "2012-07-21T07:38:22Z",
-                "event_name": "user_add_to_team",
-                "access_level": "Maintainer",
-                "project_id": project_id,
-                "project_name": "StoreCloud",
-                "project_path": "storecloud",
-                "project_path_with_namespace": "jsmith/storecloud",
-                "user_email": "johnsmith@gmail.com",
-                "user_name": "John Smith",
-                "user_username": username,
-                "user_id": gl_user_id,
-                "project_visibility": "public",
-            },
+            data=sample_payload_from_gitlab_docs,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data is None
@@ -587,52 +595,146 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     def test_handle_system_hook_user_remove_from_team(self, mock_refresh_task):
-        gl_user_id = 41
-        project_id = 74
-        username = "johnsmith"
-        user = OwnerFactory(
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:56Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "user_remove_from_team",
+            "access_level": "Maintainer",
+            "project_id": 74,
+            "project_name": "StoreCloud",
+            "project_path": "storecloud",
+            "project_path_with_namespace": "jsmith/storecloud",
+            "user_email": "johnsmith@example.com",
+            "user_name": "John Smith",
+            "user_username": "johnsmith",
+            "user_id": 41,
+            "project_visibility": "private",
+        }
+
+        owner_user = OwnerFactory(
             service="gitlab_enterprise",
-            service_id=gl_user_id,
-            username=username,
-            permission=None,
+            name=sample_payload_from_gitlab_docs["user_name"],
+            email=sample_payload_from_gitlab_docs["user_email"],
+            oauth_token="123",
+            username=sample_payload_from_gitlab_docs["user_username"],
+            service_id=sample_payload_from_gitlab_docs["user_id"],
         )
-        repo = RepositoryFactory(
-            author=user,
-            service_id=project_id,
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+            username="jsmith",
+        )
+
+        RepositoryFactory(
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
             active=True,
             activated=True,
             deleted=False,
         )
-        user.permission = [1, 2, 3, repo.repoid]
-        user.save()
 
         response = self._post_event_data(
             event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2012-07-21T07:30:56Z",
-                "updated_at": "2012-07-21T07:38:22Z",
-                "event_name": "user_remove_from_team",
-                "access_level": "Maintainer",
-                "project_id": project_id,
-                "project_name": "StoreCloud",
-                "project_path": "storecloud",
-                "project_path_with_namespace": "jsmith/storecloud",
-                "user_email": "johnsmith@gmail.com",
-                "user_name": "John Smith",
-                "user_username": username,
-                "user_id": gl_user_id,
-                "project_visibility": "private",
-            },
+            data=sample_payload_from_gitlab_docs,
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == "Sync initiated"
 
         mock_refresh_task.assert_called_once_with(
-            ownerid=user.ownerid,
-            username=user.username,
+            ownerid=owner_user.ownerid,
+            username=owner_user.username,
             using_integration=False,
             manual_trigger=False,
         )
+
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_unknown_repo(self, mock_refresh_task):
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:56Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "user_add_to_team",
+            "access_level": "Maintainer",
+            "project_id": 74,
+            "project_name": "StoreCloud",
+            "project_path": "storecloud",
+            "project_path_with_namespace": "jsmith/storecloud",
+            "user_email": "johnsmith@example.com",
+            "user_name": "John Smith",
+            "user_username": "johnsmith",
+            "user_id": 41,
+            "project_visibility": "private",
+        }
+
+        OwnerFactory(
+            service="gitlab_enterprise",
+            name=sample_payload_from_gitlab_docs["user_name"],
+            email=sample_payload_from_gitlab_docs["user_email"],
+            oauth_token="123",
+            username=sample_payload_from_gitlab_docs["user_username"],
+            service_id=sample_payload_from_gitlab_docs["user_id"],
+        )
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+            username="jsmith",
+        )
+
+        RepositoryFactory(
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"] + 1,
+            active=True,
+            activated=True,
+            deleted=False,
+        )
+
+        response = self._post_event_data(
+            event=GitLabWebhookEvents.SYSTEM,
+            data=sample_payload_from_gitlab_docs,
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_user_add_to_team_unknown_user(self, mock_refresh_task):
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:56Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "user_add_to_team",
+            "access_level": "Maintainer",
+            "project_id": 74,
+            "project_name": "StoreCloud",
+            "project_path": "storecloud",
+            "project_path_with_namespace": "jsmith/storecloud",
+            "user_email": "johnsmith@example.com",
+            "user_name": "John Smith",
+            "user_username": "johnsmith",
+            "user_id": 41,
+            "project_visibility": "private",
+        }
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+            username="jsmith",
+        )
+
+        RepositoryFactory(
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
+            active=True,
+            activated=True,
+            deleted=False,
+        )
+
+        response = self._post_event_data(
+            event=GitLabWebhookEvents.SYSTEM,
+            data=sample_payload_from_gitlab_docs,
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == "Sync initiated"
+
+        mock_refresh_task.assert_not_called()
 
     def test_secret_validation(self):
         owner = OwnerFactory(service="gitlab_enterprise")

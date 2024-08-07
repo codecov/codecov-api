@@ -246,59 +246,31 @@ class TestGitlabWebhookHandler(APITestCase):
 
         pulls_sync_mock.assert_called_once_with(repoid=self.repo.repoid, pullid=pullid)
 
-    def test_handle_system_hook_not_enterprise(self):
-        username = "jsmith"
-        project_id = 74
-        owner = OwnerFactory(service="gitlab", username=username)
+    def test_handle_system_hook_when_not_enterprise(self):
+        owner = OwnerFactory(service="gitlab")
+        repo = RepositoryFactory(author=owner)
 
-        response = self._post_event_data(
-            event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2020-01-21T07:30:54Z",
-                "updated_at": "2020-01-21T07:38:22Z",
+        system_hook_events = [
+            "project_create",
+            "project_destroy",
+            "project_rename",
+            "project_transfer",
+            "user_add_to_team",
+            "user_remove_from_team",
+        ]
+
+        event_data = {
+            "event": GitLabWebhookEvents.SYSTEM,
+            "data": {
                 "event_name": "project_create",
-                "name": "StoreCloud",
-                "owner_email": "johnsmith@gmail.com",
-                "owner_name": "John Smith",
-                "path": "storecloud",
-                "path_with_namespace": f"{username}/storecloud",
-                "project_id": project_id,
-                "project_visibility": "private",
+                "project_id": repo.service_id,
             },
-        )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        }
 
-        new_repo = Repository.objects.filter(
-            author__ownerid=owner.ownerid, service_id=project_id
-        ).first()
-        assert new_repo is None
-
-    def test_handle_system_hook_project_create(self):
-        username = "jsmith"
-        project_id = 74
-        owner = OwnerFactory(service="gitlab", username=username)
-
-        response = self._post_event_data(
-            event=GitLabWebhookEvents.SYSTEM,
-            data={
-                "created_at": "2020-01-21T07:30:54Z",
-                "updated_at": "2020-01-21T07:38:22Z",
-                "event_name": "project_create",
-                "name": "StoreCloud",
-                "owner_email": "johnsmith@gmail.com",
-                "owner_name": "John Smith",
-                "path": "storecloud",
-                "path_with_namespace": f"{username}/storecloud",
-                "project_id": project_id,
-                "project_visibility": "private",
-            },
-        )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
-        new_repo = Repository.objects.filter(
-            author__ownerid=owner.ownerid, service_id=project_id
-        ).first()
-        assert new_repo is None
+        for event in system_hook_events:
+            event_data["data"]["event_name"] = event
+            response = self._post_event_data(**event_data)
+            assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_secret_validation(self):
         owner = OwnerFactory(service="gitlab")
