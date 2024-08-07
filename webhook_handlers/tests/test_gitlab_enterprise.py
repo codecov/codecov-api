@@ -1,4 +1,5 @@
 import uuid
+from unittest import mock
 from unittest.mock import patch
 
 import pytest
@@ -398,7 +399,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         old_owner = OwnerFactory(
             service="gitlab_enterprise", username=old_owner_username
         )
-        repo = RepositoryFactory(
+        RepositoryFactory(
             author=old_owner,
             service_id=project_id,
             name="overscore",
@@ -424,13 +425,14 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             },
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == "Repository transferred"
+        assert response.data == "Sync initiated"
 
-        mock_refresh_task.assert_not_called()
-
-        repo.refresh_from_db()
-        assert repo.name == "underscore"
-        assert repo.author == new_owner
+        mock_refresh_task.assert_called_once_with(
+            ownerid=new_owner.ownerid,
+            username=new_owner.username,
+            using_integration=False,
+            manual_trigger=False,
+        )
 
     @patch("services.refresh.RefreshService.trigger_refresh")
     def test_handle_system_hook_user_create(self, mock_refresh_task):
