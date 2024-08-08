@@ -12,7 +12,7 @@ from graphql_api.helpers.mutation import (
 async def resolve_erase_repository(_, info, input) -> None:
     command = info.context["executor"].get_command("repository")
     current_owner = info.context["request"].current_owner
-    repo_name = input.get("repoName")
+    repo_name = input.get("repo_name")
     await command.erase_repository(repo_name=repo_name, owner=current_owner)
     return None
 
