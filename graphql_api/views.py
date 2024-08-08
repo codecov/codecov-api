@@ -22,6 +22,7 @@ from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
 from codecov.db import sync_to_async
 from services import ServiceException
+from services.redis_configuration import get_redis_connection
 
 from .schema import schema
 
@@ -223,6 +224,8 @@ class AsyncGraphqlView(GraphQLAsyncView):
         log.info("GraphQL Request", extra=log_data)
         sentry_metrics.incr("graphql.info.request_made", tags={"path": req_path})
 
+        await self._check_ratelimit(request=request)
+
         with RequestFinalizer(request):
             response = await super().post(request, *args, **kwargs)
 
@@ -289,6 +292,29 @@ class AsyncGraphqlView(GraphQLAsyncView):
         # while we're in a sync context
         if request.user:
             request.user.pk
+
+    async def _check_ratelimit(self, request):
+        redis = get_redis_connection()
+        user_ip = self.get_client_ip(request)
+        key = f"rate_limit:{user_ip}"
+        limit = 10  # requests per minute
+        window = 60  # seconds
+
+        current_count = redis.get(key)
+        if current_count is None:
+            redis.setex(key, window, 1)
+        elif int(current_count) >= limit:
+            return JsonResponse({"error": "Rate limit exceeded"}, status=429)
+        else:
+            redis.incr(key)
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(",")[0]
+        else:
+            ip = request.META.get("REMOTE_ADDR")
+        return ip
 
 
 BaseAriadneView = AsyncGraphqlView.as_view()
