@@ -13,6 +13,7 @@ from sentry_sdk import metrics as sentry_metrics
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
 
 from codecov_auth.authentication.repo_auth import (
+    BundleAnalysisTokenlessAuthentication,
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
@@ -47,6 +48,7 @@ class UploadSerializer(serializers.Serializer):
     service = serializers.CharField(required=False, allow_null=True)
     branch = serializers.CharField(required=False, allow_null=True)
     compareSha = serializers.CharField(required=False, allow_null=True)
+    git_service = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView, ShelterMixin):
@@ -55,6 +57,7 @@ class BundleAnalysisView(APIView, ShelterMixin):
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        BundleAnalysisTokenlessAuthentication,
     ]
 
     def get_exception_handler(self) -> Callable:
