@@ -62,7 +62,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
+# 25MB in bytes
+DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400
 
 # Same site is set to none on Staging as we want to be able to call the API
 # From Netlify preview deploy
