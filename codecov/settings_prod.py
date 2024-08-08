@@ -53,7 +53,9 @@ CORS_ALLOWED_ORIGINS = [
 # Redirect after authentication, update this setting with care
 CORS_ALLOWED_ORIGIN_REGEXES = []
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 15000000
+# 25MB in bytes
+DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400
+
 SILENCED_SYSTEM_CHECKS = ["urls.W002"]
 
 # Reinforcing the Cookie SameSite configuration to be sure it's Lax in prod
