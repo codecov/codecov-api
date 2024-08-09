@@ -1,21 +1,27 @@
+# Repository is a named collection of files uploaded
+# to a provider (e.g., github)
 type Repository {
+  # isFirstPullRequest fetches whether ??
   isFirstPullRequest: Boolean!
+  # name fetches the repository's human readable identifier
   name: String!
+  # active fetches the repo's active status as designated by provider
   active: Boolean!
+  # activated fetches the repo's Codecov activation status
   activated: Boolean!
+  # private fetches the repo's public/private status as designated at provider
   private: Boolean!
-  coverage: Float
-  coverageSha: String
-  hits: Int
-  misses: Int
-  lines: Int
+  # coverage fetches information to a repo's main branch test coverage
+  coverage: Coverage
+  # oldestCommitAt fetches main's oldest commit timestamp
   oldestCommitAt: DateTime
+  # latestCommitAt fetches main's latest commit timestamp - TODO or is it any branch?
   latestCommitAt: DateTime
   updatedAt: DateTime
   author: Owner!
   uploadToken: String
   branch(name: String!): Branch
-  commit(id: String!): Commit
+  commit(id: String!): Commit # TODO - does this work on any branch?
   pull(id: Int!): Pull
   pulls(
     filters: PullsSetFilters
@@ -25,6 +31,7 @@ type Repository {
     last: Int
     before: String
   ): PullConnection @cost(complexity: 10, multipliers: ["first", "last"])
+  # TODO - does this refer to commits on main only?
   commits(
     filters: CommitsSetFilters
     first: Int

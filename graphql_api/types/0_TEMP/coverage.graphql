@@ -1,0 +1,9 @@
+# Coverage is information related to a repo's
+# main branch test coverage
+type Coverage {
+  hits: Int
+  misses: Int
+  lines: Int
+  coverageSha: String
+  percentCovered: Float
+}
