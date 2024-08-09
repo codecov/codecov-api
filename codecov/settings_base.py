@@ -338,7 +338,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
 CORS_ALLOWED_ORIGIN_REGEXES = get_config(
     "setup", "api_cors_allowed_origin_regexes", default=[]
 )
-CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGINS: list[str] = []
 
 GRAPHQL_PLAYGROUND = True
 
