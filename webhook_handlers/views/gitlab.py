@@ -1,6 +1,5 @@
 import logging
 
-from django.db.models import Q
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import constant_time_compare
@@ -200,6 +199,18 @@ class GitLabWebhookHandler(APIView):
         self._try_initiate_sync_for_owner()
         return Response(data="Sync initiated")
 
+    def _try_initiate_sync_for_repo(self, repo):
+        # most GL repos have bots - try to sync with bot as Owner
+        if repo.bot:
+            bot_owner = Owner.objects.filter(
+                service=self.service_name,
+                ownerid=repo.bot.ownerid,
+                oauth_token__isnull=False,
+            ).first()
+            if bot_owner:
+                return self._initiate_sync_for_owner(owner=bot_owner)
+        self._try_initiate_sync_for_owner()
+
     def _handle_system_hook_event(self, repo, event_name):
         """
         GitLab Enterprise instance can send system hooks for changes on user, group, project, etc
@@ -215,7 +226,7 @@ class GitLabWebhookHandler(APIView):
             message = "Repository deleted"
 
         elif event_name in ("project_rename", "project_transfer"):
-            self._try_initiate_sync_for_owner()
+            self._try_initiate_sync_for_repo(repo=repo)
             message = "Sync initiated"
 
         elif (

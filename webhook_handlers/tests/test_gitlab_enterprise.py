@@ -384,10 +384,15 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             "old_path_with_namespace": "jsmith/overscore",
         }
 
-        owner_user = OwnerFactory(
+        OwnerFactory(
             service="gitlab_enterprise",
             oauth_token="123",
             username="jsmith",
+        )
+
+        owner_bot = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token="123",
         )
 
         owner_org = OwnerFactory(
@@ -401,6 +406,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            bot=owner_bot,
         )
 
         response = self._post_event_data(
@@ -411,8 +417,8 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
         assert response.data == "Sync initiated"
 
         mock_refresh_task.assert_called_once_with(
-            ownerid=owner_user.ownerid,
-            username=owner_user.username,
+            ownerid=owner_bot.ownerid,
+            username=owner_bot.username,
             using_integration=False,
             manual_trigger=False,
         )
@@ -442,6 +448,11 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             oauth_token="123",
         )
 
+        non_usable_bot = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+        )
+
         owner_org = OwnerFactory(
             service="gitlab_enterprise",
             oauth_token=None,
@@ -454,6 +465,7 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             active=True,
             activated=True,
             deleted=False,
+            bot=non_usable_bot,
         )
 
         response = self._post_event_data(
@@ -712,6 +724,52 @@ class TestGitlabEnterpriseWebhookHandler(APITestCase):
             "user_id": 41,
             "project_visibility": "private",
         }
+
+        owner_org = OwnerFactory(
+            service="gitlab_enterprise",
+            oauth_token=None,
+            username="jsmith",
+        )
+
+        RepositoryFactory(
+            author=owner_org,
+            service_id=sample_payload_from_gitlab_docs["project_id"],
+            active=True,
+            activated=True,
+            deleted=False,
+        )
+
+        response = self._post_event_data(
+            event=GitLabWebhookEvents.SYSTEM,
+            data=sample_payload_from_gitlab_docs,
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == "Sync initiated"
+
+        mock_refresh_task.assert_not_called()
+
+    @patch("services.refresh.RefreshService.trigger_refresh")
+    def test_handle_system_hook_no_bot_or_user_match(self, mock_refresh_task):
+        sample_payload_from_gitlab_docs = {
+            "created_at": "2012-07-21T07:30:58Z",
+            "updated_at": "2012-07-21T07:38:22Z",
+            "event_name": "project_rename",
+            "name": "Underscore",
+            "path": "underscore",
+            "path_with_namespace": "jsmith/underscore",
+            "project_id": 73,
+            "owner_name": "John Smith",
+            "owner_email": "johnsmith@example.com",
+            "owners": [{"name": "John", "email": "user1@example.com"}],
+            "project_visibility": "internal",
+            "old_path_with_namespace": "jsmith/overscore",
+        }
+
+        OwnerFactory(
+            service="gitlab_enterprise",
+            name=sample_payload_from_gitlab_docs["owner_name"],
+            oauth_token="123",
+        )
 
         owner_org = OwnerFactory(
             service="gitlab_enterprise",
