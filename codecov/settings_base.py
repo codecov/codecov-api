@@ -295,10 +295,17 @@ REST_FRAMEWORK = {
     # modify throttling for codecov-api. Initially, we just want a simple throttle mechanism to prevent
     # burst requests from users/anons on our REST endpoints
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "codecov.rate_limiter.UserBurstRateThrottle",
+        "codecov.rate_limiter.AnonBurstRateThrottle",
+        "codecov.rate_limiter.UserSustainedRateThrottle",
+        "codecov.rate_limiter.AnonSustainedRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": "60/min", "user": "120/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon-burst": "30/min",
+        "anon-sustained": "1000/day",
+        "user-burst": "90/min",
+        "user-sustained": "2000/day",
+    },
 }
 
 # API auto-documentation settings
