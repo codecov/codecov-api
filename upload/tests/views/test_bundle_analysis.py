@@ -483,7 +483,7 @@ def test_upload_bundle_analysis_tokenless_no_git_service(
 
 
 @pytest.mark.django_db(databases={"default", "timeseries"})
-def test_upload_bundle_analysis_tokenless_bad_json_one(db, client, mocker, mock_redis):
+def test_upload_bundle_analysis_tokenless_bad_json(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
 
     repository = RepositoryFactory.create(private=False)
@@ -516,3 +516,37 @@ def test_upload_bundle_analysis_tokenless_bad_json_one(db, client, mocker, mock_
 
         assert res.status_code == 401
         assert not upload.called
+
+
+@pytest.mark.django_db(databases={"default", "timeseries"})
+def test_upload_bundle_analysis_tokenless_mismatched_branch(
+    db, client, mocker, mock_redis
+):
+    upload = mocker.patch.object(TaskService, "upload")
+
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+    repository = RepositoryFactory.create(private=False)
+    CommitFactory.create(repository=repository, commitid=commit_sha, branch="main")
+
+    client = APIClient()
+
+    res = client.post(
+        reverse("upload-bundle-analysis"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "test-service",
+            "compareSha": "6fd5b89357fc8cdf34d6197549ac7c6d7e5aaaaa",
+            "branch": "f1:main",
+            "git_service": "github",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+
+    assert res.status_code == 401
+    assert res.json() == {"detail": "Not valid tokenless upload"}
+    assert not upload.called

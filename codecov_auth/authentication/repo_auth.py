@@ -347,4 +347,12 @@ class BundleAnalysisTokenlessAuthentication(TokenlessAuthentication):
 
     def get_branch(self, request, repoid=None, commitid=None):
         body = json.loads(str(request.body, "utf8"))
+
+        # If commit is not created yet (ie first upload for this commit), we just validate branch format.
+        # However if a commit exists already (ie not the first upload for this commit), we must additionally
+        # validate the saved commit branch matches what is requested in this upload call.
+        commit = Commit.objects.filter(repository_id=repoid, commitid=commitid).first()
+        if commit and commit.branch != body.get("branch"):
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
         return body.get("branch")
