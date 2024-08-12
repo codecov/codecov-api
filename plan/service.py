@@ -21,6 +21,8 @@ from plan.constants import (
     TrialStatus,
 )
 from services import sentry
+from services.self_hosted import license_seats
+from utils.config import get_config
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +73,8 @@ class PlanService:
 
     @property
     def plan_user_count(self) -> int:
+        if get_config("setup", "enterprise_license"):
+            return license_seats()
         return self.current_org.plan_user_count
 
     @property
