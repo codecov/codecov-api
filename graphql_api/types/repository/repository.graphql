@@ -1,7 +1,8 @@
 # Repository is a named collection of files uploaded
 # to a provider (e.g., github)
 type Repository {
-  # isFirstPullRequest fetches whether ??
+  # isFirstPullRequest fetches whether there is only 1 pull request (may be
+  # helpful for comparison graphs)
   isFirstPullRequest: Boolean!
   # name fetches the repository's human readable identifier
   name: String!
@@ -11,8 +12,14 @@ type Repository {
   activated: Boolean!
   # private fetches the repo's public/private status as designated at provider
   private: Boolean!
-  # coverage fetches information to a repo's main branch test coverage
-  coverage: Coverage
+
+  # coverageV2 fetches information to a repo's main branch test coverage
+  coverageV2: CoverageV2
+  testAnalytics: TestAnalytics
+
+
+
+
   # oldestCommitAt fetches main's oldest commit timestamp
   oldestCommitAt: DateTime
   # latestCommitAt fetches main's latest commit timestamp - TODO or is it any branch?
@@ -21,7 +28,7 @@ type Repository {
   author: Owner!
   uploadToken: String
   branch(name: String!): Branch
-  commit(id: String!): Commit # TODO - does this work on any branch?
+  commit(id: String!): Commit
   pull(id: Int!): Pull
   pulls(
     filters: PullsSetFilters
@@ -46,58 +53,33 @@ type Repository {
     last: Int
     before: String
   ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
-  flags(
-    filters: FlagSetFilters
-    orderingDirection: OrderingDirection
-    first: Int
-    after: String
-    last: Int
-    before: String
-  ): FlagConnection! @cost(complexity: 3, multipliers: ["first", "last"])
+
   defaultBranch: String
   profilingToken: String
+
+  # criticalFiles is ??
   criticalFiles: [CriticalFile!]!
+
   graphToken: String
   yaml: String
   bot: Owner
-  flagsCount: Int!
-  flagsMeasurementsActive: Boolean!
-  flagsMeasurementsBackfilled: Boolean!
-  componentsMeasurementsActive: Boolean!
-  componentsMeasurementsBackfilled: Boolean!
-  componentsCount: Int!
-  measurements(
-    interval: MeasurementInterval!
-    after: DateTime
-    before: DateTime
-    branch: String
-  ): [Measurement!]!
+
   repositoryConfig: RepositoryConfig
+
   staticAnalysisToken: String
+
   isATSConfigured: Boolean
+
   primaryLanguage: String
   languages: [String!]
+
+  ### Enabled features ###
+
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
-  components(
-    interval: MeasurementInterval!
-    before: DateTime!
-    after: DateTime!
-    branch: String
-    filters: ComponentMeasurementsSetFilters
-    orderingDirection: OrderingDirection
-  ): [ComponentMeasurements!]!
-  componentsYaml(termId: String): [ComponentsYaml]!
   testAnalyticsEnabled: Boolean
+
   isGithubRateLimited: Boolean!
-  testResults(
-    filters: TestResultsFilters
-    ordering: TestResultsOrdering
-    first: Int
-    after: String
-    last: Int
-    before: String
-  ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
 }
 
 type TestResultConnection {
