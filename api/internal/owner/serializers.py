@@ -143,7 +143,11 @@ class PlanSerializer(serializers.Serializer):
         return value
 
     def validate(self, plan):
-        owner = self.context["view"].owner
+        current_org = self.context["view"].owner
+        if current_org.account:
+            raise serializers.ValidationError(
+                detail="You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
+            )
 
         # Validate quantity here because we need access to whole plan object
         if plan["value"] in PAID_PLANS:
@@ -156,16 +160,19 @@ class PlanSerializer(serializers.Serializer):
                     "Quantity for paid plan must be greater than 1"
                 )
 
-            plan_service = PlanService(current_org=owner)
+            plan_service = PlanService(current_org=current_org)
             is_org_trialing = plan_service.is_org_trialing
 
-            if plan["quantity"] < owner.activated_user_count and not is_org_trialing:
+            if (
+                plan["quantity"] < current_org.activated_user_count
+                and not is_org_trialing
+            ):
                 raise serializers.ValidationError(
                     "Quantity cannot be lower than currently activated user count"
                 )
             if (
-                plan["quantity"] == owner.plan_user_count
-                and plan["value"] == owner.plan
+                plan["quantity"] == current_org.plan_user_count
+                and plan["value"] == current_org.plan
                 and not is_org_trialing
             ):
                 raise serializers.ValidationError(
@@ -252,6 +259,10 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     root_organization = RootOrganizationSerializer()
     schedule_detail = serializers.SerializerMethodField()
     apply_cancellation_discount = serializers.BooleanField(write_only=True)
+    activated_student_count = serializers.SerializerMethodField()
+    activated_user_count = serializers.SerializerMethodField()
+    delinquent = serializers.SerializerMethodField()
+    uses_invoice = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -295,6 +306,26 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def get_checkout_session_id(self, _):
         return self.context.get("checkout_session_id")
+
+    def get_activated_student_count(self, owner):
+        if owner.account:
+            return owner.account.activated_student_count
+        return owner.activated_student_count
+
+    def get_activated_user_count(self, owner):
+        if owner.account:
+            return owner.account.activated_user_count
+        return owner.activated_user_count
+
+    def get_delinquent(self, owner):
+        if owner.account:
+            return owner.account.is_delinquent
+        return owner.delinquent
+
+    def get_uses_invoice(self, owner):
+        if owner.account:
+            return owner.account.invoice_billing.filter(is_active=True).exists()
+        return owner.uses_invoice
 
     def update(self, instance, validated_data):
         if "pretty_plan" in validated_data:
