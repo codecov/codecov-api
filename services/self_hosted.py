@@ -87,14 +87,22 @@ def license_seats() -> int:
     """
     Max number of seats allowed by the current license.
     """
-    license = get_current_license()
-    return license.number_allowed_users or 0
+    enterprise_license = get_current_license()
+    if not enterprise_license.is_valid:
+        return 0
+    return enterprise_license.number_allowed_users or 0
 
 
 async def enterprise_has_seats_left() -> bool:
+    """
+    The activated_owner_query is heavy, so check the license first, only proceed if they have a valid license.
+    """
+    license_seat_count = license_seats()
+    if license_seat_count == 0:
+        return False
     owners = await activated_owners_async()
     count = await sync_to_async(owners.count)()
-    return count < license_seats()
+    return count < license_seat_count
 
 
 def can_activate_owner(owner: Owner) -> bool:
