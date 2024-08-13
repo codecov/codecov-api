@@ -14,8 +14,8 @@ type Repository {
   private: Boolean!
 
   # coverageV2 fetches information to a repo's main branch test coverage
-  coverageV2: CoverageV2
-  testAnalytics: TestAnalytics
+  coverageAnalysis: CoverageAnalysis
+  testAnalysis: TestAnalysis
 
 
 

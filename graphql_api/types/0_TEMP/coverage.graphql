@@ -1,6 +1,6 @@
 # Coverage is information related to a repo's
 # main branch test coverage
-type CoverageV2 {
+type CoverageAnalysis {
   hits: Int
   misses: Int
   lines: Int
