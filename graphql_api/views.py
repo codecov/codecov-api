@@ -12,8 +12,14 @@ from ariadne.types import Extension
 from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
-from django.http import HttpResponseBadRequest, HttpResponseNotAllowed, JsonResponse
+from django.http import (
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseNotAllowed,
+    JsonResponse,
+)
 from graphql import DocumentNode
+from rest_framework.exceptions import Throttled
 from sentry_sdk import capture_exception
 from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import Counter, Histogram
@@ -224,7 +230,16 @@ class AsyncGraphqlView(GraphQLAsyncView):
         log.info("GraphQL Request", extra=log_data)
         sentry_metrics.incr("graphql.info.request_made", tags={"path": req_path})
 
-        await self._check_ratelimit(request=request)
+        if self._check_ratelimit(request=request):
+            sentry_metrics.incr("graphql.error.rate_limit", tags={"path": req_path})
+            return JsonResponse(
+                data={
+                    "status": 429,
+                    "__typename": "RateLimitError",
+                    "detail": "Rate limit exceeded",
+                },
+                status=429,
+            )
 
         with RequestFinalizer(request):
             response = await super().post(request, *args, **kwargs)
@@ -293,7 +308,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         if request.user:
             request.user.pk
 
-    async def _check_ratelimit(self, request):
+    def _check_ratelimit(self, request):
         redis = get_redis_connection()
         user_ip = self.get_client_ip(request)
         key = f"rate_limit:{user_ip}"
@@ -304,7 +319,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         if current_count is None:
             redis.setex(key, window, 1)
         elif int(current_count) >= limit:
-            return JsonResponse({"error": "Rate limit exceeded"}, status=429)
+            return True
         else:
             redis.incr(key)
 
