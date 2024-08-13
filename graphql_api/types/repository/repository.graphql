@@ -13,12 +13,10 @@ type Repository {
   # private fetches the repo's public/private status as designated at provider
   private: Boolean!
 
-  # coverageV2 fetches information to a repo's main branch test coverage
-  coverageAnalysis: CoverageAnalysis
+  #### feature level types ####
+  coverageV2: CoverageV2
   testAnalysis: TestAnalysis
-
-
-
+  #############################
 
   # oldestCommitAt fetches main's oldest commit timestamp
   oldestCommitAt: DateTime
@@ -56,28 +54,21 @@ type Repository {
 
   defaultBranch: String
   profilingToken: String
-
-  # criticalFiles is ??
   criticalFiles: [CriticalFile!]!
-
   graphToken: String
   yaml: String
   bot: Owner
-
   repositoryConfig: RepositoryConfig
-
   staticAnalysisToken: String
-
   isATSConfigured: Boolean
-
   primaryLanguage: String
   languages: [String!]
 
   ### Enabled features ###
-
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
   testAnalyticsEnabled: Boolean
+  ########################
 
   isGithubRateLimited: Boolean!
 }

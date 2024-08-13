@@ -1,26 +1,19 @@
-# Coverage is information related to a repo's
-# main branch test coverage
-type CoverageAnalysis {
+# Coverage is information related to a repo's test coverage
+type CoverageV2 {
   hits: Int
   misses: Int
   lines: Int
   coverageSha: String
   percentCovered: Float # formerly repo.coverage
 
-  #  # TODO - not complete alignment with this type (missing partialsCount, fileCount) - what to do
-  #  # formerly repo.coverage, repo.hits, repo.misses
-  #  coverageTotals: CoverageTotals
-
-  # formerly repo.measurements
   coverageMeasurements(
     interval: MeasurementInterval!
     after: DateTime
     before: DateTime
     branch: String
-  ): [Measurement!]!
+  ): [Measurement!]! # formerly repo.measurements
 
   ### FLAGS ###
-
   flagsCount: Int!
   flagsMeasurementsActive: Boolean!
   flagsMeasurementsBackfilled: Boolean!
@@ -34,7 +27,6 @@ type CoverageAnalysis {
   ): FlagConnection! @cost(complexity: 3, multipliers: ["first", "last"])
 
   ### COMPONENTS ###
-
   componentsMeasurementsActive: Boolean!
   componentsMeasurementsBackfilled: Boolean!
   componentsCount: Int!
@@ -46,6 +38,5 @@ type CoverageAnalysis {
     filters: ComponentMeasurementsSetFilters
     orderingDirection: OrderingDirection
   ): [ComponentMeasurements!]!
-  # componentsYaml is used to list component filter terms ??
   componentsYaml(termId: String): [ComponentsYaml]!
 }
