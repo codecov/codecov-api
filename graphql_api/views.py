@@ -235,8 +235,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             return JsonResponse(
                 data={
                     "status": 429,
-                    "__typename": "RateLimitError",
-                    "detail": "Rate limit exceeded",
+                    "detail": "It looks like you've hit our rate limit. Try again in a few minutes.",
                 },
                 status=429,
             )
