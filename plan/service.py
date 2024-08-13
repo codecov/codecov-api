@@ -21,7 +21,7 @@ from plan.constants import (
     TrialStatus,
 )
 from services import sentry
-from services.self_hosted import license_seats
+from services.self_hosted import enterprise_has_seats_left, license_seats
 from utils.config import get_config
 
 log = logging.getLogger(__name__)
@@ -267,6 +267,8 @@ class PlanService:
 
     @property
     def has_seats_left(self) -> bool:
+        if get_config("setup", "enterprise_license"):
+            return enterprise_has_seats_left()
         return (
             self.plan_activated_users is None
             or len(self.plan_activated_users) < self.plan_user_count

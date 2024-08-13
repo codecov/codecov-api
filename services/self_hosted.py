@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import F, Func, Q, QuerySet
 from shared.license import get_current_license
 
+from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from services import ServiceException
 from utils.config import get_config
@@ -44,16 +45,16 @@ def admin_owners() -> QuerySet:
 
 def is_admin_owner(owner: Optional[Owner]) -> bool:
     """
-    Returns true iff the given owner is an admin.
+    Returns true if the given owner is an admin.
     """
     return owner is not None and admin_owners().filter(pk=owner.pk).exists()
 
 
-def activated_owners() -> QuerySet:
-    """
-    Returns all owners that are activated in ANY org's `plan_activated_users`
-    across the entire instance.
-    """
+async def activated_owners_async() -> QuerySet:
+    return await sync_to_async(activated_owner_query)()
+
+
+def activated_owner_query() -> QuerySet:
     owner_ids = (
         Owner.objects.annotate(
             plan_activated_owner_ids=Func(
@@ -64,13 +65,20 @@ def activated_owners() -> QuerySet:
         .values_list("plan_activated_owner_ids", flat=True)
         .distinct()
     )
-
     return Owner.objects.filter(pk__in=owner_ids)
+
+
+def activated_owners() -> QuerySet:
+    """
+    Returns all owners that are activated in ANY org's `plan_activated_users`
+    across the entire instance.
+    """
+    return activated_owner_query()
 
 
 def is_activated_owner(owner: Owner) -> bool:
     """
-    Returns true iff the given owner is activated in this instance.
+    Returns true if the given owner is activated in this instance.
     """
     return activated_owners().filter(pk=owner.pk).exists()
 
@@ -83,9 +91,15 @@ def license_seats() -> int:
     return license.number_allowed_users or 0
 
 
+async def enterprise_has_seats_left() -> bool:
+    owners = await activated_owners_async()
+    count = await sync_to_async(owners.count)()
+    return count < license_seats()
+
+
 def can_activate_owner(owner: Owner) -> bool:
     """
-    Returns true iff there are available seats left for activation.
+    Returns true if there are available seats left for activation.
     """
     if is_activated_owner(owner):
         # user is already activated in at least 1 org
