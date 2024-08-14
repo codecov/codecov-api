@@ -67,7 +67,13 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "activated",
         "deleted",
     )
-    fields = readonly_fields + ("bot", "using_integration", "branch", "private")
+    fields = readonly_fields + (
+        "bot",
+        "using_integration",
+        "branch",
+        "private",
+        "webhook_secret",
+    )
 
     def has_delete_permission(self, request, obj=None):
         return False
