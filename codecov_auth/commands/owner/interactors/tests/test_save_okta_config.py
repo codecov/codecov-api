@@ -2,6 +2,7 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
+from shared.django_apps.codecov_auth.models import Account
 
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov_auth.models import OktaSettings
@@ -18,16 +19,20 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
     def setUp(self):
         self.current_user = OwnerFactory(username="codecov-user")
         self.service = "github"
+        user1 = OwnerFactory()
+        user2 = OwnerFactory()
         self.owner = OwnerFactory(
             username=self.current_user.username,
             service=self.service,
             account=AccountFactory(),
         )
+
         self.owner_with_admins = OwnerFactory(
             username=self.current_user.username,
             service=self.service,
             admins=[self.current_user.ownerid],
-            account=AccountFactory(),
+            plan_activated_users=[user1.ownerid, user2.ownerid],
+            account=None,
         )
 
         self.interactor = SaveOktaConfigInteractor(
@@ -88,13 +93,24 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
             )
 
     def test_create_okta_settings_when_account_does_not_exist(self):
+        plan_activated_users = []
+        for _ in range(100):
+            user_owner = OwnerFactory(user=None)
+            plan_activated_users.append(user_owner.ownerid)
+
+        org_with_lots_of_users = OwnerFactory(
+            service=self.service,
+            admins=[self.current_user.ownerid],
+            plan_activated_users=plan_activated_users,
+        )
+
         input_data = {
             "client_id": "some-client-id",
             "client_secret": "some-client-secret",
             "url": "https://okta.example.com",
             "enabled": True,
             "enforced": True,
-            "org_username": self.owner_with_admins.username,
+            "org_username": org_with_lots_of_users.username,
         }
 
         interactor = SaveOktaConfigInteractor(
@@ -102,7 +118,18 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         )
         self.execute(interactor=interactor, input=input_data)
 
-        okta_config = OktaSettings.objects.get(account=self.owner_with_admins.account)
+        org_with_lots_of_users.refresh_from_db()
+        account = org_with_lots_of_users.account
+
+        assert account.name == org_with_lots_of_users.username
+        assert account.plan == org_with_lots_of_users.plan
+        assert account.plan_seat_count == org_with_lots_of_users.plan_user_count
+        assert account.free_seat_count == org_with_lots_of_users.free
+
+        assert account.users.count() == 100
+        assert account.users.count() == len(org_with_lots_of_users.plan_activated_users)
+
+        okta_config = OktaSettings.objects.get(account=org_with_lots_of_users.account)
 
         assert okta_config.client_id == input_data["client_id"]
         assert okta_config.client_secret == input_data["client_secret"]

@@ -318,3 +318,41 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
             )
         else:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+
+class BundleAnalysisTokenlessAuthentication(TokenlessAuthentication):
+    def _get_info_from_request_path(
+        self, request: HttpRequest
+    ) -> tuple[Repository, str | None]:
+        try:
+            body = json.loads(str(request.body, "utf8"))
+
+            # Validate provider
+            service_enum = Service(body.get("git_service"))
+
+            # Validate that next group exists and decode slug
+            repo = get_repository_from_string(service_enum, body.get("slug"))
+            if repo is None:
+                # Purposefully using the generic message so that we don't tell that
+                # we don't have a certain repo
+                raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+            return repo, body.get("commit")
+        except json.JSONDecodeError:
+            # Validate request body format
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        except ValueError:
+            # Validate provider
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+    def get_branch(self, request, repoid=None, commitid=None):
+        body = json.loads(str(request.body, "utf8"))
+
+        # If commit is not created yet (ie first upload for this commit), we just validate branch format.
+        # However if a commit exists already (ie not the first upload for this commit), we must additionally
+        # validate the saved commit branch matches what is requested in this upload call.
+        commit = Commit.objects.filter(repository_id=repoid, commitid=commitid).first()
+        if commit and commit.branch != body.get("branch"):
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+        return body.get("branch")

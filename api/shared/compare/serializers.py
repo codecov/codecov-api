@@ -52,7 +52,6 @@ class ComparisonSerializer(serializers.Serializer):
     diff = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
     untracked = serializers.SerializerMethodField()
-    has_unmerged_base_commits = serializers.BooleanField()
 
     def get_untracked(self, comparison) -> List[str]:
         return [

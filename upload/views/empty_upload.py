@@ -81,6 +81,16 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="empty_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         serializer = EmptyUploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -141,6 +151,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 request=self.request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
         if set(changed_files) == set(ignored_changed_files):

@@ -735,7 +735,7 @@ class GithubWebhookHandler(APIView):
 
     def post(self, request, *args, **kwargs):
         self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
-        log.debug(
+        log.info(
             "GitHub Webhook Handler invoked",
             extra=dict(
                 github_webhook_event=self.event,

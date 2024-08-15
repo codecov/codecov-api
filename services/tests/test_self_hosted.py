@@ -87,12 +87,14 @@ class SelfHostedTestCase(TestCase):
 
     @patch("services.self_hosted.get_current_license")
     def test_license_seats(self, get_current_license):
-        get_current_license.return_value = LicenseInformation(number_allowed_users=123)
+        get_current_license.return_value = LicenseInformation(
+            number_allowed_users=123, is_valid=True
+        )
         assert license_seats() == 123
 
     @patch("services.self_hosted.get_current_license")
     def test_license_seats_not_specified(self, get_current_license):
-        get_current_license.return_value = LicenseInformation()
+        get_current_license.return_value = LicenseInformation(is_valid=True)
         assert license_seats() == 0
 
     @patch("services.self_hosted.activated_owners")
