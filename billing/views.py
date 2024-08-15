@@ -131,8 +131,8 @@ class StripeWebhookHandler(APIView):
 
     def subscription_schedule_released(self, schedule: stripe.Subscription) -> None:
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
-        owner = Owner.objects.get(ownerid=subscription.metadata["obo_organization"])
-        requesting_user_id = subscription.metadata["obo"]
+        owner = Owner.objects.get(ownerid=subscription.metadata.get("obo_organization"))
+        requesting_user_id = subscription.metadata.get("obo")
         plan_service = PlanService(current_org=owner)
 
         sub_item_plan_id = subscription.plan.id
@@ -166,7 +166,7 @@ class StripeWebhookHandler(APIView):
                 "Subscription created, but missing plan_id",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
-                    ownerid=subscription.metadata["obo_organization"],
+                    ownerid=subscription.metadata.get("obo_organization"),
                     subscription_plan=subscription.plan,
                 ),
             )
@@ -177,7 +177,7 @@ class StripeWebhookHandler(APIView):
                 "Subscription creation requested for invalid plan",
                 extra=dict(
                     stripe_customer_id=subscription.customer,
-                    ownerid=subscription.metadata["obo_organization"],
+                    ownerid=subscription.metadata.get("obo_organization"),
                     plan_id=sub_item_plan_id,
                 ),
             )
@@ -190,12 +190,12 @@ class StripeWebhookHandler(APIView):
             extra=dict(
                 stripe_customer_id=subscription.customer,
                 stripe_subscription_id=subscription.id,
-                ownerid=subscription.metadata["obo_organization"],
+                ownerid=subscription.metadata.get("obo_organization"),
                 plan=plan_name,
                 quantity=subscription.quantity,
             ),
         )
-        owner = Owner.objects.get(ownerid=subscription.metadata["obo_organization"])
+        owner = Owner.objects.get(ownerid=subscription.metadata.get("obo_organization"))
         owner.stripe_subscription_id = subscription.id
         owner.stripe_customer_id = subscription.customer
         owner.save()
