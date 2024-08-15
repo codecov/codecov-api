@@ -35,15 +35,4 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Read https://www.django-rest-framework.org/api-guide/throttling/ for additional info on how to
-    # modify throttling for codecov-api. Initially, we just want a simple throttle mechanism to prevent
-    # burst requests from users/anons on our REST endpoints
-    "DEFAULT_THROTTLE_CLASSES": [
-        "codecov.rate_limiter.UserBurstRateThrottle",
-        "codecov.rate_limiter.AnonBurstRateThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        "anon-burst": "90001/min",
-        "user-burst": "90001/min",
-    },
 }
