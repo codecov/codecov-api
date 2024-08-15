@@ -89,25 +89,18 @@ class CommitWithReportFactory(CommitFactory):
                     "filename": "tests/__init__.py",
                     "file_index": 0,
                     "file_totals": [0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0],
-                    "session_totals": [
-                        [0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]
-                    ],
                     "diff_totals": None,
                 },
                 {
                     "filename": "tests/test_sample.py",
                     "file_index": 1,
                     "file_totals": [0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0],
-                    "session_totals": [[0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0]],
                     "diff_totals": None,
                 },
                 {
                     "filename": "awesome/__init__.py",
                     "file_index": 2,
                     "file_totals": [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0],
-                    "session_totals": [
-                        [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]
-                    ],
                     "diff_totals": [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
                 },
             ],
