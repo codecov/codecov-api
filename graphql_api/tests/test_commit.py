@@ -894,6 +894,104 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_compare_with_compare_sha(self, get_storage_service):
+        """
+        This tests creates 3 commits C1 -> C2 -> C3
+        C1 uses Report1, C2 and C3 uses Report2
+        Normally when doing a compare of C3, it would select C2 as its parent
+        then it would show no change, as expected
+        However the difference is that in C3's Report2 it has the compareSha set to C1.commitid
+        Now when doing comparison of C3, it would now select C1 as the parent
+        therefore show correct comparison in numbers between Report1 and Report2
+        """
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        commit_1 = CommitFactory(
+            repository=self.repo,
+            commitid="6ca727b0142bf5625bb82af2555d308862063222",
+        )
+        commit_2 = CommitFactory(
+            repository=self.repo, parent_commit_id=commit_1.commitid
+        )
+        commit_3 = CommitFactory(
+            repository=self.repo, parent_commit_id=commit_2.commitid
+        )
+
+        commit_report_1 = CommitReportFactory(
+            commit=commit_1,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+
+        commit_report_2 = CommitReportFactory(
+            commit=commit_2,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+
+        commit_report_3 = CommitReportFactory(
+            commit=commit_3,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+
+        with open("./services/tests/samples/base_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=commit_report_1.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=commit_report_2.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        with open(
+            "./services/tests/samples/head_bundle_report_with_compare_sha_6ca727b0142bf5625bb82af2555d308862063222.sqlite",
+            "rb",
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=commit_report_3.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = (
+            query_commit
+            % """
+            bundleAnalysisCompareWithParent {
+                __typename
+                ... on BundleAnalysisComparison {
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
+                    bundleChange {
+                        size {
+                            uncompress
+                        }
+                    }
+                }
+            }
+            """
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": commit_report_3.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["bundleAnalysisCompareWithParent"] == {
+            "__typename": "BundleAnalysisComparison",
+            "bundleData": {"size": {"uncompress": 201720}},
+            "bundleChange": {"size": {"uncompress": 36555}},
+        }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
     def test_bundle_analysis_sqlite_file_deleted(self, get_storage_service):
         os.system("rm -rf /tmp/bundle_analysis_*")
         storage = MemoryStorageService({})

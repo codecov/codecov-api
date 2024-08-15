@@ -311,11 +311,13 @@ class BundleAnalysisComparison(object):
         loader: BundleAnalysisReportLoader,
         base_report_key: str,
         head_report_key: str,
+        repository: Repository,
     ):
         self.comparison = SharedBundleAnalysisComparison(
             loader,
             base_report_key,
             head_report_key,
+            repository,
         )
         self.head_report = self.comparison.head_report
 
