@@ -41,13 +41,9 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
         "codecov.rate_limiter.UserBurstRateThrottle",
         "codecov.rate_limiter.AnonBurstRateThrottle",
-        "codecov.rate_limiter.UserSustainedRateThrottle",
-        "codecov.rate_limiter.AnonSustainedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon-burst": "9001/min",
-        "anon-sustained": "9001/day",
-        "user-burst": "9001/min",
-        "user-sustained": "9001/day",
+        "anon-burst": "90001/min",
+        "user-burst": "90001/min",
     },
 }
