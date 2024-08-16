@@ -25,7 +25,7 @@ class TestEncodeSecretString(TransactionTestCase, GraphQLTestHelper):
         data = self.gql_request(
             query,
             owner=self.org,
-            variables={"input": {"repoName": "test-repo", "value": "token-1"}},
+            variables={"input": {"repo_name": "test-repo", "value": "token-1"}},
         )
         return data["encodeSecretString"]["value"]
 
