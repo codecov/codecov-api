@@ -2,7 +2,6 @@ type Comparison {
   state: String!
   impactedFile(path: String!): ImpactedFile
   impactedFiles(filters: ImpactedFilesFilters): ImpactedFilesResult!
-  impactedFilesDeprecated(filters: ImpactedFilesFilters): [ImpactedFile]!
   impactedFilesCount: Int!
   indirectChangedFilesCount: Int!
   patchTotals: CoverageTotals
