@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from django.core.management.base import BaseCommand
 from django.test import TestCase
@@ -14,7 +14,7 @@ from plan.constants import PlanName, TrialStatus
 class OwnerCommandTestCase(TestCase):
     def setUp(self):
         self.command_instance = BaseCommand()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         later = now + timedelta(days=3)
         yesterday = now + timedelta(days=-1)
         much_before = now + timedelta(days=-20)

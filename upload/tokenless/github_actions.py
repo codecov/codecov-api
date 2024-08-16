@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from asgiref.sync import async_to_sync
 from django.conf import settings
@@ -116,7 +116,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 )
 
             finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=10)
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             if not now <= finish_time_with_buffer:
                 log.warning(
                     "Actions workflow run is stale",

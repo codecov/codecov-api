@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -82,7 +82,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 finishTimestamp, "%Y-%m-%d %H:%M:%S.%f"
             )
             finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             if not now <= finishTimeWithBuffer:
                 raise NotFound(
                     "Azure build has already finished. Please upload with the Codecov repository upload token to resolve issue."

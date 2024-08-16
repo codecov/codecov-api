@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from django.test import TransactionTestCase
 from shared.django_apps.reports.models import ReportType
@@ -43,8 +43,8 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         # Trial Data
         self.trial_owner = OwnerFactory(
             trial_status=TrialStatus.EXPIRED.value,
-            trial_start_date=datetime.utcnow() + timedelta(days=-10),
-            trial_end_date=datetime.utcnow() + timedelta(days=-2),
+            trial_start_date=datetime.now(UTC) + timedelta(days=-10),
+            trial_end_date=datetime.now(UTC) + timedelta(days=-2),
         )
         trial_repo = RepositoryFactory.create(author=self.trial_owner, private=True)
         trial_commit = CommitFactory.create(repository=trial_repo)

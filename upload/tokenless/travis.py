@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime, timedelta
-from json import load
+from datetime import UTC, datetime, timedelta
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -122,7 +121,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             finishTimestamp = job["finished_at"].replace("T", " ").replace("Z", "")
             buildFinishDateObj = datetime.strptime(finishTimestamp, "%Y-%m-%d %H:%M:%S")
             finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             if not now <= finishTimeWithBuffer:
                 log.warning(
                     "Cancelling upload: 4 mins since build",
