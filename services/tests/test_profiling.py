@@ -107,7 +107,7 @@ class ProfilingSummaryTests(TestCase):
 
     def test_summary_data_not_summarized(self):
         pc = ProfilingCommitFactory(repository=self.repo)
-        assert self.service.summary_data(pc) == None
+        assert self.service.summary_data(pc) is None
 
     @patch("services.archive.ArchiveService.read_file")
     def test_summary_data_not_found(self, read_file):
@@ -127,7 +127,7 @@ class ProfilingSummaryTests(TestCase):
             last_summarized_at=datetime.now(),
         )
 
-        assert self.service.summary_data(pc) == None
+        assert self.service.summary_data(pc) is None
 
     @patch("services.archive.ArchiveService.read_file")
     def test_summary_data(self, read_file):

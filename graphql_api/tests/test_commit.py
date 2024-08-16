@@ -89,7 +89,7 @@ class MockLines(object):
 
 class MockReport(object):
     def get(self, file, _else):
-        lines = MockLines()
+        MockLines()
         return MockLines()
 
     def filter(self, **kwargs):
@@ -161,23 +161,22 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         self.repo_2 = RepositoryFactory(
             author=self.org, name="test-repo", private=False
         )
-        commits_in_db = [
-            CommitFactory(
-                repository=self.repo_2,
-                commitid=123,
-                timestamp=datetime.today() - timedelta(days=3),
-            ),
-            CommitFactory(
-                repository=self.repo_2,
-                commitid=456,
-                timestamp=datetime.today() - timedelta(days=1),
-            ),
-            CommitFactory(
-                repository=self.repo_2,
-                commitid=789,
-                timestamp=datetime.today() - timedelta(days=2),
-            ),
-        ]
+
+        CommitFactory(
+            repository=self.repo_2,
+            commitid=123,
+            timestamp=datetime.today() - timedelta(days=3),
+        )
+        CommitFactory(
+            repository=self.repo_2,
+            commitid=456,
+            timestamp=datetime.today() - timedelta(days=1),
+        )
+        CommitFactory(
+            repository=self.repo_2,
+            commitid=789,
+            timestamp=datetime.today() - timedelta(days=2),
+        )
 
         variables = {"org": self.org.username, "repo": self.repo_2.name}
         data = self.gql_request(query, variables=variables)
@@ -208,7 +207,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["parent"] == None
+        assert commit["parent"] is None
 
     def test_fetch_commit_coverage(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
@@ -240,18 +239,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         ]
 
     def test_fetch_commit_uploads_state(self):
-        session_one = UploadFactory(
+        UploadFactory(
             report=self.report, provider="circleci", state=UploadState.PROCESSED.value
         )
-        session_two = UploadFactory(
+        UploadFactory(
             report=self.report, provider="travisci", state=UploadState.ERROR.value
         )
-        session_three = UploadFactory(
+        UploadFactory(
             report=self.report, provider="travisci", state=UploadState.COMPLETE.value
         )
-        session_four = UploadFactory(
+        UploadFactory(
             report=self.report, provider="travisci", state=UploadState.UPLOADED.value
         )
+        UploadFactory(report=self.report, provider="travisci", state="")
         query = (
             query_commit
             % """
@@ -278,6 +278,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"state": UploadState.ERROR.name},
             {"state": UploadState.COMPLETE.name},
             {"state": UploadState.UPLOADED.name},
+            {"state": UploadState.ERROR.name},
         ]
 
     def test_fetch_commit_uploads(self):
@@ -320,7 +321,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             order_number=4,
         )
         UploadFlagMembershipFactory(report_session=session_e, flag=flag_d)
-        session_f = UploadFactory(
+        UploadFactory(
             report=self.report,
             upload_type=UploadType.UPLOADED.value,
             order_number=5,
@@ -400,10 +401,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         session = UploadFactory(
             report=self.report, provider="circleci", state=UploadState.ERROR.value
         )
-        error_one = UploadErrorFactory(
+        UploadErrorFactory(
             report_session=session, error_code=UploadErrorEnum.REPORT_EXPIRED.value
         )
-        error_two = UploadErrorFactory(
+        UploadErrorFactory(
             report_session=session, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
         )
 
@@ -459,7 +460,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["repository"]["commit"]["yamlState"] == "DEFAULT"
 
     def test_fetch_commit_ci(self):
-        session_one = UploadFactory(
+        UploadFactory(
             report=self.report,
             provider="circleci",
             job_code=123,
@@ -707,7 +708,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             query_commit
             % """
             compareWithParent { __typename ... on Comparison { state } }
-            bundleAnalysisCompareWithParent { __typename ... on BundleAnalysisComparison { sizeDelta } }
+            bundleAnalysisCompareWithParent { __typename ... on BundleAnalysisComparison { bundleData { size { uncompress } } } }
             """
         )
         variables = {
@@ -818,17 +819,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             bundleAnalysisCompareWithParent {
                 __typename
                 ... on BundleAnalysisComparison {
-                    sizeDelta
-                    sizeTotal
-                    loadTimeDelta
-                    loadTimeTotal
                     bundles {
                         name
                         changeType
-                        sizeDelta
-                        sizeTotal
-                        loadTimeDelta
-                        loadTimeTotal
                         bundleData {
                             size {
                                 uncompress
@@ -864,58 +857,34 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["bundleAnalysisCompareWithParent"] == {
             "__typename": "BundleAnalysisComparison",
-            "sizeDelta": 36555,
-            "sizeTotal": 201720,
-            "loadTimeDelta": 0.1,
-            "loadTimeTotal": 0.5,
             "bundles": [
                 {
                     "name": "b1",
                     "changeType": "changed",
-                    "sizeDelta": 5,
-                    "sizeTotal": 20,
-                    "loadTimeDelta": 0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 20}},
                     "bundleChange": {"size": {"uncompress": 5}},
                 },
                 {
                     "name": "b2",
                     "changeType": "changed",
-                    "sizeDelta": 50,
-                    "sizeTotal": 200,
-                    "loadTimeDelta": 0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 200}},
                     "bundleChange": {"size": {"uncompress": 50}},
                 },
                 {
                     "name": "b3",
                     "changeType": "added",
-                    "sizeDelta": 1500,
-                    "sizeTotal": 1500,
-                    "loadTimeDelta": 0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 1500}},
                     "bundleChange": {"size": {"uncompress": 1500}},
                 },
                 {
                     "name": "b5",
                     "changeType": "changed",
-                    "sizeDelta": 50000,
-                    "sizeTotal": 200000,
-                    "loadTimeDelta": 0.1,
-                    "loadTimeTotal": 0.5,
                     "bundleData": {"size": {"uncompress": 200000}},
                     "bundleChange": {"size": {"uncompress": 50000}},
                 },
                 {
                     "name": "b4",
                     "changeType": "removed",
-                    "sizeDelta": -15000,
-                    "sizeTotal": 0,
-                    "loadTimeDelta": -0.0,
-                    "loadTimeTotal": 0.0,
                     "bundleData": {"size": {"uncompress": 0}},
                     "bundleChange": {"size": {"uncompress": -15000}},
                 },
@@ -958,7 +927,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             bundleAnalysisCompareWithParent {
                 __typename
                 ... on BundleAnalysisComparison {
-                    sizeTotal
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
                 }
             }
             """
@@ -1013,7 +986,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             bundleAnalysisCompareWithParent {
                 __typename
                 ... on BundleAnalysisComparison {
-                    sizeTotal
+                    bundleData {
+                        size {
+                            uncompress
+                        }
+                    }
                 }
             }
             """
@@ -1076,7 +1053,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             storage.write_file(get_bucket_name(), storage_path, f)
 
         query = """
-            query FetchCommit($org: String!, $repo: String!, $commit: String!, $filters: BundleAnalysisReportFilters) {
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
                 owner(username: $org) {
                     repository(name: $repo) {
                         ... on Repository {
@@ -1084,13 +1061,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                 bundleAnalysisReport {
                                     __typename
                                     ... on BundleAnalysisReport {
-                                        sizeTotal
-                                        loadTimeTotal
                                         bundles {
                                             name
-                                            sizeTotal
-                                            loadTimeTotal
-                                            assets(filters: $filters) {
+                                            assets {
                                                 normalizedName
                                             }
                                             asset(name: "not_exist") {
@@ -1106,6 +1079,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                     uncompress
                                                 }
                                             }
+                                            isCached
                                         }
                                         bundleData {
                                             loadTime {
@@ -1119,7 +1093,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                         }
                                         bundle(name: "not_exist") {
                                             name
+                                            isCached
                                         }
+                                        isCached
                                     }
                                     ... on MissingHeadReport {
                                         message
@@ -1136,20 +1112,15 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "org": self.org.username,
             "repo": self.repo.name,
             "commit": self.commit.commitid,
-            "filters": {"moduleExtensions": []},
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
         assert commit["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
-            "sizeTotal": 201720,
-            "loadTimeTotal": 0.5,
             "bundles": [
                 {
                     "name": "b1",
-                    "sizeTotal": 20,
-                    "loadTimeTotal": 0.0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1168,11 +1139,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 20,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b2",
-                    "sizeTotal": 200,
-                    "loadTimeTotal": 0.0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1191,11 +1161,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 200,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b3",
-                    "sizeTotal": 1500,
-                    "loadTimeTotal": 0.0,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1214,11 +1183,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 1500,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b5",
-                    "sizeTotal": 200000,
-                    "loadTimeTotal": 0.5,
                     "assets": [
                         {"normalizedName": "assets/react-*.svg"},
                         {"normalizedName": "assets/index-*.css"},
@@ -1237,6 +1205,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 200000,
                         },
                     },
+                    "isCached": False,
                 },
             ],
             "bundleData": {
@@ -1250,6 +1219,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
             },
             "bundle": None,
+            "isCached": False,
         }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
@@ -1280,13 +1250,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                     __typename
                                     ... on BundleAnalysisReport {
                                         bundle(name: "b5") {
-                                            moduleExtensions
                                             moduleCount
                                             asset(name: "assets/LazyComponent-fcbb0922.js") {
                                                 name
                                                 normalizedName
                                                 extension
-                                                moduleExtensions
                                                 bundleData {
                                                     loadTime {
                                                         threeG
@@ -1333,22 +1301,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         asset_report = bundle_report["asset"]
 
         assert bundle_report is not None
-        assert sorted(bundle_report["moduleExtensions"]) == [
-            "",
-            "css",
-            "html",
-            "js",
-            "svg",
-            "ts",
-            "tsx",
-        ]
-        assert bundle_report["moduleCount"] == 7
+        assert bundle_report["moduleCount"] == 33
 
         assert asset_report is not None
         assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
         assert asset_report["normalizedName"] == "assets/LazyComponent-*.js"
         assert asset_report["extension"] == "js"
-        assert set(asset_report["moduleExtensions"]) == set(["", "tsx"])
         assert asset_report["bundleData"] == {
             "loadTime": {
                 "threeG": 320,
@@ -1403,6 +1361,118 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             },
         }
 
+    @patch("shared.bundle_analysis.BundleReport.asset_reports")
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_asset_filtering(
+        self, get_storage_service, asset_reports_mock
+    ):
+        storage = MemoryStorageService({})
+
+        get_storage_service.return_value = storage
+        asset_reports_mock.return_value = []
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/bundle_with_assets_and_modules.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!, $filters: BundleAnalysisReportFilters) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name: "b5", filters: $filters) {
+                                            moduleCount
+                                            assets {
+                                                name
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "filters": {},
+        }
+
+        configurations = [
+            # No filters
+            (
+                {"loadTypes": None, "reportGroups": None},
+                {"asset_types": None, "chunk_entry": None, "chunk_initial": None},
+            ),
+            ({}, {"asset_types": None, "chunk_entry": None, "chunk_initial": None}),
+            # Just report groups
+            (
+                {"reportGroups": ["JAVASCRIPT", "FONT"]},
+                {
+                    "asset_types": ["JAVASCRIPT", "FONT"],
+                    "chunk_entry": None,
+                    "chunk_initial": None,
+                },
+            ),
+            # Load types -> chunk_entry cancels out
+            (
+                {"loadTypes": ["ENTRY", "INITIAL"]},
+                {"asset_types": None, "chunk_entry": None, "chunk_initial": True},
+            ),
+            # Load types -> chunk_entry = True
+            (
+                {"loadTypes": ["ENTRY"]},
+                {"asset_types": None, "chunk_entry": True, "chunk_initial": None},
+            ),
+            # Load types -> chunk_lazy = False
+            (
+                {"loadTypes": ["LAZY"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": False},
+            ),
+            # Load types -> chunk_initial cancels out
+            (
+                {"loadTypes": ["LAZY", "INITIAL"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": None},
+            ),
+            # Load types -> chunk_initial = True
+            (
+                {"loadTypes": ["INITIAL"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": True},
+            ),
+            # Load types -> chunk_initial = False
+            (
+                {"loadTypes": ["LAZY"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": False},
+            ),
+        ]
+
+        for config in configurations:
+            input_d, output_d = config
+            variables["filters"] = input_d
+            data = self.gql_request(query, variables=variables)
+            assert (
+                data["owner"]["repository"]["commit"]["bundleAnalysisReport"]["bundle"]
+                is not None
+            )
+            asset_reports_mock.assert_called_with(**output_d)
+
     def test_compare_with_parent_missing_change_coverage(self):
         CommitComparisonFactory(
             base_commit=self.parent_commit,
@@ -1431,7 +1501,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["compareWithParent"]["changeCoverage"] == None
+        assert commit["compareWithParent"]["changeCoverage"] is None
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
@@ -1639,8 +1709,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["coverageStatus"] == None
-        assert commit["bundleStatus"] == None
+        assert commit["coverageStatus"] is None
+        assert commit["bundleStatus"] is None
 
     def test_fetch_commit_status_no_sessions(self):
         CommitReportFactory(
@@ -1663,8 +1733,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["coverageStatus"] == None
-        assert commit["bundleStatus"] == None
+        assert commit["coverageStatus"] is None
+        assert commit["bundleStatus"] is None
 
     def test_fetch_commit_status_completed(self):
         coverage_report = CommitReportFactory(

@@ -83,7 +83,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_invoice_payment_succeeded_sets_owner_delinquent_false(self):
-        self.owner.deliquent = True
+        self.owner.delinquent = True
         self.owner.save()
 
         response = self._send_event(
@@ -127,7 +127,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_user_count = 20
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.deleted",
                 "data": {
@@ -143,8 +143,8 @@ class StripeWebhookHandlerTests(APITestCase):
 
         assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 1
-        assert self.owner.plan_activated_users == None
-        assert self.owner.stripe_subscription_id == None
+        assert self.owner.plan_activated_users is None
+        assert self.owner.stripe_subscription_id is None
 
     def test_customer_subscription_deleted_deactivates_all_repos(self):
         RepositoryFactory(author=self.owner, activated=True, active=True)
@@ -155,7 +155,7 @@ class StripeWebhookHandlerTests(APITestCase):
             self.owner.repository_set.filter(activated=True, active=True).count() == 3
         )
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.deleted",
                 "data": {
@@ -196,7 +196,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
     def test_customer_created_logs_and_doesnt_crash(self):
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.created",
                 "data": {"object": {"id": "FOEKDCDEQ", "email": "test@email.com"}},
@@ -224,8 +224,8 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.stripe_subscription_id == None
-        assert self.owner.stripe_customer_id == None
+        assert self.owner.stripe_subscription_id is None
+        assert self.owner.stripe_customer_id is None
 
     def test_customer_subscription_created_does_nothing_if_plan_not_paid_user_plan(
         self,
@@ -234,7 +234,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.stripe_customer_id = None
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.created",
                 "data": {
@@ -250,8 +250,8 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.stripe_subscription_id == None
-        assert self.owner.stripe_customer_id == None
+        assert self.owner.stripe_subscription_id is None
+        assert self.owner.stripe_customer_id is None
 
     def test_customer_subscription_created_sets_plan_info(self):
         self.owner.stripe_subscription_id = None
@@ -288,16 +288,16 @@ class StripeWebhookHandlerTests(APITestCase):
 
     @freeze_time("2023-06-19")
     @patch("plan.service.PlanService.expire_trial_when_upgrading")
-    @patch("services.billing.StripeService.update_payment_method")
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_created_can_trigger_trial_expiration(
-        self, _, expire_trial_when_upgrading_mock
+        self, c_mock, pm_mock, expire_trial_when_upgrading_mock
     ):
         stripe_subscription_id = "FOEKDCDEQ"
         stripe_customer_id = "sdo050493"
-        plan_name = "users-pr-inappy"
         quantity = 20
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.created",
                 "data": {
@@ -315,9 +315,10 @@ class StripeWebhookHandlerTests(APITestCase):
 
         expire_trial_when_upgrading_mock.assert_called_once()
 
-    @patch("services.billing.StripeService.update_payment_method")
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_does_not_change_subscription_if_not_paid_user_plan(
-        self, upm_mock
+        self, c_mock, pm_mock
     ):
         self.owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.owner.plan_user_count = 0
@@ -346,18 +347,25 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 0
         assert self.owner.plan_auto_activate == False
-        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
+        pm_mock.assert_called_once_with(
+            "pm_1LhiRsGlVGuVgOrkQguJXdeV", customer=self.owner.stripe_customer_id
+        )
+        c_mock.assert_called_once_with(
+            self.owner.stripe_customer_id,
+            invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
+        )
 
-    @patch("services.billing.StripeService.update_payment_method")
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_does_not_change_subscription_if_there_is_a_schedule(
-        self, upm_mock
+        self, c_mock, pm_mock
     ):
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
         self.owner.plan_auto_activate = False
         self.owner.save()
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.updated",
                 "data": {
@@ -379,11 +387,18 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == "users-pr-inappy"
         assert self.owner.plan_user_count == 10
         assert self.owner.plan_auto_activate == False
-        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
+        pm_mock.assert_called_once_with(
+            "pm_1LhiRsGlVGuVgOrkQguJXdeV", customer=self.owner.stripe_customer_id
+        )
+        c_mock.assert_called_once_with(
+            self.owner.stripe_customer_id,
+            invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
+        )
 
-    @patch("services.billing.StripeService.update_payment_method")
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_sets_free_and_deactivates_all_repos_if_incomplete_expired(
-        self, upm_mock
+        self, c_mock, pm_mock
     ):
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
@@ -395,7 +410,7 @@ class StripeWebhookHandlerTests(APITestCase):
         RepositoryFactory(author=self.owner, activated=True, active=True)
         assert self.owner.repository_set.count() == 3
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.subscription.updated",
                 "data": {
@@ -419,14 +434,23 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_auto_activate == False
-        assert self.owner.stripe_subscription_id == None
+        assert self.owner.stripe_subscription_id is None
         assert (
             self.owner.repository_set.filter(active=True, activated=True).count() == 0
         )
-        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
+        pm_mock.assert_called_once_with(
+            "pm_1LhiRsGlVGuVgOrkQguJXdeV", customer=self.owner.stripe_customer_id
+        )
+        c_mock.assert_called_once_with(
+            self.owner.stripe_customer_id,
+            invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
+        )
 
-    @patch("services.billing.StripeService.update_payment_method")
-    def test_customer_subscription_updated_sets_fields_on_success(self, upm_mock):
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
+    def test_customer_subscription_updated_sets_fields_on_success(
+        self, c_mock, pm_mock
+    ):
         self.owner.plan = "users-free"
         self.owner.plan_user_count = 5
         self.owner.plan_auto_activate = False
@@ -456,7 +480,13 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
         assert self.owner.plan_user_count == quantity
         assert self.owner.plan_auto_activate == True
-        upm_mock.assert_called_once_with(self.owner, "pm_1LhiRsGlVGuVgOrkQguJXdeV")
+        pm_mock.assert_called_once_with(
+            "pm_1LhiRsGlVGuVgOrkQguJXdeV", customer=self.owner.stripe_customer_id
+        )
+        c_mock.assert_called_once_with(
+            self.owner.stripe_customer_id,
+            invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
+        )
 
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_subscription_schedule_released_updates_owner_with_existing_subscription(
@@ -572,7 +602,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
         expected_id = "fhjtwoo40"
 
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "checkout.session.completed",
                 "data": {
@@ -590,7 +620,7 @@ class StripeWebhookHandlerTests(APITestCase):
     @patch("billing.views.stripe.Subscription.modify")
     def test_customer_update_but_not_payment_method(self, subscription_modify_mock):
         payment_method = "pm_123"
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.updated",
                 "data": {
@@ -610,7 +640,7 @@ class StripeWebhookHandlerTests(APITestCase):
     def test_customer_update_payment_method(self, subscription_modify_mock):
         payment_method = "pm_123"
         old_payment_method = "pm_321"
-        response = self._send_event(
+        self._send_event(
             payload={
                 "type": "customer.updated",
                 "data": {

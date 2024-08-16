@@ -26,7 +26,7 @@ class SelfHostedTestCase(TestCase):
     @patch("services.self_hosted.get_config")
     def test_admin_owners(self, get_config):
         owner1 = OwnerFactory(service="github", username="foo")
-        owner2 = OwnerFactory(service="github", username="bar")
+        OwnerFactory(service="github", username="bar")
         owner3 = OwnerFactory(service="gitlab", username="foo")
 
         get_config.return_value = [
@@ -40,9 +40,9 @@ class SelfHostedTestCase(TestCase):
         get_config.assert_called_once_with("setup", "admins", default=[])
 
     def test_admin_owners_empty(self):
-        owner1 = OwnerFactory(service="github", username="foo")
-        owner2 = OwnerFactory(service="github", username="bar")
-        owner3 = OwnerFactory(service="gitlab", username="foo")
+        OwnerFactory(service="github", username="foo")
+        OwnerFactory(service="github", username="bar")
+        OwnerFactory(service="gitlab", username="foo")
 
         owners = admin_owners()
         assert list(owners) == []
@@ -64,9 +64,9 @@ class SelfHostedTestCase(TestCase):
         user1 = OwnerFactory()
         user2 = OwnerFactory()
         user3 = OwnerFactory()
-        user4 = OwnerFactory()
-        org1 = OwnerFactory(plan_activated_users=[user1.pk])
-        org2 = OwnerFactory(plan_activated_users=[user2.pk, user3.pk])
+        OwnerFactory()
+        OwnerFactory(plan_activated_users=[user1.pk])
+        OwnerFactory(plan_activated_users=[user2.pk, user3.pk])
 
         owners = activated_owners()
         assert list(owners) == [user1, user2, user3]
@@ -87,12 +87,14 @@ class SelfHostedTestCase(TestCase):
 
     @patch("services.self_hosted.get_current_license")
     def test_license_seats(self, get_current_license):
-        get_current_license.return_value = LicenseInformation(number_allowed_users=123)
+        get_current_license.return_value = LicenseInformation(
+            number_allowed_users=123, is_valid=True
+        )
         assert license_seats() == 123
 
     @patch("services.self_hosted.get_current_license")
     def test_license_seats_not_specified(self, get_current_license):
-        get_current_license.return_value = LicenseInformation()
+        get_current_license.return_value = LicenseInformation(is_valid=True)
         assert license_seats() == 0
 
     @patch("services.self_hosted.activated_owners")

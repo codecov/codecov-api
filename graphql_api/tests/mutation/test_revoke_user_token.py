@@ -28,6 +28,6 @@ class RevokeUserTokenTestCase(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(
             query, owner=self.owner, variables={"input": {"tokenid": tokenid}}
         )
-        assert data["revokeUserToken"] == None
+        assert data["revokeUserToken"] is None
         deleted_user_token = self.owner.user_tokens.filter(external_id=tokenid).first()
         assert deleted_user_token is None

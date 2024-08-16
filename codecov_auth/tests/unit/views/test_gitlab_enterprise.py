@@ -37,7 +37,7 @@ def test_get_gle_redirect(client, settings, mock_redis, mocker):
     assert res.status_code == 302
     assert (
         res.url
-        == f"https://my.gitlabenterprise.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%2Flogin%2Fgle&state={state}"
+        == f"https://my.gitlabenterprise.com/oauth/authorize?response_type=code&client_id=testfiuozujcfo5kxgigugr5x3xxx2ukgyandp16x6w566uits7f32crzl4yvmth&redirect_uri=http%3A%2F%2Flocalhost%2Flogin%2Fgle&state={state}&scope=api"
     )
     mock_get_config.assert_called_with("gitlab_enterprise", "url")
 

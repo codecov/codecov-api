@@ -81,8 +81,27 @@ type Repository {
     orderingDirection: OrderingDirection
   ): [ComponentMeasurements!]!
   componentsYaml(termId: String): [ComponentsYaml]!
-  encodedSecretString(value: String!): EncodedSecretString!
   testAnalyticsEnabled: Boolean
+  isGithubRateLimited: Boolean
+  testResults(
+    filters: TestResultsFilters
+    ordering: TestResultsOrdering
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
+}
+
+type TestResultConnection {
+  edges: [TestResultEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type TestResultEdge {
+  cursor: String!
+  node: TestResult!
 }
 
 type PullConnection {
@@ -116,10 +135,6 @@ type BranchConnection {
 type BranchEdge {
   cursor: String!
   node: Branch!
-}
-
-type EncodedSecretString {
-  value: String!
 }
 
 union RepositoryResult = Repository | NotFoundError | OwnerNotActivatedError

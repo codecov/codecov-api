@@ -42,6 +42,11 @@ from .constants import ci, global_upload_token_providers
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 
+# Valid values are `https://dev.azure.com/username/` or `https://username.visualstudio.com/`
+# May be URL-encoded, so ':' can be '%3A' and '/' can be '%2F'
+# Username is alphanumeric with '_' and '-'
+_valid_azure_server_uri = r"^https?(?:://|%3A%2F%2F)(?:dev.azure.com(?:/|%2F)[a-zA-Z0-9_-]+(?:/|%2F)|[a-zA-Z0-9_-]+.visualstudio.com(?:/|%2F))$"
+
 log = logging.getLogger(__name__)
 redis = get_redis_connection()
 
@@ -207,7 +212,10 @@ def parse_params(data):
         "url": {"type": "string"},  # custom location where report is found
         "parent": {"type": "string"},
         "project": {"type": "string"},
-        "server_uri": {"type": "string"},
+        "server_uri": {
+            "type": "string",
+            "regex": _valid_azure_server_uri,
+        },
         "root": {"type": "string"},  # deprecated
         "storage_path": {"type": "string"},
     }
@@ -441,13 +449,13 @@ def determine_upload_commit_to_use(upload_params, repository):
             git_commit_data = _get_git_commit_data(
                 adapter, upload_params.get("commit"), token
             )
-        except TorngitObjectNotFoundError as e:
+        except TorngitObjectNotFoundError:
             log.warning(
                 "Unable to fetch commit. Not found",
                 extra=dict(commit=upload_params.get("commit")),
             )
             return upload_params.get("commit")
-        except TorngitClientError as e:
+        except TorngitClientError:
             log.warning(
                 "Unable to fetch commit", extra=dict(commit=upload_params.get("commit"))
             )
@@ -781,13 +789,28 @@ def get_version_from_headers(headers):
 
 
 def generate_upload_sentry_metrics_tags(
-    action, request, repository, is_shelter_request, endpoint: Optional[str] = None
+    action,
+    request,
+    is_shelter_request,
+    endpoint: Optional[str] = None,
+    repository: Optional[Repository] = None,
+    position: Optional[str] = None,
+    upload_version: Optional[str] = None,
 ):
-    return dict(
+    metrics_tags = dict(
         agent=get_agent_from_headers(request.headers),
         version=get_version_from_headers(request.headers),
         action=action,
         endpoint=endpoint,
-        repo_visibility="private" if repository.private is True else "public",
         is_using_shelter="yes" if is_shelter_request else "no",
     )
+    if repository:
+        metrics_tags["repo_visibility"] = (
+            "private" if repository.private is True else "public"
+        )
+    if position:
+        metrics_tags["position"] = position
+    if upload_version:
+        metrics_tags["upload_version"] = upload_version
+
+    return metrics_tags

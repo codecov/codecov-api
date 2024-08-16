@@ -8,6 +8,7 @@ from api.public.v2.schema import repo_parameters
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from services.components import commit_components, component_filtered_report
+from utils import round_decimals_down
 
 
 @extend_schema(
@@ -45,7 +46,9 @@ class ComponentViewSet(viewsets.ViewSet, RepoPropertyMixin):
             component_report = component_filtered_report(report, [component])
             coverage = None
             if component_report.totals.coverage is not None:
-                coverage = round(float(component_report.totals.coverage), 2)
+                coverage = round_decimals_down(
+                    float(component_report.totals.coverage), 2
+                )
             components_with_coverage.append(
                 {
                     "component_id": component.component_id,

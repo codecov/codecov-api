@@ -52,7 +52,7 @@ class UpdateSelfHostedSettingsInteractorTest(TransactionTestCase):
 
     @override_settings(IS_ENTERPRISE=True)
     def test_user_is_not_authenticated(self):
-        with pytest.raises(Unauthenticated) as e:
+        with pytest.raises(Unauthenticated):
             self.execute(
                 current_user=AnonymousUser(),
                 input={

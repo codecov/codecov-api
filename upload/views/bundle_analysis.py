@@ -1,8 +1,11 @@
 import logging
 import uuid
+from typing import Any, Callable
 
+from django.conf import settings
+from django.http import HttpRequest
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +13,7 @@ from sentry_sdk import metrics as sentry_metrics
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
 
 from codecov_auth.authentication.repo_auth import (
+    BundleAnalysisTokenlessAuthentication,
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
@@ -21,6 +25,7 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
+from timeseries.models import Dataset, MeasurementName
 from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
@@ -29,7 +34,7 @@ log = logging.getLogger(__name__)
 
 
 class UploadBundleAnalysisPermission(BasePermission):
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: Any) -> bool:
         return request.auth is not None and "upload" in request.auth.get_scopes()
 
 
@@ -42,6 +47,8 @@ class UploadSerializer(serializers.Serializer):
     pr = serializers.CharField(required=False, allow_null=True)
     service = serializers.CharField(required=False, allow_null=True)
     branch = serializers.CharField(required=False, allow_null=True)
+    compareSha = serializers.CharField(required=False, allow_null=True)
+    git_service = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView, ShelterMixin):
@@ -50,12 +57,23 @@ class BundleAnalysisView(APIView, ShelterMixin):
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        BundleAnalysisTokenlessAuthentication,
     ]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable:
         return repo_auth_custom_exception_handler
 
-    def post(self, request):
+    def post(self, request: HttpRequest) -> Response:
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="bundle_analysis",
+                endpoint="bundle_analysis",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -70,6 +88,9 @@ class BundleAnalysisView(APIView, ShelterMixin):
             repo = request.user._repository
         else:
             raise NotAuthenticated()
+
+        if repo is None:
+            raise NotFound("Repository not found.")
 
         update_fields = []
         if not repo.active or not repo.activated:
@@ -115,6 +136,8 @@ class BundleAnalysisView(APIView, ShelterMixin):
             # these are used for dispatching the task below
             "commit": commit.commitid,
             "report_code": None,
+            # custom comparison sha for the current uploaded commit sha
+            "bundle_analysis_compare_sha": data.get("compareSha"),
         }
 
         log.info(
@@ -126,12 +149,6 @@ class BundleAnalysisView(APIView, ShelterMixin):
             ),
         )
 
-        dispatch_upload_task(
-            task_arguments,
-            repo,
-            get_redis_connection(),
-            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
-        )
         sentry_metrics.incr(
             "upload",
             tags=generate_upload_sentry_metrics_tags(
@@ -140,6 +157,39 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 request=self.request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
+
+        dispatch_upload_task(
+            task_arguments,
+            repo,
+            get_redis_connection(),
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
+
+        if settings.TIMESERIES_ENABLED:
+            supported_bundle_analysis_measurement_types = [
+                MeasurementName.BUNDLE_ANALYSIS_ASSET_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_FONT_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_IMAGE_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_JAVASCRIPT_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_REPORT_SIZE,
+                MeasurementName.BUNDLE_ANALYSIS_STYLESHEET_SIZE,
+            ]
+            for measurement_type in supported_bundle_analysis_measurement_types:
+                _, created = Dataset.objects.get_or_create(
+                    name=measurement_type.value,
+                    repository_id=repo.pk,
+                )
+                if created:
+                    log.info(
+                        "Created new timescale dataset for bundle analysis",
+                        extra=dict(
+                            commit=commit.commitid,
+                            repoid=repo.repoid,
+                            measurement_type=measurement_type,
+                        ),
+                    )
+
         return Response({"url": url}, status=201)

@@ -51,13 +51,12 @@ class MockedComparisonAdapter:
         return False, False
 
 
-@patch("services.comparison.Comparison.has_unmerged_base_commits", lambda self: True)
 @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
 @patch("services.comparison.Comparison.base_report", new_callable=PropertyMock)
 @patch("services.repo_providers.RepoProviderService.get_adapter")
 class TestCompareViewSetRetrieve(APITestCase):
     """
-    Tests for retrieving a comparison. Does not test data that will be depracated,
+    Tests for retrieving a comparison. Does not test data that will be deprecated,
     eg base and head report fields. Tests for commits etc will be added as the
     compare-api refactor progresses.
     """
@@ -223,7 +222,6 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
-        assert response.data["has_unmerged_base_commits"] is True
 
     def test_returns_404_if_base_or_head_references_not_found(
         self, adapter_mock, base_report_mock, head_report_mock
@@ -330,12 +328,12 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert (
-            response.data["files"][0]["lines"] == None
+            response.data["files"][0]["lines"] is None
         )  # None means diff was truncated
 
         comparison.MAX_DIFF_SIZE = previous_max
 
-    def test_file_returns_comparefile_with_diff_and_src_data(
+    def test_file_returns_compare_file_with_diff_and_src_data(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = self.base_report
@@ -397,7 +395,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         response = self._get_comparison()
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["totals"]["base"] == None
+        assert response.data["totals"]["base"] is None
 
     def test_no_raw_reports_returns_404(
         self, adapter_mock, base_report_mock, head_report_mock

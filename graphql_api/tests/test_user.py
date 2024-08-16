@@ -85,4 +85,4 @@ class UserTestCase(GraphQLTestHelper, TransactionTestCase):
     def test_query_null_user_customer_intent_resolver(self):
         null_user = OwnerFactory(user=None, service_id=4)
         data = resolve_customer_intent(null_user, None)
-        assert data == None
+        assert data is None

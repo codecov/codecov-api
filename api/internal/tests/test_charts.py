@@ -751,7 +751,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
         )
         self.user.permission = [repo1.repoid, repo2.repoid]
         self.user.save()
-        older_incomplete_commit = G(
+        G(
             model=Commit,
             repository=repo1,
             branch=repo1.branch,
@@ -765,9 +765,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
             state="complete",
             timestamp=timezone.now() - timedelta(days=3),
         )
-        commit2 = G(
-            model=Commit, repository=repo2, branch=repo2.branch, state="complete"
-        )
+        G(model=Commit, repository=repo2, branch=repo2.branch, state="complete")
 
         qr = ChartQueryRunner(
             self.user,

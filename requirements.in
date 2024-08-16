@@ -12,7 +12,7 @@ django-filter
 django-model-utils
 django-postgres-extra>=2.0.8
 django-prometheus
-djangorestframework
+djangorestframework==3.15.2
 drf-spectacular
 drf-spectacular-sidecar
 elastic-apm
@@ -20,7 +20,7 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/c71c6ae56ea219d40d9316576716148e836e02c2.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/1482593343604028ffee5902da080696eb8c14d4.tar.gz#egg=shared
 google-cloud-pubsub
 gunicorn>=22.0.0
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
@@ -32,6 +32,7 @@ opentracing
 pre-commit
 psycopg2
 PyJWT
+pydantic
 pytest>=7.2.0
 pytest-cov
 pytest-django
@@ -49,8 +50,9 @@ sentry-sdk[celery]
 setproctitle
 simplejson
 stripe>=9.6.0
-urllib3>=1.26.17
+urllib3>=1.26.19
 vcrpy
 whitenoise
 django-autocomplete-light
 django-better-admin-arrayfield
+certifi>=2024.07.04

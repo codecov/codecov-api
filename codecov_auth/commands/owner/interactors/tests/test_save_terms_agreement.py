@@ -42,7 +42,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         assert self.current_user.terms_agreement_at == self.updated_at
 
         self.current_user.refresh_from_db()
-        self.current_user.email == before_refresh_business_email
+        assert self.current_user.email == before_refresh_business_email
 
     @freeze_time("2022-01-01T00:00:00")
     def test_update_user_when_agreement_is_true(self):
@@ -56,7 +56,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         assert self.current_user.terms_agreement_at == self.updated_at
 
         self.current_user.refresh_from_db()
-        self.current_user.email == before_refresh_business_email
+        assert self.current_user.email == before_refresh_business_email
 
     @freeze_time("2022-01-01T00:00:00")
     def test_update_owner_and_user_when_email_is_not_empty(self):
@@ -73,7 +73,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         assert self.current_user.terms_agreement_at == self.updated_at
 
         self.current_user.refresh_from_db()
-        self.current_user.email == "something@email.com"
+        assert self.current_user.email == "something@email.com"
 
     def test_validation_error_when_terms_is_none(self):
         with pytest.raises(ValidationError):
@@ -90,7 +90,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
             )
 
     def test_user_is_not_authenticated(self):
-        with pytest.raises(Unauthenticated) as e:
+        with pytest.raises(Unauthenticated):
             self.execute(
                 current_user=AnonymousUser(),
                 input={

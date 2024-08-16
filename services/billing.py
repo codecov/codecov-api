@@ -70,6 +70,10 @@ class AbstractPaymentService(ABC):
         pass
 
     @abstractmethod
+    def update_billing_address(self, owner, name, billing_address):
+        pass
+
+    @abstractmethod
     def get_schedule(self, owner):
         pass
 
@@ -108,7 +112,7 @@ class StripeService(AbstractPaymentService):
         )
         try:
             invoice = stripe.Invoice.retrieve(invoice_id)
-        except stripe.InvalidRequestError as e:
+        except stripe.InvalidRequestError:
             log.info(f"invoice {invoice_id} not found for owner {owner.ownerid}")
             return None
         if invoice["customer"] != owner.stripe_customer_id:
@@ -174,6 +178,7 @@ class StripeService(AbstractPaymentService):
                 "latest_invoice",
                 "customer",
                 "customer.invoice_settings.default_payment_method",
+                "customer.tax_ids",
             ],
         )
 
@@ -396,21 +401,43 @@ class StripeService(AbstractPaymentService):
         return session["id"]
 
     @_log_stripe_error
-    def update_payment_method(self, owner, payment_method):
-        log.info(f"Stripe update payment method for owner {owner.ownerid}")
-        if owner.stripe_subscription_id is None:
-            log.info(
-                f"stripe_subscription_id is None, no updating card for owner {owner.ownerid}"
+    def update_payment_method(self, owner: Owner, payment_method):
+        log.info(
+            "Stripe update payment method for owner",
+            extra=dict(
+                owner_id=owner.ownerid,
+                user_id=self.requesting_user.ownerid,
+                subscription_id=owner.stripe_subscription_id,
+                customer_id=owner.stripe_customer_id,
+            ),
+        )
+        if owner.stripe_subscription_id is None or owner.stripe_customer_id is None:
+            log.warn(
+                "Missing subscription or customer id, returning early",
+                extra=dict(
+                    owner_id=owner.ownerid,
+                    subscription_id=owner.stripe_subscription_id,
+                    customer_id=owner.stripe_customer_id,
+                ),
             )
             return None
-        # attach the payment method + set ass default on the invoice and subscription
+        # attach the payment method + set as default on the invoice and subscription
         stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
         stripe.Customer.modify(
             owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method},
         )
+        stripe.Subscription.modify(
+            owner.stripe_subscription_id, default_payment_method=payment_method
+        )
         log.info(
-            f"Stripe success update payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            "Successfully updated payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+            extra=dict(
+                owner_id=owner.ownerid,
+                user_id=self.requesting_user.ownerid,
+                subscription_id=owner.stripe_subscription_id,
+                customer_id=owner.stripe_customer_id,
+            ),
         )
 
     @_log_stripe_error
@@ -428,6 +455,38 @@ class StripeService(AbstractPaymentService):
         log.info(
             f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
+
+    @_log_stripe_error
+    def update_billing_address(self, owner: Owner, name, billing_address):
+        log.info(f"Stripe update billing address for owner {owner.ownerid}")
+        if owner.stripe_customer_id is None:
+            log.info(
+                f"stripe_customer_id is None, cannot update default billing address for owner {owner.ownerid}"
+            )
+            return None
+
+        try:
+            default_payment_method = stripe.Customer.retrieve(
+                owner.stripe_customer_id
+            ).invoice_settings.default_payment_method
+
+            stripe.PaymentMethod.modify(
+                default_payment_method,
+                billing_details={"name": name, "address": billing_address},
+            )
+
+            stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
+            log.info(
+                f"Stripe successfully updated billing address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+            )
+        except Exception:
+            log.error(
+                "Unable to update billing address for customer",
+                extra=dict(
+                    customer_id=owner.stripe_customer_id,
+                    subscription_id=owner.stripe_subscription_id,
+                ),
+            )
 
     @_log_stripe_error
     def apply_cancellation_discount(self, owner: Owner):
@@ -492,6 +551,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def update_email_address(self, owner, email_address):
+        pass
+
+    def update_billing_address(self, owner, name, billing_address):
         pass
 
     def get_schedule(self, owner):
@@ -569,6 +631,14 @@ class BillingService:
         Otherwise returns None.
         """
         return self.payment_service.update_email_address(owner, email_address)
+
+    def update_billing_address(self, owner: Owner, name: str, billing_address):
+        """
+        Takes an owner and a billing address. Try to update the owner's billing address
+        to the address passed in. Address should be validated via stripe component prior
+        to hitting this service method. Return None if invalid.
+        """
+        return self.payment_service.update_billing_address(owner, name, billing_address)
 
     def apply_cancellation_discount(self, owner: Owner):
         return self.payment_service.apply_cancellation_discount(owner)

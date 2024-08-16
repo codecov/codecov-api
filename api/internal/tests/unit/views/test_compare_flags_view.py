@@ -92,7 +92,7 @@ class TestCompareFlagsView(InternalAPITest):
                     "complexity": 0,
                     "complexity_total": 0,
                     "complexity_ratio": 0,
-                    "coverage": 79.17,
+                    "coverage": 79.16,
                     "diff": 0,
                     "files": 3,
                     "hits": 19,
@@ -143,7 +143,7 @@ class TestCompareFlagsView(InternalAPITest):
                     "complexity": 0,
                     "complexity_total": 0,
                     "complexity_ratio": 0,
-                    "coverage": 79.17,
+                    "coverage": 79.16,
                     "diff": 0,
                     "files": 3,
                     "hits": 19,
@@ -283,7 +283,7 @@ class TestCompareFlagsView(InternalAPITest):
                     "complexity": 0,
                     "complexity_total": 0,
                     "complexity_ratio": 0,
-                    "coverage": 79.17,
+                    "coverage": 79.16,
                     "diff": 0,
                     "files": 3,
                     "hits": 19,
@@ -380,7 +380,7 @@ class TestCompareFlagsView(InternalAPITest):
         diff_totals_mock.return_value = ReportTotals()
 
         # should not crash
-        response = self._get_compare_flags(
+        self._get_compare_flags(
             kwargs={
                 "service": self.repo.author.service,
                 "owner_username": self.repo.author.username,

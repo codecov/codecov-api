@@ -57,15 +57,15 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         other_upload = UploadFactory(
             report=commit_report, state=UploadState.ERROR.value
         )
-        other_upload_error_1 = UploadErrorFactory(report_session=other_upload)
-        other_upload_error_2 = UploadErrorFactory(report_session=other_upload)
+        UploadErrorFactory(report_session=other_upload)
+        UploadErrorFactory(report_session=other_upload)
 
         another_upload = UploadFactory(
             report=commit_report, state=UploadState.ERROR.value
         )
-        another_upload_error_1 = UploadErrorFactory(report_session=another_upload)
-        another_upload_error_2 = UploadErrorFactory(report_session=another_upload)
-        another_upload_error_3 = UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
 
         upload = UploadFactory(report=commit_report)
 

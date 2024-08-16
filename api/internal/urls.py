@@ -10,7 +10,6 @@ from api.internal.enterprise_urls import urlpatterns as enterprise_urlpatterns
 from api.internal.feature.views import FeaturesView
 from api.internal.owner.views import (
     AccountDetailsViewSet,
-    InvoiceViewSet,
     OwnerViewSet,
     UserViewSet,
 )
@@ -29,7 +28,6 @@ owners_router.register(r"owners", OwnerViewSet, basename="owners")
 
 owner_artifacts_router = OptionalTrailingSlashRouter()
 owner_artifacts_router.register(r"users", UserViewSet, basename="users")
-owner_artifacts_router.register(r"invoices", InvoiceViewSet, basename="invoices")
 
 account_details_router = RetrieveUpdateDestroyRouter()
 account_details_router.register(

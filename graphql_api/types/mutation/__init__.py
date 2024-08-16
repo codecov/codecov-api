@@ -7,6 +7,7 @@ from .create_user_token import gql_create_user_token
 from .delete_component_measurements import gql_delete_component_measurements
 from .delete_flag import gql_delete_flag
 from .delete_session import gql_delete_session
+from .encode_secret_string import gql_encode_secret_string
 from .erase_repository import gql_erase_repository
 from .mutation import mutation_resolvers
 from .onboard_user import gql_onboard_user
@@ -14,10 +15,12 @@ from .regenerate_org_upload_token import gql_regenerate_org_upload_token
 from .regenerate_repository_token import gql_regenerate_repository_token
 from .regenerate_repository_upload_token import gql_regenerate_repository_upload_token
 from .revoke_user_token import gql_revoke_user_token
+from .save_okta_config import gql_save_okta_config
 from .save_sentry_state import gql_save_sentry_state
 from .save_terms_agreement import gql_save_terms_agreement
 from .set_yaml_on_owner import gql_set_yaml_on_owner
 from .start_trial import gql_start_trial
+from .store_event_metrics import gql_store_event_metrics
 from .sync_with_git_provider import gql_sync_with_git_provider
 from .update_default_organization import gql_update_default_organization
 from .update_profile import gql_update_profile
@@ -47,3 +50,6 @@ mutation = mutation + gql_erase_repository
 mutation = mutation + gql_update_repository
 mutation = mutation + gql_update_self_hosted_settings
 mutation = mutation + gql_regenerate_repository_upload_token
+mutation = mutation + gql_encode_secret_string
+mutation = mutation + gql_store_event_metrics
+mutation = mutation + gql_save_okta_config

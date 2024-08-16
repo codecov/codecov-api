@@ -1,0 +1,11 @@
+union StoreEventMetricsError = UnauthenticatedError | ValidationError
+
+type StoreEventMetricsPayload {
+  error: StoreEventMetricsError
+}
+
+input StoreEventMetricsInput {
+  orgUsername: String!
+  eventName: String!
+  jsonPayload: String # The input expects a serialized json string
+}

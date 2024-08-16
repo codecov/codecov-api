@@ -1,21 +1,25 @@
+import json
 import logging
 import re
 from datetime import datetime
-from typing import List
+from typing import Any, List, Tuple
 from uuid import UUID
 
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
+from django.http.request import HttpRequest
 from django.utils import timezone
 from jwt import PyJWTError
 from rest_framework import authentication, exceptions
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import exception_handler
 from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import metrics
 from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
+from codecov_auth.authentication.helpers import get_upload_info_from_request_path
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
 from codecov_auth.models import (
     OrganizationLevelToken,
@@ -23,7 +27,7 @@ from codecov_auth.models import (
     Service,
     TokenTypeChoices,
 )
-from core.models import Repository
+from core.models import Commit, Repository
 from services.repo_providers import RepoProviderService
 from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import get_repository_from_string
@@ -39,10 +43,17 @@ def repo_auth_custom_exception_handler(exc, context):
     give the user something better than "Invalid Token" or "Authentication credentials were not provided."
     """
     response = exception_handler(exc, context)
-    if response is not None:
+    # we were having issues with this block, I made it super cautions.
+    # Re-evaluate later whether this is overly cautious.
+    if (
+        response is not None
+        and hasattr(response, "status_code")
+        and response.status_code == 401
+        and hasattr(response, "data")
+    ):
         try:
-            exc_code = response.data["detail"].code
-        except TypeError:
+            exc_code = response.data.get("detail").code
+        except (TypeError, AttributeError):
             return response
         if exc_code == NotAuthenticated.default_code:
             response.data["detail"] = (
@@ -178,40 +189,37 @@ class GlobalTokenAuthentication(authentication.TokenAuthentication):
     def authenticate(self, request):
         global_tokens = get_global_tokens()
         token = self.get_token(request)
-        repoid = self.get_repoid(request)
-        owner = self.get_owner(request)
-        using_global_token = True if token in global_tokens else False
-        service = global_tokens[token] if using_global_token else None
-
-        if using_global_token:
-            try:
-                repository = Repository.objects.get(
-                    author__service=service,
-                    repoid=repoid,
-                    author__username=owner.username,
-                )
-            except ObjectDoesNotExist:
-                raise exceptions.AuthenticationFailed(
-                    "Could not find a repository, try using repo upload token"
-                )
-        else:
+        using_global_token = token in global_tokens
+        if not using_global_token:
             return None  # continue to next auth class
+
+        service = global_tokens[token]
+        upload_info = get_upload_info_from_request_path(request)
+        if upload_info is None:
+            return None  # continue to next auth class
+        # It's important NOT to use the service returned in upload_info
+        # To avoid someone uploading with GlobalUploadToken to a different service
+        # Than what it configured
+        repository = get_repository_from_string(
+            Service(service), upload_info.encoded_slug
+        )
+        if repository is None:
+            raise exceptions.AuthenticationFailed(
+                "Could not find a repository, try using repo upload token"
+            )
         return (
             RepositoryAsUser(repository),
             LegacyTokenRepositoryAuth(repository, {"token": token}),
         )
 
-    def get_token(self, request):
-        # TODO
-        pass
-
-    def get_repoid(self, request):
-        # TODO
-        pass
-
-    def get_owner(self, request):
-        # TODO
-        pass
+    def get_token(self, request: HttpRequest) -> str | None:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return None
+        if " " in auth_header:
+            _, token = auth_header.split(" ", 1)
+            return token
+        return auth_header
 
 
 class OrgLevelTokenAuthentication(authentication.TokenAuthentication):
@@ -238,7 +246,7 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
 
         try:
             repository = get_repo_with_github_actions_oidc_token(token)
-        except (ObjectDoesNotExist, PyJWTError) as e:
+        except (ObjectDoesNotExist, PyJWTError):
             return None  # continue to next auth class
 
         log.info(
@@ -253,86 +261,98 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
 
 
 class TokenlessAuthentication(authentication.TokenAuthentication):
-    """This is named ironically, but provides authentication for tokenless uploads.
-    Tokenless only works in FORKs of PUBLIC repos.
-    It allows PRs from external contributors (forks) to upload coverage
-    for the upstream repo when running in a PR.
-
-    While it uses the same "shell" (authentication.TokenAuthentication)
-    it doesn't really rely on tokens to authenticate.
-    """
-
+    # TODO: replace this with the message from repo_auth_custom_exception_handler
     auth_failed_message = "Not valid tokenless upload"
-    rate_limit_failed_message = "Tokenless has reached GitHub rate limit. Please upload using a token: https://docs.codecov.com/docs/adding-the-codecov-token."
 
-    def _get_repo_info_from_request_path(self, request) -> Repository:
-        path_info = request.get_full_path_info()
-        # The repo part comes from https://stackoverflow.com/a/22312124
-        upload_views_prefix_regex = r"\/upload\/(\w+)\/([\w\.@:_/\-~]+)\/commits"
-        match = re.search(upload_views_prefix_regex, path_info)
+    def _get_info_from_request_path(
+        self, request: HttpRequest
+    ) -> tuple[Repository, str | None]:
+        upload_info = get_upload_info_from_request_path(request)
 
-        if match is None:
+        if upload_info is None:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        service, encoded_slug, commitid = upload_info
         # Validate provider
-        service = match.group(1)
         try:
             service_enum = Service(service)
-            # Currently only Github is supported
-            # TODO [codecov/engineering-team#914]: Extend tokenless support to other providers
-            if service_enum != Service.GITHUB:
-                raise exceptions.AuthenticationFailed(self.auth_failed_message)
         except ValueError:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
         # Validate that next group exists and decode slug
-        encoded_slug = match.group(2)
         repo = get_repository_from_string(service_enum, encoded_slug)
         if repo is None:
             # Purposefully using the generic message so that we don't tell that
             # we don't have a certain repo
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
-        return repo
 
-    @async_to_sync
-    async def get_pull_request_info(self, repository_service, fork_pr: str):
-        try:
-            return await repository_service.get_pull_request(fork_pr)
-        except TorngitObjectNotFoundError:
-            raise exceptions.AuthenticationFailed(self.auth_failed_message)
-        except TorngitRateLimitError as e:
-            metrics.incr("auth.get_pr_info.rate_limit_hit")
-            sentry_metrics.incr("auth.get_pr_info.rate_limit_hit")
-            if e.reset:
-                now_timestamp = datetime.now().timestamp()
-                retry_after = int(e.reset) - int(now_timestamp)
-            elif e.retry_after:
-                retry_after = int(e.retry_after)
-            raise exceptions.Throttled(
-                wait=retry_after, detail=self.rate_limit_failed_message
-            )
+        return repo, commitid
+
+    def get_branch(self, request, repoid=None, commitid=None):
+        if repoid and commitid:
+            commit = Commit.objects.filter(
+                repository_id=repoid, commitid=commitid
+            ).first()
+            if not commit:
+                raise exceptions.AuthenticationFailed(self.auth_failed_message)
+            return commit.branch
+        else:
+            try:
+                body = json.loads(str(request.body, "utf8"))
+            except json.JSONDecodeError:
+                return None
+            else:
+                return body.get("branch")
 
     def authenticate(self, request):
-        fork_slug = request.headers.get("X-Tokenless", None)
-        fork_pr = request.headers.get("X-Tokenless-PR", None)
-        if fork_slug is None or fork_pr is None:
-            return None  # continue to next auth class
-        # Get the repo
-        repository = self._get_repo_info_from_request_path(request)
-        # Tokneless is only for public repos
-        if repository.private:
-            raise exceptions.AuthenticationFailed(self.auth_failed_message)
-        # Get the provider service to check the tokenless claim
-        repository_service = RepoProviderService().get_adapter(
-            repository.author, repository
-        )
-        pull_request = self.get_pull_request_info(repository_service, fork_pr)
-        if (
-            pull_request["base"]["slug"]
-            != f"{repository.author.username}/{repository.name}"
-            or pull_request["head"]["slug"] != fork_slug
-        ):
+        repository, commitid = self._get_info_from_request_path(request)
+
+        if repository is None or repository.private:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
 
-        return (
-            RepositoryAsUser(repository),
-            TokenlessAuth(repository),
-        )
+        branch = self.get_branch(request, repository.repoid, commitid)
+
+        if (branch and ":" in branch) or request.method == "GET":
+            return (
+                RepositoryAsUser(repository),
+                TokenlessAuth(repository),
+            )
+        else:
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+
+class BundleAnalysisTokenlessAuthentication(TokenlessAuthentication):
+    def _get_info_from_request_path(
+        self, request: HttpRequest
+    ) -> tuple[Repository, str | None]:
+        try:
+            body = json.loads(str(request.body, "utf8"))
+
+            # Validate provider
+            service_enum = Service(body.get("git_service"))
+
+            # Validate that next group exists and decode slug
+            repo = get_repository_from_string(service_enum, body.get("slug"))
+            if repo is None:
+                # Purposefully using the generic message so that we don't tell that
+                # we don't have a certain repo
+                raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+            return repo, body.get("commit")
+        except json.JSONDecodeError:
+            # Validate request body format
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        except ValueError:
+            # Validate provider
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+    def get_branch(self, request, repoid=None, commitid=None):
+        body = json.loads(str(request.body, "utf8"))
+
+        # If commit is not created yet (ie first upload for this commit), we just validate branch format.
+        # However if a commit exists already (ie not the first upload for this commit), we must additionally
+        # validate the saved commit branch matches what is requested in this upload call.
+        commit = Commit.objects.filter(repository_id=repoid, commitid=commitid).first()
+        if commit and commit.branch != body.get("branch"):
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+        return body.get("branch")

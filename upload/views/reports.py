@@ -38,6 +38,16 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_report",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         repository = self.get_repo()
         commit = self.get_commit(repository)
         log.info(
@@ -62,6 +72,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
                 request=self.request,
                 repository=repository,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
         return instance
@@ -82,12 +93,23 @@ class ReportResultsView(
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
     ]
 
     def get_exception_handler(self):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_report_results",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         repository = self.get_repo()
         commit = self.get_commit(repository)
         report = self.get_report(commit)
@@ -112,6 +134,7 @@ class ReportResultsView(
                 request=self.request,
                 repository=repository,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
         return instance

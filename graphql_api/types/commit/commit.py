@@ -1,8 +1,10 @@
+import logging
 from typing import List, Optional
 
 import sentry_sdk
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from shared.django_apps.codecov_auth.models import Owner
 from shared.reports.filtered import FilteredReportFile
 from shared.reports.resources import ReportFile
 
@@ -27,7 +29,6 @@ from graphql_api.helpers.connection import (
 )
 from graphql_api.types.comparison.comparison import (
     MissingBaseCommit,
-    MissingBaseReport,
     MissingHeadReport,
 )
 from graphql_api.types.enums import (
@@ -44,13 +45,18 @@ from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
 from services.report import ReadOnlyReport
-from services.yaml import YamlStates, get_yaml_state
+from services.yaml import (
+    YamlStates,
+    get_yaml_state,
+)
 
 commit_bindable = ObjectType("Commit")
 
 commit_bindable.set_alias("createdAt", "timestamp")
 commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
+
+log = logging.getLogger(__name__)
 
 
 @commit_bindable.field("coverageFile")
@@ -198,6 +204,8 @@ def resolve_bundle_analysis_report(
             "request"
         ].bundle_analysis_head_report_db_path = bundle_analysis_report.report.db_path
 
+    info.context["commit"] = commit
+
     return bundle_analysis_report
 
 
@@ -323,9 +331,9 @@ async def resolve_total_uploads(commit, info):
 @commit_bindable.field("components")
 @sync_to_async
 def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
-    request = info.context["request"]
     info.context["component_commit"] = commit
-    all_components = components_service.commit_components(commit, request.user)
+    current_owner = info.context["request"].current_owner
+    all_components = components_service.commit_components(commit, current_owner)
 
     if filters and filters.get("components"):
         return components_service.filter_components_by_name(

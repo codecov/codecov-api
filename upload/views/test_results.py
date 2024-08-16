@@ -13,6 +13,7 @@ from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    TokenlessAuthentication,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -42,6 +43,7 @@ class UploadSerializer(serializers.Serializer):
     job = serializers.CharField(required=False)
     flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
+    branch = serializers.CharField(required=False, allow_null=True)
     service = serializers.CharField(required=False)
     storage_path = serializers.CharField(required=False)
 
@@ -55,12 +57,23 @@ class TestResultsView(
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
     ]
 
     def get_exception_handler(self):
         return repo_auth_custom_exception_handler
 
     def post(self, request):
+        metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="test_results",
+                endpoint="test_results",
+                request=request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -97,6 +110,7 @@ class TestResultsView(
                 request=request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
 
@@ -104,7 +118,7 @@ class TestResultsView(
             commitid=data["commit"],
             repository=repo,
             defaults={
-                "branch": data.get("branch"),
+                "branch": data.get("branch") or repo.branch,
                 "pullid": data.get("pr"),
                 "merged": False if data.get("pr") is not None else None,
                 "state": "pending",
