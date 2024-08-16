@@ -7,4 +7,4 @@ from codecov_auth.models import Owner
 class CheckOwnerView(APIView):
     def get(self, request, service_id):
         exists = Owner.objects.filter(service_id=service_id).exists()
-        return Response({'exists': exists})
+        return Response({"exists": exists})

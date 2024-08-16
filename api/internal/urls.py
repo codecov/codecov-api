@@ -60,7 +60,11 @@ urlpatterns += [
     path("<str:service>/<str:owner_username>/", include(owner_artifacts_router.urls)),
     path("<str:service>/<str:owner_username>/", include(account_details_router.urls)),
     path("<str:service>/<str:owner_username>/", include(repository_router.urls)),
-    path('integrations/check_owner/<int:service_id>/', CheckOwnerView.as_view(), name="check-owner"),
+    path(
+        "integrations/check_owner/<int:service_id>/",
+        CheckOwnerView.as_view(),
+        name="check-owner",
+    ),
     path(
         "<str:service>/<str:owner_username>/<str:repo_name>/",
         include(repository_artifacts_router.urls),

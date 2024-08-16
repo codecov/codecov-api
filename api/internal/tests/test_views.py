@@ -328,6 +328,7 @@ class RepoPullList(InternalAPITest):
         assert content["results"][0] == expected_content["results"][0]
         assert content == expected_content
 
+
 @patch(get_permissions_method)
 class Integrations(InternalAPITest):
     def setUp(self):
