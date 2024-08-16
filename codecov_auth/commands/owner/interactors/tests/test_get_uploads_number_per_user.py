@@ -43,8 +43,9 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         # Trial Data
         self.trial_owner = OwnerFactory(
             trial_status=TrialStatus.EXPIRED.value,
-            trial_start_date=datetime.now(UTC) + timedelta(days=-10),
-            trial_end_date=datetime.now(UTC) + timedelta(days=-2),
+            trial_start_date=datetime.now(UTC).replace(tzinfo=None)
+            + timedelta(days=-10),
+            trial_end_date=datetime.now(UTC).replace(tzinfo=None) + timedelta(days=-2),
         )
         trial_repo = RepositoryFactory.create(author=self.trial_owner, private=True)
         trial_commit = CommitFactory.create(repository=trial_repo)
