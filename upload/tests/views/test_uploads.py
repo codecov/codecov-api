@@ -1,11 +1,12 @@
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
+from shared.utils.test_utils import mock_config_helper
 
 from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
@@ -19,7 +20,6 @@ from reports.models import (
 )
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.archive import ArchiveService, MinioEndpoints
-from services.repo_providers import RepoProviderService
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
 
@@ -715,3 +715,75 @@ def test_activate_already_activated_repo(db):
     upload_views = UploadViews()
     upload_views.activate_repo(repo)
     assert repo.active
+
+
+class TestGitlabEnterpriseOIDC(APITestCase):
+    @pytest.fixture(scope="function", autouse=True)
+    def inject_mocker(request, mocker):
+        request.mocker = mocker
+
+    @pytest.fixture(autouse=True)
+    def mock_config(self, mocker):
+        mock_config_helper(
+            mocker, configs={"github_enterprise.url": "https://example.com/"}
+        )
+
+    @patch("upload.views.uploads.AnalyticsService")
+    @patch("upload.helpers.jwt.decode")
+    @patch("upload.helpers.PyJWKClient")
+    @patch("shared.metrics.metrics.incr")
+    def test_uploads_post_github_enterprise_oidc_auth_jwks_url(
+        self,
+        mock_metrics,
+        mock_jwks_client,
+        mock_jwt_decode,
+        analytics_service_mock,
+    ):
+        self.mocker.patch(
+            "services.archive.StorageService.create_presigned_put",
+            return_value="presigned put",
+        )
+        self.mocker.patch(
+            "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+        )
+
+        repository = RepositoryFactory(
+            name="the_repo",
+            author__username="codecov",
+            author__service="github_enterprise",
+            private=False,
+        )
+        mock_jwt_decode.return_value = {
+            "repository": f"url/{repository.name}",
+            "repository_owner": repository.author.username,
+            "iss": "https://enterprise-client.actions.githubusercontent.com",
+            "audience": [settings.CODECOV_API_URL],
+        }
+        token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+
+        commit = CommitFactory(repository=repository)
+        commit_report = CommitReport.objects.create(commit=commit, code="code")
+
+        client = APIClient()
+        url = reverse(
+            "new_upload.uploads",
+            args=[
+                "github_enterprise",
+                "codecov::::the_repo",
+                commit.commitid,
+                commit_report.code,
+            ],
+        )
+        response = client.post(
+            url,
+            {
+                "state": "uploaded",
+                "flags": ["flag1", "flag2"],
+                "version": "version",
+            },
+            headers={"Authorization": f"token {token}"},
+        )
+        assert response.status_code == 201
+        mock_jwks_client.assert_called_with(
+            "https://example.com/_services/token/.well-known/jwks"
+        )

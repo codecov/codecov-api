@@ -239,6 +239,8 @@ def get_repo_with_github_actions_oidc_token(token):
     else:
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
+        # remove trailing slashes if present
+        github_enterprise_url = re.sub(r"/+$", "", github_enterprise_url)
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
     jwks_client = PyJWKClient(jwks_url)
     signing_key = jwks_client.get_signing_key_from_jwt(token)
