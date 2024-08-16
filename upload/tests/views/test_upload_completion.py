@@ -97,6 +97,7 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
             "endpoint": "upload_complete",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 

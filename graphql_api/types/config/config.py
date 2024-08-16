@@ -109,7 +109,7 @@ def resolve_self_hosted_license(_, info):
     license = self_hosted.get_current_license()
 
     if not license.is_valid:
-        None
+        return None
 
     return license
 

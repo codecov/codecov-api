@@ -42,6 +42,11 @@ from .constants import ci, global_upload_token_providers
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 
+# Valid values are `https://dev.azure.com/username/` or `https://username.visualstudio.com/`
+# May be URL-encoded, so ':' can be '%3A' and '/' can be '%2F'
+# Username is alphanumeric with '_' and '-'
+_valid_azure_server_uri = r"^https?(?:://|%3A%2F%2F)(?:dev.azure.com(?:/|%2F)[a-zA-Z0-9_-]+(?:/|%2F)|[a-zA-Z0-9_-]+.visualstudio.com(?:/|%2F))$"
+
 log = logging.getLogger(__name__)
 redis = get_redis_connection()
 
@@ -207,7 +212,10 @@ def parse_params(data):
         "url": {"type": "string"},  # custom location where report is found
         "parent": {"type": "string"},
         "project": {"type": "string"},
-        "server_uri": {"type": "string"},
+        "server_uri": {
+            "type": "string",
+            "regex": _valid_azure_server_uri,
+        },
         "root": {"type": "string"},  # deprecated
         "storage_path": {"type": "string"},
     }
@@ -787,6 +795,7 @@ def generate_upload_sentry_metrics_tags(
     endpoint: Optional[str] = None,
     repository: Optional[Repository] = None,
     position: Optional[str] = None,
+    upload_version: Optional[str] = None,
 ):
     metrics_tags = dict(
         agent=get_agent_from_headers(request.headers),
@@ -801,5 +810,7 @@ def generate_upload_sentry_metrics_tags(
         )
     if position:
         metrics_tags["position"] = position
+    if upload_version:
+        metrics_tags["upload_version"] = upload_version
 
     return metrics_tags

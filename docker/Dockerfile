@@ -8,7 +8,7 @@ FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 FROM $REQUIREMENTS_IMAGE as app
 COPY . /app
 WORKDIR /app
-RUN pip install setuptools==70.3.0
+RUN pip install setuptools==71.1.0
 RUN python manage.py collectstatic --no-input
 
 FROM app as local

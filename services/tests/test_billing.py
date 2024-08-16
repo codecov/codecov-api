@@ -893,9 +893,11 @@ class StripeServiceTests(TestCase):
             plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
         )
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
-        self.stripe._get_proration_params(owner, desired_plan) == "none"
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
-        self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"

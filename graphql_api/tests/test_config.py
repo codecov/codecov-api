@@ -272,7 +272,7 @@ class TestConfigType(GraphQLTestHelper, TestCase):
         )
         assert data == {
             "config": {
-                "selfHostedLicense": {"expirationDate": None},
+                "selfHostedLicense": None,
             },
         }
 

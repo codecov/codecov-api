@@ -4,24 +4,12 @@ ARG PYTHON_IMAGE=python:3.12-slim-bookworm
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
 FROM $PYTHON_IMAGE as build
 
-
-# Pinning a specific nightly version so that builds don't suddenly break if a
-# "this feature is now stabilized" warning is promoted to an error or something.
-# We would like to keep up with nightly if we can.
-ARG RUST_VERSION=nightly-2024-02-22
-ENV RUST_VERSION=${RUST_VERSION}
-
 RUN apt-get update
 RUN apt-get install -y \
     build-essential \
     libffi-dev \
     libpq-dev \
     curl
-
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-    | bash -s -- -y --default-toolchain $RUST_VERSION
-ENV PATH="/root/.cargo/bin:$PATH"
 
 COPY requirements.txt /
 WORKDIR /pip-packages/
