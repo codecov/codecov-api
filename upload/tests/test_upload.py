@@ -334,7 +334,7 @@ class UploadHandlerHelpersTest(TestCase):
         repo = G(Repository, author=org)
         expected_response = {
             "id": 732059764,
-            "finishTime": f"{datetime.now(UTC).replace(tzinfo=None)}",
+            "finishTime": f"{datetime.now()}",
             "status": "inProgress",
             "sourceVersion": "3be5c52bd748c508a7e96993c02cf3518c816e84",
             "buildNumber": "732059764",
@@ -342,7 +342,7 @@ class UploadHandlerHelpersTest(TestCase):
             "number": "498.1",
             "state": "passed",
             "started_at": "2020-10-01T20:02:55Z",
-            "finished_at": f"{datetime.now(UTC).replace(tzinfo=None)}".split(".")[0],
+            "finished_at": f"{datetime.now()}".split(".")[0],
             "project": {"visibility": "public", "repositoryType": "github"},
             "triggerInfo": {"pr.sourceSha": "3be5c52bd748c508a7e96993c02cf3518c816e84"},
             "build": {
@@ -1992,7 +1992,7 @@ class UploadHandlerTravisTokenlessTest(TestCase):
             "number": "498.1",
             "state": "passed",
             "started_at": "2020-10-01T20:02:55Z",
-            "finished_at": f"{datetime.now(UTC)}".split(".")[0],
+            "finished_at": f"{datetime.now()}".split(".")[0],
             "build": {
                 "@type": "build",
                 "@href": "/build/732059763",
@@ -2279,7 +2279,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
     @patch.object(requests, "get")
     def test_azure_wrong_build_number(self, mock_get):
         expected_response = {
-            "finishTime": f"{datetime.now(UTC).replace(tzinfo=None)}",
+            "finishTime": f"{datetime.now()}",
             "buildNumber": "BADBUILDNUM",
             "status": "completed",
             "sourceVersion": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2308,7 +2308,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
     @patch.object(requests, "get")
     def test_azure_expired_build(self, mock_get):
         expected_response = {
-            "finishTime": f"{datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=4)}",
+            "finishTime": f"{datetime.now() - timedelta(minutes=4)}",
             "buildNumber": "20190725.8",
             "status": "completed",
             "sourceVersion": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2338,7 +2338,7 @@ class UploadHandlerAzureTokenlessTest(TestCase):
     @patch.object(requests, "get")
     def test_azure_invalid_status(self, mock_get):
         expected_response = {
-            "finishTime": f"{datetime.now(UTC).replace(tzinfo=None)}",
+            "finishTime": f"{datetime.now()}",
             "buildNumber": "20190725.8",
             "status": "BADSTATUS",
             "sourceVersion": "c739768fcac68144a3a6d82305b9c4106934d31a",
@@ -2727,7 +2727,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "slug": "owner/repo",
             "public": True,
-            "finish_time": f"{datetime.now(UTC).replace(tzinfo=None)}".split(".")[0],
+            "finish_time": f"{datetime.now()}".split(".")[0],
         }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.return_value = expected_response
@@ -2916,9 +2916,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "slug": "owner/repo",
             "public": True,
-            "finish_time": f"{datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=10)}".split(
-                "."
-            )[0],
+            "finish_time": f"{datetime.now() - timedelta(minutes=10)}".split(".")[0],
         }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.return_value = expected_response
@@ -2947,7 +2945,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
             "commit_sha": "c739768fcac68144a3a6d82305b9c4106934d31a",
             "slug": "owner/repo",
             "public": True,
-            "finish_time": f"{datetime.now(UTC).replace(tzinfo=None)}".split(".")[0],
+            "finish_time": f"{datetime.now()}".split(".")[0],
         }
         mock_get.return_value.status_code.return_value = 200
         mock_get.return_value.return_value = expected_response

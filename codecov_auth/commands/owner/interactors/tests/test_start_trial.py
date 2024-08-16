@@ -44,7 +44,7 @@ class StartTrialInteractorTest(TransactionTestCase):
 
     @freeze_time("2022-01-01T00:00:00")
     def test_start_trial_raises_exception_when_owners_trial_status_is_ongoing(self):
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         trial_start_date = now
         trial_end_date = now + timedelta(days=3)
         current_user = OwnerFactory(

@@ -14,7 +14,7 @@ from plan.constants import PlanName, TrialStatus
 class OwnerCommandTestCase(TestCase):
     def setUp(self):
         self.command_instance = BaseCommand()
-        now = datetime.now(UTC)
+        now = datetime.now()
         later = now + timedelta(days=3)
         yesterday = now + timedelta(days=-1)
         much_before = now + timedelta(days=-20)

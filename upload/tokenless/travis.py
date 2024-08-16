@@ -121,7 +121,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
             finishTimestamp = job["finished_at"].replace("T", " ").replace("Z", "")
             buildFinishDateObj = datetime.strptime(finishTimestamp, "%Y-%m-%d %H:%M:%S")
             finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)
-            now = datetime.now(UTC).replace(tzinfo=None)
+            now = datetime.now()
             if not now <= finishTimeWithBuffer:
                 log.warning(
                     "Cancelling upload: 4 mins since build",

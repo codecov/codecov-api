@@ -151,7 +151,7 @@ class PlanService:
         end_date: Optional[datetime] = None,
         is_extension: bool = False,
     ) -> None:
-        start_date = datetime.now(UTC)
+        start_date = datetime.now()
 
         # When they are not extending a trial, have to setup all the default values
         if not is_extension:
@@ -211,7 +211,7 @@ class PlanService:
     def cancel_trial(self) -> None:
         if not self.is_org_trialing:
             raise ValidationError("Cannot cancel a trial that is not ongoing")
-        now = datetime.now(UTC)
+        now = datetime.now()
         self.current_org.trial_status = TrialStatus.EXPIRED.value
         self.current_org.trial_end_date = now
         self.set_default_plan_data()
@@ -234,7 +234,7 @@ class PlanService:
             self.current_org.plan_user_count = (
                 self.current_org.pretrial_users_count or 1
             )
-            self.current_org.trial_end_date = datetime.now(UTC)
+            self.current_org.trial_end_date = datetime.now()
 
             self.current_org.save()
 

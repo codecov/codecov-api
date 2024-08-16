@@ -116,7 +116,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 )
 
             finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=10)
-            now = datetime.now(UTC).replace(tzinfo=None)
+            now = datetime.now()
             if not now <= finish_time_with_buffer:
                 log.warning(
                     "Actions workflow run is stale",
