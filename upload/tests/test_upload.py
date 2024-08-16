@@ -1,5 +1,5 @@
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from json import dumps, loads
 from unittest.mock import ANY, PropertyMock, patch
 from urllib.parse import urlencode

@@ -1,5 +1,5 @@
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from asgiref.sync import async_to_sync
 from django.conf import settings

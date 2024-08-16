@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from django.test import TransactionTestCase
 from shared.django_apps.reports.models import ReportType

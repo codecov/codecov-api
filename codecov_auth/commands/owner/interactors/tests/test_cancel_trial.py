@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import pytest
 from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
-from django.utils import timezone
 from freezegun import freeze_time
 
 from codecov.commands.exceptions import Unauthorized, ValidationError
