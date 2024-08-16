@@ -73,3 +73,18 @@ SESSION_COOKIE_SAMESITE = "None"
 CSRF_TRUSTED_ORIGINS = [
     get_config("setup", "trusted_origin", default="https://*.codecov.dev")
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "codecov_auth.authentication.UserTokenAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+        "codecov_auth.authentication.SessionAuthentication",
+    ),
+    "DEFAULT_PAGINATION_CLASS": "api.shared.pagination.StandardPageNumberPagination",
+    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
