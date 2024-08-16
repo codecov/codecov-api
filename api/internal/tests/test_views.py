@@ -332,10 +332,10 @@ class RepoPullList(InternalAPITest):
 class Integrations(InternalAPITest):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service_id=123)
-    
+
     def test_check_owner(self, mock_provider):
         mock_provider.return_value = True, True
-        response = self.client.get("/internal/integrations/check_owner/123")
+        response = self.client.get("/internal/integrations/check_owner/123/")
         self.assertEqual(response.status_code, 200)
         content = self.json_content(response)
         self.assertEqual(content["exists"], True)
