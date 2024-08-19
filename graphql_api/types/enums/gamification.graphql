@@ -1,0 +1,21 @@
+
+"""
+Aggregated metrics for different scores being tracked per user
+"""
+enum GamificationMetric {
+  "Average patch coverage percentage (a PR with all added lines covered by tests has 100% value)"
+  PATCH_COVERAGE_AVERAGE
+  "Number of test covered lines being added to the codebase in this change"
+  CHANGE_COVERAGE_COUNT
+  "Number of PRs created and merged"
+  PR_COUNT
+}
+
+"""
+Each gamification metric has different tiers of varying prestige
+"""
+enum BadgeTier {
+	GOLD
+	SILVER
+	BRONZE
+}

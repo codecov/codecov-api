@@ -1,9 +1,11 @@
 from .enums import (
+    BadgeTier,
     BundleLoadTypes,
     CommitErrorCode,
     CommitErrorGeneralType,
     CommitStatus,
     CoverageLine,
+    GamificationMetric,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,

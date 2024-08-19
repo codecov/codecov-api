@@ -29,6 +29,7 @@ from .enums import enum_types
 from .file import commit_file, file_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
+from .gamification import gamification, leaderboard_bindable, leaderboard_data_bindable
 from .impacted_file import (
     impacted_file,
     impacted_file_bindable,
@@ -115,6 +116,7 @@ types = [
     account,
     okta_config,
     test_results,
+    gamification,
 ]
 
 bindables = [
@@ -172,4 +174,6 @@ bindables = [
     account_bindable,
     okta_config_bindable,
     test_result_bindable,
+    leaderboard_bindable,
+    leaderboard_data_bindable,
 ]

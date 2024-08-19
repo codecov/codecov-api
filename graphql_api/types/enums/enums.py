@@ -130,3 +130,15 @@ class BundleLoadTypes(enum.Enum):
     ENTRY = "ENTRY"
     INITIAL = "INITIAL"
     LAZY = "LAZY"
+
+
+class GamificationMetric(enum.Enum):
+    PATCH_COVERAGE_AVERAGE = "PATCH_COVERAGE_AVERAGE"
+    CHANGE_COVERAGE_COUNT = "CHANGE_COVERAGE_COUNT"
+    PR_COUNT = "PR_COUNT"
+
+
+class BadgeTier(enum.Enum):
+    GOLD = "GOLD"
+    SILVER = "SILVER"
+    BRONZE = "BRONZE"
