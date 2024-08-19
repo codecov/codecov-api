@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
@@ -18,7 +16,7 @@ class UpdateSelfHostedSettingsInteractorTest(TransactionTestCase):
         self,
         current_user,
         input={
-            "shouldAutoActivate": None,
+            "should_auto_activate": None,
         },
     ):
         return UpdateSelfHostedSettingsInteractor(None, "github", current_user).execute(
@@ -28,14 +26,14 @@ class UpdateSelfHostedSettingsInteractorTest(TransactionTestCase):
     @override_settings(IS_ENTERPRISE=True)
     def test_update_self_hosted_settings_when_auto_activate_is_true(self):
         owner = OwnerFactory(plan_auto_activate=False)
-        self.execute(current_user=owner, input={"shouldAutoActivate": True})
+        self.execute(current_user=owner, input={"should_auto_activate": True})
         owner.refresh_from_db()
         assert owner.plan_auto_activate == True
 
     @override_settings(IS_ENTERPRISE=True)
     def test_update_self_hosted_settings_when_auto_activate_is_false(self):
         owner = OwnerFactory(plan_auto_activate=True)
-        self.execute(current_user=owner, input={"shouldAutoActivate": False})
+        self.execute(current_user=owner, input={"should_auto_activate": False})
         owner.refresh_from_db()
         assert owner.plan_auto_activate == False
 
@@ -46,7 +44,7 @@ class UpdateSelfHostedSettingsInteractorTest(TransactionTestCase):
             self.execute(
                 current_user=owner,
                 input={
-                    "shouldAutoActivate": False,
+                    "should_auto_activate": False,
                 },
             )
 
@@ -56,6 +54,6 @@ class UpdateSelfHostedSettingsInteractorTest(TransactionTestCase):
             self.execute(
                 current_user=AnonymousUser(),
                 input={
-                    "shouldAutoActivate": False,
+                    "should_auto_activate": False,
                 },
             )
