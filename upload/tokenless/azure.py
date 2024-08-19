@@ -82,7 +82,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
                 finishTimestamp, "%Y-%m-%d %H:%M:%S.%f"
             )
             finishTimeWithBuffer = buildFinishDateObj + timedelta(minutes=4)
-            now = datetime.utcnow()
+            now = datetime.now()
             if not now <= finishTimeWithBuffer:
                 raise NotFound(
                     "Azure build has already finished. Please upload with the Codecov repository upload token to resolve issue."

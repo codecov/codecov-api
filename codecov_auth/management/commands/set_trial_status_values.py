@@ -35,7 +35,7 @@ class Command(BaseCommand):
         if trial_status_type == "all" or trial_status_type == "ongoing":
             Owner.objects.filter(
                 plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
-                trial_end_date__gt=datetime.utcnow(),
+                trial_end_date__gt=datetime.now(),
             ).update(trial_status=TrialStatus.ONGOING.value)
 
         # EXPIRED
@@ -46,7 +46,7 @@ class Command(BaseCommand):
                     plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
                     stripe_customer_id__isnull=False,
                     stripe_subscription_id__isnull=False,
-                    trial_end_date__lte=datetime.utcnow(),
+                    trial_end_date__lte=datetime.now(),
                 )
                 # Currently paying sentry customer without trial_end_date
                 | Q(
