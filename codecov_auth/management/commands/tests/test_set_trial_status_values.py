@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
 from django.test import TestCase
