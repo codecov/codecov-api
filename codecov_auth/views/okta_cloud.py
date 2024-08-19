@@ -29,7 +29,7 @@ def get_app_redirect_url(org_username: str, service: str) -> str:
     return f"{settings.CODECOV_DASHBOARD_URL}/{service}/{org_username}"
 
 
-def get_oauth_redirect_url(org_username: str, service: str) -> str:
+def get_oauth_redirect_url() -> str:
     """The Okta callback URL for us to finish the authentication."""
     return f"{settings.CODECOV_API_URL}/login/okta/callback"
 
@@ -72,8 +72,10 @@ class OktaCloudLoginView(OktaLoginMixin, View):
             )
             return HttpResponse(status=404)
 
-        app_redirect_url = get_app_redirect_url(org_username, service)
-        oauth_redirect_url = get_oauth_redirect_url(org_username, service)
+        app_redirect_url = get_app_redirect_url(
+            organization.username, organization.service
+        )
+        oauth_redirect_url = get_oauth_redirect_url()
 
         # User is already logged in, redirect them to the org page
         if organization.account.id in request.session.get(
@@ -130,9 +132,7 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
             return HttpResponse(status=404)
 
         app_redirect_url = get_app_redirect_url(org_owner.username, org_owner.service)
-        oauth_redirect_url = get_oauth_redirect_url(
-            org_owner.username, org_owner.service
-        )
+        oauth_redirect_url = get_oauth_redirect_url()
 
         # Redirect URL, need to validate and mark user as logged in
         if request.GET.get("code"):

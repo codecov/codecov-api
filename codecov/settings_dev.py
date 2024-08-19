@@ -57,35 +57,3 @@ SESSION_COOKIE_DOMAIN = "localhost"
 # SHELTER_SHARED_SECRET = "test-supertoken"
 
 GUEST_ACCESS = True
-
-
-REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
-    ),
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "codecov_auth.authentication.UserTokenAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
-        "codecov_auth.authentication.SessionAuthentication",
-    ),
-    "DEFAULT_PAGINATION_CLASS": "api.shared.pagination.StandardPageNumberPagination",
-    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
-    "PAGE_SIZE": 20,
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Read https://www.django-rest-framework.org/api-guide/throttling/ for additional info on how to
-    # modify throttling for codecov-api. Initially, we just want a simple throttle mechanism to prevent
-    # burst requests from users/anons on our REST endpoints
-    # COMMENT THIS OUT TO ENABLE RATE LIMITS. COMMENTED OUT SO IT DOESNT AFFECT TEST RUNNERS
-    # "DEFAULT_THROTTLE_CLASSES": [
-    #     "codecov.rate_limiter.UserBurstRateThrottle",
-    #     "codecov.rate_limiter.AnonBurstRateThrottle",
-    #     "codecov.rate_limiter.UserSustainedRateThrottle",
-    #     "codecov.rate_limiter.AnonSustainedRateThrottle",
-    # ],
-    # "DEFAULT_THROTTLE_RATES": {
-    #     "anon-burst": "30/min",
-    #     "anon-sustained": "1000/day",
-    #     "user-burst": "90/min",
-    #     "user-sustained": "2000/day",
-    # },
-}
