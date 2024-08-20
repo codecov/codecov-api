@@ -3,6 +3,7 @@ from django.contrib.auth.models import AnonymousUser
 
 from codecov.commands.exceptions import MissingService
 from core.commands.commit import CommitCommands
+from core.tests.factories import OwnerFactory
 
 from ..base import BaseCommand, BaseInteractor
 
@@ -27,3 +28,24 @@ def test_base_interactor_with_missing_required_service():
         BaseInteractor(None, None)
 
     assert excinfo.value.message == "Missing required service"
+
+@pytest.mark.django_db
+def test_base_interactor_missing_user_in_owner():
+    owner = OwnerFactory()
+    owner.user = None
+    command = BaseCommand(owner, "github", None)
+
+    interactor = command.get_interactor(BaseInteractor)
+    assert interactor.current_user == AnonymousUser()
+
+
+@pytest.mark.django_db
+def test_base_interactor_with_owner():
+    owner = OwnerFactory()
+    command = BaseCommand(owner, "github")
+    interactor = command.get_interactor(BaseInteractor)
+
+    assert interactor.current_owner == owner
+    assert interactor.current_user == owner.user
+    assert interactor.service == "github"
+    assert interactor.requires_service is True
