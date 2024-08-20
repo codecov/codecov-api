@@ -29,7 +29,12 @@ from .enums import enum_types
 from .file import commit_file, file_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
-from .gamification import gamification, leaderboard_bindable, leaderboard_data_bindable
+from .gamification import (
+    badge_bindable,
+    gamification,
+    leaderboard_bindable,
+    leaderboard_data_bindable,
+)
 from .impacted_file import (
     impacted_file,
     impacted_file_bindable,
@@ -176,4 +181,5 @@ bindables = [
     test_result_bindable,
     leaderboard_bindable,
     leaderboard_data_bindable,
+    badge_bindable,
 ]
