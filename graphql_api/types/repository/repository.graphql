@@ -91,6 +91,7 @@ type Repository {
     last: Int
     before: String
   ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
+  leaderboards: [Leaderboard!]!
 }
 
 type TestResultConnection {

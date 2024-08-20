@@ -1,0 +1,29 @@
+
+"""
+Returns a single user's aggregated score for a metric
+"""
+type LeaderboardData {
+  author: Owner!
+  value: Float!
+}
+
+"""
+Visual representing of a leaderboard for a given repo
+"""
+type Leaderboard {
+  "Name of the metric"
+  name: GamificationMetric!
+  "Ordered list of (up to) top 5 contributors for this metric of the given repo"
+  ranking: [LeaderboardData!]!
+}
+
+
+"""
+A singular badge for a given gamification badge for a user
+"""
+type Badge {
+    "Name of the metric"
+	name: GamificationMetric!
+    "Prestige tier of the badge for the given metric"
+	tier: BadgeTier!
+}

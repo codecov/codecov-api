@@ -11,8 +11,10 @@ from timeseries.models import Interval as MeasurementInterval
 from timeseries.models import MeasurementName
 
 from .enums import (
+    BadgeTier,
     BundleLoadTypes,
     CoverageLine,
+    GamificationMetric,
     GoalOnboarding,
     LoginProvider,
     OrderingDirection,
@@ -52,4 +54,6 @@ enum_types = [
     EnumType("YamlStates", YamlStates),
     EnumType("BundleLoadTypes", BundleLoadTypes),
     EnumType("TestResultsOrderingParameter", TestResultsOrderingParameter),
+    EnumType("GamificationMetric", GamificationMetric),
+    EnumType("BadgeTier", BadgeTier),
 ]

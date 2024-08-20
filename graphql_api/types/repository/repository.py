@@ -27,8 +27,9 @@ from graphql_api.helpers.connection import (
     queryset_to_connection_sync,
 )
 from graphql_api.helpers.lookahead import lookahead
-from graphql_api.types.enums import OrderingDirection
+from graphql_api.types.enums import GamificationMetric, OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from graphql_api.types.gamification import Leaderboard
 from reports.models import Test
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
@@ -594,3 +595,26 @@ async def resolve_test_results(
         else OrderingDirection.DESC,
         **kwargs,
     )
+
+
+@repository_bindable.field("leaderboards")
+@sync_to_async
+def resolve_leaderboards(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+):
+    return [
+        Leaderboard(
+            repository.author_id,
+            repository.repoid,
+            GamificationMetric.PATCH_COVERAGE_AVERAGE,
+        ),
+        Leaderboard(
+            repository.author_id,
+            repository.repoid,
+            GamificationMetric.CHANGE_COVERAGE_COUNT,
+        ),
+        Leaderboard(
+            repository.author_id, repository.repoid, GamificationMetric.PR_COUNT
+        ),
+    ]

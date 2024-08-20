@@ -19,6 +19,7 @@ from codecov_auth.models import (
 )
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
+from graphql_api.actions.owner import get_long_service_name, get_owner
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
@@ -28,6 +29,7 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.mutation import require_part_of_org
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from graphql_api.types.gamification import BadgeCollection
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.billing import BillingService
@@ -310,3 +312,19 @@ def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
 @require_part_of_org
 def resolve_delinquent(owner: Owner, info) -> bool | None:
     return owner.delinquent
+
+
+@owner_bindable.field("badges")
+@sync_to_async
+def resolve_badges(owner: Owner, info, organization: str, repository: str):
+    if not info.context["service"]:
+        return []
+    service_name = get_long_service_name(info.context["service"])
+
+    return BadgeCollection(
+        service=service_name,
+        author_ownerid=owner.ownerid,
+    ).retrieve(
+        organization_name=organization,
+        repository_name=repository,
+    )

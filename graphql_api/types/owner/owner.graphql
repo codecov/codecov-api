@@ -37,4 +37,5 @@ type Owner {
   ): RepositoryConnection! @cost(complexity: 25, multipliers: ["first", "last"])
   username: String
   yaml: String
+  badges(organization: String!, repository: String!): [Badge!]
 }
