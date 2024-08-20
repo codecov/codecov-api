@@ -29,6 +29,7 @@ def test_base_interactor_with_missing_required_service():
 
     assert excinfo.value.message == "Missing required service"
 
+
 @pytest.mark.django_db
 def test_base_interactor_missing_user_in_owner():
     owner = OwnerFactory()
