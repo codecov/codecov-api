@@ -205,8 +205,6 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 graphql-core==3.2.3
     # via ariadne
-greenlet==3.0.3
-    # via sqlalchemy
 grpc-google-iam-v1==0.12.6
     # via google-cloud-pubsub
 grpcio==1.62.1
