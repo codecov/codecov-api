@@ -16,11 +16,11 @@ class SaveOktaConfigInput:
     url: Optional[str] = None
     enabled: bool = False
     enforced: bool = False
-    org_username: str = None
+    org_username: str | None = None
 
 
 class SaveOktaConfigInteractor(BaseInteractor):
-    def validate(self, owner: Owner):
+    def validate(self, owner: Owner) -> bool:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
         if not owner:
@@ -29,7 +29,7 @@ class SaveOktaConfigInteractor(BaseInteractor):
             raise Unauthorized()
 
     @sync_to_async
-    def execute(self, input: dict):
+    def execute(self, input: dict) -> None:
         typed_input = SaveOktaConfigInput(
             client_id=input.get("client_id"),
             client_secret=input.get("client_secret"),
@@ -85,6 +85,9 @@ class SaveOktaConfigInteractor(BaseInteractor):
         for field in ["client_id", "client_secret", "url", "enabled", "enforced"]:
             value = getattr(typed_input, field)
             if value is not None:
+                # Strip the URL of any trailing spaces and slashes before saving it
+                if field == "url":
+                    value = value.strip("/ ")
                 setattr(okta_config, field, value)
 
         okta_config.save()

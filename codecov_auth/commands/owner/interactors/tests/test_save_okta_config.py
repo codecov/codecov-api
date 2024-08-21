@@ -164,6 +164,29 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         assert okta_config.enabled == input_data["enabled"]
         assert okta_config.enforced == input_data["enforced"]
 
+    def test_update_okta_settings_url_remove_trailing_slashes(self):
+        input_data = {
+            "client_id": "some-client-id",
+            "client_secret": "some-client-secret",
+            "url": "https://okta.example.com/",
+            "enabled": True,
+            "enforced": True,
+            "org_username": self.owner_with_admins.username,
+        }
+
+        account = AccountFactory()
+        self.owner_with_admins.account = account
+        self.owner_with_admins.save()
+
+        interactor = SaveOktaConfigInteractor(
+            current_owner=self.current_user, service=self.service
+        )
+        self.execute(interactor=interactor, input=input_data)
+
+        okta_config = OktaSettings.objects.get(account=self.owner_with_admins.account)
+
+        assert okta_config.url == "https://okta.example.com"
+
     def test_update_okta_settings_when_okta_settings_exists(self):
         input_data = {
             "client_id": "some-client-id",
