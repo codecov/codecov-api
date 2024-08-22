@@ -42,10 +42,16 @@ class SaveOktaConfigInteractorTest(TransactionTestCase):
         )
 
     @async_to_sync
-    def execute(self, interactor=None, input: dict = None):
-        if not interactor:
+    def execute(
+        self,
+        interactor: SaveOktaConfigInteractor | None = None,
+        input: dict | None = None,
+    ):
+        if not interactor and self.interactor:
             interactor = self.interactor
 
+        if not interactor:
+            return
         return interactor.execute(input)
 
     def test_user_is_not_authenticated(self):
