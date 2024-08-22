@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from shared.django_apps.codecov_auth.models import AccountsUsers, User
 
@@ -11,11 +10,11 @@ from codecov_auth.models import Account, OktaSettings, Owner
 
 @dataclass
 class SaveOktaConfigInput:
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    url: Optional[str] = None
-    enabled: bool = False
-    enforced: bool = False
+    enabled: bool | None
+    enforced: bool | None
+    client_id: str | None = None
+    client_secret: str | None = None
+    url: str | None = None
     org_username: str | None = None
 
 
