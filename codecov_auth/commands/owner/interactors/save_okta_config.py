@@ -20,7 +20,7 @@ class SaveOktaConfigInput:
 
 
 class SaveOktaConfigInteractor(BaseInteractor):
-    def validate(self, owner: Owner) -> bool:
+    def validate(self, owner: Owner) -> None:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
         if not owner:
