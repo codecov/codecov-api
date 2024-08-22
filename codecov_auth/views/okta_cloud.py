@@ -86,7 +86,7 @@ class OktaCloudLoginView(OktaLoginMixin, View):
         # Otherwise start the process redirect them to the Issuer page to authenticate
         else:
             consent = self._redirect_to_consent(
-                iss=okta_settings.url,
+                iss=okta_settings.url.strip("/ "),
                 client_id=okta_settings.client_id,
                 oauth_redirect_url=oauth_redirect_url,
             )
@@ -166,7 +166,7 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
             log.warning("Invalid state during Okta login")
             return redirect(app_redirect_url)
 
-        issuer: str = okta_settings.url
+        issuer: str = okta_settings.url.strip("/ ")
         user_data: OktaTokenResponse | None = self._fetch_user_data(
             issuer,
             code,
