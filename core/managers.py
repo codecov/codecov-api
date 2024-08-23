@@ -131,6 +131,7 @@ class RepositoryQuerySet(QuerySet):
         branch) of each repository. Depends on having called "with_latest_commit_totals_before" with
         "include_previous_totals=True".
         """
+        from core.models import Commit  # noqa: F401
 
         return self.annotate(
             latest_coverage=Cast(

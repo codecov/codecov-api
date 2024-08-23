@@ -12,7 +12,9 @@ from codecov_auth.models import (
     OrganizationLevelToken,
     Owner,
     OwnerProfile,
+    RepositoryToken,  # noqa: F401
     SentryUser,
+    Service,  # noqa: F401
     Session,
     TokenTypeChoices,
     User,
