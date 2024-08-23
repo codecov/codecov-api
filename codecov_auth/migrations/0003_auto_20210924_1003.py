@@ -4,6 +4,7 @@ import uuid
 
 import django.contrib.postgres.fields
 import django.db.models.deletion
+from django.conf import settings  # noqa: F401
 from django.db import migrations, models
 
 

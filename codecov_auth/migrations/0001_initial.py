@@ -6,6 +6,7 @@ import uuid
 import django.contrib.postgres.fields
 import django.contrib.postgres.fields.citext
 import django.db.models.deletion
+from django.conf import settings  # noqa: F401
 from django.contrib.postgres.operations import CITextExtension
 from django.db import migrations, models
 
