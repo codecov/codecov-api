@@ -1,5 +1,6 @@
 from logging import LogRecord
 from typing import Any
+from unittest.mock import ANY
 from urllib.parse import unquote, urlparse
 
 import pytest
@@ -47,7 +48,7 @@ def okta_account(okta_org: Owner):
     okta_org.save()
 
     okta_settings: OktaSettings = OktaSettingsFactory(account=account)
-    okta_settings.url = "https://foo-bar.okta.com"
+    okta_settings.url = "https://foo-bar.okta.com/"
     okta_settings.save()
     return account
 
@@ -210,6 +211,8 @@ def test_okta_callback_login_success(
     updated_session = signed_in_client.session
     assert updated_session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) == [okta_account.id]
 
+    mocked_validate_id_token.assert_called_with("https://foo-bar.okta.com", ANY, ANY)
+
 
 @pytest.mark.django_db
 def test_okta_callback_login_success_multiple_accounts(
@@ -248,6 +251,8 @@ def test_okta_callback_login_success_multiple_accounts(
         okta_account.id + 1,
         okta_account.id,
     ]
+
+    mocked_validate_id_token.assert_called_with("https://foo-bar.okta.com", ANY, ANY)
 
 
 @pytest.mark.django_db
