@@ -1,5 +1,6 @@
 import logging
 from urllib.parse import urlencode, urljoin
+from uuid import uuid4  # noqa: F401
 
 from asgiref.sync import async_to_sync
 from django.conf import settings
