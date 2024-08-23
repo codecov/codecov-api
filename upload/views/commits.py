@@ -52,6 +52,16 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_commit",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         repository = self.get_repo()
         commit = serializer.save(repository=repository)
         log.info(
@@ -69,6 +79,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
                 request=self.request,
                 repository=repository,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
         return commit

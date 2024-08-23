@@ -8,6 +8,11 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    InvoiceBillingFactory,
+    StripeBillingFactory,
+)
 from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
@@ -170,6 +175,7 @@ class AccountViewSetTests(APITestCase):
             "student_count": 0,
             "schedule_detail": None,
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -190,6 +196,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": "sub_sched_456",
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -244,6 +251,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -262,6 +270,7 @@ class AccountViewSetTests(APITestCase):
                 },
             },
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -283,6 +292,7 @@ class AccountViewSetTests(APITestCase):
             "schedule_id": "sub_sched_456678999",
             "collection_method": "charge_automatically",
             "trial_end": 1633512445,
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -344,6 +354,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": 1633512445,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -362,6 +373,7 @@ class AccountViewSetTests(APITestCase):
                 },
             },
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -381,6 +393,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_retrieve_subscription.return_value = MockSubscription(subscription_params)
@@ -415,6 +428,7 @@ class AccountViewSetTests(APITestCase):
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
                 "trial_end": None,
+                "tax_ids": None,
             },
             "checkout_session_id": None,
             "name": owner.name,
@@ -426,6 +440,7 @@ class AccountViewSetTests(APITestCase):
             "student_count": 0,
             "schedule_detail": None,
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     def test_retrieve_account_gets_account_students(self):
@@ -459,6 +474,7 @@ class AccountViewSetTests(APITestCase):
             "student_count": 3,
             "schedule_detail": None,
             "uses_invoice": False,
+            "delinquent": None,
         }
 
     def test_account_with_free_user_plan(self):
@@ -563,6 +579,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         mock_subscription.return_value = MockSubscription(subscription_params)
@@ -588,6 +605,7 @@ class AccountViewSetTests(APITestCase):
             "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
             "collection_method": "charge_automatically",
             "trial_end": None,
+            "tax_ids": None,
         }
 
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -624,6 +642,26 @@ class AccountViewSetTests(APITestCase):
         assert response.data["plan_auto_activate"] is True
 
     def test_update_can_set_plan_auto_activate_to_false(self):
+        self.current_owner.plan_auto_activate = True
+        self.current_owner.save()
+
+        response = self._update(
+            kwargs={
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
+            },
+            data={"plan_auto_activate": False},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        self.current_owner.refresh_from_db()
+
+        assert self.current_owner.plan_auto_activate is False
+        assert response.data["plan_auto_activate"] is False
+
+    def test_update_can_set_plan_auto_activate_on_org_with_account(self):
+        self.current_owner.account = AccountFactory()
         self.current_owner.plan_auto_activate = True
         self.current_owner.save()
 
@@ -714,6 +752,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -924,6 +963,48 @@ class AccountViewSetTests(APITestCase):
                 == "Quantity for Team plan cannot exceed 10"
             )
 
+    def test_update_quantity_must_fail_if_account(self):
+        desired_plans = [
+            {"quantity": 10},
+        ]
+        self.current_owner.account = AccountFactory()
+        self.current_owner.save()
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert (
+                str(response.data["plan"]["non_field_errors"][0])
+                == "You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
+            )
+
+    def test_update_plan_must_fail_if_account(self):
+        desired_plans = [
+            {"value": PlanName.CODECOV_PRO_YEARLY.value},
+        ]
+        self.current_owner.account = AccountFactory()
+        self.current_owner.save()
+        for desired_plan in desired_plans:
+            response = self._update(
+                kwargs={
+                    "service": self.current_owner.service,
+                    "owner_username": self.current_owner.username,
+                },
+                data={"plan": desired_plan},
+            )
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert (
+                str(response.data["plan"]["non_field_errors"][0])
+                == "You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
+            )
+
     def test_update_quantity_must_be_at_least_2_if_paid_plan(self):
         desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 1}
         response = self._update(
@@ -952,8 +1033,13 @@ class AccountViewSetTests(APITestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
     def test_update_payment_method(
-        self, modify_customer_mock, attach_payment_mock, retrieve_subscription_mock
+        self,
+        modify_subscription_mock,
+        modify_customer_mock,
+        attach_payment_mock,
+        retrieve_subscription_mock,
     ):
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
@@ -977,6 +1063,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -996,6 +1083,11 @@ class AccountViewSetTests(APITestCase):
         modify_customer_mock.assert_called_once_with(
             self.current_owner.stripe_customer_id,
             invoice_settings={"default_payment_method": payment_method_id},
+        )
+
+        modify_subscription_mock.assert_called_once_with(
+            self.current_owner.stripe_subscription_id,
+            default_payment_method=payment_method_id,
         )
 
     @patch("services.billing.StripeService.update_payment_method")
@@ -1077,6 +1169,34 @@ class AccountViewSetTests(APITestCase):
         response = self.client.patch(url, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_update_billing_address_without_name(self):
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        billing_address = {
+            "line_1": "45 Fremont St.",
+            "line_2": "",
+            "city": "San Francisco",
+            "state": "CA",
+            "country": "US",
+            "postal_code": "94105",
+        }
+        data = {"billing_address": billing_address}
+        url = reverse("account_details-update-billing-address", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_update_billing_address_without_address(self):
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        data = {"name": "John Doe"}
+        url = reverse("account_details-update-billing-address", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
     @patch("services.billing.StripeService.update_billing_address")
     def test_update_billing_address_handles_stripe_error(self, stripe_mock):
         code, message = 402, "Oops, nope"
@@ -1098,7 +1218,7 @@ class AccountViewSetTests(APITestCase):
             "service": self.current_owner.service,
             "owner_username": self.current_owner.username,
         }
-        data = {"billing_address": billing_address}
+        data = {"name": "John Doe", "billing_address": billing_address}
         url = reverse("account_details-update-billing-address", kwargs=kwargs)
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == code
@@ -1155,6 +1275,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_sub_mock.return_value = MockSubscription(subscription_params)
@@ -1163,7 +1284,7 @@ class AccountViewSetTests(APITestCase):
             "service": self.current_owner.service,
             "owner_username": self.current_owner.username,
         }
-        data = {"billing_address": billing_address}
+        data = {"name": "John Doe", "billing_address": billing_address}
         url = reverse("account_details-update-billing-address", kwargs=kwargs)
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == status.HTTP_200_OK
@@ -1363,6 +1484,7 @@ class AccountViewSetTests(APITestCase):
                 "duration_in_months": 6,
                 "created": int(datetime(2023, 1, 1, 0, 0, 0).timestamp()),
             },
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -1408,6 +1530,7 @@ class AccountViewSetTests(APITestCase):
             "latest_invoice": None,
             "schedule_id": None,
             "collection_method": "charge_automatically",
+            "tax_ids": None,
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
@@ -1442,6 +1565,103 @@ class AccountViewSetTests(APITestCase):
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_retrieve_org_with_account(self):
+        account = AccountFactory(
+            name="Hello World",
+            plan_seat_count=5,
+            free_seat_count=3,
+            plan="users-enterprisey",
+            is_delinquent=False,
+        )
+        InvoiceBillingFactory(is_active=True, account=account)
+        org_1 = OwnerFactory(
+            account=account,
+            service=Service.GITHUB.value,
+            username="Test",
+            delinquent=True,
+            uses_invoice=False,
+        )
+        org_2 = OwnerFactory(
+            account=account,
+            service=Service.GITHUB.value,
+        )
+        activated_owner = OwnerFactory(
+            user=UserFactory(), organizations=[org_1.ownerid, org_2.ownerid]
+        )
+        account.users.add(activated_owner.user)
+        student_owner = OwnerFactory(
+            user=UserFactory(),
+            student=True,
+            organizations=[org_1.ownerid, org_2.ownerid],
+        )
+        account.users.add(student_owner.user)
+        other_activated_owner = OwnerFactory(
+            user=UserFactory(), organizations=[org_2.ownerid]
+        )
+        account.users.add(other_activated_owner.user)
+        other_student_owner = OwnerFactory(
+            user=UserFactory(),
+            student=True,
+            organizations=[org_2.ownerid],
+        )
+        account.users.add(other_student_owner.user)
+        org_1.plan_activated_users = [activated_owner.ownerid, student_owner.ownerid]
+        org_1.admins = [activated_owner.ownerid]
+        org_1.save()
+        org_2.plan_activated_users = [
+            activated_owner.ownerid,
+            student_owner.ownerid,
+            other_activated_owner.ownerid,
+            other_student_owner.ownerid,
+        ]
+        org_2.save()
+
+        self.client.force_login_owner(activated_owner)
+        response = self._retrieve(
+            kwargs={"service": Service.GITHUB.value, "owner_username": org_1.username}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        # these fields are all overridden by account fields if the org has an account
+        self.assertEqual(org_1.activated_user_count, 1)
+        self.assertEqual(org_1.activated_student_count, 1)
+        self.assertTrue(org_1.delinquent)
+        self.assertFalse(org_1.uses_invoice)
+        self.assertEqual(org_1.plan_user_count, 1)
+        expected_response = {
+            "activated_user_count": 2,
+            "activated_student_count": 2,
+            "delinquent": False,
+            "uses_invoice": True,
+            "plan": {
+                "marketing_name": "Enterprise Cloud",
+                "value": PlanName.ENTERPRISE_CLOUD_YEARLY.value,
+                "billing_rate": "annually",
+                "base_unit_price": 10,
+                "benefits": [
+                    "Configurable # of users",
+                    "Unlimited public repositories",
+                    "Unlimited private repositories",
+                    "Priority Support",
+                ],
+                "quantity": 5,
+            },
+            "root_organization": None,
+            "integration_id": org_1.integration_id,
+            "plan_auto_activate": org_1.plan_auto_activate,
+            "inactive_user_count": 0,
+            "subscription_detail": None,
+            "checkout_session_id": None,
+            "name": org_1.name,
+            "email": org_1.email,
+            "nb_active_private_repos": 0,
+            "repo_total_credits": 99999999,
+            "plan_provider": org_1.plan_provider,
+            "student_count": 1,
+            "schedule_detail": None,
+        }
+        self.assertDictEqual(response.data["plan"], expected_response["plan"])
+        self.assertDictEqual(response.data, expected_response)
 
 
 @override_settings(IS_ENTERPRISE=True)

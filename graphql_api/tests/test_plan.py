@@ -1,8 +1,12 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
+from unittest.mock import patch
 
+import pytest
 from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
+from shared.license import LicenseInformation
+from shared.utils.test_utils import mock_config_helper
 
 from codecov_auth.tests.factories import OwnerFactory
 from plan.constants import PlanName, TrialStatus
@@ -11,6 +15,10 @@ from .helper import GraphQLTestHelper
 
 
 class TestPlanType(GraphQLTestHelper, TransactionTestCase):
+    @pytest.fixture(scope="function", autouse=True)
+    def inject_mocker(request, mocker):
+        request.mocker = mocker
+
     def setUp(self):
         self.current_org = OwnerFactory(
             username="random-plan-user",
@@ -94,3 +102,90 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {"hasSeatsLeft": True}
+
+    @patch("services.self_hosted.get_current_license")
+    def test_plan_user_count_for_enterprise_org(self, mocked_license):
+        """
+        If an Org has an enterprise license, number_allowed_users from their license
+        should be used instead of plan_user_count on the Org object.
+        """
+        mock_enterprise_license = LicenseInformation(
+            is_valid=True,
+            message=None,
+            url="https://codeov.mysite.com",
+            number_allowed_users=5,
+            number_allowed_repos=10,
+            expires=datetime.strptime("2020-05-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            is_trial=False,
+            is_pr_billing=True,
+        )
+        mocked_license.return_value = mock_enterprise_license
+        mock_config_helper(
+            self.mocker, configs={"setup.enterprise_license": mock_enterprise_license}
+        )
+
+        enterprise_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.CODECOV_PRO_YEARLY.value,
+            plan_user_count=1,
+            plan_activated_users=[],
+        )
+        for i in range(4):
+            new_owner = OwnerFactory()
+            enterprise_org.plan_activated_users.append(new_owner.ownerid)
+        enterprise_org.save()
+
+        other_org_in_enterprise = OwnerFactory(
+            service="github",
+            plan=PlanName.CODECOV_PRO_YEARLY.value,
+            plan_user_count=1,
+            plan_activated_users=[],
+        )
+        for i in range(4):
+            new_owner = OwnerFactory()
+            other_org_in_enterprise.plan_activated_users.append(new_owner.ownerid)
+        other_org_in_enterprise.save()
+
+        query = """{
+                    owner(username: "%s") {
+                        plan {
+                            planUserCount
+                            hasSeatsLeft
+                        }
+                    }
+                }
+                """ % (enterprise_org.username)
+        data = self.gql_request(query, owner=enterprise_org)
+        assert data["owner"]["plan"]["planUserCount"] == 5
+        assert data["owner"]["plan"]["hasSeatsLeft"] == False
+
+    @patch("services.self_hosted.get_current_license")
+    def test_plan_user_count_for_enterprise_org_invaild_license(self, mocked_license):
+        mock_enterprise_license = LicenseInformation(
+            is_valid=False,
+        )
+        mocked_license.return_value = mock_enterprise_license
+        mock_config_helper(
+            self.mocker, configs={"setup.enterprise_license": mock_enterprise_license}
+        )
+
+        enterprise_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.CODECOV_PRO_YEARLY.value,
+            plan_user_count=1,
+            plan_activated_users=[],
+        )
+        query = """{
+                        owner(username: "%s") {
+                            plan {
+                                planUserCount
+                                hasSeatsLeft
+                            }
+                        }
+                    }
+                    """ % (enterprise_org.username)
+        data = self.gql_request(query, owner=enterprise_org)
+        assert data["owner"]["plan"]["planUserCount"] == 0
+        assert data["owner"]["plan"]["hasSeatsLeft"] == False

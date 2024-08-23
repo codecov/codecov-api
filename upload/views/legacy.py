@@ -75,6 +75,17 @@ class UploadHandler(APIView, ShelterMixin):
     def post(self, request, *args, **kwargs):
         # Extract the version
         version = self.kwargs["version"]
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+                upload_version=version,
+            ),
+        )
 
         log.info(
             f"Received upload request {version}",
@@ -154,23 +165,29 @@ class UploadHandler(APIView, ShelterMixin):
             ),
         )
 
-        sentry_tags = generate_upload_sentry_metrics_tags(
-            action="coverage",
-            endpoint="legacy_upload",
-            request=self.request,
-            repository=repository,
-            is_shelter_request=self.is_shelter_request(),
-        )
-
         sentry_metrics.incr(
             "upload",
-            tags=sentry_tags,
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+                upload_version=version,
+            ),
         )
 
         sentry_metrics.set(
             "upload_set",
             repository.author.ownerid,
-            tags=sentry_tags,
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
 
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
@@ -379,8 +396,12 @@ class UploadDownloadHandler(View):
         if owner is None:
             raise Http404("Requested report could not be found")
         repo = await RepositoryCommands(
-            self.request.current_owner, self.service
-        ).fetch_repository(owner, self.repo_name)
+            self.request.current_owner,
+            self.service,
+        ).fetch_repository(
+            owner, self.repo_name, [], exclude_okta_enforced_repos=False
+        )  # Okta sign-in is only enforced on the UI for now.
+
         if repo is None:
             raise Http404("Requested report could not be found")
         return repo

@@ -74,7 +74,7 @@ class RepositoryQuerySetTests(TestCase):
         with self.subTest("doesnt crash when fork but no parent"):
             repo_data = {
                 "id": 45,
-                "default_branch": "master",
+                "default_branch": "main",
                 "private": True,
                 "name": "test",
                 "fork": True,
@@ -85,7 +85,7 @@ class RepositoryQuerySetTests(TestCase):
             )
             assert created
             assert repo.service_id == 45
-            assert repo.branch == "master"
+            assert repo.branch == "main"
             assert repo.private
             assert repo.name == "test"
 

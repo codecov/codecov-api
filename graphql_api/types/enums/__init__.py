@@ -1,4 +1,5 @@
 from .enums import (
+    BundleLoadTypes,
     CommitErrorCode,
     CommitErrorGeneralType,
     CommitStatus,
@@ -11,6 +12,7 @@ from .enums import (
     PullRequestState,
     RepositoryOrdering,
     SyncProvider,
+    TestResultsOrderingParameter,
     TypeProjectOnboarding,
     UploadErrorEnum,
     UploadState,

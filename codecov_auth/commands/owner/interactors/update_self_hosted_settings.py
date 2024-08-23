@@ -27,7 +27,7 @@ class UpdateSelfHostedSettingsInteractor(BaseInteractor):
     def execute(self, input: UpdateSelfHostedSettingsInput) -> None:
         self.validate()
         typed_input = UpdateSelfHostedSettingsInput(
-            auto_activate_members=input.get("shouldAutoActivate"),
+            auto_activate_members=input.get("should_auto_activate"),
         )
 
         should_auto_activate = typed_input.auto_activate_members

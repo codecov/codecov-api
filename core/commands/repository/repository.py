@@ -3,6 +3,7 @@ from typing import Optional
 
 from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner
+from core.models import Repository
 from timeseries.models import MeasurementName
 
 from .interactors.activate_measurements import ActivateMeasurementsInteractor
@@ -19,8 +20,19 @@ from .interactors.update_repository import UpdateRepositoryInteractor
 
 
 class RepositoryCommands(BaseCommand):
-    def fetch_repository(self, owner, name):
-        return self.get_interactor(FetchRepositoryInteractor).execute(owner, name)
+    def fetch_repository(
+        self,
+        owner,
+        name,
+        okta_authenticated_accounts: list[int],
+        exclude_okta_enforced_repos: bool = True,
+    ) -> Repository:
+        return self.get_interactor(FetchRepositoryInteractor).execute(
+            owner,
+            name,
+            okta_authenticated_accounts,
+            exclude_okta_enforced_repos=exclude_okta_enforced_repos,
+        )
 
     def regenerate_repository_upload_token(
         self,

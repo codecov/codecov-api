@@ -14,3 +14,6 @@ flag_management:
 
 codecov:
   require_ci_to_pass: false
+
+test_analytics:
+  flake_detection: true

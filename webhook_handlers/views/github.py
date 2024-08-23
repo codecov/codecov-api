@@ -437,9 +437,12 @@ class GithubWebhookHandler(APIView):
         owner, _ = Owner.objects.get_or_create(
             service=self.service_name,
             service_id=service_id,
-            username=username,
-            defaults={"createstamp": timezone.now()},
+            defaults={
+                "username": username,
+                "createstamp": timezone.now(),
+            },
         )
+
         installation_id = request.data["installation"]["id"]
 
         ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
@@ -478,8 +481,10 @@ class GithubWebhookHandler(APIView):
         owner, _ = Owner.objects.get_or_create(
             service=self.service_name,
             service_id=service_id,
-            username=username,
-            defaults={"createstamp": timezone.now()},
+            defaults={
+                "username": username,
+                "createstamp": timezone.now(),
+            },
         )
 
         installation_id = request.data["installation"]["id"]
@@ -526,6 +531,19 @@ class GithubWebhookHandler(APIView):
                         map(lambda obj: obj["id"], request.data.get("repositories", []))
                     )
                     ghapp_installation.repository_service_ids = repositories_service_ids
+
+                if action in ["suspend", "unsuspend"]:
+                    log.info(
+                        "Request to suspend/unsuspend App",
+                        extra=dict(
+                            action=action,
+                            is_currently_suspended=ghapp_installation.is_suspended,
+                            ownerid=owner.ownerid,
+                            installation_id=request.data["installation"]["id"],
+                        ),
+                    )
+                    ghapp_installation.is_suspended = action == "suspend"
+
                 ghapp_installation.save()
 
             # This flow is deprecated and should be removed once the
@@ -535,18 +553,6 @@ class GithubWebhookHandler(APIView):
                 owner.integration_id = request.data["installation"]["id"]
                 owner.save()
             # Deprecated flow - END
-
-            # We need to understand if users are suspending / not-suspending apps
-            # and if this is related to RepositoryWithoutValidBot errors we see
-            if action in ["suspend", "unsuspend"]:
-                log.info(
-                    "Request to suspend/unsuspend App",
-                    extra=dict(
-                        action=action,
-                        ownerid=owner.ownerid,
-                        installation_id=request.data["installation"]["id"],
-                    ),
-                )
 
             log.info(
                 "Triggering refresh task to sync repos",
@@ -728,7 +734,7 @@ class GithubWebhookHandler(APIView):
 
     def post(self, request, *args, **kwargs):
         self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
-        log.debug(
+        log.info(
             "GitHub Webhook Handler invoked",
             extra=dict(
                 github_webhook_event=self.event,

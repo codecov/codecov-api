@@ -1,0 +1,6 @@
+enum TestResultsOrderingParameter {
+  AVG_DURATION
+  FAILURE_RATE
+  COMMITS_WHERE_FAIL
+  UPDATED_AT
+}

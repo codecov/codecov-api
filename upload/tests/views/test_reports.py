@@ -71,6 +71,7 @@ def test_reports_post(client, db, mocker):
             "endpoint": "create_report",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 
@@ -310,6 +311,7 @@ def test_reports_results_post_successful_github_oidc_auth(
             "endpoint": "create_report_results",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 

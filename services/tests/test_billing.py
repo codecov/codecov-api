@@ -893,9 +893,11 @@ class StripeServiceTests(TestCase):
             plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
         )
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
-        self.stripe._get_proration_params(owner, desired_plan) == "none"
+        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
-        self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        assert (
+            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+        )
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
         assert (
             self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
@@ -1096,6 +1098,7 @@ class StripeServiceTests(TestCase):
                 "latest_invoice",
                 "customer",
                 "customer.invoice_settings.default_payment_method",
+                "customer.tax_ids",
             ],
         )
 
@@ -1105,7 +1108,10 @@ class StripeServiceTests(TestCase):
 
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
-    def test_update_payment_method(self, modify_customer_mock, attach_payment_mock):
+    @patch("services.billing.stripe.Subscription.modify")
+    def test_update_payment_method(
+        self, modify_sub_mock, modify_customer_mock, attach_payment_mock
+    ):
         payment_method_id = "pm_1234567"
         subscription_id = "sub_abc"
         customer_id = "cus_abc"
@@ -1118,6 +1124,10 @@ class StripeServiceTests(TestCase):
         )
         modify_customer_mock.assert_called_once_with(
             customer_id, invoice_settings={"default_payment_method": payment_method_id}
+        )
+
+        modify_sub_mock.assert_called_once_with(
+            subscription_id, default_payment_method=payment_method_id
         )
 
     def test_update_email_address_with_invalid_email(self):
@@ -1142,7 +1152,7 @@ class StripeServiceTests(TestCase):
     @patch("logging.Logger.error")
     def test_update_billing_address_with_invalid_address(self, log_error_mock):
         owner = OwnerFactory(stripe_customer_id="123", stripe_subscription_id="123")
-        assert self.stripe.update_billing_address(owner, "gabagool") is None
+        assert self.stripe.update_billing_address(owner, "John Doe", "gabagool") is None
         log_error_mock.assert_called_with(
             "Unable to update billing address for customer",
             extra={
@@ -1156,6 +1166,7 @@ class StripeServiceTests(TestCase):
         assert (
             self.stripe.update_billing_address(
                 owner,
+                name="John Doe",
                 billing_address={
                     "line1": "45 Fremont St.",
                     "line2": "",
@@ -1189,6 +1200,7 @@ class StripeServiceTests(TestCase):
         }
         self.stripe.update_billing_address(
             owner,
+            name="John Doe",
             billing_address=billing_address,
         )
 
@@ -1331,6 +1343,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def update_email_address(self, owner, email_address):
+        pass
+
+    def update_billing_address(self, owner, name, billing_address):
         pass
 
     def get_schedule(self, owner):

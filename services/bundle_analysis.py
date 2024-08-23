@@ -2,7 +2,8 @@ import enum
 import os
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Optional
+from decimal import Decimal
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from django.utils.functional import cached_property
 from shared.bundle_analysis import AssetReport as SharedAssetReport
@@ -18,7 +19,10 @@ from shared.bundle_analysis.models import AssetType
 from shared.storage import get_appropriate_storage_service
 
 from core.models import Commit, Repository
-from graphql_api.actions.measurements import measurements_by_ids
+from graphql_api.actions.measurements import (
+    measurements_by_ids,
+    measurements_last_uploaded_before_start_date,
+)
 from reports.models import CommitReport
 from services.archive import ArchiveService
 from timeseries.helpers import fill_sparse_measurements
@@ -80,7 +84,7 @@ class BundleAnalysisMeasurementData(object):
         asset_type: BundleAnalysisMeasurementsAssetType,
         asset_name: Optional[str],
         interval: Interval,
-        after: datetime,
+        after: Optional[datetime],
         before: datetime,
     ):
         self.raw_measurements = raw_measurements
@@ -153,14 +157,20 @@ class BundleSize:
 
 @dataclass
 class BundleData:
-    def __init__(self, size_in_bytes: int):
+    def __init__(self, size_in_bytes: int, gzip_size_in_bytes: Optional[int] = None):
         self.size_in_bytes = size_in_bytes
         self.size_in_bits = size_in_bytes * 8
+        self.gzip_size_in_bytes = gzip_size_in_bytes
 
     @cached_property
     def size(self) -> BundleSize:
+        gzip_size = (
+            self.gzip_size_in_bytes
+            if self.gzip_size_in_bytes is not None
+            else int(float(self.size_in_bytes) * BundleSize.GZIP)
+        )
         return BundleSize(
-            gzip=int(float(self.size_in_bytes) * BundleSize.GZIP),
+            gzip=gzip_size,
             uncompress=int(float(self.size_in_bytes) * BundleSize.UNCOMPRESS),
         )
 
@@ -213,6 +223,10 @@ class AssetReport(object):
         return self.asset.size
 
     @cached_property
+    def gzip_size_total(self) -> int:
+        return self.asset.gzip_size
+
+    @cached_property
     def modules(self) -> List[ModuleReport]:
         return [ModuleReport(module) for module in self.asset.modules()]
 
@@ -223,11 +237,8 @@ class AssetReport(object):
 
 @dataclass
 class BundleReport(object):
-    def __init__(self, report: SharedBundleReport, filters: Dict[str, List[str]] = {}):
+    def __init__(self, report: SharedBundleReport, filters: Dict[str, Any] = {}):
         self.report = report
-
-        # TODO this will be passed to shared.BundleReport in assets and size_total calls
-        # once shared.BundleReport supports filtering by load and asset types
         self.filters = filters
 
     @cached_property
@@ -239,7 +250,9 @@ class BundleReport(object):
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
     def assets(self) -> List[AssetReport]:
-        return self.all_assets
+        return [
+            AssetReport(asset) for asset in self.report.asset_reports(**self.filters)
+        ]
 
     def asset(self, name: str) -> Optional[AssetReport]:
         for asset_report in self.all_assets:
@@ -248,7 +261,7 @@ class BundleReport(object):
 
     @cached_property
     def size_total(self) -> int:
-        return self.report.total_size()
+        return self.report.total_size(**self.filters)
 
     @cached_property
     def module_extensions(self) -> List[str]:
@@ -259,18 +272,17 @@ class BundleReport(object):
 
     @cached_property
     def module_count(self) -> int:
-        return len(self.module_extensions)
+        return sum([len(asset.modules) for asset in self.assets()])
+
+    @cached_property
+    def is_cached(self) -> bool:
+        return self.report.is_cached()
 
 
 @dataclass
 class BundleAnalysisReport(object):
     def __init__(self, report: SharedBundleAnalysisReport):
         self.report = report
-        self.cleanup()
-
-    def cleanup(self) -> None:
-        if self.report and self.report.db_session:
-            self.report.db_session.close()
 
     def bundle(
         self, name: str, filters: Dict[str, List[str]]
@@ -287,6 +299,10 @@ class BundleAnalysisReport(object):
     def size_total(self) -> int:
         return sum([bundle.size_total for bundle in self.bundles])
 
+    @cached_property
+    def is_cached(self) -> bool:
+        return self.report.is_cached()
+
 
 @dataclass
 class BundleAnalysisComparison(object):
@@ -302,13 +318,6 @@ class BundleAnalysisComparison(object):
             head_report_key,
         )
         self.head_report = self.comparison.head_report
-        self.cleanup()
-
-    def cleanup(self) -> None:
-        if self.comparison.head_report and self.comparison.head_report.db_session:
-            self.comparison.head_report.db_session.close()
-        if self.comparison.base_report and self.comparison.base_report.db_session:
-            self.comparison.base_report.db_session.close()
 
     @cached_property
     def bundles(self) -> List["BundleComparison"]:
@@ -358,8 +367,8 @@ class BundleAnalysisMeasurementsService(object):
         self,
         repository: Repository,
         interval: Interval,
-        after: datetime,
         before: datetime,
+        after: Optional[datetime] = None,
         branch: Optional[str] = None,
     ) -> None:
         self.repository = repository
@@ -368,6 +377,45 @@ class BundleAnalysisMeasurementsService(object):
         self.before = before
         self.branch = branch
 
+    def _compute_measurements(
+        self, measurable_name: str, measurable_ids: List[str]
+    ) -> Dict[int, List[Dict[str, Any]]]:
+        all_measurements = measurements_by_ids(
+            repository=self.repository,
+            measurable_name=measurable_name,
+            measurable_ids=measurable_ids,
+            interval=self.interval,
+            after=self.after,
+            before=self.before,
+            branch=self.branch,
+        )
+
+        # Carry over previous available value for start date if its value is null
+        for measurable_id, measurements in all_measurements.items():
+            if self.after is not None and measurements[0]["timestamp_bin"] > self.after:
+                carryover_measurement = measurements_last_uploaded_before_start_date(
+                    repo_id=self.repository.repoid,
+                    measurable_name=measurable_name,
+                    measurable_ids=[measurable_id],
+                    start_date=self.after,
+                    branch=self.branch,
+                )
+
+                # Create a new datapoint in the measurements and prepend it to the existing list
+                # If there isn't any measurements before the start date range, measurements will be untouched
+                if carryover_measurement:
+                    value = Decimal(carryover_measurement[0]["value"])
+                    carryover = dict(measurements[0])
+                    carryover["timestamp_bin"] = self.after
+                    carryover["min"] = value
+                    carryover["max"] = value
+                    carryover["avg"] = value
+                    all_measurements[measurable_id] = [carryover] + all_measurements[
+                        measurable_id
+                    ]
+
+        return all_measurements
+
     def compute_asset(
         self, asset_report: AssetReport
     ) -> Optional[BundleAnalysisMeasurementData]:
@@ -375,15 +423,11 @@ class BundleAnalysisMeasurementsService(object):
         if asset.asset_type != AssetType.JAVASCRIPT:
             return None
 
-        measurements = measurements_by_ids(
-            repository=self.repository,
+        measurements = self._compute_measurements(
             measurable_name=MeasurementName.BUNDLE_ANALYSIS_ASSET_SIZE.value,
             measurable_ids=[asset.uuid],
-            interval=self.interval,
-            after=self.after,
-            before=self.before,
-            branch=self.branch,
         )
+
         return BundleAnalysisMeasurementData(
             raw_measurements=list(measurements.get(asset.uuid, [])),
             asset_type=BundleAnalysisMeasurementsAssetType.JAVASCRIPT_SIZE,
@@ -409,17 +453,12 @@ class BundleAnalysisMeasurementsService(object):
         else:
             measurable_ids = [bundle_report.name]
 
-        measurements = measurements_by_ids(
-            repository=self.repository,
+        measurements = self._compute_measurements(
             measurable_name=asset_type.value.value,
             measurable_ids=measurable_ids,
-            interval=self.interval,
-            after=self.after,
-            before=self.before,
-            branch=self.branch,
         )
 
-        results = [
+        return [
             BundleAnalysisMeasurementData(
                 raw_measurements=list(measurements.get(measurable_id, [])),
                 asset_type=asset_type,
@@ -430,5 +469,3 @@ class BundleAnalysisMeasurementsService(object):
             )
             for measurable_id in measurable_ids
         ]
-
-        return results

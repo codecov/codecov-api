@@ -3,6 +3,7 @@ from ariadne.validation import cost_directive
 from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
+from .account import account, account_bindable
 from .branch import branch, branch_bindable
 from .bundle_analysis import (
     bundle_analysis,
@@ -38,6 +39,7 @@ from .line_comparison import line_comparison, line_comparison_bindable
 from .me import me, me_bindable, tracking_metadata_bindable
 from .measurement import measurement, measurement_bindable
 from .mutation import mutation, mutation_resolvers
+from .okta_config import okta_config, okta_config_bindable
 from .owner import owner, owner_bindable
 from .path_contents import (
     path_content,
@@ -63,6 +65,7 @@ from .segment_comparison import (
 )
 from .self_hosted_license import self_hosted_license, self_hosted_license_bindable
 from .session import session, session_bindable
+from .test_results import test_result_bindable, test_results
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 from .user_token import user_token, user_token_bindable
@@ -109,6 +112,9 @@ types = [
     upload,
     user_token,
     user,
+    account,
+    okta_config,
+    test_results,
 ]
 
 bindables = [
@@ -163,4 +169,7 @@ bindables = [
     upload_error_bindable,
     user_bindable,
     user_token_bindable,
+    account_bindable,
+    okta_config_bindable,
+    test_result_bindable,
 ]

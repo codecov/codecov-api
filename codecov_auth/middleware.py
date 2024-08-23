@@ -8,7 +8,8 @@ from corsheaders.middleware import (
     ACCESS_CONTROL_ALLOW_ORIGIN,
 )
 from corsheaders.middleware import CorsMiddleware as BaseCorsMiddleware
-from django.http import HttpRequest
+from django.conf import settings
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.urls import resolve
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework import exceptions
@@ -46,7 +47,7 @@ class CurrentOwnerMiddleware(MiddlewareMixin):
     additional database queries).
     """
 
-    def process_request(self, request):
+    def process_request(self, request: HttpRequest) -> None:
         if not request.user or request.user.is_anonymous:
             request.current_owner = None
             return
@@ -72,7 +73,11 @@ class ImpersonationMiddleware(MiddlewareMixin):
     Allows staff users to impersonate other users for debugging.
     """
 
-    def process_request(self, request):
+    def process_request(self, request: HttpRequest) -> None:
+        """Log and ensure that the impersonating user is authenticated.
+        The `current user` is the staff user that is impersonating the
+        user owner at `impersonating_ownerid`.
+        """
         current_user = request.user
 
         if current_user and not current_user.is_anonymous:
@@ -84,6 +89,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
                 "Impersonation attempted",
                 extra=dict(
                     current_user_id=current_user.pk,
+                    current_user_email=current_user.email,
                     impersonating_ownerid=impersonating_ownerid,
                 ),
             )
@@ -93,6 +99,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
                     extra=dict(
                         reason="must be a staff user",
                         current_user_id=current_user.pk,
+                        current_user_email=current_user.email,
                         impersonating_ownerid=impersonating_ownerid,
                     ),
                 )
@@ -109,6 +116,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
                     extra=dict(
                         reason="no such owner",
                         current_user_id=current_user.pk,
+                        current_user_email=current_user.email,
                         impersonating_ownerid=impersonating_ownerid,
                     ),
                 )
@@ -118,13 +126,16 @@ class ImpersonationMiddleware(MiddlewareMixin):
                 "Impersonation successful",
                 extra=dict(
                     current_user_id=current_user.pk,
+                    current_user_email=current_user.email,
                     impersonating_ownerid=impersonating_ownerid,
                 ),
             )
 
 
 class CorsMiddleware(BaseCorsMiddleware):
-    def process_response(self, request, response):
+    def process_response(
+        self, request: HttpRequest, response: HttpResponse
+    ) -> HttpResponse:
         response = super().process_response(request, response)
         if not self.is_enabled(request):
             return response

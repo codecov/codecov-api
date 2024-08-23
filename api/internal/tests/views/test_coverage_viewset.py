@@ -76,7 +76,7 @@ class CoverageViewSetTests(APITestCase):
         self.commit3 = CommitFactory(
             author=self.current_owner,
             repository=self.repo,
-            branch=self.branch,
+            branch=self.branch.name,
         )
         with connection.cursor() as cursor:
             cursor.execute(

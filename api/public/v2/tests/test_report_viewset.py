@@ -108,7 +108,7 @@ class ReportViewSetTestCase(TestCase):
         self.commit3 = CommitFactory(
             author=self.org,
             repository=self.repo,
-            branch=self.branch,
+            branch=self.branch.name,
         )
         self.branch.head = self.commit3.commitid
         self.branch.save()

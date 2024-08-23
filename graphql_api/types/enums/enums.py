@@ -1,4 +1,5 @@
 import enum
+from typing import Self
 
 
 class OrderingParameter(enum.Enum):
@@ -8,6 +9,13 @@ class OrderingParameter(enum.Enum):
     MISSES = "misses"
     PARTIALS = "partials"
     LINES = "lines"
+
+
+class TestResultsOrderingParameter(enum.Enum):
+    AVG_DURATION = "avg_duration"
+    FAILURE_RATE = "failure_rate"
+    COMMITS_WHERE_FAIL = "commits_where_fail"
+    UPDATED_AT = "updated_at"
 
 
 class PathContentDisplayType(enum.Enum):
@@ -103,12 +111,12 @@ class CommitErrorCode(enum.Enum):
     yaml_unknown_error = ("yaml_unknown_error", CommitErrorGeneralType.yaml_error)
     repo_bot_invalid = ("repo_bot_invalid", CommitErrorGeneralType.bot_error)
 
-    def __init__(self, db_string, error_type):
+    def __init__(self, db_string: str, error_type: CommitErrorGeneralType):
         self.db_string = db_string
         self.error_type = error_type
 
     @classmethod
-    def get_codes_from_type(cls, error_type):
+    def get_codes_from_type(cls, error_type: CommitErrorGeneralType) -> list[Self]:
         return [item for item in cls if item.error_type == error_type]
 
 
@@ -116,3 +124,9 @@ class CommitStatus(enum.Enum):
     COMPLETED = "COMPLETED"
     ERROR = "ERROR"
     PENDING = "PENDING"
+
+
+class BundleLoadTypes(enum.Enum):
+    ENTRY = "ENTRY"
+    INITIAL = "INITIAL"
+    LAZY = "LAZY"

@@ -54,10 +54,10 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, input):
         typed_input = TermsAgreementInput(
-            business_email=input.get("businessEmail"),
-            terms_agreement=input.get("termsAgreement"),
-            marketing_consent=input.get("marketingConsent"),
-            customer_intent=input.get("customerIntent"),
+            business_email=input.get("business_email"),
+            terms_agreement=input.get("terms_agreement"),
+            marketing_consent=input.get("marketing_consent"),
+            customer_intent=input.get("customer_intent"),
         )
         self.validate(typed_input)
         return self.update_terms_agreement(typed_input)

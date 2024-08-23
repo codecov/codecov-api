@@ -143,7 +143,11 @@ class PlanSerializer(serializers.Serializer):
         return value
 
     def validate(self, plan):
-        owner = self.context["view"].owner
+        current_org = self.context["view"].owner
+        if current_org.account:
+            raise serializers.ValidationError(
+                detail="You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
+            )
 
         # Validate quantity here because we need access to whole plan object
         if plan["value"] in PAID_PLANS:
@@ -156,16 +160,19 @@ class PlanSerializer(serializers.Serializer):
                     "Quantity for paid plan must be greater than 1"
                 )
 
-            plan_service = PlanService(current_org=owner)
+            plan_service = PlanService(current_org=current_org)
             is_org_trialing = plan_service.is_org_trialing
 
-            if plan["quantity"] < owner.activated_user_count and not is_org_trialing:
+            if (
+                plan["quantity"] < current_org.activated_user_count
+                and not is_org_trialing
+            ):
                 raise serializers.ValidationError(
                     "Quantity cannot be lower than currently activated user count"
                 )
             if (
-                plan["quantity"] == owner.plan_user_count
-                and plan["value"] == owner.plan
+                plan["quantity"] == current_org.plan_user_count
+                and plan["value"] == current_org.plan
                 and not is_org_trialing
             ):
                 raise serializers.ValidationError(
@@ -190,6 +197,9 @@ class SubscriptionDetailSerializer(serializers.Serializer):
     current_period_end = serializers.IntegerField()
     customer = StripeCustomerSerializer()
     collection_method = serializers.CharField()
+    tax_ids = serializers.ListField(
+        source="customer.tax_ids.data", read_only=True, allow_null=True
+    )
     trial_end = serializers.IntegerField()
 
 
@@ -249,6 +259,10 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     root_organization = RootOrganizationSerializer()
     schedule_detail = serializers.SerializerMethodField()
     apply_cancellation_discount = serializers.BooleanField(write_only=True)
+    activated_student_count = serializers.SerializerMethodField()
+    activated_user_count = serializers.SerializerMethodField()
+    delinquent = serializers.SerializerMethodField()
+    uses_invoice = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -258,21 +272,22 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         fields = read_only_fields + (
             "activated_student_count",
             "activated_user_count",
+            "apply_cancellation_discount",
             "checkout_session_id",
+            "delinquent",
             "email",
             "inactive_user_count",
             "name",
             "nb_active_private_repos",
-            "plan",
             "plan_auto_activate",
             "plan_provider",
-            "uses_invoice",
+            "plan",
             "repo_total_credits",
             "root_organization",
             "schedule_detail",
             "student_count",
             "subscription_detail",
-            "apply_cancellation_discount",
+            "uses_invoice",
         )
 
     def _get_billing(self):
@@ -291,6 +306,26 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
     def get_checkout_session_id(self, _):
         return self.context.get("checkout_session_id")
+
+    def get_activated_student_count(self, owner):
+        if owner.account:
+            return owner.account.activated_student_count
+        return owner.activated_student_count
+
+    def get_activated_user_count(self, owner):
+        if owner.account:
+            return owner.account.activated_user_count
+        return owner.activated_user_count
+
+    def get_delinquent(self, owner):
+        if owner.account:
+            return owner.account.is_delinquent
+        return owner.delinquent
+
+    def get_uses_invoice(self, owner):
+        if owner.account:
+            return owner.account.invoice_billing.filter(is_active=True).exists()
+        return owner.uses_invoice
 
     def update(self, instance, validated_data):
         if "pretty_plan" in validated_data:

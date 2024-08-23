@@ -250,6 +250,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         UploadFactory(
             report=self.report, provider="travisci", state=UploadState.UPLOADED.value
         )
+        UploadFactory(report=self.report, provider="travisci", state="")
         query = (
             query_commit
             % """
@@ -276,6 +277,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             {"state": UploadState.ERROR.name},
             {"state": UploadState.COMPLETE.name},
             {"state": UploadState.UPLOADED.name},
+            {"state": UploadState.ERROR.name},
         ]
 
     def test_fetch_commit_uploads(self):
@@ -1076,6 +1078,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                     uncompress
                                                 }
                                             }
+                                            isCached
                                         }
                                         bundleData {
                                             loadTime {
@@ -1089,7 +1092,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                         }
                                         bundle(name: "not_exist") {
                                             name
+                                            isCached
                                         }
+                                        isCached
                                     }
                                     ... on MissingHeadReport {
                                         message
@@ -1133,6 +1138,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 20,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b2",
@@ -1154,6 +1160,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 200,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b3",
@@ -1175,6 +1182,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 1500,
                         },
                     },
+                    "isCached": False,
                 },
                 {
                     "name": "b5",
@@ -1196,6 +1204,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "uncompress": 200000,
                         },
                     },
+                    "isCached": False,
                 },
             ],
             "bundleData": {
@@ -1209,6 +1218,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
             },
             "bundle": None,
+            "isCached": False,
         }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
@@ -1290,7 +1300,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         asset_report = bundle_report["asset"]
 
         assert bundle_report is not None
-        assert bundle_report["moduleCount"] == 7
+        assert bundle_report["moduleCount"] == 33
 
         assert asset_report is not None
         assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
@@ -1349,6 +1359,118 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
             },
         }
+
+    @patch("shared.bundle_analysis.BundleReport.asset_reports")
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_asset_filtering(
+        self, get_storage_service, asset_reports_mock
+    ):
+        storage = MemoryStorageService({})
+
+        get_storage_service.return_value = storage
+        asset_reports_mock.return_value = []
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/bundle_with_assets_and_modules.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!, $filters: BundleAnalysisReportFilters) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name: "b5", filters: $filters) {
+                                            moduleCount
+                                            assets {
+                                                name
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "filters": {},
+        }
+
+        configurations = [
+            # No filters
+            (
+                {"loadTypes": None, "reportGroups": None},
+                {"asset_types": None, "chunk_entry": None, "chunk_initial": None},
+            ),
+            ({}, {"asset_types": None, "chunk_entry": None, "chunk_initial": None}),
+            # Just report groups
+            (
+                {"reportGroups": ["JAVASCRIPT", "FONT"]},
+                {
+                    "asset_types": ["JAVASCRIPT", "FONT"],
+                    "chunk_entry": None,
+                    "chunk_initial": None,
+                },
+            ),
+            # Load types -> chunk_entry cancels out
+            (
+                {"loadTypes": ["ENTRY", "INITIAL"]},
+                {"asset_types": None, "chunk_entry": None, "chunk_initial": True},
+            ),
+            # Load types -> chunk_entry = True
+            (
+                {"loadTypes": ["ENTRY"]},
+                {"asset_types": None, "chunk_entry": True, "chunk_initial": None},
+            ),
+            # Load types -> chunk_lazy = False
+            (
+                {"loadTypes": ["LAZY"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": False},
+            ),
+            # Load types -> chunk_initial cancels out
+            (
+                {"loadTypes": ["LAZY", "INITIAL"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": None},
+            ),
+            # Load types -> chunk_initial = True
+            (
+                {"loadTypes": ["INITIAL"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": True},
+            ),
+            # Load types -> chunk_initial = False
+            (
+                {"loadTypes": ["LAZY"]},
+                {"asset_types": None, "chunk_entry": False, "chunk_initial": False},
+            ),
+        ]
+
+        for config in configurations:
+            input_d, output_d = config
+            variables["filters"] = input_d
+            data = self.gql_request(query, variables=variables)
+            assert (
+                data["owner"]["repository"]["commit"]["bundleAnalysisReport"]["bundle"]
+                is not None
+            )
+            asset_reports_mock.assert_called_with(**output_d)
 
     def test_compare_with_parent_missing_change_coverage(self):
         CommitComparisonFactory(
