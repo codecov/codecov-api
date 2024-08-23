@@ -1,6 +1,3 @@
-from unittest.mock import MagicMock, patch
-
-import jwt
 import pytest
 from django.conf import settings
 from django.contrib import auth

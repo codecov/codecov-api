@@ -2,8 +2,7 @@ import logging
 
 from django.utils import timezone
 from django_filters import rest_framework as django_filters
-from rest_framework import filters, mixins, status
-from rest_framework.decorators import action
+from rest_framework import filters, mixins
 from rest_framework.exceptions import PermissionDenied
 
 from api.internal.repo.filter import RepositoryOrderingFilter

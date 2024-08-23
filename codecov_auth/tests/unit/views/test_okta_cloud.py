@@ -1,6 +1,6 @@
 from logging import LogRecord
 from typing import Any
-from urllib.parse import unquote, urlencode, urlparse
+from urllib.parse import unquote, urlparse
 
 import pytest
 from django.test import override_settings

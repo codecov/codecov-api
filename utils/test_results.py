@@ -1,9 +1,7 @@
 import datetime as dt
 from dataclasses import dataclass
 
-from asgiref.sync import sync_to_async
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db import connection
 from django.db.models import (
     Avg,
     Case,
@@ -12,16 +10,13 @@ from django.db.models import (
     Func,
     IntegerField,
     Max,
-    OuterRef,
     Q,
     QuerySet,
-    Sum,
     Value,
     When,
 )
-from django.db.models.expressions import RawSQL
 from django.db.models.functions import Coalesce
-from shared.django_apps.reports.models import Test, TestInstance
+from shared.django_apps.reports.models import TestInstance
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
 

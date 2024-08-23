@@ -4,7 +4,6 @@ from typing import List, Optional
 import sentry_sdk
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
-from shared.django_apps.codecov_auth.models import Owner
 from shared.reports.filtered import FilteredReportFile
 from shared.reports.resources import ReportFile
 

@@ -1,5 +1,4 @@
 import uuid
-from unittest import mock
 from unittest.mock import patch
 
 import pytest
@@ -8,7 +7,6 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 from shared.utils.test_utils import mock_config_helper
 
-from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, PullStates, Repository
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory

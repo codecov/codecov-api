@@ -24,7 +24,6 @@ from services.comparison import (
     ComparisonReport,
     FirstPullRequest,
     ImpactedFile,
-    MissingComparisonReport,
 )
 
 comparison_bindable = ObjectType("Comparison")

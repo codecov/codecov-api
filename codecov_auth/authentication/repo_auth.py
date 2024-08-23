@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from typing import List
 from uuid import UUID
 

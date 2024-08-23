@@ -5,3 +5,6 @@ from .revoke_user_token import error_revoke_user_token, resolve_revoke_user_toke
 gql_revoke_user_token = ariadne_load_local_graphql(
     __file__, "revoke_user_token.graphql"
 )
+
+
+__all__ = ["error_revoke_user_token", "resolve_revoke_user_token"]

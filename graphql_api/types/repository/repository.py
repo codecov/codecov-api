@@ -29,7 +29,6 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from reports.models import Test
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection

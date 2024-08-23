@@ -4,7 +4,7 @@ from django.db.models import F
 from django_filters import rest_framework as django_filters
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from shared.django_apps.codecov_auth.models import Owner
 
@@ -19,7 +19,6 @@ from services.task import TaskService
 from .serializers import (
     AccountDetailsSerializer,
     OwnerSerializer,
-    StripeInvoiceSerializer,
     UserSerializer,
 )
 
