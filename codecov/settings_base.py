@@ -8,6 +8,7 @@ from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 from shared.django_apps.db_settings import *
+from shared.license import startup_license_logging
 
 from utils.config import SettingsModule, get_config, get_settings_module
 
@@ -418,3 +419,6 @@ MIGRATION_MODULES = {
     "reports": "shared.django_apps.reports.migrations",
     "legacy_migrations": "shared.django_apps.legacy_migrations.migrations",
 }
+
+# to aid in debugging, print out this info on startup. If no license, prints nothing
+startup_license_logging()
