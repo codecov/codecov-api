@@ -6,7 +6,7 @@ from shared.utils.match import match
 import services.components as components
 from codecov.commands.base import BaseInteractor
 from services.comparison import Comparison, ComparisonReport, ImpactedFile
-from services.report import files_belonging_to_flags, files_in_sessions
+from services.report import files_belonging_to_flags
 
 
 class ImpactedFileParameter(enum.Enum):

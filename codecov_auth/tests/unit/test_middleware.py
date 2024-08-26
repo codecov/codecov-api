@@ -1,7 +1,5 @@
 from django.test import TestCase, override_settings
-from django.urls import reverse
 
-from codecov_auth.tests.factories import OwnerFactory
 from utils.test_utils import Client
 
 

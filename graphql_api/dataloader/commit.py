@@ -1,4 +1,4 @@
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch
 
 from core.models import Commit
 from reports.models import CommitReport

@@ -1,7 +1,6 @@
 import json
 from unittest.mock import Mock, patch
 
-from django.test import override_settings
 from django.utils import timezone
 from rest_framework.reverse import reverse
 from shared.torngit.exceptions import TorngitClientGeneralError

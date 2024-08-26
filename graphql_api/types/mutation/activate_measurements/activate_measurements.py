@@ -6,7 +6,6 @@ from graphql_api.helpers.mutation import (
     resolve_union_error_type,
     wrap_error_handling_mutation,
 )
-from timeseries.models import MeasurementName
 
 
 @wrap_error_handling_mutation

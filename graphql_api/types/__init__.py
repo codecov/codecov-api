@@ -1,4 +1,3 @@
-from ariadne import load_schema_from_path
 from ariadne.validation import cost_directive
 from ariadne_django.scalars import datetime_scalar
 

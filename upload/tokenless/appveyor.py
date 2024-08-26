@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError

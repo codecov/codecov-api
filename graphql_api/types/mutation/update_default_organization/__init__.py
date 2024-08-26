@@ -8,3 +8,6 @@ from .update_default_organization import (
 gql_update_default_organization = ariadne_load_local_graphql(
     __file__, "update_default_organization.graphql"
 )
+
+
+__all__ = ["error_update_default_organization", "resolve_update_default_organization"]

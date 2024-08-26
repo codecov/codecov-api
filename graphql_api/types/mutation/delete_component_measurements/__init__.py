@@ -8,3 +8,9 @@ from .delete_component_measurements import (
 gql_delete_component_measurements = ariadne_load_local_graphql(
     __file__, "delete_component_measurements.graphql"
 )
+
+
+__all__ = [
+    "error_delete_component_measurements",
+    "resolve_delete_component_measurements",
+]

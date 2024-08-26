@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import pytest
 
 from utils.test_utils import TestMigrations

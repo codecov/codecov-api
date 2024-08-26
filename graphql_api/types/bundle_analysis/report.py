@@ -1,4 +1,4 @@
-from typing import Any, List, Mapping, Optional, Union
+from typing import Any, List, Optional, Union
 
 from ariadne import ObjectType, UnionType
 from graphql import GraphQLResolveInfo

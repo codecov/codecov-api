@@ -1,5 +1,3 @@
-from json import loads
-
 import pytest
 
 from services.refresh import RefreshService

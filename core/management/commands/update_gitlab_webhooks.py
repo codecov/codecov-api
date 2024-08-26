@@ -7,7 +7,6 @@ from shared.config import get_config
 from shared.torngit.exceptions import TorngitClientError, TorngitRefreshTokenFailedError
 from shared.torngit.gitlab import Gitlab
 
-from codecov_auth.models import Owner
 from core.models import Repository
 from services.repo_providers import RepoProviderService
 from utils.repos import get_bot_user

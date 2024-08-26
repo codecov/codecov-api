@@ -7,7 +7,6 @@ from rest_framework import status
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from reports.models import TestInstance
 from reports.tests.factories import TestInstanceFactory
 from utils.test_utils import APIClient
 

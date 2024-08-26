@@ -1,5 +1,3 @@
-from inspect import Parameter
-
 from distutils.util import strtobool
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -15,7 +13,6 @@ from api.shared.compare.serializers import (
     ImpactedFilesComparisonSerializer,
     ImpactedFileSegmentsSerializer,
 )
-from core.models import Commit
 from services.components import ComponentComparison, commit_components
 from services.decorators import torngit_safe
 

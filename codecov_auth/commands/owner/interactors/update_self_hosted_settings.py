@@ -6,7 +6,6 @@ import services.self_hosted as self_hosted
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov.db import sync_to_async
-from services.refresh import RefreshService
 
 
 @dataclass

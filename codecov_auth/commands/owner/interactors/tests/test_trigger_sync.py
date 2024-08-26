@@ -1,10 +1,9 @@
 from unittest.mock import patch
 
 import pytest
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
-from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import Unauthenticated
 from codecov_auth.tests.factories import OwnerFactory
 
 from ..trigger_sync import TriggerSyncInteractor

@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from rest_framework.exceptions import APIException
-from rest_framework.test import APIRequestFactory
 
 from api.internal.tests.test_utils import (
     GetAdminErrorProviderAdapter,

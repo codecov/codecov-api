@@ -1,5 +1,3 @@
-from shared.rollouts import Feature
-
 from codecov_auth.models import Owner
 
 

@@ -5,7 +5,6 @@ from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from core import models
 from core.tests.factories import (
     CommitFactory,
     PullFactory,
