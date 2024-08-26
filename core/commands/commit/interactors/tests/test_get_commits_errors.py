@@ -1,5 +1,4 @@
 from asgiref.sync import async_to_sync
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from core.tests.factories import CommitErrorFactory, CommitFactory, OwnerFactory

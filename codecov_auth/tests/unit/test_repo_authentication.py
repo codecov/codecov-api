@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,7 +10,6 @@ from django.utils import timezone
 from jwt import PyJWTError
 from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
-from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,

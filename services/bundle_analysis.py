@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from django.utils.functional import cached_property
 from shared.bundle_analysis import AssetReport as SharedAssetReport
@@ -311,11 +311,13 @@ class BundleAnalysisComparison(object):
         loader: BundleAnalysisReportLoader,
         base_report_key: str,
         head_report_key: str,
+        repository: Repository,
     ):
         self.comparison = SharedBundleAnalysisComparison(
             loader,
             base_report_key,
             head_report_key,
+            repository,
         )
         self.head_report = self.comparison.head_report
 

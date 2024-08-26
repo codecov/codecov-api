@@ -1,3 +1,5 @@
+from typing import Union
+
 from shared.bundle_analysis import (
     BundleAnalysisReportLoader,
     MissingBaseReportError,
@@ -14,7 +16,7 @@ from services.bundle_analysis import BundleAnalysisComparison, BundleAnalysisRep
 
 def load_bundle_analysis_comparison(
     base_commit: Commit, head_commit: Commit
-) -> BundleAnalysisComparison:
+) -> Union[BundleAnalysisComparison, MissingHeadReport, MissingBaseReport]:
     head_report = CommitReport.objects.filter(
         report_type=CommitReport.ReportType.BUNDLE_ANALYSIS, commit=head_commit
     ).first()
@@ -37,6 +39,7 @@ def load_bundle_analysis_comparison(
             loader=loader,
             base_report_key=base_report.external_id,
             head_report_key=head_report.external_id,
+            repository=head_commit.repository,
         )
     except MissingBaseReportError:
         return MissingBaseReport()
@@ -44,7 +47,9 @@ def load_bundle_analysis_comparison(
         return MissingHeadReport()
 
 
-def load_bundle_analysis_report(commit: Commit) -> BundleAnalysisReport:
+def load_bundle_analysis_report(
+    commit: Commit,
+) -> Union[BundleAnalysisReport, MissingHeadReport, MissingBaseReport]:
     report = CommitReport.objects.filter(
         report_type=CommitReport.ReportType.BUNDLE_ANALYSIS, commit=commit
     ).first()

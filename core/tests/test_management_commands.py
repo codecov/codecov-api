@@ -1,5 +1,4 @@
 import unittest.mock as mock
-import uuid
 from io import StringIO
 
 import fakeredis

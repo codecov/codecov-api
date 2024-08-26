@@ -1,6 +1,4 @@
 from django.apps import AppConfig
-from redis import Redis
-from shared.config import get_config
 from shared.helpers.cache import RedisBackend
 
 from services.redis_configuration import get_redis_connection
@@ -12,7 +10,7 @@ class CoreConfig(AppConfig):
     name = "core"
 
     def ready(self):
-        import core.signals
+        import core.signals  # noqa: F401
 
         if RUN_ENV not in ["DEV", "TESTING"]:
             cache_backend = RedisBackend(get_redis_connection())

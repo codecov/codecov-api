@@ -1,7 +1,6 @@
 import hmac
 import json
 import uuid
-from collections import namedtuple
 from hashlib import sha256
 from unittest.mock import call, patch
 
@@ -13,7 +12,6 @@ from rest_framework.test import APITestCase
 
 from codecov_auth.models import GithubAppInstallation, Owner, Service
 from codecov_auth.tests.factories import OwnerFactory
-from core.models import Repository
 from core.tests.factories import (
     BranchFactory,
     CommitFactory,

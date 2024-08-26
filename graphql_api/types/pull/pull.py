@@ -1,7 +1,6 @@
 from typing import Any, Optional, Union
 
 from ariadne import ObjectType
-from asgiref.sync import async_to_sync
 from graphql import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
@@ -107,8 +106,12 @@ def resolve_bundle_analysis_compare_with_base(
     head_commit_sha = pull.head if pull.head else pull.compared_to
 
     bundle_analysis_comparison = load_bundle_analysis_comparison(
-        Commit.objects.filter(commitid=pull.compared_to).first(),
-        Commit.objects.filter(commitid=head_commit_sha).first(),
+        Commit.objects.filter(
+            commitid=pull.compared_to, repository=pull.repository
+        ).first(),
+        Commit.objects.filter(
+            commitid=head_commit_sha, repository=pull.repository
+        ).first(),
     )
 
     # Store the created SQLite DB path in info.context

@@ -1,8 +1,7 @@
 import logging
 import uuid
-from secrets import token_bytes
 
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.forms import ValidationError
 

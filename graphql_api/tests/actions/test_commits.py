@@ -1,6 +1,5 @@
 from collections import Counter
 
-from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory

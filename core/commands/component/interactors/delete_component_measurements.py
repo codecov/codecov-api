@@ -3,7 +3,6 @@ from django.conf import settings
 import services.self_hosted as self_hosted
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import (
-    NotFound,
     Unauthenticated,
     Unauthorized,
     ValidationError,

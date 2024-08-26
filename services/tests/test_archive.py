@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from time import time
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -31,20 +30,12 @@ class TestWriteData(object):
                 "filename": "file_1.go",
                 "file_index": 0,
                 "file_totals": [0, 8, 5, 3, 0, "62.50000", 0, 0, 0, 0, 10, 2, 0],
-                "session_totals": {
-                    "0": [0, 8, 5, 3, 0, "62.50000", 0, 0, 0, 0, 10, 2],
-                    "meta": {"session_count": 1},
-                },
                 "diff_totals": None,
             },
             {
                 "filename": "file_2.py",
                 "file_index": 1,
                 "file_totals": [0, 2, 1, 0, 1, "50.00000", 1, 0, 0, 0, 0, 0, 0],
-                "session_totals": {
-                    "0": [0, 2, 1, 0, 1, "50.00000", 1],
-                    "meta": {"session_count": 1},
-                },
                 "diff_totals": None,
             },
         ]
@@ -79,20 +70,12 @@ class TestWriteData(object):
                 "filename": "file_1.go",
                 "file_index": 0,
                 "file_totals": [0, 8, 5, 3, 0, "62.50000", 0, 0, 0, 0, 10, 2, 0],
-                "session_totals": {
-                    "0": [0, 8, 5, 3, 0, "62.50000", 0, 0, 0, 0, 10, 2],
-                    "meta": {"session_count": 1},
-                },
                 "diff_totals": None,
             },
             {
                 "filename": "file_2.py",
                 "file_index": 1,
                 "file_totals": [0, 2, 1, 0, 1, "50.00000", 1, 0, 0, 0, 0, 0, 0],
-                "session_totals": {
-                    "0": [0, 2, 1, 0, 1, "50.00000", 1],
-                    "meta": {"session_count": 1},
-                },
                 "diff_totals": None,
             },
         ]

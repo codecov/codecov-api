@@ -1,11 +1,7 @@
-from unittest.mock import patch
-
 from django.test import TestCase, override_settings
 from rest_framework.reverse import reverse
 
-from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
-from services.self_hosted import activate_owner, is_autoactivation_enabled
 from utils.test_utils import APIClient
 
 

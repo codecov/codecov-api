@@ -1,7 +1,5 @@
 import pytest
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
-from django.utils import timezone
 
 from codecov.commands.exceptions import Unauthenticated
 from codecov.db import sync_to_async

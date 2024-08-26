@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import pytest
 from django.core import signing
 from django.http.cookie import SimpleCookie
@@ -9,7 +7,6 @@ from shared.torngit.exceptions import TorngitClientGeneralError
 from codecov_auth.models import Owner
 from codecov_auth.views.bitbucket_server import (
     BitbucketServer,
-    BitbucketServerLoginView,
 )
 from utils.encryption import encryptor
 

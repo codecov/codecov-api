@@ -1,4 +1,4 @@
-from typing import Any, List, Mapping, Optional, Union
+from typing import Any, List, Optional, Union
 
 from ariadne import ObjectType, UnionType
 from graphql import GraphQLResolveInfo
@@ -36,12 +36,12 @@ def resolve_bundle(
     filters: dict[str, list[str]] = {},
 ) -> Optional[BundleReport]:
     asset_types = None
-    if filters.get("reportGroups"):
-        asset_types = filters.get("reportGroups")
+    if filters.get("report_groups"):
+        asset_types = filters.get("report_groups")
 
     chunk_entry, chunk_initial = None, None
-    if filters.get("loadTypes"):
-        load_types = filters.get("loadTypes")
+    if filters.get("load_types"):
+        load_types = filters.get("load_types")
 
         # Compute chunk entry boolean
         if BundleLoadTypes.ENTRY in load_types and (

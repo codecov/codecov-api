@@ -1,12 +1,8 @@
-import asyncio
 from datetime import UTC, datetime
-from unittest.mock import patch
 
-from ariadne import graphql_sync
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TransactionTestCase
 from freezegun import freeze_time
 
-from codecov.db import sync_to_async
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from reports.models import TestInstance
@@ -23,7 +19,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             author=self.owner,
         )
         self.test = TestFactory(
-            name="Test Name",
+            name="Test\x1fName",
             repository=self.repository,
         )
         _ = TestInstanceFactory(
@@ -71,10 +67,9 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert (
-            result["owner"]["repository"]["testResults"]["edges"][0]["node"]["name"]
-            == self.test.name
-        )
+        assert result["owner"]["repository"]["testResults"]["edges"][0]["node"][
+            "name"
+        ] == self.test.name.replace("\x1f", " ")
 
     def test_fetch_test_result_updated_at(self) -> None:
         query = """

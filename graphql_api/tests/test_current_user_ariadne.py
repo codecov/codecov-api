@@ -8,7 +8,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
     OktaSettingsFactory,
 )
 
-from codecov_auth.models import Owner, OwnerProfile
+from codecov_auth.models import OwnerProfile
 from codecov_auth.tests.factories import OwnerFactory, UserFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 

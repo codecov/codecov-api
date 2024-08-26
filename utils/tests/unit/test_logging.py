@@ -1,5 +1,3 @@
-import os
-
 from utils.logging_configuration import CustomLocalJsonFormatter
 
 

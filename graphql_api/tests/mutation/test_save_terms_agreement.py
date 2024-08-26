@@ -1,7 +1,5 @@
-import pytest
 from django.test import TransactionTestCase
 
-from codecov.commands.exceptions import ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
