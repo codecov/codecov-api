@@ -8,3 +8,6 @@ from .sync_with_git_provider import (
 gql_sync_with_git_provider = ariadne_load_local_graphql(
     __file__, "sync_with_git_provider.graphql"
 )
+
+
+__all__ = ["error_sync_with_git_provider", "resolve_sync_with_git_provider"]

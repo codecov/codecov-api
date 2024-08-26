@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import minio
 from ddf import G
-from rest_framework.reverse import reverse
 from rest_framework.test import APITransactionTestCase
 
 from codecov_auth.models import Owner

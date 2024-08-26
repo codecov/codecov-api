@@ -1,5 +1,3 @@
-from cProfile import label
-
 from rest_framework import serializers
 
 from reports.models import TestInstance

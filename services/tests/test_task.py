@@ -1,9 +1,7 @@
 from datetime import datetime
-from operator import xor
 from unittest.mock import MagicMock
 
 import pytest
-from celery import Task
 from django.conf import settings
 from freezegun import freeze_time
 from shared import celery_config

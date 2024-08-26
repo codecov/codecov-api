@@ -1,5 +1,4 @@
 import dataclasses
-import hashlib
 import logging
 from typing import List
 
@@ -7,7 +6,6 @@ from rest_framework import serializers
 
 from api.internal.commit.serializers import CommitSerializer
 from api.shared.commit.serializers import ReportTotalsSerializer
-from compare.models import CommitComparison
 from services.comparison import (
     Comparison,
     ComparisonReport,

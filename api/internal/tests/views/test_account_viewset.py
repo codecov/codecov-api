@@ -11,7 +11,6 @@ from rest_framework.test import APITestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     InvoiceBillingFactory,
-    StripeBillingFactory,
 )
 from stripe import StripeError
 

@@ -1,15 +1,11 @@
-import asyncio
 import logging
 
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
-from rest_framework.exceptions import APIException, PermissionDenied
-from shared.torngit.exceptions import TorngitClientError
 
 from codecov_auth.models import Owner
 from core.models import Repository
-from services.decorators import torngit_safe
 from services.repo_providers import RepoProviderService
 
 log = logging.getLogger(__name__)

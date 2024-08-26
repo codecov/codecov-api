@@ -14,7 +14,7 @@ import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
 from core.models import Branch, Repository
-from graphql_api.actions.commits import commit_status, repo_commits
+from graphql_api.actions.commits import repo_commits
 from graphql_api.actions.components import (
     component_measurements,
     component_measurements_last_uploaded,
@@ -29,7 +29,6 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from reports.models import Test
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection

@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase, override_settings
 
 from codecov.commands.exceptions import (

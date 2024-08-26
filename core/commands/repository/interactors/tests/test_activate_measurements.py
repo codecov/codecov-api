@@ -4,7 +4,6 @@ from unittest.mock import patch
 import pytest
 from asgiref.sync import async_to_sync
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time

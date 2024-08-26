@@ -2,8 +2,6 @@ from datetime import datetime
 
 from ariadne import ObjectType
 
-from reports.models import Test
-
 test_result_bindable = ObjectType("TestResult")
 
 

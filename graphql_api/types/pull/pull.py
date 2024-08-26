@@ -1,7 +1,6 @@
 from typing import Any, Optional, Union
 
 from ariadne import ObjectType
-from asgiref.sync import async_to_sync
 from graphql import GraphQLResolveInfo
 
 from codecov.db import sync_to_async

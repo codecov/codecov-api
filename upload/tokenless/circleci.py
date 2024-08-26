@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta
 
 import requests
 from django.conf import settings

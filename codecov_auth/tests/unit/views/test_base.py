@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 from django.conf import settings
 from django.contrib.sessions.backends.cache import SessionStore
-from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
 from freezegun import freeze_time

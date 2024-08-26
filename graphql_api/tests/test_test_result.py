@@ -1,12 +1,8 @@
-import asyncio
 from datetime import UTC, datetime
-from unittest.mock import patch
 
-from ariadne import graphql_sync
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TransactionTestCase
 from freezegun import freeze_time
 
-from codecov.db import sync_to_async
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from reports.models import TestInstance

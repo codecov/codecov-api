@@ -1,6 +1,4 @@
 import pytest
-from asgiref.sync import async_to_sync
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError

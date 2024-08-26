@@ -1,7 +1,4 @@
-from django.test import TestCase
 from prometheus_client import REGISTRY
-
-from core.middleware import USER_AGENT_METRICS
 
 
 # TODO: consolidate with worker/helpers/tests/unit/test_checkpoint_logger.py into shared repo

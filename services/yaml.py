@@ -1,7 +1,7 @@
 import enum
 import logging
 from functools import lru_cache
-from typing import Dict, Optional
+from typing import Dict
 
 from asgiref.sync import async_to_sync
 from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference

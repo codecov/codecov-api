@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from django.conf import settings
@@ -19,7 +19,6 @@ from reports.models import (
 )
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.archive import ArchiveService, MinioEndpoints
-from services.repo_providers import RepoProviderService
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
 
 

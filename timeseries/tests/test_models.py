@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import TransactionTestCase
 from freezegun import freeze_time
 
-from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
+from timeseries.models import Dataset, Interval, MeasurementSummary
 
 from .factories import DatasetFactory, MeasurementFactory
 

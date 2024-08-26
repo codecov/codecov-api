@@ -1,5 +1,3 @@
-import os
-
 from utils.services import get_long_service_name, get_short_service_name
 
 

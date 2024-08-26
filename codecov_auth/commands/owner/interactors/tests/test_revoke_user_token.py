@@ -1,11 +1,10 @@
 import pytest
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from codecov.commands.exceptions import Unauthenticated
 from codecov.db import sync_to_async
-from codecov_auth.models import Session, UserToken
-from codecov_auth.tests.factories import OwnerFactory, SessionFactory, UserTokenFactory
+from codecov_auth.models import UserToken
+from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
 
 from ..revoke_user_token import RevokeUserTokenInteractor
 
