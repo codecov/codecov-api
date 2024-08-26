@@ -1,6 +1,4 @@
 import hashlib
-import math
-from fractions import Fraction
 
 from ariadne import ObjectType
 from shared.utils.merge import LineType, line_type

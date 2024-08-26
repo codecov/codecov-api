@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
@@ -8,7 +8,6 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport, ReportResults
 from reports.tests.factories import ReportResultsFactory
-from services.repo_providers import RepoProviderService
 from services.task.task import TaskService
 from upload.views.uploads import CanDoCoverageUploadsPermission
 

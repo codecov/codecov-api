@@ -1,17 +1,9 @@
-import pytest
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
 )
 
-from codecov.commands.exceptions import (
-    NotFound,
-    Unauthenticated,
-    Unauthorized,
-    ValidationError,
-)
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 

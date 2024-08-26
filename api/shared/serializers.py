@@ -3,7 +3,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
 from core.models import Branch, Commit, Pull
-from utils.config import get_config
 
 
 class StringListField(serializers.ListField):

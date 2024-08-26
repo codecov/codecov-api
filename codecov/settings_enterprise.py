@@ -1,7 +1,6 @@
 import os
-from urllib.parse import urlparse
 
-from utils.config import get_config, get_settings_module
+from utils.config import get_config
 
 from .settings_base import *
 

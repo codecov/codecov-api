@@ -1,5 +1,4 @@
 import pytest
-from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 
 from codecov.commands.exceptions import Unauthorized

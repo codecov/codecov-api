@@ -1,5 +1,3 @@
-import logging
-
 from .settings_base import *
 
 # Remove CSP headers from local development build to allow GQL Playground

@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from utils.test_utils import Client
 

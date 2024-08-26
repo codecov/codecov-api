@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from unittest.mock import ANY, call, patch
+from unittest.mock import call
 
 import pytest
 from django.http.cookie import SimpleCookie

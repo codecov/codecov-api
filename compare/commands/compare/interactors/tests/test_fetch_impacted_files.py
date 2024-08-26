@@ -1,7 +1,6 @@
 import enum
 from unittest.mock import PropertyMock, patch
 
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session

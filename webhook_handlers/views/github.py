@@ -3,7 +3,7 @@ import logging
 import re
 from contextlib import suppress
 from hashlib import sha1, sha256
-from typing import Optional, Union
+from typing import Optional
 
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
@@ -20,7 +20,6 @@ from codecov_auth.models import (
     Owner,
 )
 from core.models import Branch, Commit, Pull, Repository
-from services.archive import ArchiveService
 from services.billing import BillingService
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService

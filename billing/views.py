@@ -9,7 +9,6 @@ from rest_framework.views import APIView
 
 from codecov_auth.models import Owner
 from plan.service import PlanService
-from services.billing import BillingService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
 

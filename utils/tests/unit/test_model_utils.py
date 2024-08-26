@@ -2,7 +2,6 @@ import json
 from unittest.mock import MagicMock
 
 from shared.storage.exceptions import FileNotInStorageError
-from shared.utils.ReportEncoder import ReportEncoder
 
 from core.models import Commit
 from core.tests.factories import CommitFactory

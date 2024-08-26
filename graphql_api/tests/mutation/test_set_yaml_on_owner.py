@@ -1,10 +1,8 @@
 import asyncio
 from unittest.mock import patch
 
-import pytest
 from django.test import TransactionTestCase
 
-from codecov.db import sync_to_async
 from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 

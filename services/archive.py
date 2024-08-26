@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.utils import timezone
-from minio import Minio
 from shared.utils.ReportEncoder import ReportEncoder
 
 from services.storage import StorageService

@@ -3,7 +3,6 @@ import logging
 from django.http import HttpResponse
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from shared.celery_config import static_analysis_task_name
 
 from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication

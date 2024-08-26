@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.sessions.models import Session as DjangoSession
-from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.core.exceptions import PermissionDenied
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
 from django.utils import timezone

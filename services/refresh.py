@@ -1,4 +1,3 @@
-from contextlib import suppress
 from json import dumps, loads
 
 from celery.result import result_from_tuple

@@ -1,6 +1,3 @@
-from datetime import datetime, timedelta
-
-from django.db.models import Q
 from shared.upload.utils import query_monthly_coverage_measurements
 
 from codecov.commands.base import BaseInteractor

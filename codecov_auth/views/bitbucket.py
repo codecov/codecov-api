@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import logging
 from urllib.parse import urlencode

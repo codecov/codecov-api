@@ -1,7 +1,6 @@
 from typing import Optional
 
 from django.conf import settings
-from django.db import connection
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.functional import cached_property

@@ -1,9 +1,8 @@
 import logging
-from typing import Optional
 
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from api.shared.mixins import CompareSlugMixin
@@ -12,7 +11,6 @@ from compare.models import CommitComparison
 from services.comparison import (
     CommitComparisonService,
     Comparison,
-    ComparisonReport,
     MissingComparisonCommit,
     MissingComparisonReport,
     PullRequestComparison,

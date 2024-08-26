@@ -5,3 +5,6 @@ from .component_comparison import component_comparison_bindable
 component_comparison = ariadne_load_local_graphql(
     __file__, "component_comparison.graphql"
 )
+
+
+__all__ = ["component_comparison_bindable"]

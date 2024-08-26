@@ -6,7 +6,7 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.models import Commit, PullStates, Repository
+from core.models import Commit, PullStates
 from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from webhook_handlers.constants import (
     GitLabHTTPHeaders,
