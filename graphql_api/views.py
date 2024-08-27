@@ -13,13 +13,11 @@ from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
 from django.http import (
-    HttpResponse,
     HttpResponseBadRequest,
     HttpResponseNotAllowed,
     JsonResponse,
 )
 from graphql import DocumentNode
-from rest_framework.exceptions import Throttled
 from sentry_sdk import capture_exception
 from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import Counter, Histogram
@@ -280,7 +278,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         }
 
     def error_formatter(self, error, debug=False):
-        # the only way to check for a malformatted query
+        # the only way to check for a malformed query
         is_bad_query = "Cannot query field" in error.formatted["message"]
         if debug or is_bad_query:
             return format_error(error, debug)
@@ -310,8 +308,18 @@ class AsyncGraphqlView(GraphQLAsyncView):
     def _check_ratelimit(self, request):
         redis = get_redis_connection()
         user_ip = self.get_client_ip(request)
-        key = f"rate_limit:{user_ip}"
-        limit = 10  # requests per minute
+        try:
+            # eagerly try to get user_id from request object
+            user_id = request.user.pk
+        except Exception:
+            pass
+
+        if user_id:
+            key = f"rl-user:{user_id}"
+        else:
+            key = f"rl-ip:{user_ip}"
+
+        limit = 10000  # requests per minute
         window = 60  # seconds
 
         current_count = redis.get(key)
@@ -321,6 +329,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             return True
         else:
             redis.incr(key)
+        return False
 
     def get_client_ip(self, request):
         x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
