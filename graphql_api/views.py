@@ -238,8 +238,6 @@ class AsyncGraphqlView(GraphQLAsyncView):
                 status=429,
             )
 
-        print("PAST THIS POINT")
-
         with RequestFinalizer(request):
             response = await super().post(request, *args, **kwargs)
 
