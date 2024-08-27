@@ -210,8 +210,6 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
         mocked_check_ratelimit.return_value = True
         response = await self.do_query(schema, " { stuff }")
 
-        print("RESPONSE", response)
-
         assert response["status"] == 429
         assert (
             response["detail"]
