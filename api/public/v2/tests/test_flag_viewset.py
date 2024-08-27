@@ -76,8 +76,8 @@ class FlagViewSetTestCase(TestCase):
             "next": None,
             "previous": None,
             "results": [
-                {"flag_name": "foo", "coverage": 0},
-                {"flag_name": "bar", "coverage": 0},
+                {"flag_name": "foo", "coverage": None},
+                {"flag_name": "bar", "coverage": None},
             ],
             "total_pages": 1,
         }
@@ -97,8 +97,8 @@ class FlagViewSetTestCase(TestCase):
             "next": None,
             "previous": None,
             "results": [
-                {"flag_name": "foo", "coverage": 0},
-                {"flag_name": "bar", "coverage": 0},
+                {"flag_name": "foo", "coverage": None},
+                {"flag_name": "bar", "coverage": None},
             ],
             "total_pages": 1,
         }

@@ -23,7 +23,7 @@ class FlagViewSet(viewsets.GenericViewSet, mixins.ListModelMixin, RepoPropertyMi
 
     def get_queryset(self) -> QuerySet:
         results = [
-            {"flag_name": f.flag_name, "coverage": 0} for f in self.repo.flags.all()
+            {"flag_name": f.flag_name, "coverage": None} for f in self.repo.flags.all()
         ]
         try:
             report = self.get_commit().full_report
