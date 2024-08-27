@@ -213,7 +213,7 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
         assert response["status"] == 429
         assert (
             response["detail"]
-            == "It looks like you've hit the rate limit of 1000 req/min. Try again later."
+            == "It looks like you've hit the rate limit of 300 req/min. Try again later."
         )
 
         expected_calls = [
