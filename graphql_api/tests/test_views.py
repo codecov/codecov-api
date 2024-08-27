@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 from ariadne import ObjectType, make_executable_schema
 from ariadne.validation import cost_directive
@@ -39,7 +39,7 @@ def generate_cost_test_schema():
     return make_executable_schema([types, cost_directive], query_bindable)
 
 
-class ArianeViewTestCase(GraphQLTestHelper, TestCase):
+class AriadneViewTestCase(GraphQLTestHelper, TestCase):
     async def do_query(self, schema, query="{ failing }"):
         view = AsyncGraphqlView.as_view(schema=schema)
         request = RequestFactory().post(
@@ -200,3 +200,42 @@ class ArianeViewTestCase(GraphQLTestHelper, TestCase):
         )
         assert extension.operation_type == "unknown_type"
         assert extension.operation_name == "unknown_name"
+
+    @patch("sentry_sdk.metrics.incr")
+    @patch("graphql_api.views.AsyncGraphqlView._check_ratelimit")
+    async def test_when_rate_limit_reached(
+        self, mocked_check_ratelimit, mocked_sentry_incr
+    ):
+        schema = generate_cost_test_schema()
+        mocked_check_ratelimit.return_value = True
+        response = await self.do_query(schema, " { stuff }")
+
+        print("RESPONSE", response)
+
+        assert response["status"] == 429
+        assert (
+            response["detail"]
+            == "It looks like you've hit the rate limit of 1000 req/min. Try again later."
+        )
+
+        expected_calls = [
+            call("graphql.info.request_made", tags={"path": "/graphql/gh"}),
+            call("graphql.error.rate_limit", tags={"path": "/graphql/gh"}),
+        ]
+        mocked_sentry_incr.assert_has_calls(expected_calls)
+
+    def test_client_ip_from_x_forwarded_for(self):
+        view = AsyncGraphqlView()
+        request = Mock()
+        request.META = {"HTTP_X_FORWARDED_FOR": "127.0.0.1,blah", "REMOTE_ADDR": "lol"}
+
+        result = view.get_client_ip(request)
+        assert result == "127.0.0.1"
+
+    def test_client_ip_from_remote_addr(self):
+        view = AsyncGraphqlView()
+        request = Mock()
+        request.META = {"HTTP_X_FORWARDED_FOR": None, "REMOTE_ADDR": "lol"}
+
+        result = view.get_client_ip(request)
+        assert result == "lol"

@@ -233,10 +233,12 @@ class AsyncGraphqlView(GraphQLAsyncView):
             return JsonResponse(
                 data={
                     "status": 429,
-                    "detail": "It looks like you've hit our rate limit. Try again in a few minutes.",
+                    "detail": "It looks like you've hit the rate limit of 1000 req/min. Try again later.",
                 },
                 status=429,
             )
+
+        print("PAST THIS POINT")
 
         with RequestFinalizer(request):
             response = await super().post(request, *args, **kwargs)
@@ -319,7 +321,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         else:
             key = f"rl-ip:{user_ip}"
 
-        limit = 10000  # requests per minute
+        limit = 1000  # requests per minute
         window = 60  # seconds
 
         current_count = redis.get(key)
