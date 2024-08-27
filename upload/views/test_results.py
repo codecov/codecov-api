@@ -3,7 +3,7 @@ import uuid
 
 from django.utils import timezone
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -88,6 +88,9 @@ class TestResultsView(
             repo = request.user._repository
         else:
             raise NotAuthenticated()
+
+        if repo is None:
+            raise NotFound("Repository not found.")
 
         update_fields = []
         if not repo.active or not repo.activated:
