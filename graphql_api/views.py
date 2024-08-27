@@ -311,8 +311,8 @@ class AsyncGraphqlView(GraphQLAsyncView):
         try:
             # eagerly try to get user_id from request object
             user_id = request.user.pk
-        except Exception:
-            pass
+        except AttributeError:
+            user_id = None
 
         if user_id:
             key = f"rl-user:{user_id}"
