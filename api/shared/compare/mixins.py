@@ -87,8 +87,7 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
         comparison = self.get_object()
 
         # Some checks here for pseudo-comparisons. Basically, when pseudo-comparing,
-        # we sometimes might need to tweak the base report if the user allows us to
-        # in their yaml, or raise an error if not.
+        # we sometimes might need to tweak the base report
         if isinstance(comparison, PullRequestComparison):
             if comparison.pseudo_diff_adjusts_tracked_lines:
                 comparison.update_base_report_with_pseudo_diff()
