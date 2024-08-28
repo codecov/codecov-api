@@ -805,11 +805,11 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
-    @patch("logging.Logger.error")
+    @patch("logging.Logger.warning")
     @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
     def test_fetch_is_github_rate_limited_but_errors(
         self,
-        mock_log_error,
+        mock_log_warning,
         mock_determine_rate_limit,
         mock_determine_redis_key,
     ):
@@ -834,7 +834,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         assert data["me"]["owner"]["repository"]["isGithubRateLimited"] is None
 
-        mock_log_error.assert_called_once_with(
+        mock_log_warning.assert_called_once_with(
             "Error when checking rate limit",
             extra={
                 "repo_id": repo.repoid,
