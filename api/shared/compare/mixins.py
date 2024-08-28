@@ -90,9 +90,7 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
         # we sometimes might need to tweak the base report if the user allows us to
         # in their yaml, or raise an error if not.
         if isinstance(comparison, PullRequestComparison):
-            if (
-                comparison.pseudo_diff_adjusts_tracked_lines
-            ):
+            if comparison.pseudo_diff_adjusts_tracked_lines:
                 comparison.update_base_report_with_pseudo_diff()
         serializer = self.get_serializer(comparison)
 
