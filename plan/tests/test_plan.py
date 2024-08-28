@@ -4,9 +4,10 @@ from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from pytest import raises
+from shared.django_apps.codecov_auth.tests.factories import AccountsUsersFactory
 
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import AccountFactory, OwnerFactory
 from plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,
@@ -362,6 +363,60 @@ class PlanServiceTests(TestCase):
 
         assert current_org.plan == PlanName.TEAM_MONTHLY.value
         assert current_org.plan_user_count == 8
+
+    def test_has_account(self):
+        current_org = OwnerFactory()
+        plan_service = PlanService(current_org=current_org)
+        self.assertFalse(plan_service.has_account)
+
+        current_org.account = AccountFactory()
+        current_org.save()
+        plan_service = PlanService(current_org=current_org)
+        self.assertTrue(plan_service.has_account)
+
+    def test_plan_data_has_account(self):
+        current_org = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        plan_service = PlanService(current_org=current_org)
+        self.assertEqual(plan_service.plan_name, PlanName.BASIC_PLAN_NAME.value)
+
+        current_org.account = AccountFactory(plan=PlanName.CODECOV_PRO_YEARLY.value)
+        current_org.save()
+        plan_service = PlanService(current_org=current_org)
+        self.assertEqual(plan_service.plan_name, PlanName.CODECOV_PRO_YEARLY.value)
+
+    def test_plan_user_count_has_account(self):
+        org = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value, plan_user_count=5)
+        account = AccountFactory(
+            plan=PlanName.BASIC_PLAN_NAME.value, plan_seat_count=50, free_seat_count=3
+        )
+
+        plan_service = PlanService(current_org=org)
+        self.assertEqual(plan_service.plan_user_count, 5)
+
+        org.account = account
+        org.save()
+        plan_service = PlanService(current_org=org)
+        self.assertEqual(plan_service.plan_user_count, 53)
+
+    def test_has_seats_left_has_account(self):
+        org = OwnerFactory(
+            plan=PlanName.BASIC_PLAN_NAME.value,
+            plan_user_count=5,
+            plan_activated_users=[1, 2, 3],
+        )
+        account = AccountFactory(
+            plan=PlanName.BASIC_PLAN_NAME.value, plan_seat_count=5, free_seat_count=3
+        )
+        for i in range(8):
+            AccountsUsersFactory(account=account)
+
+        plan_service = PlanService(current_org=org)
+        self.assertEqual(plan_service.has_seats_left, True)
+
+        org.account = account
+        org.save()
+        plan_service = PlanService(current_org=org)
+        self.assertEqual(plan_service.has_seats_left, False)
 
 
 class AvailablePlansBeforeTrial(TestCase):
