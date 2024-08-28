@@ -44,7 +44,7 @@ class UploadSerializer(serializers.Serializer):
     flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
     branch = serializers.CharField(required=False, allow_null=True)
-    service = serializers.CharField(required=False)
+    ci_service = serializers.CharField(required=False)
     storage_path = serializers.CharField(required=False)
 
 
@@ -152,7 +152,7 @@ class TestResultsView(
             "build_url": data.get("buildURL"),  # build_url
             "job": data.get("job"),  # job_code
             "flags": data.get("flags"),
-            "service": data.get("service"),  # provider
+            "service": data.get("ci_service"),  # provider
             "url": storage_path,  # storage_path
             # these are used for dispatching the task below
             "commit": commit.commitid,
