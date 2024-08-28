@@ -92,18 +92,8 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
         if isinstance(comparison, PullRequestComparison):
             if (
                 comparison.pseudo_diff_adjusts_tracked_lines
-                and comparison.allow_coverage_offsets
             ):
                 comparison.update_base_report_with_pseudo_diff()
-            elif comparison.pseudo_diff_adjusts_tracked_lines:
-                return Response(
-                    data={
-                        "detail": "Changes found in between %.7s...%.7s (pseudo...base) "
-                        "which prevent comparing this pull request."
-                        % (comparison.pull.compared_to, comparison.pull.base)
-                    },
-                    status=400,
-                )
         serializer = self.get_serializer(comparison)
 
         try:
