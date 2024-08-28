@@ -5,7 +5,6 @@ from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from core import models
 from core.tests.factories import (
     CommitFactory,
     PullFactory,
@@ -803,6 +802,45 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data["me"]["owner"]["repository"]["isGithubRateLimited"] == False
+
+    @patch("shared.rate_limits.determine_entity_redis_key")
+    @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
+    @patch("logging.Logger.warning")
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_is_github_rate_limited_but_errors(
+        self,
+        mock_log_warning,
+        mock_determine_rate_limit,
+        mock_determine_redis_key,
+    ):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        mock_determine_redis_key.side_effect = Exception("some random error lol")
+        mock_determine_rate_limit.return_value = True
+
+        data = self.gql_request(
+            query_repository
+            % """
+                isGithubRateLimited
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["isGithubRateLimited"] is None
+
+        mock_log_warning.assert_called_once_with(
+            "Error when checking rate limit",
+            extra={
+                "repo_id": repo.repoid,
+                "has_owner": True,
+            },
+        )
 
     def test_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)

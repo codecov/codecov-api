@@ -14,6 +14,7 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from reports.models import CommitReport, ReportResults
+from rollouts import NO_PREPROCESS_UPLOAD
 from services.task import TaskService
 from upload.helpers import generate_upload_sentry_metrics_tags
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
@@ -61,9 +62,11 @@ class ReportViews(ListCreateAPIView, GetterMixin):
             commit_id=commit.id,
             report_type=CommitReport.ReportType.COVERAGE,
         )
-        TaskService().preprocess_upload(
-            repository.repoid, commit.commitid, instance.code
-        )
+
+        if NO_PREPROCESS_UPLOAD.check_value(identifier=repository.repoid, default=True):
+            TaskService().preprocess_upload(
+                repository.repoid, commit.commitid, instance.code
+            )
         sentry_metrics.incr(
             "upload",
             tags=generate_upload_sentry_metrics_tags(
@@ -101,12 +104,13 @@ class ReportResultsView(
 
     def perform_create(self, serializer):
         sentry_metrics.incr(
-            "upload_start",
+            "upload",
             tags=generate_upload_sentry_metrics_tags(
                 action="coverage",
                 endpoint="create_report_results",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
+                position="start",
             ),
         )
         repository = self.get_repo()
@@ -133,6 +137,7 @@ class ReportResultsView(
                 request=self.request,
                 repository=repository,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
         return instance

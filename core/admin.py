@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.core.paginator import Paginator
 from django.db import connections
@@ -42,6 +43,19 @@ class EstimatedCountPaginator(Paginator):
         return int(result[0])
 
 
+class RepositoryAdminForm(forms.ModelForm):
+    # the model field has null=True but not blank=True, so we have to add a workaround
+    # to be able to clear out this field through the django admin
+    webhook_secret = forms.CharField(required=False, empty_value=None)
+    yaml = forms.JSONField(required=False)
+    using_integration = forms.BooleanField(required=False)
+    hookid = forms.CharField(required=False, empty_value=None)
+
+    class Meta:
+        model = Repository
+        fields = "__all__"
+
+
 @admin.register(Repository)
 class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
     inlines = [RepositoryTokenInline]
@@ -49,6 +63,7 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
     search_fields = ("author__username__exact",)
     show_full_result_count = False
     autocomplete_fields = ("bot",)
+    form = RepositoryAdminForm
 
     paginator = EstimatedCountPaginator
 
@@ -67,7 +82,13 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
         "activated",
         "deleted",
     )
-    fields = readonly_fields + ("bot", "using_integration", "branch", "private")
+    fields = readonly_fields + (
+        "bot",
+        "using_integration",
+        "branch",
+        "private",
+        "webhook_secret",
+    )
 
     def has_delete_permission(self, request, obj=None):
         return False

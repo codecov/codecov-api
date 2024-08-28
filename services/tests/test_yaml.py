@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 

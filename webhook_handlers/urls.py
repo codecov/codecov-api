@@ -1,4 +1,4 @@
-from django.urls import include, path
+from django.urls import path
 
 # to remove when in production we send the webhooks to /billing/stripe/webhooks
 from billing.views import StripeWebhookHandler

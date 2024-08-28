@@ -1,4 +1,4 @@
-type TestAnalysis {
+type TestAnalytics {
   testResults(
     filters: TestResultsFilters
     ordering: TestResultsOrdering

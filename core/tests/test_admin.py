@@ -1,10 +1,11 @@
+import uuid
 from unittest.mock import MagicMock, patch
 
 from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
 
 from codecov_auth.tests.factories import UserFactory
-from core.admin import RepositoryAdmin
+from core.admin import RepositoryAdmin, RepositoryAdminForm
 from core.models import Repository
 from core.tests.factories import RepositoryFactory
 from utils.test_utils import Client
@@ -52,3 +53,29 @@ class AdminTest(TestCase):
             {"changed": {"fields": ["using_integration"]}},
             {"using_integration": "prev value: True, new value: False"},
         ]
+
+
+class RepositoryAdminTests(AdminTest):
+    def test_webhook_secret_nullable(self):
+        repo = RepositoryFactory(
+            webhook_secret=str(uuid.uuid4()),
+        )
+        self.assertIsNotNone(repo.webhook_secret)
+        data = {
+            "webhook_secret": "",
+            # all the required fields have to be filled out in the form even though they aren't changed
+            "name": repo.name,
+            "author": repo.author,
+            "service_id": repo.service_id,
+            "upload_token": repo.upload_token,
+            "image_token": repo.image_token,
+            "branch": repo.branch,
+        }
+
+        form = RepositoryAdminForm(data=data, instance=repo)
+        self.assertTrue(form.is_valid())
+        updated_instance = form.save()
+        self.assertIsNone(updated_instance.webhook_secret)
+
+        repo.refresh_from_db()
+        self.assertIsNone(repo.webhook_secret)

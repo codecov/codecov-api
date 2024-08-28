@@ -13,7 +13,7 @@ from shared.storage.exceptions import FileNotInStorageError
 from shared.utils.sessions import Session, SessionType
 
 from core.models import Commit
-from reports.models import AbstractTotals, CommitReport, ReportDetails, ReportSession
+from reports.models import AbstractTotals, CommitReport, ReportSession
 from services.archive import ArchiveService
 from utils.config import RUN_ENV
 
@@ -226,7 +226,6 @@ def build_files(commit_report: CommitReport) -> dict[str, ReportFileSummary]:
         file["filename"]: ReportFileSummary(
             file_index=file["file_index"],
             file_totals=ReportTotals(*file["file_totals"]),
-            session_totals=file["session_totals"],
             diff_totals=file["diff_totals"],
         )
         for file in report_details.files_array

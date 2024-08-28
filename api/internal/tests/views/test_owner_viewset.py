@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from rest_framework import status
 from rest_framework.exceptions import ErrorDetail
 from rest_framework.reverse import reverse

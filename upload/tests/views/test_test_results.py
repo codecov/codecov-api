@@ -102,6 +102,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
             "endpoint": "test_results",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 
@@ -184,11 +185,34 @@ def test_test_results_no_auth(db, client, mocker, mock_redis):
         format="json",
     )
     assert res.status_code == 401
-    assert (
-        res.json().get("detail")
-        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
-        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    assert res.json().get("detail") == "Not valid tokenless upload"
+
+
+def test_upload_test_results_no_repo(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+    mocker.patch.object(TaskService, "upload")
+    mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
     )
+
+    repository = RepositoryFactory.create()
+    org_token = OrganizationLevelTokenFactory.create(owner=repository.author)
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {org_token.token}")
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
+            "slug": "FakeUser::::NonExistentName",
+        },
+        format="json",
+    )
+    assert res.status_code == 404
+    assert res.json() == {"detail": "Repository not found."}
+    assert not upload.called
 
 
 def test_upload_test_results_missing_args(db, client, mocker, mock_redis):

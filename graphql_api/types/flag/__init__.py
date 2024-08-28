@@ -5,3 +5,6 @@ from .flag import flag_bindable
 
 flag = ariadne_load_local_graphql(__file__, "flag.graphql")
 flag += build_connection_graphql("FlagConnection", "Flag")
+
+
+__all__ = ["flag_bindable"]

@@ -1,12 +1,12 @@
 import logging
-from dataclasses import asdict
 
 from django.db.models import F
 from django_filters import rest_framework as django_filters
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
+from shared.django_apps.codecov_auth.models import Owner
 
 from api.shared.mixins import OwnerPropertyMixin
 from api.shared.owner.mixins import OwnerViewSetMixin, UserViewSetMixin
@@ -19,7 +19,6 @@ from services.task import TaskService
 from .serializers import (
     AccountDetailsSerializer,
     OwnerSerializer,
-    StripeInvoiceSerializer,
     UserSerializer,
 )
 
@@ -57,6 +56,14 @@ class AccountDetailsViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_object(self):
+        if self.owner.account:
+            # gets the related account and invoice_billing objects from db in 1 query
+            # otherwise, each reference to owner.account would be an additional query
+            self.owner = (
+                Owner.objects.filter(pk=self.owner.ownerid)
+                .select_related("account__invoice_billing")
+                .first()
+            )
         return self.owner
 
     @action(detail=False, methods=["patch"])

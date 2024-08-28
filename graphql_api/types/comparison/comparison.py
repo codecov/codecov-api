@@ -24,7 +24,6 @@ from services.comparison import (
     ComparisonReport,
     FirstPullRequest,
     ImpactedFile,
-    MissingComparisonReport,
 )
 
 comparison_bindable = ObjectType("Comparison")
@@ -33,18 +32,6 @@ comparison_bindable = ObjectType("Comparison")
 @comparison_bindable.field("state")
 def resolve_state(comparison: ComparisonReport, info: GraphQLResolveInfo) -> str:
     return comparison.commit_comparison.state
-
-
-@comparison_bindable.field("impactedFilesDeprecated")
-@convert_kwargs_to_snake_case
-@sync_to_async
-def resolve_impacted_files_deprecated(
-    comparison_report: ComparisonReport, info: GraphQLResolveInfo, filters=None
-) -> List[ImpactedFile]:
-    command: CompareCommands = info.context["executor"].get_command("compare")
-    comparison: Comparison = info.context.get("comparison", None)
-
-    return command.fetch_impacted_files(comparison_report, comparison, filters)
 
 
 @comparison_bindable.field("impactedFiles")
@@ -256,7 +243,7 @@ def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport,
     info: GraphQLResolveInfo,
     **kwargs,  # type: ignore
-) -> False:
+) -> bool:
     # TODO: can we remove the need for `info.context["comparison"]` here?
     if "comparison" not in info.context:
         return False

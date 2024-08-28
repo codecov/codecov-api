@@ -1,23 +1,16 @@
 import json
 import logging
-import re
-from datetime import datetime
-from typing import Any, List, Tuple
+from typing import List
 from uuid import UUID
 
-from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import QuerySet
-from django.http.request import HttpRequest
+from django.http import HttpRequest
 from django.utils import timezone
 from jwt import PyJWTError
 from rest_framework import authentication, exceptions
-from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
-from rest_framework.response import Response
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.views import exception_handler
-from sentry_sdk import metrics as sentry_metrics
-from shared.metrics import metrics
-from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.helpers import get_upload_info_from_request_path
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
@@ -28,7 +21,6 @@ from codecov_auth.models import (
     TokenTypeChoices,
 )
 from core.models import Commit, Repository
-from services.repo_providers import RepoProviderService
 from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import get_repository_from_string
 from utils import is_uuid
@@ -318,3 +310,41 @@ class TokenlessAuthentication(authentication.TokenAuthentication):
             )
         else:
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+
+class BundleAnalysisTokenlessAuthentication(TokenlessAuthentication):
+    def _get_info_from_request_path(
+        self, request: HttpRequest
+    ) -> tuple[Repository, str | None]:
+        try:
+            body = json.loads(str(request.body, "utf8"))
+
+            # Validate provider
+            service_enum = Service(body.get("git_service"))
+
+            # Validate that next group exists and decode slug
+            repo = get_repository_from_string(service_enum, body.get("slug"))
+            if repo is None:
+                # Purposefully using the generic message so that we don't tell that
+                # we don't have a certain repo
+                raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+            return repo, body.get("commit")
+        except json.JSONDecodeError:
+            # Validate request body format
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+        except ValueError:
+            # Validate provider
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+    def get_branch(self, request, repoid=None, commitid=None):
+        body = json.loads(str(request.body, "utf8"))
+
+        # If commit is not created yet (ie first upload for this commit), we just validate branch format.
+        # However if a commit exists already (ie not the first upload for this commit), we must additionally
+        # validate the saved commit branch matches what is requested in this upload call.
+        commit = Commit.objects.filter(repository_id=repoid, commitid=commitid).first()
+        if commit and commit.branch != body.get("branch"):
+            raise exceptions.AuthenticationFailed(self.auth_failed_message)
+
+        return body.get("branch")

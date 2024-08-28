@@ -1,10 +1,5 @@
-import asyncio
-from unittest.mock import patch
+from django.test import TransactionTestCase
 
-from ariadne import graphql_sync
-from django.test import TestCase, TransactionTestCase, override_settings
-
-from codecov.db import sync_to_async
 from codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,

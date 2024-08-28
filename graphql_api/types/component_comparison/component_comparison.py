@@ -1,5 +1,3 @@
-from typing import List
-
 from ariadne import ObjectType
 from shared.reports.types import ReportTotals
 

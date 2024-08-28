@@ -21,15 +21,12 @@ from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast
 from django.utils import timezone
 
-import services.report as report_service
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
-from reports.models import RepositoryFlag
 from services.task import TaskService
 from timeseries.models import (
     Dataset,
     Interval,
-    Measurement,
     MeasurementName,
     MeasurementSummary,
 )

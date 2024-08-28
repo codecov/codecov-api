@@ -1,0 +1,15 @@
+type BundleAnalysisCommit {
+  bundleAnalysisCompareWithParent: BundleAnalysisComparisonResult
+  bundleAnalysisReport: BundleAnalysisReportResult
+}
+
+type CoverageCommit {
+  components(filters: ComponentsFilters): [Component!]!
+  coverageFile(path: String!, flags: [String], components: [String]): File
+  flagNames: [String]
+  totals: CoverageTotals
+}
+
+type TestAnalyticsCommit {
+  placeholder: String
+}

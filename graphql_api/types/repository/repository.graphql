@@ -14,8 +14,9 @@ type Repository {
   private: Boolean!
 
   #### feature level types ####
-  coverageV2: CoverageV2
-  testAnalysis: TestAnalysis
+  coverageAnalytics: CoverageAnalytics
+  testAnalytics: TestAnalytics
+  bundleAnalysis: BundleAnalysis
   #############################
 
   # oldestCommitAt fetches main's oldest commit timestamp
@@ -68,9 +69,15 @@ type Repository {
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
   testAnalyticsEnabled: Boolean
-  ########################
-
   isGithubRateLimited: Boolean!
+  testResults(
+    filters: TestResultsFilters
+    ordering: TestResultsOrdering
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
 }
 
 type TestResultConnection {

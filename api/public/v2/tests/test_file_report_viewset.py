@@ -1,18 +1,15 @@
-import os
 from unittest.mock import call, patch
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from rest_framework.reverse import reverse
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.models import UserToken
-from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
+from codecov_auth.tests.factories import OwnerFactory
 from core.models import Branch
-from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
-from services.components import Component
+from core.tests.factories import CommitFactory, RepositoryFactory
 from utils.test_utils import APIClient
 
 

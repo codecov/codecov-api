@@ -8,3 +8,5 @@ from .save_terms_agreement import (
 gql_save_terms_agreement = ariadne_load_local_graphql(
     __file__, "save_terms_agreement.graphql"
 )
+
+__all__ = ["error_save_terms_agreement", "resolve_save_terms_agreement"]

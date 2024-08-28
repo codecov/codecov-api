@@ -1,5 +1,3 @@
-from cProfile import label
-
 from rest_framework import serializers
 
 from api.public.v2.owner.serializers import OwnerSerializer

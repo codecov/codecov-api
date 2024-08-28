@@ -118,6 +118,7 @@ class TestBundleAnalysisComparison(TestCase):
             loader,
             self.base_commit_report.external_id,
             self.head_commit_report.external_id,
+            self.repo,
         )
 
         assert len(bac.bundles) == 5

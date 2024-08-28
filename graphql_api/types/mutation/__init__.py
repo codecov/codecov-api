@@ -9,7 +9,7 @@ from .delete_flag import gql_delete_flag
 from .delete_session import gql_delete_session
 from .encode_secret_string import gql_encode_secret_string
 from .erase_repository import gql_erase_repository
-from .mutation import mutation_resolvers
+from .mutation import mutation_resolvers  # noqa: F401
 from .onboard_user import gql_onboard_user
 from .regenerate_org_upload_token import gql_regenerate_org_upload_token
 from .regenerate_repository_token import gql_regenerate_repository_token

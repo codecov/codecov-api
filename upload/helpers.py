@@ -42,6 +42,11 @@ from .constants import ci, global_upload_token_providers
 
 is_pull_noted_in_branch = re.compile(r".*(pull|pr)\/(\d+).*")
 
+# Valid values are `https://dev.azure.com/username/` or `https://username.visualstudio.com/`
+# May be URL-encoded, so ':' can be '%3A' and '/' can be '%2F'
+# Username is alphanumeric with '_' and '-'
+_valid_azure_server_uri = r"^https?(?:://|%3A%2F%2F)(?:dev.azure.com(?:/|%2F)[a-zA-Z0-9_-]+(?:/|%2F)|[a-zA-Z0-9_-]+.visualstudio.com(?:/|%2F))$"
+
 log = logging.getLogger(__name__)
 redis = get_redis_connection()
 
@@ -207,7 +212,10 @@ def parse_params(data):
         "url": {"type": "string"},  # custom location where report is found
         "parent": {"type": "string"},
         "project": {"type": "string"},
-        "server_uri": {"type": "string"},
+        "server_uri": {
+            "type": "string",
+            "regex": _valid_azure_server_uri,
+        },
         "root": {"type": "string"},  # deprecated
         "storage_path": {"type": "string"},
     }
@@ -231,6 +239,8 @@ def get_repo_with_github_actions_oidc_token(token):
     else:
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
+        # remove trailing slashes if present
+        github_enterprise_url = re.sub(r"/+$", "", github_enterprise_url)
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
     jwks_client = PyJWKClient(jwks_url)
     signing_key = jwks_client.get_signing_key_from_jwt(token)

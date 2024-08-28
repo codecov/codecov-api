@@ -1,7 +1,6 @@
 import json
 from unittest.mock import Mock, patch
 
-from django.test import override_settings
 from django.utils import timezone
 from rest_framework.reverse import reverse
 from shared.torngit.exceptions import TorngitClientGeneralError
@@ -743,14 +742,12 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
                 "filename": "test_file_1.py",
                 "file_index": 2,
                 "file_totals": [1, 10, 8, 2, 5, "80.00000", 6, 7, 9, 8, 20, 40, 13],
-                "session_totals": [[0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]],
                 "diff_totals": [0, 2, 1, 1, 0, "50.00000", 0, 0, 0, 0, 0, 0, 0],
             },
             {
                 "filename": "test_file_2.py",
                 "file_index": 0,
                 "file_totals": [1, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0],
-                "session_totals": [[0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]],
                 "diff_totals": None,
             },
         ]
@@ -842,9 +839,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
                                 40,
                                 13,
                             ],
-                            "session_totals": [
-                                [0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0]
-                            ],
                             "diff_totals": [
                                 0,
                                 2,
@@ -878,9 +872,6 @@ class TestRepositoryViewSetDetailActions(RepositoryViewSetTestSuite):
                                 0,
                                 0,
                                 0,
-                            ],
-                            "session_totals": [
-                                [0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0]
                             ],
                             "diff_totals": None,
                         },

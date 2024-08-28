@@ -1,19 +1,16 @@
 import time
 from unittest.mock import patch
 
-import pytest
 import stripe
 from django.conf import settings
 from freezegun import freeze_time
-from pytest import raises
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
 
-from codecov_auth.models import Owner
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from plan.constants import PlanName, TrialDaysAmount
+from plan.constants import PlanName
 
 from ..constants import StripeHTTPHeaders
 

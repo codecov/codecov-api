@@ -1,11 +1,8 @@
-from django.db.models import F, OuterRef, Subquery
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, viewsets
+from django.db.models import OuterRef, Subquery
+from rest_framework import mixins
 
 from api.shared.branch.mixins import BranchViewSetMixin
-from api.shared.mixins import RepoPropertyMixin
-from api.shared.permissions import RepositoryArtifactPermissions
-from core.models import Branch, Commit
+from core.models import Commit
 
 from .serializers import BranchSerializer
 

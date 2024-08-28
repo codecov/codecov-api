@@ -70,6 +70,17 @@ class Connection:
 
 class DictCursorPaginator(CursorPaginator):
     """
+    WARNING: DictCursorPaginator does not work for dict objects where a key contains the following string: "__"
+    TODO: if instance is a dictionary and not an object, don't split the ordering
+
+    ordering = "test__name"
+    Django object:
+    -> obj.test.name
+
+    Dict:
+    -> obj["test"]["name"] X wrong
+    we want obj["test__name"]
+
     overrides CursorPaginator's position_from_instance method
     because it assumes that instance's fields are attributes on the
     instance. This doesn't work with the aggregate_test_results query

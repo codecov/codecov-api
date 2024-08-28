@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Iterable, List, Mapping, Optional
 
@@ -13,7 +14,7 @@ import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
 from core.models import Branch, Repository
-from graphql_api.actions.commits import commit_status, repo_commits
+from graphql_api.actions.commits import repo_commits
 from graphql_api.actions.components import (
     component_measurements,
     component_measurements_last_uploaded,
@@ -28,13 +29,14 @@ from graphql_api.helpers.connection import (
 from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from reports.models import Test
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 from utils.test_results import aggregate_test_results
+
+log = logging.getLogger(__name__)
 
 repository_bindable = ObjectType("Repository")
 
@@ -551,14 +553,21 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
         and repository.service != SERVICE_GITHUB_ENTERPRISE
     ):
         return False
-    current_owner = info.context["request"].current_owner
-    redis_connection = get_redis_connection()
-    rate_limit_redis_key = rate_limits.determine_entity_redis_key(
-        owner=current_owner, repository=repository
-    )
-    return rate_limits.determine_if_entity_is_rate_limited(
-        redis_connection, rate_limit_redis_key
-    )
+    repo_owner = repository.author
+    try:
+        redis_connection = get_redis_connection()
+        rate_limit_redis_key = rate_limits.determine_entity_redis_key(
+            owner=repo_owner, repository=repository
+        )
+        return rate_limits.determine_if_entity_is_rate_limited(
+            redis_connection, rate_limit_redis_key
+        )
+    except Exception:
+        log.warning(
+            "Error when checking rate limit",
+            extra=dict(repo_id=repository.repoid, has_owner=bool(repo_owner)),
+        )
+        return None
 
 
 @repository_bindable.field("testResults")
@@ -573,9 +582,12 @@ async def resolve_test_results(
     queryset = await sync_to_async(aggregate_test_results)(
         repoid=repository.repoid, branch=filters.get("branch") if filters else None
     )
+
     return await queryset_to_connection(
         queryset,
-        ordering=(ordering.get("parameter"),) if ordering else ("avg_duration",),
+        ordering=(ordering.get("parameter"), "name")
+        if ordering
+        else ("avg_duration", "name"),
         ordering_direction=ordering.get("direction")
         if ordering
         else OrderingDirection.DESC,

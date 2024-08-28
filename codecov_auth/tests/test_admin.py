@@ -568,6 +568,15 @@ class AccountAdminTest(TestCase):
         self.assertEqual(AccountsUsers.objects.all().count(), 0)
 
     def test_seat_check(self):
+        # edge case: User has multiple Owners, one of which is a Student, but should still count as 1 seat on this Account
+        user = self.owner_with_user_1.user
+        OwnerFactory(
+            service="gitlab", user=user, student=False
+        )  # another owner on this user
+        OwnerFactory(
+            service="bitbucket", user=user, student=True
+        )  # student owner on this user
+
         self.assertEqual(AccountsUsers.objects.all().count(), 0)
         self.account.plan_seat_count = 1
         self.account.save()

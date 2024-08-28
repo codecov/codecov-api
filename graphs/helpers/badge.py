@@ -1,5 +1,3 @@
-from math import floor
-
 from shared.helpers.color import coverage_to_color
 
 from graphs.badges.badges import large_badge, medium_badge, small_badge, unknown_badge
