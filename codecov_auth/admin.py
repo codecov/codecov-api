@@ -1,14 +1,17 @@
 import logging
-from typing import Optional
+from datetime import timedelta
+from typing import Optional, Sequence
 
 import django.forms as forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
+from django.db.models import OuterRef, Subquery
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import CheckboxInput, Select
 from django.http import HttpRequest
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.html import format_html
 from shared.django_apps.codecov_auth.models import (
     Account,
@@ -20,7 +23,7 @@ from shared.django_apps.codecov_auth.models import (
 from codecov.admin import AdminMixin
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.helpers import History
-from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
+from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, Session, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
@@ -336,13 +339,75 @@ class OwnerOrgInline(admin.TabularInline):
     fields = [] + readonly_fields
 
 
+def find_and_remove_stale_users(
+    orgs: Sequence[Owner], date_threshold: timedelta | None = None
+) -> tuple[set[int], set[int]]:
+    """
+    This functions finds all the stale `plan_activated_users` in any of the given `orgs`.
+
+    It then removes all those stale users from the given `orgs`,
+    returning the set of stale users (`ownerid`), and the set of `orgs` that were updated (`ownerid`).
+
+    A user is considered stale if it had no API or login `Session` or any opened PR within `date_threshold`.
+    If no `date_threshold` is given, it defaults to *90 days*.
+    """
+
+    active_users = set()
+    for org in orgs:
+        active_users.update(set(org.plan_activated_users))
+
+    if not active_users:
+        return (set(), set())
+
+    # NOTE: the `annotate_last_pull_timestamp` manager/queryset method does the same `annotate` with `Subquery`.
+    sessions = Session.objects.filter(owner=OuterRef("pk")).order_by("-lastseen")
+    resolved_users = list(
+        Owner.objects.filter(ownerid__in=active_users)
+        .annotate(latest_session=Subquery(sessions.values("lastseen")[:1]))
+        .annotate_last_pull_timestamp()
+        .values_list("ownerid", "latest_session", "last_pull_timestamp", named=True)
+    )
+
+    threshold = timezone.now() - (date_threshold or timedelta(days=90))
+
+    def is_stale(user: dict) -> bool:
+        return (user.latest_session is None or user.latest_session < threshold) and (
+            # NOTE: `last_pull_timestamp` is not timezone-aware, so we explicitly compare without timezones here
+            user.last_pull_timestamp is None
+            or user.last_pull_timestamp.replace(tzinfo=None)
+            < threshold.replace(tzinfo=None)
+        )
+
+    stale_users = {user.ownerid for user in resolved_users if is_stale(user)}
+
+    # TODO: the existing stale user cleanup script clears the `oauth_token`, though the reason for that is not clear?
+    # Owner.objects.filter(ownerid__in=stale_users).update(oauth_token=None)
+
+    affected_orgs = {
+        org for org in orgs if stale_users.intersection(set(org.plan_activated_users))
+    }
+
+    if not affected_orgs:
+        return (set(), set())
+
+    # TODO: it might make sense to run all this within a transaction and locking the `affected_orgs` for update,
+    # as we have a slight chance of races between querying the `orgs` at the very beginning and updating them here:
+    for org in affected_orgs:
+        org.plan_activated_users = list(
+            set(org.plan_activated_users).difference(stale_users)
+        )
+    Owner.objects.bulk_update(affected_orgs, ["plan_activated_users"])
+
+    return (stale_users, {org.ownerid for org in affected_orgs})
+
+
 @admin.register(Account)
 class AccountAdmin(AdminMixin, admin.ModelAdmin):
     list_display = ("name", "is_active", "organizations_count", "all_user_count")
     search_fields = ("name__iregex", "id")
     search_help_text = "Search by name (can use regex), or id (exact)"
     inlines = [OwnerOrgInline, StripeBillingInline, InvoiceBillingInline]
-    actions = ["seat_check", "link_users_to_account"]
+    actions = ["seat_check", "link_users_to_account", "deactivate_stale_users"]
 
     readonly_fields = ["id", "created_at", "updated_at", "users"]
 
@@ -355,6 +420,24 @@ class AccountAdmin(AdminMixin, admin.ModelAdmin):
         "plan_auto_activate",
         "is_delinquent",
     ]
+
+    @admin.action(description="Deactivate all stale `plan_activated_users`")
+    def deactivate_stale_users(self, request, queryset):
+        orgs = [org for account in queryset for org in account.organizations.all()]
+        stale_users, updated_orgs = find_and_remove_stale_users(orgs)
+
+        if not stale_users or not updated_orgs:
+            self.message_user(
+                request,
+                "No stale users found in selected accounts / organizations.",
+                messages.INFO,
+            )
+        else:
+            self.message_user(
+                request,
+                f"Removed {len(stale_users)} stale users from {len(updated_orgs)} affected organizations.",
+                messages.SUCCESS,
+            )
 
     @admin.action(
         description="Count current plan_activated_users across all Organizations"
