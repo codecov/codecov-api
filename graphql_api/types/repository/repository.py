@@ -553,19 +553,19 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
         and repository.service != SERVICE_GITHUB_ENTERPRISE
     ):
         return False
-    current_owner = info.context["request"].current_owner
+    repo_owner = repository.author
     try:
         redis_connection = get_redis_connection()
         rate_limit_redis_key = rate_limits.determine_entity_redis_key(
-            owner=current_owner, repository=repository
+            owner=repo_owner, repository=repository
         )
         return rate_limits.determine_if_entity_is_rate_limited(
             redis_connection, rate_limit_redis_key
         )
     except Exception:
-        log.error(
+        log.warning(
             "Error when checking rate limit",
-            extra=dict(repo_id=repository.repoid, has_owner=bool(current_owner)),
+            extra=dict(repo_id=repository.repoid, has_owner=bool(repo_owner)),
         )
         return None
 
