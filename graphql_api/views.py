@@ -307,7 +307,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
 
     def _check_ratelimit(self, request):
         redis = get_redis_connection()
-        user_ip = self.get_client_ip(request)
+
         try:
             # eagerly try to get user_id from request object
             user_id = request.user.pk
@@ -317,6 +317,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         if user_id:
             key = f"rl-user:{user_id}"
         else:
+            user_ip = self.get_client_ip(request)
             key = f"rl-ip:{user_ip}"
 
         limit = 300
