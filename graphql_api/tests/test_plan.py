@@ -5,6 +5,7 @@ import pytest
 from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
+from shared.django_apps.codecov_auth.tests.factories import AccountFactory
 from shared.license import LicenseInformation
 from shared.utils.test_utils import mock_config_helper
 
@@ -81,6 +82,37 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "monthlyUploadLimit": None,
             "pretrialUsersCount": 234,
             "planUserCount": 123,
+        }
+
+    def test_owner_plan_data_with_account(self):
+        self.current_org.account = AccountFactory(
+            plan=PlanName.CODECOV_PRO_YEARLY.value,
+            plan_seat_count=25,
+        )
+        self.current_org.save()
+        query = """{
+                owner(username: "%s") {
+                    plan {
+                        marketingName
+                        planName
+                        value
+                        tierName
+                        billingRate
+                        baseUnitPrice
+                        planUserCount
+                    }
+                }
+            }
+            """ % (self.current_org.username)
+        data = self.gql_request(query, owner=self.current_org)
+        assert data["owner"]["plan"] == {
+            "marketingName": "Pro",
+            "planName": "users-pr-inappy",
+            "value": "users-pr-inappy",
+            "tierName": "pro",
+            "billingRate": "annually",
+            "baseUnitPrice": 10,
+            "planUserCount": 25,
         }
 
     def test_owner_plan_data_has_seats_left(self):
