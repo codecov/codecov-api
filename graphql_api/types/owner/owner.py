@@ -126,8 +126,16 @@ async def resolve_repository(owner: Owner, info, name):
     okta_authenticated_accounts: list[int] = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
     )
+
+    # if impersonating, exclude_okta_enforced_repos=False
+    request = info.context["request"]
+    is_impersonation = getattr(request, "impersonation", False)
+
     repository: Optional[Repository] = await command.fetch_repository(
-        owner, name, okta_authenticated_accounts
+        owner,
+        name,
+        okta_authenticated_accounts,
+        exclude_okta_enforced_repos=not is_impersonation,
     )
 
     if repository is None:

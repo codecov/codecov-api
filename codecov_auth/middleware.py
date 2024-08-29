@@ -129,6 +129,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
                     impersonating_ownerid=impersonating_ownerid,
                 ),
             )
+            request.impersonation = True
 
 
 class CorsMiddleware(BaseCorsMiddleware):
