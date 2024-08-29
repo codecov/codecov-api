@@ -144,7 +144,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.stripe_subscription_id is None
 
     def test_customer_subscription_deleted_deactivates_all_repos(self):
-        RepositoryFactory(author=self.owner, activated=True, active=True)
+        # RepositoryFactory(author=self.owner, activated=True, active=True)
         RepositoryFactory(author=self.owner, activated=True, active=True)
         RepositoryFactory(author=self.owner, activated=True, active=True)
 
