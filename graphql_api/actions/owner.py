@@ -19,7 +19,11 @@ def get_owner(service, username):
         raise MissingService()
 
     long_service = get_long_service_name(service)
-    return Owner.objects.filter(username=username, service=long_service).first()
+    return (
+        Owner.objects.filter(username=username, service=long_service)
+        .prefetch_related("account")
+        .first()
+    )
 
 
 def get_owner_login_sessions(current_user):
