@@ -1,9 +1,12 @@
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from django.utils import timezone
 from shared.django_apps.codecov_auth.models import (
     Account,
     AccountsUsers,
@@ -24,14 +27,18 @@ from codecov_auth.admin import (
     OwnerAdmin,
     StripeBillingAdmin,
     UserAdmin,
+    find_and_remove_stale_users,
 )
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
     SentryUserFactory,
+    SessionFactory,
     UserFactory,
 )
+from core.models import Pull
+from core.tests.factories import PullFactory, RepositoryFactory
 from plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
@@ -421,6 +428,84 @@ class SentryUserAdminTest(TestCase):
         assert sentry_user.refresh_token not in res.content.decode("utf-8")
 
 
+def create_stale_users(
+    account: Account | None = None,
+) -> tuple[list[Owner], list[Owner]]:
+    org_1 = OwnerFactory(account=account)
+    org_2 = OwnerFactory(account=account)
+
+    now = timezone.now()
+
+    user_1 = OwnerFactory(user=UserFactory())  # stale, neither session nor PR
+
+    user_2 = OwnerFactory(user=UserFactory())  # semi-stale, semi-old session
+    SessionFactory(owner=user_2, lastseen=now - timedelta(days=45))
+
+    user_3 = OwnerFactory(user=UserFactory())  # stale, old session
+    SessionFactory(owner=user_3, lastseen=now - timedelta(days=120))
+
+    user_4 = OwnerFactory(user=UserFactory())  # semi-stale, semi-old PR
+    pull = PullFactory(
+        repository=RepositoryFactory(),
+        author=user_4,
+    )
+    pull.updatestamp = now - timedelta(days=45)
+    super(Pull, pull).save()  # `Pull` overrides the `updatestamp` on each save
+
+    user_5 = OwnerFactory(user=UserFactory())  # stale, old PR
+    pull = PullFactory(
+        repository=RepositoryFactory(),
+        author=user_5,
+    )
+    pull.updatestamp = now - timedelta(days=120)
+    super(Pull, pull).save()  # `Pull` overrides the `updatestamp` on each save
+
+    org_1.plan_activated_users = [
+        user_1.ownerid,
+        user_2.ownerid,
+    ]
+    org_1.save()
+
+    org_2.plan_activated_users = [
+        user_3.ownerid,
+        user_4.ownerid,
+        user_5.ownerid,
+    ]
+    org_2.save()
+
+    return ([org_1, org_2], [user_1, user_2, user_3, user_4, user_5])
+
+
+@pytest.mark.django_db()
+def test_stale_user_cleanup():
+    orgs, users = create_stale_users()
+
+    # remove stale users with default > 90 days
+    removed_users, affected_orgs = find_and_remove_stale_users(orgs)
+    assert removed_users == set([users[0].ownerid, users[2].ownerid, users[4].ownerid])
+    assert affected_orgs == set([orgs[0].ownerid, orgs[1].ownerid])
+
+    orgs = list(
+        Owner.objects.filter(ownerid__in=[org.ownerid for org in orgs])
+    )  # re-fetch orgs
+    # all good, nothing to do
+    removed_users, affected_orgs = find_and_remove_stale_users(orgs)
+    assert removed_users == set()
+    assert affected_orgs == set()
+
+    # remove even more stale users
+    removed_users, affected_orgs = find_and_remove_stale_users(orgs, timedelta(days=30))
+    assert removed_users == set([users[1].ownerid, users[3].ownerid])
+    assert affected_orgs == set([orgs[0].ownerid, orgs[1].ownerid])
+
+    orgs = list(
+        Owner.objects.filter(ownerid__in=[org.ownerid for org in orgs])
+    )  # re-fetch orgs
+    # all the users have been deactivated by now
+    for org in orgs:
+        assert len(org.plan_activated_users) == 0
+
+
 class AccountAdminTest(TestCase):
     def setUp(self):
         staff_user = UserFactory(is_staff=True)
@@ -698,6 +783,35 @@ class AccountAdminTest(TestCase):
         self.assertIsNotNone(self.owner_with_user_1.user_id)
         self.assertFalse(
             AccountsUsers.objects.filter(user=self.owner_with_user_1.user).exists()
+        )
+
+    def test_deactivate_stale_users(self):
+        account = AccountFactory()
+        orgs, users = create_stale_users(account)
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "deactivate_stale_users",
+                ACTION_CHECKBOX_NAME: [account.pk],
+            },
+        )
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[-1].message, "Removed 3 stale users from 2 affected organizations."
+        )
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "deactivate_stale_users",
+                ACTION_CHECKBOX_NAME: [account.pk],
+            },
+        )
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[-1].message,
+            "No stale users found in selected accounts / organizations.",
         )
 
 
