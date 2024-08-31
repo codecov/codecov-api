@@ -12,6 +12,7 @@ class FetchPullRequestInteractor(BaseInteractor):
         return (
             pull is not None
             and pull.state == "open"
+            and pull.updatestamp is not None
             and (datetime.now(tz=None) - pull.updatestamp) > timedelta(hours=1)
         )
 
