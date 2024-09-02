@@ -54,13 +54,6 @@ class ReportLevelTotalsFactory(DjangoModelFactory):
     files = factory.Faker("pyint")
 
 
-class UploadLevelTotalsFactory(DjangoModelFactory):
-    class Meta:
-        model = models.UploadLevelTotals
-
-    report_session = factory.SubFactory(UploadFactory)
-
-
 class ReportDetailsFactory(DjangoModelFactory):
     class Meta:
         model = models.ReportDetails
