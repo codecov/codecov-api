@@ -274,9 +274,9 @@ class PlanService:
         return bool(self.trial_start_date and self.trial_end_date)
 
     @property
-    def has_seats_left(self) -> bool:
+    async def has_seats_left(self) -> bool:
         if get_config("setup", "enterprise_license"):
-            return enterprise_has_seats_left()
+            return await enterprise_has_seats_left()
         if self.has_account:
             # edge case: IF the User is already a plan_activated_user on any of the Orgs in the Account,
             # AND their Account is at capacity,

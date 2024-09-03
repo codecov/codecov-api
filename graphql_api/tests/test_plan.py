@@ -144,7 +144,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         mock_enterprise_license = LicenseInformation(
             is_valid=True,
             message=None,
-            url="https://codeov.mysite.com",
+            url="https://codecov.mysite.com",
             number_allowed_users=5,
             number_allowed_repos=10,
             expires=datetime.strptime("2020-05-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
@@ -189,11 +189,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 }
                 """ % (enterprise_org.username)
         data = self.gql_request(query, owner=enterprise_org)
+
         assert data["owner"]["plan"]["planUserCount"] == 5
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
 
     @patch("services.self_hosted.get_current_license")
-    def test_plan_user_count_for_enterprise_org_invaild_license(self, mocked_license):
+    def test_plan_user_count_for_enterprise_org_invalid_license(self, mocked_license):
         mock_enterprise_license = LicenseInformation(
             is_valid=False,
         )
@@ -219,5 +220,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     }
                     """ % (enterprise_org.username)
         data = self.gql_request(query, owner=enterprise_org)
+
         assert data["owner"]["plan"]["planUserCount"] == 0
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
