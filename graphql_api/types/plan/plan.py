@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 
+from codecov.db import sync_to_async
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from plan.constants import (
     TrialStatus,
@@ -93,5 +94,6 @@ def resolve_plan_user_count(plan_service: PlanService, info) -> int:
 
 @plan_bindable.field("hasSeatsLeft")
 @convert_kwargs_to_snake_case
+@sync_to_async
 def resolve_has_seats_left(plan_service: PlanService, info) -> bool:
     return plan_service.has_seats_left
