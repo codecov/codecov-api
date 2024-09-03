@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -327,7 +328,7 @@ class PlanServiceTests(TestCase):
         )
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.has_seats_left == True
+        assert asyncio.run(plan_service.has_seats_left) == True
 
     def test_plan_service_has_no_seats_left(self):
         current_org = OwnerFactory(
@@ -337,7 +338,7 @@ class PlanServiceTests(TestCase):
         )
         plan_service = PlanService(current_org=current_org)
 
-        assert plan_service.has_seats_left == False
+        assert asyncio.run(plan_service.has_seats_left) == False
 
     def test_plan_service_update_plan_invalid_name(self):
         current_org = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
@@ -411,12 +412,12 @@ class PlanServiceTests(TestCase):
             AccountsUsersFactory(account=account)
 
         plan_service = PlanService(current_org=org)
-        self.assertEqual(plan_service.has_seats_left, True)
+        self.assertTrue(asyncio.run(plan_service.has_seats_left))
 
         org.account = account
         org.save()
         plan_service = PlanService(current_org=org)
-        self.assertEqual(plan_service.has_seats_left, False)
+        self.assertFalse(asyncio.run(plan_service.has_seats_left))
 
 
 class AvailablePlansBeforeTrial(TestCase):
