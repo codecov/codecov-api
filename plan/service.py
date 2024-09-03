@@ -283,8 +283,6 @@ class PlanService:
             # AND they try to become a plan_activated_user on another Org in the Account,
             # has_seats_left will evaluate as False even though the User should be allowed to activate on the Org.
 
-            print("GETTING HERE", self.current_org.account)
-
             return await self.current_org.account.can_activate_user()
         return (
             self.plan_activated_users is None
