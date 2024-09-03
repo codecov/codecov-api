@@ -45,7 +45,7 @@ pytz
 redis
 regex
 requests
-sentry-sdk>=1.40.0
+sentry-sdk>=2.13.0
 sentry-sdk[celery]
 setproctitle
 simplejson

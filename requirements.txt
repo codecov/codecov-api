@@ -411,7 +411,7 @@ rsa==4.7.2
     # via google-auth
 s3transfer==0.5.0
     # via boto3
-sentry-sdk[celery]==1.44.1
+sentry-sdk[celery]==2.13.0
     # via
     #   -r requirements.in
     #   shared
