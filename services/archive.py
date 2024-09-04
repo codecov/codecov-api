@@ -143,14 +143,6 @@ class ArchiveService(object):
         return path
 
     """
-    Grabs path from storage, adds data to path object
-    writes back to path, overwriting the original contents
-    """
-
-    def update_archive(self, path, data):
-        self.storage.append_to_file(self.root, path, data)
-
-    """
     Writes a generic file to the archive -- it's typically recommended to
     not use this in lieu of the convenience methods write_raw_upload and
     write_chunks
