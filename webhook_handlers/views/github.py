@@ -201,7 +201,7 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def delete(self, request, *args, **kwargs):
-        ref_type = request.data.get("ref_type")
+        ref_type = request.data.get("ref_type", "")
         _incr_event(GitHubWebhookEvents.DELETE + "." + ref_type)
         repo = self._get_repo(request)
         if ref_type != "branch":
@@ -232,7 +232,7 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def push(self, request, *args, **kwargs):
-        ref_type = "branch" if request.data.get("ref")[5:10] == "heads" else "tag"
+        ref_type = "branch" if request.data.get("ref", "")[5:10] == "heads" else "tag"
         _incr_event(GitHubWebhookEvents.PUSH + "." + ref_type)
         repo = self._get_repo(request)
         if ref_type != "branch":
