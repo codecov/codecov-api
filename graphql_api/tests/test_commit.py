@@ -1219,11 +1219,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b1",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1241,11 +1241,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b2",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1263,11 +1263,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b3",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1285,11 +1285,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b5",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
