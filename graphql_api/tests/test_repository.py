@@ -403,6 +403,36 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             == 80
         )
 
+    @patch("shared.yaml.user_yaml.UserYaml.get_final_yaml")
+    def test_repository_repository_config_indication_range_float(self, mocked_useryaml):
+        mocked_useryaml.return_value = {"coverage": {"range": [61.1, 82.2]}}
+
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+        )
+
+        data = self.gql_request(
+            query_repository
+            % "repositoryConfig { indicationRange { upperRange lowerRange } }",
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert (
+            data["me"]["owner"]["repository"]["repositoryConfig"]["indicationRange"][
+                "lowerRange"
+            ]
+            == 61.1
+        )
+        assert (
+            data["me"]["owner"]["repository"]["repositoryConfig"]["indicationRange"][
+                "upperRange"
+            ]
+            == 82.2
+        )
+
     @patch("services.activation.try_auto_activate")
     def test_repository_auto_activate(self, try_auto_activate):
         repo = RepositoryFactory(
