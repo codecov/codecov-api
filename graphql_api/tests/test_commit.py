@@ -1276,7 +1276,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "highSpeed": 0,
                         },
                         "size": {
-                            "gzip": 1,
+                            "gzip": 0,
                             "uncompress": 1500,
                         },
                     },
