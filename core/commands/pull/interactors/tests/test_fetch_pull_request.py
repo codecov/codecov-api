@@ -57,3 +57,16 @@ def test_fetch_pull_should_sync(pr_state, updatestamp, expected, db):
     )._should_sync_pull(pr)
     assert pr.updatestamp == datetime.fromisoformat(updatestamp).replace(tzinfo=None)
     assert should_sync == expected
+
+
+def test_fetch_pull_updatestamp_is_none(db):
+    repo = RepositoryFactory(private=False)
+    pr = PullFactory(repository_id=repo.repoid, state="open")
+    repo.save()
+    pr.save()
+    pr.updatestamp = None
+    should_sync = FetchPullRequestInteractor(
+        repo.author, repo.service
+    )._should_sync_pull(pr)
+    assert pr.updatestamp is None
+    assert should_sync == False

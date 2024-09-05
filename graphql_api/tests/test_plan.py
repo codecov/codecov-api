@@ -48,6 +48,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     trialStatus
                     trialEndDate
                     trialStartDate
+                    trialTotalDays
                     marketingName
                     planName
                     value
@@ -67,6 +68,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "trialStatus": "ONGOING",
             "trialEndDate": "2023-07-03T00:00:00",
             "trialStartDate": "2023-06-19T00:00:00",
+            "trialTotalDays": None,
             "marketingName": "Developer",
             "planName": "users-trial",
             "value": "users-trial",

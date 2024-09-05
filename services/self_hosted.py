@@ -7,7 +7,6 @@ from django.db import transaction
 from django.db.models import F, Func, Q, QuerySet
 from shared.license import get_current_license
 
-from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from services import ServiceException
 from utils.config import get_config
@@ -50,11 +49,11 @@ def is_admin_owner(owner: Optional[Owner]) -> bool:
     return owner is not None and admin_owners().filter(pk=owner.pk).exists()
 
 
-async def activated_owners_async() -> QuerySet:
-    return await sync_to_async(activated_owner_query)()
-
-
-def activated_owner_query() -> QuerySet:
+def activated_owners() -> QuerySet:
+    """
+    Returns all owners that are activated in ANY org's `plan_activated_users`
+    across the entire instance.
+    """
     owner_ids = (
         Owner.objects.annotate(
             plan_activated_owner_ids=Func(
@@ -66,14 +65,6 @@ def activated_owner_query() -> QuerySet:
         .distinct()
     )
     return Owner.objects.filter(pk__in=owner_ids)
-
-
-def activated_owners() -> QuerySet:
-    """
-    Returns all owners that are activated in ANY org's `plan_activated_users`
-    across the entire instance.
-    """
-    return activated_owner_query()
 
 
 def is_activated_owner(owner: Owner) -> bool:
@@ -93,15 +84,15 @@ def license_seats() -> int:
     return enterprise_license.number_allowed_users or 0
 
 
-async def enterprise_has_seats_left() -> bool:
+def enterprise_has_seats_left() -> bool:
     """
     The activated_owner_query is heavy, so check the license first, only proceed if they have a valid license.
     """
     license_seat_count = license_seats()
     if license_seat_count == 0:
         return False
-    owners = await activated_owners_async()
-    count = await sync_to_async(owners.count)()
+    owners = activated_owners()
+    count = owners.count()
     return count < license_seat_count
 
 
