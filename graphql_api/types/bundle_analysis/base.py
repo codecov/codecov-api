@@ -146,7 +146,10 @@ def resolve_asset(
 def resolve_bundle_data(
     bundle_report: BundleReport, info: GraphQLResolveInfo
 ) -> BundleData:
-    return BundleData(bundle_report.size_total)
+    return BundleData(
+        bundle_report.size_total,
+        bundle_report.gzip_size_total,
+    )
 
 
 @bundle_report_bindable.field("measurements")
