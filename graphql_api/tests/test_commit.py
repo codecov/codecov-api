@@ -1460,7 +1460,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                 ordering: $ordering,
                                                 orderingDirection: $orderingDirection,
                                                 first: 2,
-                                                after: "99999",
+                                                after: "notanumber",
                                             ){
                                                 totalCount
                                                 edges {
