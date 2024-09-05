@@ -187,7 +187,7 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
         assert data == {"me": {"businessEmail": None, "termsAgreement": False}}
 
     def test_fetch_null_terms_agreement_for_user_without_owner(self):
-        # There is an edge where a owner without user can call the me endpoint
+        # There is an edge where an owner without user can call the "me" endpoint
         # via impersonation, in that case return null for terms agreement
         owner_to_impersonate = OwnerFactory()
         owner_to_impersonate.user.delete()
@@ -278,6 +278,22 @@ class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
                 "6",  # personal private repo
                 "7",  # personal public repo
                 "okta_enforced_repo_authed",  # private repo in org with Okta Enforced permissions
+            ]
+        )
+
+        # Test with impersonation
+        data = self.gql_request(query, owner=current_user, impersonate_owner=True)
+        repos = paginate_connection(data["me"]["viewableRepositories"])
+        repos_name = [repo["name"] for repo in repos]
+        assert (
+            sorted(repos_name)
+            == [
+                "1",  # public repo in org of user
+                "2",  # private repo in org of user and in user permission
+                "6",  # personal private repo
+                "7",  # personal public repo
+                "okta_enforced_repo_authed",  # Okta repo should show up for impersonated users
+                "okta_enforced_repo_unauthed",  # Okta repo should show up for impersonated users
             ]
         )
 

@@ -55,8 +55,14 @@ def resolve_repositories(
     okta_account_auths: list[int] = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
     )
+
+    is_impersonation = info.context["request"].impersonation
+    # If the user is impersonating another user, we want to show all the Okta repos.
+    # This means we do not want to filter out the Okta enforced repos
+    exclude_okta_enforced_repos = not is_impersonation
+
     queryset = list_repository_for_owner(
-        current_owner, owner, filters, okta_account_auths
+        current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
     )
     return queryset_to_connection(
         queryset,
@@ -127,15 +133,16 @@ async def resolve_repository(owner: Owner, info, name):
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
     )
 
-    # if impersonating, exclude_okta_enforced_repos=False
-    request = info.context["request"]
-    is_impersonation = getattr(request, "impersonation", False)
+    is_impersonation = info.context["request"].impersonation
+    # If the user is impersonating another user, we want to show all the Okta repos.
+    # This means we do not want to filter out the Okta enforced repos
+    exclude_okta_enforced_repos = not is_impersonation
 
     repository: Optional[Repository] = await command.fetch_repository(
         owner,
         name,
         okta_authenticated_accounts,
-        exclude_okta_enforced_repos=not is_impersonation,
+        exclude_okta_enforced_repos=exclude_okta_enforced_repos,
     )
 
     if repository is None:

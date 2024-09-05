@@ -82,6 +82,7 @@ class ImpersonationMiddleware(MiddlewareMixin):
         if current_user and not current_user.is_anonymous:
             impersonating_ownerid = request.COOKIES.get("staff_user")
             if impersonating_ownerid is None:
+                request.impersonation = False
                 return
 
             log.info(
@@ -130,6 +131,8 @@ class ImpersonationMiddleware(MiddlewareMixin):
                 ),
             )
             request.impersonation = True
+        else:
+            request.impersonation = False
 
 
 class CorsMiddleware(BaseCorsMiddleware):
