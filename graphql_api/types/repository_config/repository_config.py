@@ -12,8 +12,8 @@ indication_range_bindable = ObjectType("IndicationRange")
 
 
 class IndicationRange(TypedDict):
-    lowerRange: str
-    upperRange: str
+    lowerRange: float
+    upperRange: float
 
 
 @repository_config_bindable.field("indicationRange")
@@ -28,12 +28,12 @@ async def resolve_indication_range(repository: Repository, info) -> dict[str, in
 
 
 @indication_range_bindable.field("upperRange")
-def resolve_upper_range(indicationRange: IndicationRange, info) -> int:
+def resolve_upper_range(indicationRange: IndicationRange, info) -> float:
     upperRange = indicationRange.get("upperRange")
     return upperRange
 
 
 @indication_range_bindable.field("lowerRange")
-def resolve_lower_range(indicationRange: IndicationRange, info) -> int:
+def resolve_lower_range(indicationRange: IndicationRange, info) -> float:
     lowerRange = indicationRange.get("lowerRange")
     return lowerRange
