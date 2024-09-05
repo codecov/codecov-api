@@ -207,6 +207,10 @@ class AssetReport(object):
         self.all_modules = None
 
     @cached_property
+    def id(self) -> int:
+        return self.asset.id
+
+    @cached_property
     def name(self) -> str:
         return self.asset.hashed_name
 
@@ -249,7 +253,13 @@ class BundleReport(object):
     def all_assets(self) -> List[AssetReport]:
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
-    def assets(self) -> List[AssetReport]:
+    def assets(
+        self, ordering: Optional[str] = None, ordering_desc: Optional[bool] = True
+    ) -> List[AssetReport]:
+        if ordering:
+            self.filters["ordering_column"] = ordering
+        if ordering_desc is not None:
+            self.filters["ordering_desc"] = ordering_desc
         return [
             AssetReport(asset) for asset in self.report.asset_reports(**self.filters)
         ]

@@ -1,4 +1,5 @@
 from .enums import (
+    AssetOrdering,
     BundleLoadTypes,
     CommitErrorCode,
     CommitErrorGeneralType,
@@ -20,6 +21,7 @@ from .enums import (
 )
 
 __all__ = [
+    "AssetOrdering",
     "BundleLoadTypes",
     "CommitErrorCode",
     "CommitErrorGeneralType",
