@@ -9,6 +9,6 @@ permissions:
 jobs:
   shared-change-checker:
     name: See if shared changed
-    uses: codecov/gha-workflows/.github/workflows/diff-dep.yml@pr32
+    uses: codecov/gha-workflows/.github/workflows/diff-dep.yml@main
     with:
       dep: 'shared'
