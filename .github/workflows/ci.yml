@@ -52,6 +52,12 @@ jobs:
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
 
+  shared-change-checker:
+    name: See if shared changed
+    uses: codecov/gha-workflows/.github/workflows/diff-dep.yml@main
+    with:
+      dep: 'shared'
+
   build-self-hosted:
     name: Build Self Hosted API
     needs: [build, test]
