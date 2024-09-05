@@ -1219,11 +1219,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b1",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1241,11 +1241,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b2",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1263,11 +1263,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b3",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1285,11 +1285,11 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {
                     "name": "b5",
                     "assets": [
-                        {"normalizedName": "assets/react-*.svg"},
-                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
                         {"normalizedName": "assets/LazyComponent-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
-                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
                     ],
                     "asset": None,
                     "bundleData": {
@@ -1318,6 +1318,71 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "bundle": None,
             "isCached": False,
         }
+
+    # @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    # def test_bundle_analysis_report_assets_paginated(self, get_storage_service):
+    #     storage = MemoryStorageService({})
+    #     get_storage_service.return_value = storage
+
+    #     head_commit_report = CommitReportFactory(
+    #         commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+    #     )
+
+    #     with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+    #         storage_path = StoragePaths.bundle_report.path(
+    #             repo_key=ArchiveService.get_archive_hash(self.repo),
+    #             report_key=head_commit_report.external_id,
+    #         )
+    #         storage.write_file(get_bucket_name(), storage_path, f)
+
+    #     query = """
+    #         query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+    #             owner(username: $org) {
+    #                 repository(name: $repo) {
+    #                     ... on Repository {
+    #                         commit(id: $commit) {
+    #                             bundleAnalysisReport {
+    #                                 __typename
+    #                                 ... on BundleAnalysisReport {
+    #                                     bundle(name: "b1") {
+    #                                         assets {
+    #                                             normalizedName
+    #                                             bundleData {
+    #                                                 size {
+    #                                                     uncompress
+    #                                                 }
+    #                                             }
+    #                                         }
+    #                                     }
+    #                                 }
+    #                             }
+    #                         }
+    #                     }
+    #                 }
+    #             }
+    #         }
+    #     """
+
+    #     variables = {
+    #         "org": self.org.username,
+    #         "repo": self.repo.name,
+    #         "commit": self.commit.commitid,
+    #     }
+    #     data = self.gql_request(query, variables=variables)
+    #     commit = data["owner"]["repository"]["commit"]
+
+    #     assert commit["bundleAnalysisReport"] == {
+    #         "__typename": "BundleAnalysisReport",
+    #         "bundle": {
+    #             "assets": [
+    #                 {"normalizedName": "assets/react-*.svg"},
+    #                 {"normalizedName": "assets/index-*.css"},
+    #                 {"normalizedName": "assets/LazyComponent-*.js"},
+    #                 {"normalizedName": "assets/index-*.js"},
+    #                 {"normalizedName": "assets/index-*.js"},
+    #             ],
+    #         }
+    #     }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
     def test_bundle_analysis_asset(self, get_storage_service):

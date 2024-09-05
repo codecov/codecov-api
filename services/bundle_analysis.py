@@ -254,14 +254,16 @@ class BundleReport(object):
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
     def assets(
-        self, ordering: Optional[str] = None, ordering_desc: Optional[bool] = True
+        self, ordering: Optional[str] = None, ordering_desc: Optional[bool] = None
     ) -> List[AssetReport]:
+        ordering_dict: Dict[str, Any] = {}
         if ordering:
-            self.filters["ordering_column"] = ordering
+            ordering_dict["ordering_column"] = ordering
         if ordering_desc is not None:
-            self.filters["ordering_desc"] = ordering_desc
+            ordering_dict["ordering_desc"] = ordering_desc
         return [
-            AssetReport(asset) for asset in self.report.asset_reports(**self.filters)
+            AssetReport(asset)
+            for asset in self.report.asset_reports(**{**ordering_dict, **self.filters})
         ]
 
     def asset(self, name: str) -> Optional[AssetReport]:
