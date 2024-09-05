@@ -1,0 +1,14 @@
+name: Detect dep version changes
+
+on:
+  pull_request:
+
+permissions:
+  pull-requests: "write"
+
+jobs:
+  shared-change-checker:
+    name: See if shared changed
+    uses: codecov/gha-workflows/.github/workflows/diff-dep.yml@main
+    with:
+      dep: 'shared'
