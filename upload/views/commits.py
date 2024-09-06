@@ -13,7 +13,6 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
-from services.task import TaskService
 from upload.helpers import generate_upload_sentry_metrics_tags
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin
@@ -64,23 +63,12 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         )
         repository = self.get_repo()
 
-        validated_data = serializer.validated_data
-        data_for_create = {**validated_data}
-        repo = data_for_create.pop("repository", repository)
-        commitid = data_for_create.pop("commitid", None)
-
-        commit, created = Commit.objects.get_or_create(
-            repository=repo, commitid=commitid, defaults=data_for_create
-        )
+        commit = serializer.save(repository=repository)
 
         log.info(
             "Request to create new commit",
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
-        if created:
-            TaskService().update_commit(
-                commitid=commit.commitid, repoid=commit.repository.repoid
-            )
 
         sentry_metrics.incr(
             "upload",
@@ -94,5 +82,4 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             ),
         )
 
-        serializer.instance = commit
-        return serializer.data
+        return commit
