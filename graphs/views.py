@@ -121,7 +121,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
     def flag_coverage(self, flag_name, commit):
         """
-        Looks into a commit's report sessions and returns the coverage for a perticular flag
+        Looks into a commit's report sessions and returns the coverage for a particular flag
 
         Parameters
         flag_name (string): name of flag
