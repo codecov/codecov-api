@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Dict, List, Mapping, Optional
+from typing import Dict, List, Mapping, Optional, Union
 
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from graphql import GraphQLResolveInfo
 
+from codecov.commands.exceptions import ValidationError
 from codecov.db import sync_to_async
 from graphql_api.types.enums import AssetOrdering, OrderingDirection
 from services.bundle_analysis import (
@@ -155,7 +156,12 @@ def resolve_assets_paginated(
     after: Optional[str] = None,
     last: Optional[int] = None,
     before: Optional[str] = None,
-) -> Dict[str, object]:
+) -> Union[Dict[str, object], ValidationError]:
+    if first is not None and last is not None:
+        return ValidationError("First and last can not be used at the same time")
+    if after is not None and before is not None:
+        return ValidationError("After and before can not be used at the same time")
+
     # All filtered assets before pagination
     assets = list(
         bundle_report.assets(
