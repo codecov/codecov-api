@@ -276,6 +276,10 @@ class BundleReport(object):
         return self.report.total_size(**self.filters)
 
     @cached_property
+    def gzip_size_total(self) -> int:
+        return self.report.total_gzip_size(**self.filters)
+
+    @cached_property
     def module_extensions(self) -> List[str]:
         extensions = set()
         for asset in self.assets():

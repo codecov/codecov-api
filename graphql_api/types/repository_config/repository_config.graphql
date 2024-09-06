@@ -3,6 +3,6 @@ type RepositoryConfig {
 }
 
 type IndicationRange {
-  upperRange: Int!
-  lowerRange: Int!
+  upperRange: Float!
+  lowerRange: Float!
 }

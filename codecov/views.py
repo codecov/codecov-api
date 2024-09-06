@@ -1,7 +1,6 @@
 from dal import autocomplete
-from django.conf import settings
 from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 
 from codecov_auth.models import Owner, Service
 from core.models import Constants, Repository
@@ -17,19 +16,11 @@ def _get_version():
 
 
 def health(request):
-    # will raise if connection cannot be estabilished
+    # will raise if connection cannot be established
     connection.ensure_connection()
 
     version = _get_version()
     return HttpResponse("%s is live!" % version.value)
-
-
-def redirect_app(request):
-    """
-    This view is intended to be used as part of the frontend migration to redirect traffic from legacy urls to urls
-    """
-    app_domain = settings.CODECOV_DASHBOARD_URL
-    return HttpResponseRedirect(app_domain + request.path.replace("/redirect_app", ""))
 
 
 SERVICE_CHOICES = dict(Service.choices)

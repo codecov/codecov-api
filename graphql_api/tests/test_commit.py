@@ -1276,7 +1276,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             "highSpeed": 0,
                         },
                         "size": {
-                            "gzip": 1,
+                            "gzip": 0,
                             "uncompress": 1500,
                         },
                     },
@@ -2346,3 +2346,102 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["coverageStatus"] == CommitStatus.PENDING.value
         assert commit["bundleStatus"] == CommitStatus.PENDING.value
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_report_gzip_size_total(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/head_bundle_report_with_gzip_size.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundles {
+                                            name
+                                            bundleData {
+                                                size {
+                                                    gzip
+                                                    uncompress
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundles": [
+                {
+                    # All assets non compressible
+                    "name": "b1",
+                    "bundleData": {
+                        "size": {
+                            "gzip": 20,
+                            "uncompress": 20,
+                        },
+                    },
+                },
+                {
+                    # Some assets non compressible
+                    "name": "b2",
+                    "bundleData": {
+                        "size": {
+                            "gzip": 198,
+                            "uncompress": 200,
+                        },
+                    },
+                },
+                {
+                    # All assets non compressible
+                    "name": "b3",
+                    "bundleData": {
+                        "size": {
+                            "gzip": 1495,
+                            "uncompress": 1500,
+                        },
+                    },
+                },
+                {
+                    # All assets non compressible
+                    "name": "b5",
+                    "bundleData": {
+                        "size": {
+                            "gzip": 199995,
+                            "uncompress": 200000,
+                        },
+                    },
+                },
+            ],
+        }
