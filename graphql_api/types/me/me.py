@@ -53,7 +53,14 @@ def resolve_viewable_repositories(
     okta_authenticated_accounts: list[int] = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
     )
-    queryset = search_repos(current_user, filters, okta_authenticated_accounts)
+    is_impersonation = info.context["request"].impersonation
+    # If the user is impersonating another user, we want to show all the Okta repos.
+    # This means we do not want to filter out the Okta enforced repos
+    exclude_okta_enforced_repos = not is_impersonation
+
+    queryset = search_repos(
+        current_user, filters, okta_authenticated_accounts, exclude_okta_enforced_repos
+    )
     return queryset_to_connection(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),

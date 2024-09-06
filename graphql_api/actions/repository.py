@@ -35,26 +35,35 @@ def list_repository_for_owner(
     owner: Owner,
     filters: dict[str, Any] | None,
     okta_account_auths: list[int],
+    exclude_okta_enforced_repos: bool = True,
 ) -> QuerySet:
+    queryset = Repository.objects.viewable_repos(current_owner)
+
+    if exclude_okta_enforced_repos:
+        queryset = queryset.exclude_accounts_enforced_okta(okta_account_auths)
+
     queryset = (
-        Repository.objects.viewable_repos(current_owner)
-        .exclude_accounts_enforced_okta(okta_account_auths)
-        .with_recent_coverage()
-        .with_latest_commit_at()
-        .filter(author=owner)
+        queryset.with_recent_coverage().with_latest_commit_at().filter(author=owner)
     )
+
     queryset = apply_filters_to_queryset(queryset, filters)
     return queryset
 
 
 def search_repos(
-    current_owner: Owner, filters: dict[str, Any] | None, okta_account_auths: list[int]
+    current_owner: Owner,
+    filters: dict[str, Any] | None,
+    okta_account_auths: list[int],
+    exclude_okta_enforced_repos: bool = True,
 ) -> QuerySet:
     authors_from = [current_owner.ownerid] + (current_owner.organizations or [])
+    queryset = Repository.objects.viewable_repos(current_owner)
+
+    if exclude_okta_enforced_repos:
+        queryset = queryset.exclude_accounts_enforced_okta(okta_account_auths)
+
     queryset = (
-        Repository.objects.viewable_repos(current_owner)
-        .exclude_accounts_enforced_okta(okta_account_auths)
-        .with_recent_coverage()
+        queryset.with_recent_coverage()
         .with_latest_commit_at()
         .filter(author__ownerid__in=authors_from)
     )
