@@ -61,7 +61,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             author=self.owner, active=True, activated=True, private=True, name="a"
         )
         RepositoryFactory(
-            author=self.owner, active=False, private=False, activated=False, name="b"
+            author=self.owner, active=False, activated=False, private=False, name="b"
         )
         RepositoryFactory(
             author=random_user, active=True, activated=False, private=True, name="not"
@@ -246,6 +246,12 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.owner)
         repos = paginate_connection(data["owner"]["repositories"])
         assert repos == []
+
+    def test_fetching_repositories_impersonation_show_okta_enforced(self):
+        query = query_repositories % (self.owner.username, "", "")
+        data = self.gql_request(query, owner=self.owner, impersonate_owner=True)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "a"}, {"name": "b"}]
 
     def test_is_part_of_org_when_unauthenticated(self):
         query = query_repositories % (self.owner.username, "", "")
