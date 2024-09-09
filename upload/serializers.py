@@ -5,6 +5,7 @@ from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportResults, ReportSession, RepositoryFlag
 from services.archive import ArchiveService
+from services.task import TaskService
 
 
 class FlagListField(serializers.ListField):
@@ -136,9 +137,15 @@ class CommitSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         repo = validated_data.pop("repository", None)
         commitid = validated_data.pop("commitid", None)
-        commit, _ = Commit.objects.get_or_create(
+        commit, created = Commit.objects.get_or_create(
             repository=repo, commitid=commitid, defaults=validated_data
         )
+
+        if created:
+            TaskService().update_commit(
+                commitid=commit.commitid, repoid=commit.repository.repoid
+            )
+
         return commit
 
 
