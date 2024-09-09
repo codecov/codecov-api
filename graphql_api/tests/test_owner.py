@@ -12,7 +12,7 @@ from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
-from codecov_auth.models import OwnerProfile
+from codecov_auth.models import GithubAppInstallation, OwnerProfile
 from codecov_auth.tests.factories import (
     AccountFactory,
     GetAdminProviderAdapter,
@@ -58,13 +58,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         self.okta_settings = OktaSettingsFactory(account=self.account, enforced=True)
         random_user = OwnerFactory(username="random-user", service="github")
         RepositoryFactory(
-            author=self.owner, active=True, activated=True, private=True, name="a"
+            author=self.owner, active=True, activated=True, private=True, name="a", service_id="repo-1"
         )
         RepositoryFactory(
-            author=self.owner, active=False, activated=False, private=False, name="b"
+            author=self.owner, active=False, activated=False, private=False, name="b", service_id="repo-2"
         )
         RepositoryFactory(
-            author=random_user, active=True, activated=False, private=True, name="not"
+            author=random_user, active=True, activated=False, private=True, name="not", service_id="repo-3"
         )
 
     def test_fetching_repositories(self):
@@ -834,14 +834,28 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org, provider="bb")
         assert data["owner"]["isGithubRateLimited"] == False
 
-    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    @patch("services.self_hosted.get_config")
     def test_ai_features_enabled(
-        self, mock_determine_rate_limit, mock_determine_redis_key
+        self, get_config_mock
     ):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
         )
+
+        get_config_mock.return_value = [
+            {"service": "github", "ai_features_app_id": 12345},
+        ]
+
+        ai_app_installation = GithubAppInstallation(
+            name="ai-features",
+            owner=current_org,
+            repository_service_ids=None,
+            installation_id=12345,
+        )
+
+        ai_app_installation.save()
+
         query = """{
             owner(username: "%s") {
                 isAiFeaturesEnabled
@@ -849,21 +863,37 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
 
         """ % (current_org.username)
-        mock_determine_redis_key.return_value = "test"
-        mock_determine_rate_limit.return_value = True
 
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["isAiFeaturesEnabled"] == False
 
-    def test_fetch_repos_ai_features_enabled(self):
+    @patch("services.self_hosted.get_config")
+    def test_fetch_repos_ai_features_enabled(self, get_config_mock):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
         )
+
+        get_config_mock.return_value = [
+            {"service": "github", "ai_features_app_id": 12345},
+        ]
+
+
+        ai_app_installation = GithubAppInstallation(
+            name="ai-features",
+            owner=current_org,
+            repository_service_ids=["repo-1"],
+            installation_id=12345,
+        )
+
+        ai_app_installation.save()
+
+
         query = query_repositories % (
             self.owner.username,
             "(filters: { isAiFeaturesEnabled: true })",
             "",
         )
-        data = self.gql_request(query, owner=current_org, provider="bb")
-        assert data["owner"]["isGithubRateLimited"] == False
+        data = self.gql_request(query, owner=current_org)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "a"}]
