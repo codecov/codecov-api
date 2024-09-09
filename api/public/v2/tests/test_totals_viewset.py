@@ -580,10 +580,10 @@ class TotalsViewSetTestCase(TestCase):
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_report_if_unauthenticated_token_request(
         self,
-        repository_artifact_permisssions_has_permission,
+        repository_artifact_permissions_has_permission,
         _,
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
 
         res = self._request_report()
         assert res.status_code == 403
@@ -617,6 +617,7 @@ class TotalsViewSetTestCase(TestCase):
         build_report_from_commit.return_value = sample_report()
 
         res = self._request_report(component_id="foo")
+        commit_components.assert_called_once_with(self.commit1, self.org)
         assert res.status_code == 200
         assert res.json() == {
             "totals": {

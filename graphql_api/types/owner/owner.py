@@ -15,11 +15,14 @@ from codecov_auth.models import (
     SERVICE_GITHUB,
     SERVICE_GITHUB_ENTERPRISE,
     Account,
+    GithubAppInstallation,
     Owner,
 )
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
-from graphql_api.actions.repository import list_repository_for_owner
+from graphql_api.actions.repository import (
+    list_repository_for_owner,
+)
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     build_connection_graphql,
@@ -35,10 +38,12 @@ from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
+from utils.config import get_config
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
 owner_bindable = ObjectType("Owner")
+AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 @owner_bindable.field("repositories")
@@ -64,6 +69,7 @@ def resolve_repositories(
     queryset = list_repository_for_owner(
         current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
     )
+
     return queryset_to_connection(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
@@ -325,3 +331,34 @@ def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
 @require_part_of_org
 def resolve_delinquent(owner: Owner, info) -> bool | None:
     return owner.delinquent
+
+
+@owner_bindable.field("aiFeaturesEnabled")
+@sync_to_async
+@require_part_of_org
+def resolve_ai_features_enabled(owner: Owner, info) -> bool:
+    return GithubAppInstallation.objects.filter(
+        app_id=AI_FEATURES_GH_APP_ID, owner=owner
+    ).exists()
+
+
+@owner_bindable.field("aiEnabledRepos")
+@sync_to_async
+@require_part_of_org
+def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
+    ai_features_app_install = GithubAppInstallation.objects.filter(
+        app_id=AI_FEATURES_GH_APP_ID, owner=owner
+    ).first()
+
+    if not ai_features_app_install:
+        return None
+
+    current_owner = info.context["request"].current_owner
+    queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
+
+    if ai_features_app_install.repository_service_ids:
+        queryset = queryset.filter(
+            service_id__in=ai_features_app_install.repository_service_ids
+        )
+
+    return list(queryset.values_list("name", flat=True))

@@ -1,0 +1,26 @@
+"""
+CoverageAnalytics is information related to a repo's test coverage
+"""
+type CoverageAnalytics {
+  "Hits is the number of hits in a coverage report"
+  hits: Int # formerly repo.hits
+  "Misses is the number of misses in a coverage report"
+  misses: Int # formerly repo.misses
+  "Lines is the number of lines in a coverage report"
+  lines: Int # formerly repo.lines
+  "Commit sha is the sha hash of the commit in the coverage report"
+  commitSha: String # formerly repo.coverageSha
+  "PercentCovered is percent of lines covered (e.g., 87.25)"
+  percentCovered: Float # formerly repo.coverage
+
+  "measurements are points in the time series for coverage over time"
+  measurements(
+    interval: MeasurementInterval!
+    after: DateTime
+    before: DateTime
+    branch: String
+  ): [Measurement!]! # formerly repository.measurements
+}
+
+"CoverageAnalyticsResult is CoverageAnalytics or potential error(s)"
+union CoverageAnalyticsResult = CoverageAnalytics | NotFoundError

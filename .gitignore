@@ -49,6 +49,8 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+*.coverage.xml
+*junit.xml
 
 # Translations
 *.mo
@@ -129,5 +131,6 @@ dmypy.json
 
 # PyCharm stuff
 .idea
+.run
 
 *.pem

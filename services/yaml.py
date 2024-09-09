@@ -25,6 +25,16 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
     Fetches the codecov.yaml file for a particular commit from the service provider.
     Service provider API request is made on behalf of the given `owner`.
     """
+
+    # There's been a lot of instances where this function is called where the owner arg is not Owner type
+    # Previously this issue is masked by the catch all exception handling. Most badly typed calls have
+    # been addressed, but there might still be some entrypoints unaccounted for, will fix new discoveries
+    # from this assertion being raised.
+    if owner is not None and not isinstance(owner, Owner):
+        raise TypeError(
+            f"fetch_commit_yaml owner arg must be Owner or None. Provided: {type(owner)}"
+        )
+
     try:
         repository_service = RepoProviderService().get_adapter(
             owner=owner, repo=commit.repository
@@ -34,14 +44,18 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
         )
         yaml_dict = safe_load(yaml_str)
         return validate_yaml(yaml_dict, show_secrets_for=None)
-    except Exception:
+    except Exception as e:
         # fetching, parsing, validating the yaml inside the commit can
         # have various exceptions, which we do not care about to get the final
         # yaml used for a commit, as any error here, the codecov.yaml would not
         # be used, so we return None here
+
         log.warning(
-            "Was not able to fetch yaml file for commit. Ignoring error and returning None.",
-            extra={"commit_id": commit.commitid},
+            f"Was not able to fetch yaml file for commit. Ignoring error and returning None. Exception: {e}",
+            extra={
+                "commit_id": commit.commitid,
+                "owner_arg": type(owner),
+            },
         )
         return None
 

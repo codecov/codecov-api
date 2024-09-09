@@ -2,14 +2,13 @@ import logging
 from datetime import datetime
 from typing import Iterable, List, Mapping, Optional
 
-import shared.rate_limits as rate_limits
 import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
-from shared.yaml import UserYaml
 
+import shared.rate_limits as rate_limits
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
@@ -27,11 +26,15 @@ from graphql_api.helpers.connection import (
     queryset_to_connection_sync,
 )
 from graphql_api.helpers.lookahead import lookahead
+from graphql_api.types.coverage_analytics.coverage_analytics import (
+    CoverageAnalyticsProps,
+)
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
+from shared.yaml import UserYaml
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 from utils.test_results import aggregate_test_results
@@ -585,11 +588,23 @@ async def resolve_test_results(
 
     return await queryset_to_connection(
         queryset,
-        ordering=(ordering.get("parameter"), "name")
-        if ordering
-        else ("avg_duration", "name"),
-        ordering_direction=ordering.get("direction")
-        if ordering
-        else OrderingDirection.DESC,
+        ordering=(
+            (ordering.get("parameter"), "name")
+            if ordering
+            else ("avg_duration", "name")
+        ),
+        ordering_direction=(
+            ordering.get("direction") if ordering else OrderingDirection.DESC
+        ),
         **kwargs,
+    )
+
+
+@repository_bindable.field("coverageAnalytics")
+def resolve_coverage_analytics(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+) -> CoverageAnalyticsProps:
+    return CoverageAnalyticsProps(
+        repository=repository,
     )

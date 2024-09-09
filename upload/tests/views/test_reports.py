@@ -195,7 +195,7 @@ def test_create_report_already_exists(client, db, mocker):
     assert CommitReport.objects.filter(
         commit_id=commit.id, code="code", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
-    mocked_call.assert_called_once()
+    mocked_call.assert_not_called()
 
 
 def test_reports_post_code_as_default(client, db, mocker):

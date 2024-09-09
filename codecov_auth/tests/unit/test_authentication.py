@@ -54,6 +54,13 @@ class UserTokenAuthenticationTests(TestCase):
         with pytest.raises(AuthenticationFailed):
             authenticator.authenticate(request)
 
+    def test_token_not_uuid(self):
+        request_factory = APIRequestFactory()
+        request = request_factory.get("", HTTP_AUTHORIZATION="Bearer hello_world")
+        authenticator = UserTokenAuthentication()
+        with pytest.raises(AuthenticationFailed):
+            authenticator.authenticate(request)
+
     def test_bearer_token_auth_expired_token(self):
         user_token = UserTokenFactory(valid_until=datetime.now() - timedelta(seconds=1))
 

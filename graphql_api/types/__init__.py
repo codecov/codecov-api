@@ -23,6 +23,7 @@ from .comparison import comparison, comparison_bindable, comparison_result_binda
 from .component import component, component_bindable
 from .component_comparison import component_comparison, component_comparison_bindable
 from .config import config, config_bindable
+from .coverage_analytics import coverage_analytics, coverage_analytics_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types
 from .file import commit_file, file_bindable
@@ -84,6 +85,7 @@ types = [
     component,
     config,
     cost_directive,
+    coverage_analytics,
     coverage_totals,
     enums,
     errors,
@@ -135,6 +137,7 @@ bindables = [
     component_bindable,
     component_comparison_bindable,
     config_bindable,
+    coverage_analytics_bindable,
     coverage_totals_bindable,
     datetime_scalar,
     file_bindable,
