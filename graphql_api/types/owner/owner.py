@@ -69,9 +69,7 @@ def resolve_repositories(
         current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
     )
 
-    is_ai_features_enabled = filters.get("is_ai_features_enabled")
-
-    if is_ai_features_enabled:
+    if filters and filters.get("is_ai_features_enabled"):
         queryset = list_ai_features_enabled_repos(owner, queryset)
 
     return queryset_to_connection(

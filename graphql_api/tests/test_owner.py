@@ -833,3 +833,37 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org, provider="bb")
         assert data["owner"]["isGithubRateLimited"] == False
+
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_ai_features_enabled(
+        self, mock_determine_rate_limit, mock_determine_redis_key
+    ):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        query = """{
+            owner(username: "%s") {
+                isAiFeaturesEnabled
+            }
+        }
+
+        """ % (current_org.username)
+        mock_determine_redis_key.return_value = "test"
+        mock_determine_rate_limit.return_value = True
+
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["isAiFeaturesEnabled"] == False
+
+    def test_fetch_repos_ai_features_enabled(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        query = query_repositories % (
+            self.owner.username,
+            "(filters: { isAiFeaturesEnabled: true })",
+            "",
+        )
+        data = self.gql_request(query, owner=current_org, provider="bb")
+        assert data["owner"]["isGithubRateLimited"] == False
