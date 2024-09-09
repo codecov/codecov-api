@@ -14,15 +14,15 @@ from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import (
     SERVICE_GITHUB,
     SERVICE_GITHUB_ENTERPRISE,
-    GithubAppInstallation,
     Account,
+    GithubAppInstallation,
     Owner,
 )
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
 from graphql_api.actions.repository import (
-    list_repository_for_owner,
     list_ai_features_enabled_repos,
+    list_repository_for_owner,
 )
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
