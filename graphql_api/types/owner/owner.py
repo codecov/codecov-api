@@ -39,6 +39,7 @@ from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
+from utils.config import get_config
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
@@ -338,5 +339,7 @@ def resolve_delinquent(owner: Owner, info) -> bool | None:
 @owner_bindable.field("aiFeaturesEnabled")
 @require_part_of_org
 def resolve_ai_features_enabled(owner: Owner, info) -> bool | None:
-    # TODO: Update with proper app id once finalized
-    return GithubAppInstallation.objects.filter(app_id="TBD", owner=owner).exists()
+    ai_features_gh_app_id = get_config("github", "ai_features_app_id")
+    return GithubAppInstallation.objects.filter(
+        app_id=ai_features_gh_app_id, owner=owner
+    ).exists()

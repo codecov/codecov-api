@@ -58,13 +58,28 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         self.okta_settings = OktaSettingsFactory(account=self.account, enforced=True)
         random_user = OwnerFactory(username="random-user", service="github")
         RepositoryFactory(
-            author=self.owner, active=True, activated=True, private=True, name="a", service_id="repo-1"
+            author=self.owner,
+            active=True,
+            activated=True,
+            private=True,
+            name="a",
+            service_id="repo-1",
         )
         RepositoryFactory(
-            author=self.owner, active=False, activated=False, private=False, name="b", service_id="repo-2"
+            author=self.owner,
+            active=False,
+            activated=False,
+            private=False,
+            name="b",
+            service_id="repo-2",
         )
         RepositoryFactory(
-            author=random_user, active=True, activated=False, private=True, name="not", service_id="repo-3"
+            author=random_user,
+            active=True,
+            activated=False,
+            private=True,
+            name="not",
+            service_id="repo-3",
         )
 
     def test_fetching_repositories(self):
@@ -835,9 +850,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["isGithubRateLimited"] == False
 
     @patch("services.self_hosted.get_config")
-    def test_ai_features_enabled(
-        self, get_config_mock
-    ):
+    def test_ai_features_enabled(self, get_config_mock):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
@@ -878,7 +891,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             {"service": "github", "ai_features_app_id": 12345},
         ]
 
-
         ai_app_installation = GithubAppInstallation(
             name="ai-features",
             owner=current_org,
@@ -887,7 +899,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         )
 
         ai_app_installation.save()
-
 
         query = query_repositories % (
             self.owner.username,
