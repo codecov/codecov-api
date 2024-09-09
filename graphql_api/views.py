@@ -325,8 +325,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
 
         current_count = redis.get(key)
         if current_count is None:
+            log.info("[GQL Rate Limit] - Setting new key", extra=dict(key=key))
             redis.setex(key, window, 1)
         elif int(current_count) >= limit:
+            log.warning(
+                "[GQL Rate Limit] - Rate limit reached for key",
+                extra=dict(key=key, limit=limit, count=current_count),
+            )
             return True
         else:
             redis.incr(key)
