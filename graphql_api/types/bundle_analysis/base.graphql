@@ -71,6 +71,14 @@ type BundleReport {
     filters: BundleAnalysisMeasurementsSetFilters
   ): [BundleAnalysisMeasurements!]
   isCached: Boolean!
+  assetsPaginated(
+    ordering: AssetOrdering
+    orderingDirection: OrderingDirection
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): AssetConnection
 }
 
 type BundleAnalysisMeasurements{
@@ -79,4 +87,15 @@ type BundleAnalysisMeasurements{
     size: BundleData
     change: BundleData
     measurements: [Measurement!]
+}
+
+type AssetConnection {
+  edges: [AssetEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type AssetEdge {
+  cursor: String!
+  node: BundleAsset!
 }

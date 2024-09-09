@@ -11,6 +11,7 @@ from timeseries.models import Interval as MeasurementInterval
 from timeseries.models import MeasurementName
 
 from .enums import (
+    AssetOrdering,
     BundleLoadTypes,
     CoverageLine,
     GoalOnboarding,
@@ -52,4 +53,5 @@ enum_types = [
     EnumType("YamlStates", YamlStates),
     EnumType("BundleLoadTypes", BundleLoadTypes),
     EnumType("TestResultsOrderingParameter", TestResultsOrderingParameter),
+    EnumType("AssetOrdering", AssetOrdering),
 ]

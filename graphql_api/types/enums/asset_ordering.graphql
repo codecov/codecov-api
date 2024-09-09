@@ -1,0 +1,5 @@
+enum AssetOrdering {
+  NAME
+  SIZE
+  TYPE
+}
