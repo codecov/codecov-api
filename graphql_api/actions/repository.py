@@ -56,16 +56,18 @@ def list_repository_for_owner(
 
 
 def list_ai_features_enabled_repos(owner: Owner, queryset: QuerySet) -> QuerySet:
-    ai_features_app_id = get_config("github", "ai_features_app_id")
-    app_installation = GithubAppInstallation.objects.filter(
-        app_id=ai_features_app_id, owner=owner
-    ).first()
+    ai_features_gh_app_id = get_config("github", "ai_features_app_id")
 
-    if not app_installation:
+    ai_features_app_install = GithubAppInstallation.objects.filter(
+        app_id=ai_features_gh_app_id, owner=owner
+    )
+
+    if not ai_features_app_install.exists():
         return Repository.objects.none()
 
-    repo_service_ids = app_installation.repository_service_ids
+    repo_service_ids = ai_features_app_install.first().repository_service_ids
 
+    # App is installed on all repos
     if repo_service_ids is None:
         return queryset
 
