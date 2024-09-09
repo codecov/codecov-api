@@ -197,7 +197,7 @@ def test_create_commit_already_exists(db, client, mocker):
     }
     assert response.status_code == 201
     assert expected_response == response_json
-    mocked_call.assert_called_with(commitid=commit.commitid, repoid=repository.repoid)
+    mocked_call.assert_not_called()
 
 
 @pytest.mark.parametrize("branch", ["main", "someone:main", "someone/fork:main"])
