@@ -360,5 +360,5 @@ def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
         queryset = queryset.filter(
         service_id__in=ai_features_app_install.repository_service_ids
     )
-        
+
     return list(queryset.values_list("name", flat=True))
