@@ -335,7 +335,7 @@ def resolve_delinquent(owner: Owner, info) -> bool | None:
 @owner_bindable.field("aiFeaturesEnabled")
 @sync_to_async
 @require_part_of_org
-def resolve_ai_features_enabled(owner: Owner, info) -> bool | None:
+def resolve_ai_features_enabled(owner: Owner, info) -> bool:
     return GithubAppInstallation.objects.filter(
         app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).exists()
