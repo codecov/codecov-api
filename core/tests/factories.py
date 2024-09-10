@@ -78,7 +78,6 @@ class CommitWithReportFactory(CommitFactory):
             ReportLevelTotalsFactory,
             UploadFactory,
             UploadFlagMembershipFactory,
-            UploadLevelTotalsFactory,
         )
 
         commit_report = CommitReportFactory(commit=commit)
@@ -129,17 +128,6 @@ class CommitWithReportFactory(CommitFactory):
             order_number=0,
             storage_path="v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
         )
-        UploadLevelTotalsFactory(
-            report_session=upload1,
-            files=3,
-            lines=20,
-            hits=17,
-            misses=3,
-            partials=0,
-            coverage=85.0,
-            branches=0,
-            methods=0,
-        )
         UploadFlagMembershipFactory(
             report_session=upload1,
             flag=flag_unittests,
@@ -149,17 +137,6 @@ class CommitWithReportFactory(CommitFactory):
             report=commit_report,
             order_number=1,
             storage_path="v4/raw/2019-01-10/4434BC2A2EC4FCA57F77B473D83F928C/abf6d4df662c47e32460020ab14abf9303581429/9ccc55a1-8b41-4bb1-a946-ee7a33a7fb56.txt",
-        )
-        UploadLevelTotalsFactory(
-            report_session=upload2,
-            files=3,
-            lines=20,
-            hits=17,
-            misses=3,
-            partials=0,
-            coverage=85.0,
-            branches=0,
-            methods=0,
         )
         UploadFlagMembershipFactory(
             report_session=upload2,
