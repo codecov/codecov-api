@@ -38,4 +38,5 @@ type Owner {
   username: String
   yaml: String
   aiFeaturesEnabled: Boolean
+  aiEnabledRepos: [String]
 }

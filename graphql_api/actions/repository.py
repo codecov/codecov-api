@@ -5,11 +5,6 @@ from django.db.models import QuerySet
 from shared.django_apps.codecov_auth.models import Owner
 from shared.django_apps.core.models import Repository
 
-from codecov_auth.models import (
-    GithubAppInstallation,
-)
-from utils.config import get_config
-
 log = logging.getLogger(__name__)
 
 
@@ -53,25 +48,6 @@ def list_repository_for_owner(
 
     queryset = apply_filters_to_queryset(queryset, filters)
     return queryset
-
-
-def list_ai_features_enabled_repos(owner: Owner, queryset: QuerySet) -> QuerySet:
-    ai_features_gh_app_id = get_config("github", "ai_features_app_id")
-
-    ai_features_app_install = GithubAppInstallation.objects.filter(
-        app_id=ai_features_gh_app_id, owner=owner
-    )
-
-    if not ai_features_app_install.exists():
-        return Repository.objects.none()
-
-    repo_service_ids = ai_features_app_install.first().repository_service_ids
-
-    # App is installed on all repos
-    if repo_service_ids is None:
-        return queryset
-
-    return queryset.filter(service_id__in=repo_service_ids)
 
 
 def search_repos(

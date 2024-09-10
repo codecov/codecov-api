@@ -21,7 +21,6 @@ from codecov_auth.models import (
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
 from graphql_api.actions.repository import (
-    list_ai_features_enabled_repos,
     list_repository_for_owner,
 )
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -69,9 +68,6 @@ def resolve_repositories(
     queryset = list_repository_for_owner(
         current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
     )
-
-    if filters and filters.get("is_ai_features_enabled"):
-        queryset = list_ai_features_enabled_repos(owner, queryset)
 
     return queryset_to_connection(
         queryset,
@@ -337,9 +333,32 @@ def resolve_delinquent(owner: Owner, info) -> bool | None:
 
 
 @owner_bindable.field("aiFeaturesEnabled")
+@sync_to_async
 @require_part_of_org
 def resolve_ai_features_enabled(owner: Owner, info) -> bool | None:
     ai_features_gh_app_id = get_config("github", "ai_features_app_id")
     return GithubAppInstallation.objects.filter(
         app_id=ai_features_gh_app_id, owner=owner
     ).exists()
+
+
+@owner_bindable.field("aiEnabledRepos")
+@sync_to_async
+@require_part_of_org
+def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
+    ai_features_gh_app_id = get_config("github", "ai_features_app_id")
+
+    ai_features_app_install = GithubAppInstallation.objects.filter(
+        app_id=ai_features_gh_app_id, owner=owner
+    )
+
+    if not ai_features_app_install.exists():
+        return None
+
+    repo_service_ids = ai_features_app_install.first().repository_service_ids
+
+    # App is installed on all repos
+    if repo_service_ids is None:
+        return []
+
+    return repo_service_ids

@@ -871,14 +871,14 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         query = """{
             owner(username: "%s") {
-                isAiFeaturesEnabled
+                aiFeaturesEnabled
             }
         }
 
         """ % (current_org.username)
 
         data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["isAiFeaturesEnabled"] == False
+        assert data["owner"]["aiFeaturesEnabled"] == True
 
     @patch("services.self_hosted.get_config")
     def test_fetch_repos_ai_features_enabled(self, get_config_mock):
@@ -900,11 +900,12 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         ai_app_installation.save()
 
-        query = query_repositories % (
-            self.owner.username,
-            "(filters: { isAiFeaturesEnabled: true })",
-            "",
-        )
+        query = """{
+            owner(username: "%s") {
+                aiEnabledRepos
+            }
+        }
+
+        """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        repos = paginate_connection(data["owner"]["repositories"])
-        assert repos == [{"name": "a"}]
+        assert data["owner"]["aiEnabledRepos"] == ["repo-1"]
