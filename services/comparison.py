@@ -721,8 +721,12 @@ class Comparison(object):
 
     @cached_property
     def has_different_number_of_head_and_base_sessions(self):
+        log.info("has_different_number_of_head_and_base_sessions - Start")
         head_sessions = self.head_report.sessions
         base_sessions = self.base_report.sessions
+        log.info(
+            f"has_different_number_of_head_and_base_sessions - Retrieved sessions - head {len(head_sessions)} / base {len(base_sessions)}"
+        )
         # We're treating this case as false since considering CFF's complicates the logic
         if self._has_cff_sessions(head_sessions) or self._has_cff_sessions(
             base_sessions
@@ -733,10 +737,12 @@ class Comparison(object):
     # I feel this method should belong to the API Report class, but we're thinking of getting rid of that class soon
     # In truth, this should be in the shared.Report class
     def _has_cff_sessions(self, sessions) -> bool:
+        log.info(f"_has_cff_sessions - sessions count {len(sessions)}")
         for session in sessions.values():
             if session.session_type.value == "carriedforward":
+                log.info("_has_cff_sessions - Found carriedforward")
                 return True
-
+        log.info("_has_cff_sessions - No carriedforward")
         return False
 
     @property
