@@ -45,6 +45,7 @@ owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
 owner_bindable = ObjectType("Owner")
 AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
+
 @owner_bindable.field("repositories")
 @convert_kwargs_to_snake_case
 def resolve_repositories(
