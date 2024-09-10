@@ -43,7 +43,7 @@ from utils.config import get_config
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
 owner = owner + build_connection_graphql("RepositoryConnection", "Repository")
 owner_bindable = ObjectType("Owner")
-
+AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 @owner_bindable.field("repositories")
 @convert_kwargs_to_snake_case
@@ -336,9 +336,8 @@ def resolve_delinquent(owner: Owner, info) -> bool | None:
 @sync_to_async
 @require_part_of_org
 def resolve_ai_features_enabled(owner: Owner, info) -> bool | None:
-    ai_features_gh_app_id = get_config("github", "ai_features_app_id")
     return GithubAppInstallation.objects.filter(
-        app_id=ai_features_gh_app_id, owner=owner
+        app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).exists()
 
 
@@ -346,10 +345,8 @@ def resolve_ai_features_enabled(owner: Owner, info) -> bool | None:
 @sync_to_async
 @require_part_of_org
 def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
-    ai_features_gh_app_id = get_config("github", "ai_features_app_id")
-
     ai_features_app_install = GithubAppInstallation.objects.filter(
-        app_id=ai_features_gh_app_id, owner=owner
+        app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).first()
 
     if not ai_features_app_install:
