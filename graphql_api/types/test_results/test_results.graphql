@@ -4,4 +4,5 @@ type TestResult {
   commitsFailed: Int
   failureRate: Float
   avgDuration: Float
+  lastDuration: Float
 }

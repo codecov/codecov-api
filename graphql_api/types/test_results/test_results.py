@@ -26,5 +26,10 @@ def resolve_failure_rate(test, info) -> float | None:
 
 
 @test_result_bindable.field("avgDuration")
-def resolve_last_duration(test, info) -> float | None:
+def resolve_avg_duration(test, info) -> float | None:
     return test["avg_duration"]
+
+
+@test_result_bindable.field("lastDuration")
+def resolve_last_duration(test, info) -> float | None:
+    return test["last_duration"]

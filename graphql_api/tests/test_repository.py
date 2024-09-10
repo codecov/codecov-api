@@ -11,7 +11,7 @@ from core.tests.factories import (
     RepositoryFactory,
     RepositoryTokenFactory,
 )
-from reports.tests.factories import TestFactory, TestInstanceFactory
+from reports.tests.factories import DailyTestRollupFactory, TestFactory
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -882,9 +882,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
-            test=test, created_at=datetime.datetime.now(), repoid=repo.repoid
-        )
+
+        _ = DailyTestRollupFactory(test=test)
         res = self.fetch_repository(
             repo.name, """testResults { edges { node { name } } }"""
         )
@@ -900,14 +899,15 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_branch_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
+        test2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
             test=test,
             created_at=datetime.datetime.now(),
             repoid=repo.repoid,
             branch="main",
         )
-        _test_instance_2 = TestInstanceFactory(
-            test=test,
+        _ = DailyTestRollupFactory(
+            test=test2,
             created_at=datetime.datetime.now(),
             repoid=repo.repoid,
             branch="feature",
@@ -921,24 +921,24 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today() - datetime.timedelta(days=1),
             repoid=repo.repoid,
-            commitid="1",
+            commits_where_fail=["1"],
         )
-        _test_instance_2 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            commitid="2",
+            commits_where_fail=["2"],
         )
         test_2 = TestFactory(repository=repo)
-        _test_instance_3 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test_2,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            commitid="3",
+            commits_where_fail=["3"],
         )
         res = self.fetch_repository(
             repo.name,
@@ -954,24 +954,24 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_desc_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today() - datetime.timedelta(days=1),
             repoid=repo.repoid,
-            commitid="1",
+            commits_where_fail=["1"],
         )
-        _test_instance_2 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            commitid="2",
+            commits_where_fail=["2"],
         )
         test_2 = TestFactory(repository=repo)
-        _test_instance_3 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test_2,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            commitid="3",
+            commits_where_fail=["3"],
         )
         res = self.fetch_repository(
             repo.name,
@@ -984,27 +984,98 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    def test_last_duration_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            repoid=repo.repoid,
+            last_duration_seconds=1,
+            latest_run=datetime.datetime.now() - datetime.timedelta(days=1),
+        )
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            last_duration_seconds=2,
+            latest_run=datetime.datetime.now(),
+        )
+        test_2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test_2,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            last_duration_seconds=3,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: LAST_DURATION, direction: ASC }) { edges { node { name lastDuration } } }""",
+        )
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test.name, "lastDuration": 2.0}},
+                {"node": {"name": test_2.name, "lastDuration": 3.0}},
+            ]
+        }
+
+    def test_desc_last_duration_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            repoid=repo.repoid,
+            last_duration_seconds=1,
+            latest_run=datetime.datetime.now() - datetime.timedelta(days=1),
+        )
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            last_duration_seconds=2,
+            latest_run=datetime.datetime.now(),
+        )
+        test_2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test_2,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            last_duration_seconds=3,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: LAST_DURATION, direction: DESC }) { edges { node { name lastDuration } } }""",
+        )
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_2.name, "lastDuration": 3}},
+                {"node": {"name": test.name, "lastDuration": 2}},
+            ]
+        }
+
     def test_avg_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
+        test = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today() - datetime.timedelta(days=1),
             repoid=repo.repoid,
-            duration_seconds=1,
+            avg_duration_seconds=1,
         )
-        _test_instance_2 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            duration_seconds=2,
+            avg_duration_seconds=2,
         )
         test_2 = TestFactory(repository=repo)
-        _test_instance_3 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test_2,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            duration_seconds=3,
+            avg_duration_seconds=3,
         )
         res = self.fetch_repository(
             repo.name,
@@ -1020,24 +1091,24 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_desc_avg_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today() - datetime.timedelta(days=1),
             repoid=repo.repoid,
-            duration_seconds=1,
+            avg_duration_seconds=1,
         )
-        _test_instance_2 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            duration_seconds=2,
+            avg_duration_seconds=2,
         )
         test_2 = TestFactory(repository=repo)
-        _test_instance_3 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test_2,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            duration_seconds=3,
+            avg_duration_seconds=3,
         )
         res = self.fetch_repository(
             repo.name,
@@ -1053,30 +1124,27 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     def test_failure_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today() - datetime.timedelta(days=1),
             repoid=repo.repoid,
-            outcome="pass",
+            pass_count=1,
+            fail_count=1,
         )
-        _test_instance_2 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            outcome="failure",
+            pass_count=3,
+            fail_count=0,
         )
         test_2 = TestFactory(repository=repo)
-        _test_instance_3 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test_2,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            outcome="failure",
-        )
-        _test_instance_4 = TestInstanceFactory(
-            test=test_2,
-            created_at=datetime.datetime.now(),
-            repoid=repo.repoid,
-            outcome="failure",
+            pass_count=2,
+            fail_count=3,
         )
         res = self.fetch_repository(
             repo.name,
@@ -1085,38 +1153,35 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test.name, "failureRate": 0.5}},
-                {"node": {"name": test_2.name, "failureRate": 1.0}},
+                {"node": {"name": test.name, "failureRate": 0.2}},
+                {"node": {"name": test_2.name, "failureRate": 0.6}},
             ]
         }
 
     def test_desc_failure_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
-        _test_instance_1 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today() - datetime.timedelta(days=1),
             repoid=repo.repoid,
-            outcome="pass",
+            pass_count=1,
+            fail_count=1,
         )
-        _test_instance_2 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            outcome="failure",
+            pass_count=3,
+            fail_count=0,
         )
         test_2 = TestFactory(repository=repo)
-        _test_instance_3 = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=test_2,
-            created_at=datetime.datetime.now(),
+            date=datetime.date.today(),
             repoid=repo.repoid,
-            outcome="failure",
-        )
-        _test_instance_4 = TestInstanceFactory(
-            test=test_2,
-            created_at=datetime.datetime.now(),
-            repoid=repo.repoid,
-            outcome="failure",
+            pass_count=2,
+            fail_count=3,
         )
         res = self.fetch_repository(
             repo.name,
@@ -1125,7 +1190,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test_2.name, "failureRate": 1.0}},
-                {"node": {"name": test.name, "failureRate": 0.5}},
+                {"node": {"name": test_2.name, "failureRate": 0.6}},
+                {"node": {"name": test.name, "failureRate": 0.2}},
             ]
         }

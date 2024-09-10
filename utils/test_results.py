@@ -1,22 +1,20 @@
 import datetime as dt
 from dataclasses import dataclass
 
-from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
+    Aggregate,
     Avg,
-    Case,
     F,
     FloatField,
     Func,
-    IntegerField,
     Max,
-    Q,
+    OuterRef,
     QuerySet,
-    Value,
-    When,
+    Subquery,
+    Sum,
 )
-from django.db.models.functions import Coalesce
-from shared.django_apps.reports.models import TestInstance
+from django.db.models.functions import Cast
+from shared.django_apps.reports.models import DailyTestRollup, TestInstance
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
 
@@ -30,6 +28,18 @@ class TestResultsAggregation:
 
 class ArrayLength(Func):
     function = "CARDINALITY"
+
+
+class Unnest(Func):
+    function = "unnest"
+
+
+class Distinct(Func):
+    function = "distinct"
+
+
+class Array(Aggregate):
+    function = "array"
 
 
 def aggregate_test_results(
@@ -62,38 +72,42 @@ def aggregate_test_results(
             branch=branch
         )
 
-    failure_rates_queryset = (
-        pass_failure_error_test_instances.values("test")
-        .annotate(
-            failure_rate=Avg(
-                Case(
-                    When(outcome="pass", then=Value(0.0)),
-                    When(outcome__in=["failure", "error"], then=Value(1.0)),
-                    output_field=FloatField(),
-                )
-            ),
-            updated_at=Max("created_at"),
-            commits_where_fail=Coalesce(
-                ArrayLength(
-                    ArrayAgg(
-                        "commitid",
-                        distinct=True,
-                        filter=Q(outcome__in=["failure", "error"]),
-                    )
-                ),
-                0,
-                output_field=IntegerField(),
-            ),
-            avg_duration=Avg("duration_seconds"),
-            name=F("test__name"),
-        )
-        .values(
-            "failure_rate",
-            "commits_where_fail",
-            "avg_duration",
-            "name",
-            "updated_at",
-        )
+    totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=time_ago)
+
+    print([(t.pass_count, t.fail_count) for t in totals], branch)
+
+    if branch is not None:
+        totals = totals.filter(branch=branch)
+
+    commits_where_fail_sq = (
+        totals.filter(test_id=OuterRef("test_id"))
+        .annotate(v=Distinct(Unnest(F("commits_where_fail"))))
+        .values("v")
+    )
+    latest_duration_sq = (
+        totals.filter(test_id=OuterRef("test_id"))
+        .values("last_duration_seconds")
+        .order_by("-latest_run")[:1]
     )
 
-    return failure_rates_queryset
+    aggregation_of_test_results = totals.values("test").annotate(
+        failure_rate=(
+            Cast(Sum(F("fail_count")), output_field=FloatField())
+            / (
+                Cast(
+                    Sum(F("pass_count")),
+                    output_field=FloatField(),
+                )
+                + Cast(Sum(F("fail_count")), output_field=FloatField())
+            )
+        ),
+        updated_at=Max("latest_run"),
+        commits_where_fail=ArrayLength(Array(Subquery(commits_where_fail_sq))),
+        last_duration=Subquery(latest_duration_sq),
+        avg_duration=Avg("avg_duration_seconds"),
+        name=F("test__name"),
+    )
+
+    print(aggregation_of_test_results.query)
+
+    return aggregation_of_test_results

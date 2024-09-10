@@ -1,12 +1,11 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from django.test import TransactionTestCase
 from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from reports.models import TestInstance
-from reports.tests.factories import TestFactory, TestInstanceFactory
+from reports.tests.factories import DailyTestRollupFactory, TestFactory
 
 from .helper import GraphQLTestHelper
 
@@ -22,27 +21,28 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             name="Test\x1fName",
             repository=self.repository,
         )
-        _ = TestInstanceFactory(
+
+        _ = DailyTestRollupFactory(
             test=self.test,
-            outcome=TestInstance.Outcome.FAILURE.value,
-            duration_seconds=1.1,
-            repoid=self.repository.repoid,
-            created_at=datetime.now(),
+            commits_where_fail=["123"],
+            date=date.today() - timedelta(days=2),
+            avg_duration_seconds=0.6,
+            latest_run=datetime.now() - timedelta(days=2),
         )
-        _ = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=self.test,
-            outcome=TestInstance.Outcome.FAILURE.value,
-            duration_seconds=1.3,
-            repoid=self.repository.repoid,
-            created_at=datetime.now(),
+            commits_where_fail=["123", "456"],
+            date=datetime.now() - timedelta(days=1),
+            avg_duration_seconds=2,
+            latest_run=datetime.now() - timedelta(days=1),
         )
-        _ = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=self.test,
-            outcome=TestInstance.Outcome.PASS.value,
-            duration_seconds=1.5,
-            repoid=self.repository.repoid,
-            created_at=datetime.now(),
-            commitid="456123",
+            commits_where_fail=["123", "789"],
+            date=date.today(),
+            last_duration_seconds=5.0,
+            avg_duration_seconds=3,
+            latest_run=datetime.now(),
         )
 
     def test_fetch_test_result_name(self) -> None:
@@ -126,7 +126,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testResults"]["edges"][0]["node"][
                 "commitsFailed"
             ]
-            == 1
+            == 3
         )
 
     def test_fetch_test_result_failure_rate(self) -> None:
@@ -155,7 +155,36 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testResults"]["edges"][0]["node"][
                 "failureRate"
             ]
-            == 2 / 3
+            == 0.75
+        )
+
+    def test_fetch_test_result_last_duration(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testResults {
+                                edges {
+                                    node {
+                                        lastDuration
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
+                "lastDuration"
+            ]
+            == 5.0
         )
 
     def test_fetch_test_result_avg_duration(self) -> None:
@@ -180,9 +209,6 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert (
-            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
-                "avgDuration"
-            ]
-            == 1.3
-        )
+        assert result["owner"]["repository"]["testResults"]["edges"][0]["node"][
+            "avgDuration"
+        ] == (5.6 / 3)
