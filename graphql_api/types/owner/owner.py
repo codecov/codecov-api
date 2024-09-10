@@ -350,15 +350,19 @@ def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
 
     ai_features_app_install = GithubAppInstallation.objects.filter(
         app_id=ai_features_gh_app_id, owner=owner
-    )
+    ).first()
 
-    if not ai_features_app_install.exists():
+    if not ai_features_app_install:
         return None
 
-    repo_service_ids = ai_features_app_install.first().repository_service_ids
+    current_owner = info.context["request"].current_owner
+    queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
 
     # App is installed on all repos
-    if repo_service_ids is None:
-        return []
+    if not ai_features_app_install.repository_service_ids:
+        return list(queryset.values_list("name", flat=True))
 
-    return repo_service_ids
+    repo_names = queryset.filter(
+        service_id__in=ai_features_app_install.repository_service_ids
+    ).values_list("name", flat=True)
+    return list(repo_names)
