@@ -412,9 +412,10 @@ class BundleAnalysisMeasurementsService(object):
         for measurable_id, measurements in all_measurements.items():
             if self.after is not None and measurements[0]["timestamp_bin"] > self.after:
                 carryover_measurement = measurements_last_uploaded_before_start_date(
+                    owner_id=self.repository.author.ownerid,
                     repo_id=self.repository.repoid,
                     measurable_name=measurable_name,
-                    measurable_ids=[measurable_id],
+                    measurable_id=measurable_id,
                     start_date=self.after,
                     branch=self.branch,
                 )
