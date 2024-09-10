@@ -1,6 +1,7 @@
 import hashlib
 from typing import List, Union
 
+import sentry_sdk
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
@@ -63,6 +64,7 @@ def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
     return md5_path.hexdigest()
 
 
+@sentry_sdk.trace
 @impacted_file_bindable.field("segments")
 @sync_to_async
 @convert_kwargs_to_snake_case
