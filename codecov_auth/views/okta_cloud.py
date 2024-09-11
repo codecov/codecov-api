@@ -142,7 +142,9 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
                 f"Okta authentication error: {error}. Description: {error_description}",
                 extra=log_context,
             )
-            return redirect(f"{app_redirect_url}?error={error}&error_description={error_description}")
+            return redirect(
+                f"{app_redirect_url}?error={error}&error_description={error_description}"
+            )
 
         # Redirect URL, need to validate and mark user as logged in
         if request.GET.get("code"):
