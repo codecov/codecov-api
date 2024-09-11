@@ -2,6 +2,8 @@ from rest_framework import serializers
 from shared.reports.resources import Report, ReportFile
 from shared.utils.merge import line_type
 
+from utils import round_decimals_down
+
 
 class BaseTotalsSerializer(serializers.Serializer):
     files = serializers.IntegerField()
@@ -15,7 +17,7 @@ class BaseTotalsSerializer(serializers.Serializer):
 
     def get_coverage(self, totals) -> float:
         if totals.coverage is not None:
-            return round(float(totals.coverage), 2)
+            return round_decimals_down(float(totals.coverage), 2)
         return 0
 
 
@@ -40,11 +42,11 @@ class CommitTotalsSerializer(BaseTotalsSerializer):
         if totals.get("c") is None:
             return None
         else:
-            return round(float(totals["c"]), 2)
+            return round_decimals_down(float(totals["c"]), 2)
 
     def get_complexity_ratio(self, totals) -> float:
         return (
-            round((totals["C"] / totals["N"]) * 100, 2)
+            round_decimals_down((totals["C"] / totals["N"]) * 100, 2)
             if totals["C"] and totals["N"]
             else 0
         )
@@ -65,7 +67,7 @@ class ReportTotalsSerializer(BaseTotalsSerializer):
 
     def get_complexity_ratio(self, totals) -> float:
         return (
-            round((totals.complexity / totals.complexity_total) * 100, 2)
+            round_decimals_down((totals.complexity / totals.complexity_total) * 100, 2)
             if totals.complexity and totals.complexity_total
             else 0
         )

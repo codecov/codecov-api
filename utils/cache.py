@@ -1,3 +1,3 @@
-from shared.helpers.cache import OurOwnCache, RedisBackend
+from shared.helpers.cache import OurOwnCache
 
 cache = OurOwnCache()

@@ -1,5 +1,3 @@
-from typing import Dict
-
 from django.conf import settings
 from rest_framework import serializers
 
@@ -7,6 +5,7 @@ from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportResults, ReportSession, RepositoryFlag
 from services.archive import ArchiveService
+from services.task import TaskService
 
 
 class FlagListField(serializers.ListField):
@@ -138,9 +137,15 @@ class CommitSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         repo = validated_data.pop("repository", None)
         commitid = validated_data.pop("commitid", None)
-        commit, _ = Commit.objects.get_or_create(
+        commit, created = Commit.objects.get_or_create(
             repository=repo, commitid=commitid, defaults=validated_data
         )
+
+        if created:
+            TaskService().update_commit(
+                commitid=commit.commitid, repoid=commit.repository.repoid
+            )
+
         return commit
 
 
@@ -156,7 +161,7 @@ class CommitReportSerializer(serializers.ModelSerializer):
         )
         fields = read_only_fields + ("code",)
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> tuple[CommitReport, bool]:
         report = (
             CommitReport.objects.coverage_reports()
             .filter(
@@ -169,8 +174,8 @@ class CommitReportSerializer(serializers.ModelSerializer):
             if report.report_type is None:
                 report.report_type = CommitReport.ReportType.COVERAGE
                 report.save()
-            return report
-        return super().create(validated_data)
+            return report, False
+        return super().create(validated_data), True
 
 
 class ReportResultsSerializer(serializers.ModelSerializer):

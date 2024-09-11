@@ -1,11 +1,9 @@
-from pprint import pprint
 from unittest.mock import patch
 
 import pytest
-from django.contrib.admin.models import CHANGE, LogEntry
+from django.contrib.admin.models import LogEntry
 
 from codecov_auth.helpers import History, current_user_part_of_org
-from codecov_auth.models import Owner, User
 
 from ..factories import OwnerFactory
 

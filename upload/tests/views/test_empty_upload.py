@@ -99,6 +99,7 @@ def test_empty_upload_with_yaml_ignored_files(
             "endpoint": "empty_upload",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 
@@ -290,7 +291,6 @@ def test_empty_upload_with_testable_file_invalid_serializer(
         ],
     )
     response = client.post(url, data={"should_force": "hello world"})
-    response_json = response.json()
     assert response.status_code == 400
 
 

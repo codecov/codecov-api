@@ -1,6 +1,3 @@
-import html
-
-import yaml
 from django import forms
 
 from codecov.commands.base import BaseInteractor

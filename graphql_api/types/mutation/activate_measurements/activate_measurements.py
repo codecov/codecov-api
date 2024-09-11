@@ -6,7 +6,6 @@ from graphql_api.helpers.mutation import (
     resolve_union_error_type,
     wrap_error_handling_mutation,
 )
-from timeseries.models import MeasurementName
 
 
 @wrap_error_handling_mutation
@@ -15,8 +14,8 @@ async def resolve_activate_measurements(_, info, input):
     command: RepositoryCommands = info.context["executor"].get_command("repository")
     await command.activate_measurements(
         owner_name=input.get("owner"),
-        repo_name=input.get("repoName"),
-        measurement_type=input.get("measurementType"),
+        repo_name=input.get("repo_name"),
+        measurement_type=input.get("measurement_type"),
     )
     return None
 

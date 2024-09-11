@@ -1,10 +1,7 @@
-import pytest
 from asgiref.sync import async_to_sync
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core import models
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum, UploadState
 from reports.tests.factories import (
@@ -57,15 +54,15 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         other_upload = UploadFactory(
             report=commit_report, state=UploadState.ERROR.value
         )
-        other_upload_error_1 = UploadErrorFactory(report_session=other_upload)
-        other_upload_error_2 = UploadErrorFactory(report_session=other_upload)
+        UploadErrorFactory(report_session=other_upload)
+        UploadErrorFactory(report_session=other_upload)
 
         another_upload = UploadFactory(
             report=commit_report, state=UploadState.ERROR.value
         )
-        another_upload_error_1 = UploadErrorFactory(report_session=another_upload)
-        another_upload_error_2 = UploadErrorFactory(report_session=another_upload)
-        another_upload_error_3 = UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
+        UploadErrorFactory(report_session=another_upload)
 
         upload = UploadFactory(report=commit_report)
 

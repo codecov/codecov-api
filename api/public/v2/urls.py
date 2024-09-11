@@ -16,6 +16,7 @@ from .owner.views import OwnersViewSet, OwnerViewSet, UserViewSet
 from .pull.views import PullViewSet
 from .repo.views import RepositoryConfigView, RepositoryViewSet
 from .report.views import FileReportViewSet, ReportViewSet, TotalsViewSet
+from .test_results.views import TestResultsView
 
 urls.handler404 = not_found
 urls.handler500 = server_error
@@ -40,6 +41,9 @@ repository_artifacts_router.register(
 repository_artifacts_router.register(r"flags", FlagViewSet, basename="api-v2-flags")
 repository_artifacts_router.register(
     r"components", ComponentViewSet, basename="api-v2-components"
+)
+repository_artifacts_router.register(
+    r"test-results", TestResultsView, basename="api-v2-tests-results"
 )
 
 compare_router = RetrieveUpdateDestroyRouter()
@@ -67,7 +71,7 @@ file_report_router.register(
 service_prefix = "<str:service>/"
 owner_prefix = "<str:service>/<str:owner_username>/"
 repo_prefix = "<str:service>/<str:owner_username>/repos/<str:repo_name>/"
-flag_prefix = repo_prefix + "flags/<str:flag_name>/"
+flag_prefix = repo_prefix + "flags/<path:flag_name>/"
 commit_prefix = repo_prefix + "commits/<str:commitid>/"
 
 urlpatterns = [

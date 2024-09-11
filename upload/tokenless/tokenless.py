@@ -1,12 +1,5 @@
 import logging
-import os
-from datetime import datetime, timedelta
-from json import load
 
-import requests
-from django.http import HttpResponse
-from requests.exceptions import ConnectionError, HTTPError
-from rest_framework import status
 from rest_framework.exceptions import NotFound
 
 from upload.tokenless.appveyor import TokenlessAppveyorHandler
@@ -46,7 +39,7 @@ class TokenlessUploadHandler(object):
         )
         try:
             return self.verifier(self.upload_params).verify()
-        except TypeError as e:
+        except TypeError:
             raise NotFound(
                 "Your CI provider is not compatible with tokenless uploads, please upload using your repository token to resolve this."
             )

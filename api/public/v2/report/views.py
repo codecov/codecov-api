@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema

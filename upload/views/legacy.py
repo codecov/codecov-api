@@ -1,14 +1,11 @@
 import asyncio
 import logging
 import re
-from contextlib import suppress
-from datetime import datetime
 from json import dumps
 from uuid import uuid4
 
 import minio
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import MultipleObjectsReturned
 from django.http import Http404, HttpResponse, HttpResponseServerError
 from django.utils import timezone
@@ -16,7 +13,7 @@ from django.utils.decorators import classonlymethod
 from django.utils.encoding import smart_str
 from django.views import View
 from rest_framework import renderers, status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from sentry_sdk import metrics as sentry_metrics
@@ -78,6 +75,17 @@ class UploadHandler(APIView, ShelterMixin):
     def post(self, request, *args, **kwargs):
         # Extract the version
         version = self.kwargs["version"]
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+                upload_version=version,
+            ),
+        )
 
         log.info(
             f"Received upload request {version}",
@@ -135,12 +143,12 @@ class UploadHandler(APIView, ShelterMixin):
         try:
             repository = determine_repo_for_upload(upload_params)
             owner = repository.author
-        except ValidationError as e:
+        except ValidationError:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"
             metrics.incr("uploads.rejected", 1)
             return response
-        except MultipleObjectsReturned as e:
+        except MultipleObjectsReturned:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Found too many repos"
             metrics.incr("uploads.rejected", 1)
@@ -157,23 +165,29 @@ class UploadHandler(APIView, ShelterMixin):
             ),
         )
 
-        sentry_tags = generate_upload_sentry_metrics_tags(
-            action="coverage",
-            endpoint="legacy_upload",
-            request=self.request,
-            repository=repository,
-            is_shelter_request=self.is_shelter_request(),
-        )
-
         sentry_metrics.incr(
             "upload",
-            tags=sentry_tags,
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+                upload_version=version,
+            ),
         )
 
         sentry_metrics.set(
             "upload_set",
             repository.author.ownerid,
-            tags=sentry_tags,
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="legacy_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+            ),
         )
 
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
@@ -264,7 +278,7 @@ class UploadHandler(APIView, ShelterMixin):
                 ),
             )
 
-            headers = parse_headers(request.META, upload_params)
+            parse_headers(request.META, upload_params)
             archive_service = ArchiveService(repository)
 
             # only Shelter requests are allowed to set their own `storage_path`
@@ -382,8 +396,12 @@ class UploadDownloadHandler(View):
         if owner is None:
             raise Http404("Requested report could not be found")
         repo = await RepositoryCommands(
-            self.request.current_owner, self.service
-        ).fetch_repository(owner, self.repo_name)
+            self.request.current_owner,
+            self.service,
+        ).fetch_repository(
+            owner, self.repo_name, [], exclude_okta_enforced_repos=False
+        )  # Okta sign-in is only enforced on the UI for now.
+
         if repo is None:
             raise Http404("Requested report could not be found")
         return repo

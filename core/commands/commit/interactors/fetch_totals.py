@@ -1,8 +1,5 @@
-from django.db.models import Prefetch
-
 from codecov.commands.base import BaseInteractor
 from codecov.db import sync_to_async
-from reports.models import CommitReport
 
 
 class FetchTotalsInteractor(BaseInteractor):

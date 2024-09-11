@@ -91,7 +91,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
 
         author = OwnerFactory()
         repo = RepositoryFactory(author=author, private=False)
-        commit = CommitFactory(repository=repo)
+        CommitFactory(repository=repo)
 
         self.client.logout()
         response = self.client.get(
@@ -146,7 +146,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
                         "hits": 19,
                         "misses": 5,
                         "partials": 0,
-                        "coverage": 79.17,
+                        "coverage": 79.16,
                         "branches": 0,
                         "methods": 0,
                         "sessions": 2,
@@ -282,7 +282,7 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
                 "hits": 19,
                 "misses": 5,
                 "partials": 0,
-                "coverage": 79.17,
+                "coverage": 79.16,
                 "branches": 0,
                 "methods": 0,
                 "sessions": 2,

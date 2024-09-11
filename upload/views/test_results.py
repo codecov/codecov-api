@@ -3,7 +3,7 @@ import uuid
 
 from django.utils import timezone
 from rest_framework import serializers, status
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +13,7 @@ from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    TokenlessAuthentication,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -42,7 +43,8 @@ class UploadSerializer(serializers.Serializer):
     job = serializers.CharField(required=False)
     flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
-    service = serializers.CharField(required=False)
+    branch = serializers.CharField(required=False, allow_null=True)
+    ci_service = serializers.CharField(required=False)
     storage_path = serializers.CharField(required=False)
 
 
@@ -55,12 +57,23 @@ class TestResultsView(
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
     ]
 
     def get_exception_handler(self):
         return repo_auth_custom_exception_handler
 
     def post(self, request):
+        metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="test_results",
+                endpoint="test_results",
+                request=request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -75,6 +88,9 @@ class TestResultsView(
             repo = request.user._repository
         else:
             raise NotAuthenticated()
+
+        if repo is None:
+            raise NotFound("Repository not found.")
 
         update_fields = []
         if not repo.active or not repo.activated:
@@ -97,6 +113,7 @@ class TestResultsView(
                 request=request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
 
@@ -104,7 +121,7 @@ class TestResultsView(
             commitid=data["commit"],
             repository=repo,
             defaults={
-                "branch": data.get("branch"),
+                "branch": data.get("branch") or repo.branch,
                 "pullid": data.get("pr"),
                 "merged": False if data.get("pr") is not None else None,
                 "state": "pending",
@@ -135,7 +152,7 @@ class TestResultsView(
             "build_url": data.get("buildURL"),  # build_url
             "job": data.get("job"),  # job_code
             "flags": data.get("flags"),
-            "service": data.get("service"),  # provider
+            "service": data.get("ci_service"),  # provider
             "url": storage_path,  # storage_path
             # these are used for dispatching the task below
             "commit": commit.commitid,

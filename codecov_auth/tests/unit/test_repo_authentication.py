@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,7 +10,6 @@ from django.utils import timezone
 from jwt import PyJWTError
 from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
-from shared.torngit.exceptions import TorngitObjectNotFoundError, TorngitRateLimitError
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -168,58 +167,69 @@ class TestGlobalTokenAuthentication(object):
             "bitbucketserveruploadtoken": "bitbucket_server",
         }
 
-    def test_authentication_for_non_enterprise(self):
+    @patch("codecov_auth.authentication.repo_auth.get_global_tokens")
+    def test_authentication_no_global_token_available(self, mocked_get_global_tokens):
+        mocked_get_global_tokens.return_value = {}
         authentication = GlobalTokenAuthentication()
-        request = APIRequestFactory().post("/endpoint")
+        request = APIRequestFactory().post("/upload/service/owner::::repo/commits")
         res = authentication.authenticate(request)
         assert res is None
 
     @patch("codecov_auth.authentication.repo_auth.get_global_tokens")
-    @patch("codecov_auth.authentication.repo_auth.GlobalTokenAuthentication.get_token")
-    def test_authentication_for_enterprise_wrong_token(
-        self, mocked_token, mocked_get_global_tokens
-    ):
+    def test_authentication_for_enterprise_wrong_token(self, mocked_get_global_tokens):
         mocked_get_global_tokens.return_value = self.get_mocked_global_tokens()
-        mocked_token.return_value = "random_token"
         authentication = GlobalTokenAuthentication()
-        request = APIRequestFactory().post("/endpoint")
+        request = APIRequestFactory().post(
+            "/upload/service/owner::::repo/commits",
+            headers={"Authorization": "token GUT"},
+        )
         res = authentication.authenticate(request)
         assert res is None
 
     @patch("codecov_auth.authentication.repo_auth.get_global_tokens")
-    @patch("codecov_auth.authentication.repo_auth.GlobalTokenAuthentication.get_token")
-    @patch("codecov_auth.authentication.repo_auth.GlobalTokenAuthentication.get_owner")
     def test_authentication_for_enterprise_correct_token_repo_not_exists(
-        self, mocked_owner, mocked_token, mocked_get_global_tokens, db
+        self, mocked_get_global_tokens, db
     ):
         mocked_get_global_tokens.return_value = self.get_mocked_global_tokens()
-        mocked_token.return_value = "githubuploadtoken"
-        mocked_owner.return_value = OwnerFactory.create()
         authentication = GlobalTokenAuthentication()
-        request = APIRequestFactory().post("/endpoint")
+        request = APIRequestFactory().post(
+            "/upload/service/owner::::repo/commits",
+            headers={"Authorization": "token githubuploadtoken"},
+        )
         with pytest.raises(exceptions.AuthenticationFailed) as exc:
             authentication.authenticate(request)
         assert exc.value.args == (
             "Could not find a repository, try using repo upload token",
         )
 
+    @pytest.mark.parametrize(
+        "owner_service, owner_name, token",
+        [
+            pytest.param("github", "username", "githubuploadtoken", id="github"),
+            pytest.param(
+                "gitlab", "username", "gitlabuploadtoken", id="gitlab_single_user"
+            ),
+            pytest.param(
+                "gitlab",
+                "usergroup:username",
+                "gitlabuploadtoken",
+                id="gitlab_subgroup_user",
+            ),
+        ],
+    )
     @patch("codecov_auth.authentication.repo_auth.get_global_tokens")
-    @patch("codecov_auth.authentication.repo_auth.GlobalTokenAuthentication.get_token")
-    @patch("codecov_auth.authentication.repo_auth.GlobalTokenAuthentication.get_owner")
-    @patch("codecov_auth.authentication.repo_auth.GlobalTokenAuthentication.get_repoid")
     def test_authentication_for_enterprise_correct_token_repo_exists(
-        self, mocked_repoid, mocked_owner, mocked_token, mocked_get_global_tokens, db
+        self, mocked_get_global_tokens, owner_service, owner_name, token, db
     ):
         mocked_get_global_tokens.return_value = self.get_mocked_global_tokens()
-        mocked_token.return_value = "githubuploadtoken"
-        owner = OwnerFactory.create(service="github")
-        repoid = 123
-        mocked_repoid.return_value = repoid
-        mocked_owner.return_value = owner
-
-        repository = RepositoryFactory.create(author=owner, repoid=repoid)
+        owner = OwnerFactory.create(service=owner_service, username=owner_name)
+        owner_name.replace(":", ":::")  # encode name to test GL subgroups
+        repository = RepositoryFactory.create(author=owner)
         authentication = GlobalTokenAuthentication()
-        request = APIRequestFactory().post("/endpoint")
+        request = APIRequestFactory().post(
+            f"/upload/{owner_service}/{owner_name}::::{repository.name}/commits",
+            headers={"Authorization": f"token {token}"},
+        )
         res = authentication.authenticate(request)
         assert res is not None
         user, auth = res
@@ -290,7 +300,7 @@ class TestOrgLevelTokenAuthentication(object):
         token = uuid.uuid4()
         authentication = OrgLevelTokenAuthentication()
         res = authentication.authenticate_credentials(token)
-        assert res == None
+        assert res is None
 
     @override_settings(IS_ENTERPRISE=False)
     def test_owner_has_token_but_wrong_one_sent_return_none(self, db, mocker):
@@ -305,7 +315,7 @@ class TestOrgLevelTokenAuthentication(object):
         )
         authentication = OrgLevelTokenAuthentication()
         res = authentication.authenticate(request)
-        assert res == None
+        assert res is None
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 1
 
     @override_settings(IS_ENTERPRISE=False)
@@ -512,6 +522,7 @@ class TestTokenlessAuth(object):
         if existing_commit:
             commit = CommitFactory()
             commit.branch = commit_branch
+            commit.repository = repo
             commit.save()
 
             request = APIRequestFactory().post(

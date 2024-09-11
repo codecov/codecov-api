@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 
 from django.test import override_settings
 from rest_framework.test import APITestCase
@@ -96,7 +96,7 @@ class ThrottlesUnitTests(APITestCase):
         self.request_should_not_throttle(unrelated_commit)
 
     @override_settings(UPLOAD_THROTTLING_ENABLED=True)
-    def test_check_commit_constraints_settings_enabled(self):
+    def test_throttle_check_commit_constraints_settings_enabled(self):
         author = self.owner
         first_commit = CommitFactory.create(repository__author=author)
 

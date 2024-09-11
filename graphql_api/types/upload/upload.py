@@ -27,6 +27,8 @@ upload_error_bindable = ObjectType("UploadError")
 
 @upload_bindable.field("state")
 def resolve_state(upload, info):
+    if not upload.state:
+        return UploadState.ERROR
     return UploadState(upload.state)
 
 

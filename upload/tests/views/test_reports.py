@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
@@ -8,7 +8,6 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport, ReportResults
 from reports.tests.factories import ReportResultsFactory
-from services.repo_providers import RepoProviderService
 from services.task.task import TaskService
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -72,6 +71,7 @@ def test_reports_post(client, db, mocker):
             "endpoint": "create_report",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 
@@ -177,7 +177,7 @@ def test_create_report_already_exists(client, db, mocker):
         name="the_repo", author__username="codecov", author__service="github"
     )
     commit = CommitFactory(repository=repository)
-    report = CommitReport.objects.create(commit=commit, code="code")
+    CommitReport.objects.create(commit=commit, code="code")
 
     repository.save()
     client = APIClient()
@@ -195,7 +195,7 @@ def test_create_report_already_exists(client, db, mocker):
     assert CommitReport.objects.filter(
         commit_id=commit.id, code="code", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
-    mocked_call.assert_called_once()
+    mocked_call.assert_not_called()
 
 
 def test_reports_post_code_as_default(client, db, mocker):
@@ -311,6 +311,7 @@ def test_reports_results_post_successful_github_oidc_auth(
             "endpoint": "create_report_results",
             "repo_visibility": "private",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )
 
@@ -401,7 +402,7 @@ def test_report_results_get_unsuccessful(client, db, mocker):
         name="the_repo", author__username="codecov", author__service="github"
     )
     commit = CommitFactory(repository=repository)
-    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    CommitReport.objects.create(commit=commit, code="code")
     repository.save()
 
     client = APIClient()

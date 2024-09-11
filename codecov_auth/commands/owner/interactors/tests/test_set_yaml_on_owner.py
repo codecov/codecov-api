@@ -1,5 +1,4 @@
 import pytest
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
 from codecov.commands.exceptions import (
@@ -86,14 +85,12 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
 
     async def test_user_is_part_of_org_and_yaml_is_not_dict(self):
         with pytest.raises(ValidationError) as e:
-            owner_updated = await self.execute(
-                self.current_owner, self.org.username, bad_yaml_not_dict
-            )
+            await self.execute(self.current_owner, self.org.username, bad_yaml_not_dict)
         assert str(e.value) == "Error at []: Yaml needs to be a dict"
 
     async def test_user_is_part_of_org_and_yaml_is_not_codecov_valid(self):
-        with pytest.raises(ValidationError) as e:
-            owner_updated = await self.execute(
+        with pytest.raises(ValidationError):
+            await self.execute(
                 self.current_owner, self.org.username, bad_yaml_wrong_keys
             )
 

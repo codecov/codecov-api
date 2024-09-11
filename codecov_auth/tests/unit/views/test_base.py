@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 from django.conf import settings
 from django.contrib.sessions.backends.cache import SessionStore
-from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
 from freezegun import freeze_time
@@ -190,7 +190,7 @@ class LoginMixinTests(TestCase):
     @override_settings(IS_ENTERPRISE=False)
     @patch("services.analytics.AnalyticsService.user_signed_in")
     def test_set_marketing_tags_on_cookies(self, user_signed_in_mock):
-        owner = OwnerFactory(service="github")
+        OwnerFactory(service="github")
         self.request = RequestFactory().get(
             "",
             {
@@ -402,7 +402,7 @@ class LoginMixinTests(TestCase):
             == 0
         )
         # If the number of users is larger than the limit, raise error
-        with pytest.raises(PermissionDenied) as exp:
+        with pytest.raises(PermissionDenied):
             OwnerFactory(service="github", ownerid=12, oauth_token="very-fake-token")
             OwnerFactory(service="github", ownerid=13, oauth_token=None)
             OwnerFactory(service="github", ownerid=14, oauth_token="very-fake-token")
@@ -425,7 +425,7 @@ class LoginMixinTests(TestCase):
         )
         mock_get_current_license.return_value = license
         # User doesn't exist, and existing users will raise error
-        with pytest.raises(PermissionDenied) as exp:
+        with pytest.raises(PermissionDenied):
             OwnerFactory(ownerid=1, service="github", plan_activated_users=[1, 2, 3])
             OwnerFactory(
                 ownerid=2,

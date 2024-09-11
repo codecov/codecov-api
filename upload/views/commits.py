@@ -1,6 +1,6 @@
 import logging
 
-from rest_framework.exceptions import NotAuthenticated, ValidationError
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import ListCreateAPIView
 from sentry_sdk import metrics as sentry_metrics
 
@@ -13,7 +13,6 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
-from services.task import TaskService
 from upload.helpers import generate_upload_sentry_metrics_tags
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin
@@ -52,15 +51,25 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        sentry_metrics.incr(
+            "upload",
+            tags=generate_upload_sentry_metrics_tags(
+                action="coverage",
+                endpoint="create_commit",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
         repository = self.get_repo()
+
         commit = serializer.save(repository=repository)
+
         log.info(
             "Request to create new commit",
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
-        TaskService().update_commit(
-            commitid=commit.commitid, repoid=commit.repository.repoid
-        )
+
         sentry_metrics.incr(
             "upload",
             tags=generate_upload_sentry_metrics_tags(
@@ -69,6 +78,8 @@ class CommitViews(ListCreateAPIView, GetterMixin):
                 request=self.request,
                 repository=repository,
                 is_shelter_request=self.is_shelter_request(),
+                position="end",
             ),
         )
+
         return commit

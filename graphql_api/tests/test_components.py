@@ -5,7 +5,6 @@ from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from shared.reports.resources import Report, ReportFile, ReportLine
-from shared.reports.types import ReportTotals
 from shared.utils.sessions import Session
 
 from codecov_auth.tests.factories import OwnerFactory
@@ -112,7 +111,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "sha": self.commit.commitid,
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -148,7 +149,11 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "sha": self.commit.commitid,
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components,
+            variables=variables,
+            owner=OwnerFactory(),
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -229,7 +234,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "sha": self.commit.commitid,
             "filter": {"components": ["Python"]},
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -289,7 +296,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "sha": self.commit.commitid,
             "filter": {"components": ["C", "Golang"]},
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {
@@ -349,7 +358,9 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             "sha": self.commit.commitid,
             "filter": {"components": ["pYtHoN"]},
         }
-        data = self.gql_request(query_commit_components, variables=variables)
+        data = self.gql_request(
+            query_commit_components, variables=variables, owner=OwnerFactory()
+        )
         assert data == {
             "owner": {
                 "repository": {

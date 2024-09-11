@@ -1,7 +1,7 @@
-from django.test import TransactionTestCase, override_settings
+from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, RepositoryFactory
+from core.tests.factories import RepositoryFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """
@@ -22,7 +22,7 @@ mutation($input: RegenerateRepositoryUploadTokenInput!) {
 class RegenerateRepositoryUploadTokenTests(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
-        self.repo = RepositoryFactory(author=self.org, name="gazebo", active=True)
+        self.repo = RepositoryFactory(author=self.org, name="gazebo")
         self.old_repo_token = self.repo.upload_token
 
     def test_when_authenticated_updates_token(self):

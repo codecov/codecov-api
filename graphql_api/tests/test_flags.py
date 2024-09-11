@@ -1,16 +1,14 @@
-from datetime import datetime
 from unittest.mock import patch
 
 import pytest
 from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
-from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
-from timeseries.models import Dataset, MeasurementName
+from timeseries.models import MeasurementName
 from timeseries.tests.factories import DatasetFactory, MeasurementFactory
 
 from .helper import GraphQLTestHelper
@@ -102,11 +100,9 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
         self.commit = CommitFactory(repository=self.repo)
 
     def test_fetch_flags_no_measurements(self):
-        flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
-        flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
-        flag3 = RepositoryFlagFactory(
-            repository=self.repo, flag_name="flag3", deleted=True
-        )
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag3", deleted=True)
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -145,11 +141,9 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
 
     @override_settings(TIMESERIES_ENABLED=False)
     def test_fetch_flags_timeseries_not_enabled(self):
-        flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
-        flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
-        flag3 = RepositoryFlagFactory(
-            repository=self.repo, flag_name="flag3", deleted=True
-        )
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag3", deleted=True)
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -189,9 +183,7 @@ class TestFlags(GraphQLTestHelper, TransactionTestCase):
     def test_fetch_flags_with_measurements(self):
         flag1 = RepositoryFlagFactory(repository=self.repo, flag_name="flag1")
         flag2 = RepositoryFlagFactory(repository=self.repo, flag_name="flag2")
-        flag3 = RepositoryFlagFactory(
-            repository=self.repo, flag_name="flag3", deleted=True
-        )
+        RepositoryFlagFactory(repository=self.repo, flag_name="flag3", deleted=True)
         MeasurementFactory(
             name="flag_coverage",
             owner_id=self.org.pk,

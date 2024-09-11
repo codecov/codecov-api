@@ -2,6 +2,7 @@ from datetime import datetime
 from hashlib import sha1
 from typing import Iterable, List, Optional
 
+import shared.rate_limits as rate_limits
 import stripe
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
@@ -10,7 +11,13 @@ import services.activation as activation
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
-from codecov_auth.models import Owner
+from codecov_auth.models import (
+    SERVICE_GITHUB,
+    SERVICE_GITHUB_ENTERPRISE,
+    Account,
+    Owner,
+)
+from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
 from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
@@ -25,6 +32,7 @@ from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.billing import BillingService
 from services.profiling import ProfilingSummary
+from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementSummary
 
@@ -36,7 +44,7 @@ owner_bindable = ObjectType("Owner")
 @owner_bindable.field("repositories")
 @convert_kwargs_to_snake_case
 def resolve_repositories(
-    owner,
+    owner: Owner,
     info,
     filters=None,
     ordering=RepositoryOrdering.ID,
@@ -44,7 +52,18 @@ def resolve_repositories(
     **kwargs,
 ):
     current_owner = info.context["request"].current_owner
-    queryset = list_repository_for_owner(current_owner, owner, filters)
+    okta_account_auths: list[int] = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
+    )
+
+    is_impersonation = info.context["request"].impersonation
+    # If the user is impersonating another user, we want to show all the Okta repos.
+    # This means we do not want to filter out the Okta enforced repos
+    exclude_okta_enforced_repos = not is_impersonation
+
+    queryset = list_repository_for_owner(
+        current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
+    )
     return queryset_to_connection(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
@@ -61,7 +80,7 @@ def resolve_is_current_user_part_of_org(owner, info):
 
 
 @owner_bindable.field("yaml")
-def resolve_yaml(owner, info):
+def resolve_yaml(owner: Owner, info):
     if owner.yaml is None:
         return
     current_owner = info.context["request"].current_owner
@@ -103,14 +122,28 @@ def resolve_has_private_repos(owner: Owner, info) -> List[PlanData]:
 
 @owner_bindable.field("ownerid")
 @require_part_of_org
-def resolve_ownerid(owner, info) -> int:
+def resolve_ownerid(owner: Owner, info) -> int:
     return owner.ownerid
 
 
 @owner_bindable.field("repository")
-async def resolve_repository(owner, info, name):
+async def resolve_repository(owner: Owner, info, name):
     command = info.context["executor"].get_command("repository")
-    repository: Optional[Repository] = await command.fetch_repository(owner, name)
+    okta_authenticated_accounts: list[int] = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
+    )
+
+    is_impersonation = info.context["request"].impersonation
+    # If the user is impersonating another user, we want to show all the Okta repos.
+    # This means we do not want to filter out the Okta enforced repos
+    exclude_okta_enforced_repos = not is_impersonation
+
+    repository: Optional[Repository] = await command.fetch_repository(
+        owner,
+        name,
+        okta_authenticated_accounts,
+        exclude_okta_enforced_repos=exclude_okta_enforced_repos,
+    )
 
     if repository is None:
         return NotFoundError()
@@ -134,14 +167,14 @@ async def resolve_repository(owner, info, name):
 
 @owner_bindable.field("numberOfUploads")
 @require_part_of_org
-async def resolve_number_of_uploads(owner, info, **kwargs):
+async def resolve_number_of_uploads(owner: Owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return await command.get_uploads_number_per_user(owner)
 
 
 @owner_bindable.field("isAdmin")
 @require_part_of_org
-def resolve_is_current_user_an_admin(owner, info):
+def resolve_is_current_user_an_admin(owner: Owner, info):
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
     return command.get_is_current_user_an_admin(owner, current_owner)
@@ -149,14 +182,14 @@ def resolve_is_current_user_an_admin(owner, info):
 
 @owner_bindable.field("hashOwnerid")
 @require_part_of_org
-def resolve_hash_ownerid(owner, info):
+def resolve_hash_ownerid(owner: Owner, info):
     hash_ownerid = sha1(str(owner.ownerid).encode())
     return hash_ownerid.hexdigest()
 
 
 @owner_bindable.field("orgUploadToken")
 @require_part_of_org
-def resolve_org_upload_token(owner, info, **kwargs):
+def resolve_org_upload_token(owner: Owner, info, **kwargs):
     command = info.context["executor"].get_command("owner")
     return command.get_org_upload_token(owner)
 
@@ -182,7 +215,15 @@ def resolve_measurements(
 ) -> Iterable[MeasurementSummary]:
     current_owner = info.context["request"].current_owner
 
-    queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
+    okta_authenticated_accounts: list[int] = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
+    )
+
+    queryset = (
+        Repository.objects.filter(author=owner)
+        .viewable_repos(current_owner)
+        .exclude_accounts_enforced_okta(okta_authenticated_accounts)
+    )
 
     if is_public is not None:
         queryset = queryset.filter(private=not is_public)
@@ -208,7 +249,7 @@ def resolve_measurements(
 
 @owner_bindable.field("isCurrentUserActivated")
 @sync_to_async
-def resolve_is_current_user_activated(owner, info):
+def resolve_is_current_user_activated(owner: Owner, info):
     current_user = info.context["request"].user
     if not current_user.is_authenticated:
         return False
@@ -234,6 +275,20 @@ def resolve_owner_invoices(owner: Owner, info) -> list | None:
     return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)
 
 
+@owner_bindable.field("isGithubRateLimited")
+@sync_to_async
+def resolve_is_github_rate_limited(owner: Owner, info) -> bool | None:
+    if owner.service != SERVICE_GITHUB and owner.service != SERVICE_GITHUB_ENTERPRISE:
+        return False
+    redis_connection = get_redis_connection()
+    rate_limit_redis_key = rate_limits.determine_entity_redis_key(
+        owner=owner, repository=None
+    )
+    return rate_limits.determine_if_entity_is_rate_limited(
+        redis_connection, rate_limit_redis_key
+    )
+
+
 @owner_bindable.field("invoice")
 @require_part_of_org
 @convert_kwargs_to_snake_case
@@ -243,3 +298,30 @@ def resolve_owner_invoice(
     invoice_id: str,
 ) -> stripe.Invoice | None:
     return BillingService(requesting_user=owner).get_invoice(owner, invoice_id)
+
+
+@owner_bindable.field("account")
+@require_part_of_org
+@sync_to_async
+def resolve_owner_account(owner: Owner, info) -> dict:
+    account_id = owner.account_id
+    return Account.objects.filter(pk=account_id).first()
+
+
+@owner_bindable.field("isUserOktaAuthenticated")
+@sync_to_async
+@require_part_of_org
+def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
+    okta_signed_in_accounts = info.context["request"].session.get(
+        OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY,
+        [],
+    )
+    if owner.account_id:
+        return owner.account_id in okta_signed_in_accounts
+    return False
+
+
+@owner_bindable.field("delinquent")
+@require_part_of_org
+def resolve_delinquent(owner: Owner, info) -> bool | None:
+    return owner.delinquent

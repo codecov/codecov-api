@@ -223,13 +223,12 @@ class MockFileComparison(object):
         ]
 
 
-@patch("services.comparison.Comparison.has_unmerged_base_commits", lambda self: True)
 @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
 @patch("services.comparison.Comparison.base_report", new_callable=PropertyMock)
 @patch("services.repo_providers.RepoProviderService.get_adapter")
 class TestCompareViewSetRetrieve(APITestCase):
     """
-    Tests for retrieving a comparison. Does not test data that will be depracated,
+    Tests for retrieving a comparison. Does not test data that will be deprecated,
     eg base and head report fields. Tests for commits etc will be added as the
     compare-api refactor progresses.
     """
@@ -412,7 +411,6 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
-        assert response.data["has_unmerged_base_commits"] is True
 
     def test_returns_404_if_base_or_head_references_not_found(
         self, adapter_mock, base_report_mock, head_report_mock
@@ -535,7 +533,7 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_file_returns_comparefile_with_diff_and_src_data(
+    def test_file_returns_compare_file_with_diff_and_src_data(
         self, adapter_mock, base_report_mock, head_report_mock
     ):
         base_report_mock.return_value = self.base_report
@@ -597,7 +595,7 @@ class TestCompareViewSetRetrieve(APITestCase):
         response = self._get_comparison()
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["totals"]["base"] == None
+        assert response.data["totals"]["base"] is None
 
     def test_no_raw_reports_returns_404(
         self, adapter_mock, base_report_mock, head_report_mock
@@ -668,49 +666,6 @@ class TestCompareViewSetRetrieve(APITestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["files"] == self.expected_files
-
-    @patch("redis.Redis.get", lambda self, key: None)
-    @patch("redis.Redis.set", lambda self, key, val, ex: None)
-    @patch(
-        "services.comparison.PullRequestComparison.pseudo_diff_adjusts_tracked_lines",
-        new_callable=PropertyMock,
-    )
-    @patch(
-        "services.comparison.PullRequestComparison.allow_coverage_offsets",
-        new_callable=PropertyMock,
-    )
-    @patch(
-        "services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff"
-    )
-    def test_pull_request_pseudo_comparison_returns_error_if_coverage_offsets_not_allowed(
-        self,
-        update_base_report_mock,
-        allow_coverage_offsets_mock,
-        pseudo_diff_adjusts_tracked_lines_mock,
-        adapter_mock,
-        base_report_mock,
-        head_report_mock,
-    ):
-        adapter_mock.return_value = self.mocked_compare_adapter
-        base_report_mock.return_value = self.base_report
-        head_report_mock.return_value = self.head_report
-
-        pseudo_diff_adjusts_tracked_lines_mock.return_value = True
-        allow_coverage_offsets_mock.return_value = False
-
-        response = self._get_comparison(
-            query_params={
-                "pullid": PullFactory(
-                    base=self.base.commitid,
-                    head=self.head.commitid,
-                    compared_to=self.base.commitid,
-                    pullid=2,
-                    repository=self.repo,
-                ).pullid
-            }
-        )
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_flags_comparison(self, adapter_mock, base_report_mock, head_report_mock):
         adapter_mock.return_value = self.mocked_compare_adapter
@@ -787,7 +742,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                     "hits": 5,
                     "misses": 4,
                     "partials": 0,
-                    "coverage": 55.56,
+                    "coverage": 55.55,
                     "branches": 0,
                     "methods": 0,
                     "messages": 0,
@@ -839,7 +794,7 @@ class TestCompareViewSetRetrieve(APITestCase):
                     "hits": 2,
                     "misses": 0,
                     "partials": 1,
-                    "coverage": 66.67,
+                    "coverage": 66.66,
                     "branches": 1,
                     "methods": 0,
                     "messages": 0,

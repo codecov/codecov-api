@@ -24,9 +24,18 @@ type Mutation {
   deleteFlag(input: DeleteFlagInput!): DeleteFlagPayload
   saveSentryState(input: SaveSentryStateInput!): SaveSentryStatePayload
   saveTermsAgreement(input: SaveTermsAgreementInput!): SaveTermsAgreementPayload
-  deleteComponentMeasurements(input: DeleteComponentMeasurementsInput!): DeleteComponentMeasurementsPayload
+  deleteComponentMeasurements(
+    input: DeleteComponentMeasurementsInput!
+  ): DeleteComponentMeasurementsPayload
   eraseRepository(input: EraseRepositoryInput!): EraseRepositoryPayload
   updateRepository(input: UpdateRepositoryInput!): UpdateRepositoryPayload
-  updateSelfHostedSettings(input: UpdateSelfHostedSettingsInput!): UpdateSelfHostedSettingsPayload
-  regenerateRepositoryUploadToken(input: RegenerateRepositoryUploadTokenInput!): RegenerateRepositoryUploadTokenPayload
+  updateSelfHostedSettings(
+    input: UpdateSelfHostedSettingsInput!
+  ): UpdateSelfHostedSettingsPayload
+  regenerateRepositoryUploadToken(
+    input: RegenerateRepositoryUploadTokenInput!
+  ): RegenerateRepositoryUploadTokenPayload
+  encodeSecretString(input: EncodeSecretStringInput!): EncodeSecretStringPayload
+  storeEventMetric(input: StoreEventMetricsInput!): StoreEventMetricsPayload
+  saveOktaConfig(input: SaveOktaConfigInput!): SaveOktaConfigPayload
 }

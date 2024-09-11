@@ -3,14 +3,11 @@ from operator import itemgetter
 from graphs.settings import settings
 
 from .graph_utils import (
-    _layout,
     _make_svg,
-    _max_aspect_ratio,
     _squarify,
     _svg_polar_rect,
     _svg_rect,
     _tree_height,
-    _worst_ratio,
 )
 
 

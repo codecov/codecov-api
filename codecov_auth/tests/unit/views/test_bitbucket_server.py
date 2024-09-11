@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import pytest
 from django.core import signing
 from django.http.cookie import SimpleCookie
@@ -9,7 +7,6 @@ from shared.torngit.exceptions import TorngitClientGeneralError
 from codecov_auth.models import Owner
 from codecov_auth.views.bitbucket_server import (
     BitbucketServer,
-    BitbucketServerLoginView,
 )
 from utils.encryption import encryptor
 
@@ -44,7 +41,7 @@ def test_get_bbs_redirect_bitbucket_fails_to_get_request_token(
         # This is the error class that BitbucketServer.api generates
         raise TorngitClientGeneralError(500, "data data", "BBS unavailable")
 
-    client_request_mock = mocker.patch.object(
+    mocker.patch.object(
         BitbucketServer,
         "api",
         side_effect=faulty_response,
@@ -54,7 +51,7 @@ def test_get_bbs_redirect_bitbucket_fails_to_get_request_token(
     settings.BITBUCKET_CLIENT_ID = "testqmo19ebdkseoby"
     settings.BITBUCKET_CLIENT_SECRET = "testfi8hzehvz453qj8mhv21ca4rf83f"
     with pytest.raises(TorngitClientGeneralError):
-        res = client.get(reverse("bbs-login"), SERVER_NAME="localhost:8000")
+        client.get(reverse("bbs-login"), SERVER_NAME="localhost:8000")
 
 
 def test_get_bbs_already_token(client, settings, mocker, db, mock_redis):

@@ -193,7 +193,7 @@ class RepoPullList(InternalAPITest):
         assert response.status_code == status.HTTP_200_OK
         assert [p for p in response.data["results"] if p["pullid"] == 13][0][
             "head_totals"
-        ] == None
+        ] is None
 
     def test_get_pulls_no_base_commit_returns_null_for_base_totals(self, mock_provider):
         mock_provider.return_value = True, True
@@ -213,7 +213,7 @@ class RepoPullList(InternalAPITest):
         assert response.status_code == status.HTTP_200_OK
         assert [p for p in response.data["results"] if p["pullid"] == 13][0][
             "base_totals"
-        ] == None
+        ] is None
 
     def test_get_pulls_as_inactive_user_returns_403(self, mock_provider):
         self.org.plan = "users-inappm"
@@ -336,9 +336,7 @@ class RepoPullDetail(InternalAPITest):
         other_org = OwnerFactory(username="other_org")
         # Create different types of repos / pulls
         repo = RepositoryFactory(author=self.org, name="testRepoName", active=True)
-        other_repo = RepositoryFactory(
-            author=other_org, name="otherRepoName", active=True
-        )
+        RepositoryFactory(author=other_org, name="otherRepoName", active=True)
         repo_with_permission = [repo.repoid]
         self.current_owner = OwnerFactory(
             username="codecov-user",
@@ -389,7 +387,6 @@ class RepoPullDetail(InternalAPITest):
         self.assertEqual(response.status_code, 404)
 
     def test_get_pull_as_inactive_user_returns_403(self, mock_provider):
-        mock_provider = True, True
         self.org.plan = "users-inappm"
         self.org.plan_auto_activate = False
         self.org.save()
@@ -533,7 +530,7 @@ class RepoCommitList(InternalAPITest):
                         "complexity": 3.0,
                         "complexity_total": 5.0,
                         "complexity_ratio": 60.0,
-                        "coverage": 79.17,
+                        "coverage": 79.16,
                         "diff": 0,
                         "files": 3,
                         "hits": 19,
@@ -569,7 +566,7 @@ class RepoCommitList(InternalAPITest):
                         "complexity": 2.0,
                         "complexity_total": 5.0,
                         "complexity_ratio": 40.0,
-                        "coverage": 79.17,
+                        "coverage": 79.16,
                         "diff": 0,
                         "files": 3,
                         "hits": 19,
@@ -631,7 +628,6 @@ class RepoCommitList(InternalAPITest):
         assert response.status_code == 404
 
     def test_fetch_commits_inactive_user_returns_403(self, mock_provider):
-        mock_provider = True, True
         self.org.plan = "users-inappm"
         self.org.plan_auto_activate = False
         self.org.save()

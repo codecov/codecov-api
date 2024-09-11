@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from api.shared.mixins import RepositoriesMixin
 from api.shared.permissions import ChartPermissions
 from core.models import Commit
+from utils import round_decimals_down
 
 from .filters import apply_default_filters, apply_simple_filters
 from .helpers import (
@@ -102,7 +103,9 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
             complexity = [
                 {
                     "date": commit.timestamp,
-                    "complexity_ratio": round(commit.complexity_ratio * 100, 2),
+                    "complexity_ratio": round_decimals_down(
+                        commit.complexity_ratio * 100, 2
+                    ),
                     "commitid": commit.commitid,
                 }
                 for commit in commits
@@ -136,7 +139,9 @@ class RepositoryChartHandler(APIView, RepositoriesMixin):
             complexity = [
                 {
                     "date": commit.truncated_date,
-                    "complexity_ratio": round(commit.complexity_ratio * 100, 2),
+                    "complexity_ratio": round_decimals_down(
+                        commit.complexity_ratio * 100, 2
+                    ),
                     "commitid": commit.commitid,
                 }
                 for commit in complexity_grouped_queryset

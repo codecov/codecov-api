@@ -1,24 +1,36 @@
-from typing import Optional
+import logging
+from datetime import timedelta
+from typing import Optional, Sequence
 
 import django.forms as forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
+from django.db.models import OuterRef, Subquery
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import CheckboxInput, Select
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpRequest
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.html import format_html
+from shared.django_apps.codecov_auth.models import (
+    Account,
+    AccountsUsers,
+    InvoiceBilling,
+    StripeBilling,
+)
 
 from codecov.admin import AdminMixin
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.helpers import History
-from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
+from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, Session, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from services.task import TaskService
 from utils.services import get_short_service_name
+
+log = logging.getLogger(__name__)
 
 
 class ExtendTrialForm(forms.Form):
@@ -96,13 +108,43 @@ def impersonate_owner(self, request, queryset):
 impersonate_owner.short_description = "Impersonate the selected owner"
 
 
+class AccountsUsersInline(admin.TabularInline):
+    model = AccountsUsers
+    max_num = 10
+    extra = 1
+    verbose_name_plural = "Accounts Users (click save to commit changes)"
+    verbose_name = "Account User"
+    can_delete = False
+    can_edit = False
+
+
+class OwnerUserInline(admin.TabularInline):
+    model = Owner
+    max_num = 5
+    extra = 0
+    verbose_name_plural = "Owners (read only)"
+    verbose_name = "Owner"
+    exclude = ("oauth_token",)
+    can_delete = False
+
+    readonly_fields = [
+        "name",
+        "username",
+        "email",
+        "service",
+        "student",
+    ]
+
+    fields = [] + readonly_fields
+
+
 @admin.register(User)
 class UserAdmin(AdminMixin, admin.ModelAdmin):
     list_display = (
         "name",
         "email",
     )
-    readonly_fields = []
+    inlines = [AccountsUsersInline, OwnerUserInline]
     search_fields = (
         "name__iregex",
         "email__iregex",
@@ -190,14 +232,336 @@ class OrgUploadTokenInline(admin.TabularInline):
         return (not has_token) and request.user.is_staff
 
 
+class InvoiceBillingInline(admin.StackedInline):
+    model = InvoiceBilling
+    extra = 0
+    can_delete = False
+    verbose_name_plural = "Invoice Billing"
+    verbose_name = "Invoice Billing (click save to commit changes)"
+
+
+@admin.register(InvoiceBilling)
+class InvoiceBillingAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("id", "account", "is_active")
+    search_fields = (
+        "account__name",
+        "account__id__iexact",
+        "id__iexact",
+        "account_manager",
+    )
+    search_help_text = (
+        "Search by account name, account id (exact), id (exact), or account_manager"
+    )
+    autocomplete_fields = ("account",)
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+    ]
+
+    fields = readonly_fields + [
+        "account",
+        "account_manager",
+        "invoice_notes",
+        "is_active",
+    ]
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        field = form.base_fields["account"]
+        field.widget.can_add_related = False
+        field.widget.can_change_related = False
+        field.widget.can_delete_related = False
+        return form
+
+
+class StripeBillingInline(admin.StackedInline):
+    can_delete = False
+    extra = 0
+    model = StripeBilling
+    verbose_name_plural = "Stripe Billing"
+    verbose_name = "Stripe Billing (click save to commit changes)"
+
+
+@admin.register(StripeBilling)
+class StripeBillingAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("id", "account", "is_active")
+    search_fields = (
+        "account__name",
+        "account__id__iexact",
+        "id__iexact",
+        "customer_id__iexact",
+        "subscription_id__iexact",
+    )
+    search_help_text = "Search by account name, account id (exact), id (exact), customer_id (exact), or subscription_id (exact)"
+    autocomplete_fields = ("account",)
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+    ]
+
+    fields = readonly_fields + [
+        "account",
+        "customer_id",
+        "subscription_id",
+        "is_active",
+    ]
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        field = form.base_fields["account"]
+        field.widget.can_add_related = False
+        field.widget.can_change_related = False
+        field.widget.can_delete_related = False
+        return form
+
+
+class OwnerOrgInline(admin.TabularInline):
+    model = Owner
+    max_num = 100
+    extra = 0
+    verbose_name_plural = "Organizations (read only)"
+    verbose_name = "Organization"
+    exclude = ("oauth_token",)
+    can_delete = False
+
+    readonly_fields = [
+        "name",
+        "username",
+        "plan",
+        "plan_activated_users",
+        "service",
+    ]
+
+    fields = [] + readonly_fields
+
+
+def find_and_remove_stale_users(
+    orgs: Sequence[Owner], date_threshold: timedelta | None = None
+) -> tuple[set[int], set[int]]:
+    """
+    This functions finds all the stale `plan_activated_users` in any of the given `orgs`.
+
+    It then removes all those stale users from the given `orgs`,
+    returning the set of stale users (`ownerid`), and the set of `orgs` that were updated (`ownerid`).
+
+    A user is considered stale if it had no API or login `Session` or any opened PR within `date_threshold`.
+    If no `date_threshold` is given, it defaults to *90 days*.
+    """
+
+    active_users = set()
+    for org in orgs:
+        active_users.update(set(org.plan_activated_users))
+
+    if not active_users:
+        return (set(), set())
+
+    # NOTE: the `annotate_last_pull_timestamp` manager/queryset method does the same `annotate` with `Subquery`.
+    sessions = Session.objects.filter(owner=OuterRef("pk")).order_by("-lastseen")
+    resolved_users = list(
+        Owner.objects.filter(ownerid__in=active_users)
+        .annotate(latest_session=Subquery(sessions.values("lastseen")[:1]))
+        .annotate_last_pull_timestamp()
+        .values_list("ownerid", "latest_session", "last_pull_timestamp", named=True)
+    )
+
+    threshold = timezone.now() - (date_threshold or timedelta(days=90))
+
+    def is_stale(user: dict) -> bool:
+        return (user.latest_session is None or user.latest_session < threshold) and (
+            # NOTE: `last_pull_timestamp` is not timezone-aware, so we explicitly compare without timezones here
+            user.last_pull_timestamp is None
+            or user.last_pull_timestamp.replace(tzinfo=None)
+            < threshold.replace(tzinfo=None)
+        )
+
+    stale_users = {user.ownerid for user in resolved_users if is_stale(user)}
+
+    # TODO: the existing stale user cleanup script clears the `oauth_token`, though the reason for that is not clear?
+    # Owner.objects.filter(ownerid__in=stale_users).update(oauth_token=None)
+
+    affected_orgs = {
+        org for org in orgs if stale_users.intersection(set(org.plan_activated_users))
+    }
+
+    if not affected_orgs:
+        return (set(), set())
+
+    # TODO: it might make sense to run all this within a transaction and locking the `affected_orgs` for update,
+    # as we have a slight chance of races between querying the `orgs` at the very beginning and updating them here:
+    for org in affected_orgs:
+        org.plan_activated_users = list(
+            set(org.plan_activated_users).difference(stale_users)
+        )
+    Owner.objects.bulk_update(affected_orgs, ["plan_activated_users"])
+
+    return (stale_users, {org.ownerid for org in affected_orgs})
+
+
+@admin.register(Account)
+class AccountAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("name", "is_active", "organizations_count", "all_user_count")
+    search_fields = ("name__iregex", "id")
+    search_help_text = "Search by name (can use regex), or id (exact)"
+    inlines = [OwnerOrgInline, StripeBillingInline, InvoiceBillingInline]
+    actions = ["seat_check", "link_users_to_account", "deactivate_stale_users"]
+
+    readonly_fields = ["id", "created_at", "updated_at", "users"]
+
+    fields = readonly_fields + [
+        "name",
+        "is_active",
+        "plan",
+        "plan_seat_count",
+        "free_seat_count",
+        "plan_auto_activate",
+        "is_delinquent",
+    ]
+
+    @admin.action(description="Deactivate all stale `plan_activated_users`")
+    def deactivate_stale_users(self, request, queryset):
+        orgs = [org for account in queryset for org in account.organizations.all()]
+        stale_users, updated_orgs = find_and_remove_stale_users(orgs)
+
+        if not stale_users or not updated_orgs:
+            self.message_user(
+                request,
+                "No stale users found in selected accounts / organizations.",
+                messages.INFO,
+            )
+        else:
+            self.message_user(
+                request,
+                f"Removed {len(stale_users)} stale users from {len(updated_orgs)} affected organizations.",
+                messages.SUCCESS,
+            )
+
+    @admin.action(
+        description="Count current plan_activated_users across all Organizations"
+    )
+    def seat_check(self, request, queryset):
+        self.link_users_to_account(request, queryset, dry_run=True)
+
+    @admin.action(description="Link Users to Account")
+    def link_users_to_account(self, request, queryset, dry_run=False):
+        for account in queryset:
+            account_plan_activated_user_ownerids = set()
+            for org in account.organizations.all():
+                account_plan_activated_user_ownerids.update(
+                    set(org.plan_activated_users)
+                )
+
+            account_plan_activated_user_owners = Owner.objects.filter(
+                ownerid__in=account_plan_activated_user_ownerids
+            ).prefetch_related("user")
+
+            non_student_count = account_plan_activated_user_owners.exclude(
+                student=True
+            ).count()
+            total_seats_for_account = account.plan_seat_count + account.free_seat_count
+            if non_student_count > total_seats_for_account:
+                self.message_user(
+                    request,
+                    f"Request failed: Account plan does not have enough seats; "
+                    f"current plan activated users (non-students): {non_student_count}, total seats for account: {total_seats_for_account}",
+                    messages.ERROR,
+                )
+                return
+            if dry_run:
+                self.message_user(
+                    request,
+                    f"Request succeeded: Account plan has enough seats! "
+                    f"current plan activated users (non-students): {non_student_count}, total seats for account: {total_seats_for_account}",
+                    messages.SUCCESS,
+                )
+                return
+
+            owners_without_user_objects = account_plan_activated_user_owners.filter(
+                user__isnull=True
+            )
+            owners_with_new_user_objects = []
+            for userless_owner in owners_without_user_objects:
+                new_user = User.objects.create(
+                    name=userless_owner.name, email=userless_owner.email
+                )
+                userless_owner.user = new_user
+                owners_with_new_user_objects.append(userless_owner)
+            total = Owner.objects.bulk_update(owners_with_new_user_objects, ["user"])
+            self.message_user(
+                request,
+                f"Created a User for {total} Owners",
+                messages.INFO,
+            )
+            if total > 0:
+                log.info(
+                    f"Admin operation for {account} - Created a User for {total} Owners",
+                    extra=dict(
+                        owners_with_new_user_objects=[
+                            str(owner) for owner in owners_with_new_user_objects
+                        ],
+                        account_id=account.id,
+                    ),
+                )
+
+            # redo this query to get all Owners and Users
+            account_plan_activated_user_owners = Owner.objects.filter(
+                ownerid__in=account_plan_activated_user_ownerids
+            ).prefetch_related("user")
+
+            already_linked_account_users = AccountsUsers.objects.filter(account=account)
+
+            not_yet_linked_owners = account_plan_activated_user_owners.exclude(
+                user_id__in=already_linked_account_users.values_list(
+                    "user_id", flat=True
+                )
+            )
+
+            account_users_that_should_be_unlinked = (
+                already_linked_account_users.exclude(
+                    user_id__in=account_plan_activated_user_owners.values_list(
+                        "user_id", flat=True
+                    )
+                )
+            )
+            deleted_ids_for_log = list(
+                account_users_that_should_be_unlinked.values_list("id", flat=True)
+            )
+            deleted_count, _ = account_users_that_should_be_unlinked.delete()
+
+            new_accounts_users = []
+            for owner in not_yet_linked_owners:
+                new_account_user = AccountsUsers(
+                    user_id=owner.user_id, account_id=account.id
+                )
+                new_accounts_users.append(new_account_user)
+            total = AccountsUsers.objects.bulk_create(new_accounts_users)
+            self.message_user(
+                request,
+                f"Created {len(total)} AccountsUsers, removed {deleted_count} AccountsUsers",
+                messages.SUCCESS,
+            )
+            if len(total) > 0 or deleted_count > 0:
+                log.info(
+                    f"Admin operation for {account} - Created {len(total)} AccountsUsers, removed {deleted_count} AccountsUsers",
+                    extra=dict(
+                        new_accounts_users=total,
+                        removed_accounts_users_ids=deleted_ids_for_log,
+                        account_id=account.id,
+                    ),
+                )
+
+
 @admin.register(Owner)
 class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     exclude = ("oauth_token",)
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
-    search_fields = ("name__iregex", "username__iregex", "email__iregex")
+    search_fields = ("name__iregex", "username__iregex", "email__iregex", "ownerid")
     actions = [impersonate_owner, extend_trial]
-    autocomplete_fields = ("bot",)
+    autocomplete_fields = ("bot", "account")
     inlines = [OrgUploadTokenInline]
 
     readonly_fields = (
@@ -215,7 +579,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "cache",
         "free",
         "invoice_details",
-        "delinquent",
         "yaml",
         "updatestamp",
         "permission",
@@ -235,12 +598,14 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "plan_user_count",
         "plan_activated_users",
         "uses_invoice",
+        "delinquent",
         "integration_id",
         "bot",
         "stripe_customer_id",
         "stripe_subscription_id",
         "organizations",
         "max_upload_limit",
+        "account",
     )
 
     def get_form(self, request, obj=None, change=False, **kwargs):
@@ -252,9 +617,13 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         form.base_fields["uses_invoice"].widget = CheckboxInput()
 
         is_superuser = request.user.is_superuser
-
         if not is_superuser:
             form.base_fields["staff"].disabled = True
+
+        field = form.base_fields["account"]
+        field.widget.can_add_related = False
+        field.widget.can_change_related = False
+        field.widget.can_delete_related = False
 
         return form
 
@@ -319,3 +688,26 @@ class LogEntryAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(AccountsUsers)
+class AccountsUsersAdmin(AdminMixin, admin.ModelAdmin):
+    list_display = ("id", "user", "account")
+    search_fields = (
+        "account__name",
+        "account__id__iexact",
+        "id__iexact",
+        "user__id__iexact",
+        "user__name",
+        "user__email",
+    )
+    search_help_text = "Search by account name, account id (exact), id (exact), user id (exact), user's name or email"
+    autocomplete_fields = ("account", "user")
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+    ]
+
+    fields = readonly_fields + ["account", "user"]

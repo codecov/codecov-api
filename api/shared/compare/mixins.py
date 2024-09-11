@@ -1,9 +1,8 @@
 import logging
-from typing import Optional
 
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from api.shared.mixins import CompareSlugMixin
@@ -12,7 +11,6 @@ from compare.models import CommitComparison
 from services.comparison import (
     CommitComparisonService,
     Comparison,
-    ComparisonReport,
     MissingComparisonCommit,
     MissingComparisonReport,
     PullRequestComparison,
@@ -89,23 +87,10 @@ class CompareViewSetMixin(CompareSlugMixin, viewsets.GenericViewSet):
         comparison = self.get_object()
 
         # Some checks here for pseudo-comparisons. Basically, when pseudo-comparing,
-        # we sometimes might need to tweak the base report if the user allows us to
-        # in their yaml, or raise an error if not.
+        # we sometimes might need to tweak the base report
         if isinstance(comparison, PullRequestComparison):
-            if (
-                comparison.pseudo_diff_adjusts_tracked_lines
-                and comparison.allow_coverage_offsets
-            ):
+            if comparison.pseudo_diff_adjusts_tracked_lines:
                 comparison.update_base_report_with_pseudo_diff()
-            elif comparison.pseudo_diff_adjusts_tracked_lines:
-                return Response(
-                    data={
-                        "detail": "Changes found in between %.7s...%.7s (pseudo...base) "
-                        "which prevent comparing this pull request."
-                        % (comparison.pull.compared_to, comparison.pull.base)
-                    },
-                    status=400,
-                )
         serializer = self.get_serializer(comparison)
 
         try:

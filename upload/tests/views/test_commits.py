@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
@@ -7,7 +7,6 @@ from rest_framework.test import APIClient
 
 from core.models import Commit
 from core.tests.factories import CommitFactory, RepositoryFactory
-from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from upload.views.commits import CommitViews
 
@@ -33,7 +32,7 @@ def test_get_repo_with_invalid_service():
 
 def test_get_repo_not_found(db):
     # Making sure that owner has different repos and getting none when the name of the repo isn't correct
-    repository = RepositoryFactory(
+    RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
     upload_views = CommitViews()
@@ -198,7 +197,7 @@ def test_create_commit_already_exists(db, client, mocker):
     }
     assert response.status_code == 201
     assert expected_response == response_json
-    mocked_call.assert_called_with(commitid=commit.commitid, repoid=repository.repoid)
+    mocked_call.assert_not_called()
 
 
 @pytest.mark.parametrize("branch", ["main", "someone:main", "someone/fork:main"])
@@ -317,5 +316,6 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
             "endpoint": "create_commit",
             "repo_visibility": "public",
             "is_using_shelter": "no",
+            "position": "end",
         },
     )

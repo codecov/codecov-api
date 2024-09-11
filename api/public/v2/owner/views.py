@@ -27,10 +27,7 @@ class OwnerViewSet(
 
 
 @extend_schema(parameters=owner_parameters, tags=["Users"])
-class UserViewSet(
-    UserViewSetMixin,
-    mixins.ListModelMixin,
-):
+class UserViewSet(UserViewSetMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin):
     serializer_class = UserSerializer
     queryset = Owner.objects.none()
 
@@ -40,6 +37,13 @@ class UserViewSet(
         Returns a paginated list of users for the specified owner (org)
         """
         return super().list(request, *args, **kwargs)
+
+    @extend_schema(summary="User detail")
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Returns a user for the specified owner_username or ownerid
+        """
+        return super().retrieve(request, *args, **kwargs)
 
 
 @extend_schema(

@@ -1,12 +1,12 @@
 import logging
-from dataclasses import asdict
 
 from django.db.models import F
 from django_filters import rest_framework as django_filters
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
+from shared.django_apps.codecov_auth.models import Owner
 
 from api.shared.mixins import OwnerPropertyMixin
 from api.shared.owner.mixins import OwnerViewSetMixin, UserViewSetMixin
@@ -19,7 +19,6 @@ from services.task import TaskService
 from .serializers import (
     AccountDetailsSerializer,
     OwnerSerializer,
-    StripeInvoiceSerializer,
     UserSerializer,
 )
 
@@ -28,31 +27,6 @@ log = logging.getLogger(__name__)
 
 class OwnerViewSet(OwnerViewSetMixin, mixins.RetrieveModelMixin):
     serializer_class = OwnerSerializer
-
-
-class InvoiceViewSet(
-    viewsets.GenericViewSet,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    OwnerPropertyMixin,
-):
-    serializer_class = StripeInvoiceSerializer
-    permission_classes = [MemberOfOrgPermissions]
-    pagination_class = None
-
-    def get_queryset(self):
-        return BillingService(
-            requesting_user=self.request.current_owner
-        ).list_filtered_invoices(self.owner, 100)
-
-    def get_object(self):
-        invoice_id = self.kwargs.get("pk")
-        invoice = BillingService(
-            requesting_user=self.request.current_owner
-        ).get_invoice(self.owner, invoice_id)
-        if not invoice:
-            raise NotFound(f"Invoice {invoice_id} does not exist for that account")
-        return invoice
 
 
 class AccountDetailsViewSet(
@@ -82,6 +56,14 @@ class AccountDetailsViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_object(self):
+        if self.owner.account:
+            # gets the related account and invoice_billing objects from db in 1 query
+            # otherwise, each reference to owner.account would be an additional query
+            self.owner = (
+                Owner.objects.filter(pk=self.owner.ownerid)
+                .select_related("account__invoice_billing")
+                .first()
+            )
         return self.owner
 
     @action(detail=False, methods=["patch"])
@@ -109,12 +91,25 @@ class AccountDetailsViewSet(
     @action(detail=False, methods=["patch"])
     @stripe_safe
     def update_billing_address(self, request, *args, **kwargs):
+        name = request.data.get("name")
+        if not name:
+            raise ValidationError(detail="No name sent")
         billing_address = request.data.get("billing_address")
         if not billing_address:
             raise ValidationError(detail="No billing_address sent")
         owner = self.get_object()
+
+        formatted_address = {
+            "line1": billing_address["line_1"],
+            "line2": billing_address["line_2"],
+            "city": billing_address["city"],
+            "state": billing_address["state"],
+            "postal_code": billing_address["postal_code"],
+            "country": billing_address["country"],
+        }
+
         billing = BillingService(requesting_user=request.current_owner)
-        billing.update_billing_address(owner, billing_address)
+        billing.update_billing_address(owner, name, billing_address=formatted_address)
         return Response(self.get_serializer(owner).data)
 
 

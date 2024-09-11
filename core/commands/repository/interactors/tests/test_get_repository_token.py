@@ -1,10 +1,7 @@
-from xml.dom import ValidationErr
-
 import pytest
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 
-from codecov.commands.exceptions import Unauthenticated, ValidationError
+from codecov.commands.exceptions import Unauthenticated
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 
@@ -36,8 +33,8 @@ class GetRepositoryTokenInteractorTest(TransactionTestCase):
             await self.execute(owner="", repo=self.active_repo)
 
     async def test_when_repo_inactive(self):
-        with pytest.raises(ValidationError):
-            await self.execute(owner=self.user, repo=self.inactive_repo)
+        token = await self.execute(owner=self.user, repo=self.inactive_repo)
+        assert token is None
 
     async def test_when_repo_has_no_token(self):
         token = await self.execute(owner=self.user, repo=self.repo_with_no_token)

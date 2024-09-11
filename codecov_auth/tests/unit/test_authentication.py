@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
+from unittest.mock import call, patch
 
 import pytest
 from django.conf import settings
@@ -7,6 +8,7 @@ from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import ResolverMatch
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.test import APIRequestFactory
+from shared.django_apps.core.tests.factories import RepositoryFactory
 
 from codecov_auth.authentication import (
     InternalTokenAuthentication,
@@ -103,7 +105,7 @@ class SuperTokenAuthenticationTests(TestCase):
 
         authenticator = SuperTokenAuthentication()
         result = authenticator.authenticate(request)
-        assert result == None
+        assert result is None
 
     def test_bearer_token_default_token_envar(self):
         super_token = "0ae68e58-79f8-4341-9531-55aada05a251"
@@ -111,7 +113,7 @@ class SuperTokenAuthenticationTests(TestCase):
         request = request_factory.get("", HTTP_AUTHORIZATION=f"Bearer {super_token}")
         authenticator = SuperTokenAuthentication()
         result = authenticator.authenticate(request)
-        assert result == None
+        assert result is None
 
     def test_bearer_token_default_token_envar_and_same_string_as_header(self):
         super_token = settings.SUPER_API_TOKEN
@@ -168,7 +170,7 @@ class InternalTokenAuthenticationTests(TestCase):
 class ImpersonationTests(TransactionTestCase):
     def setUp(self):
         self.owner_to_impersonate = OwnerFactory(
-            username="impersonateme", service="github"
+            username="impersonateme", service="github", user=UserFactory(is_staff=False)
         )
         self.staff_user = UserFactory(is_staff=True)
         self.non_staff_user = UserFactory(is_staff=False)
@@ -183,6 +185,47 @@ class ImpersonationTests(TransactionTestCase):
             content_type="application/json",
         )
         assert res.json()["data"]["me"] == {"user": {"username": "impersonateme"}}
+
+    @patch("core.commands.repository.repository.RepositoryCommands.fetch_repository")
+    def test_impersonation_with_okta(self, mock_call_to_fetch_repository):
+        repo = RepositoryFactory(author=self.owner_to_impersonate, private=True)
+        query_repositories = """{ owner(username: "%s") { repository(name: "%s") { ... on Repository { name } } } }"""
+        query = query_repositories % (repo.author.username, repo.name)
+
+        # not impersonating
+        del self.client.cookies["staff_user"]
+        self.client.force_login(user=self.owner_to_impersonate.user)
+        self.client.post(
+            "/graphql/gh",
+            {"query": query},
+            content_type="application/json",
+        )
+
+        # impersonating, same query
+        self.client.cookies = SimpleCookie({"staff_user": self.owner_to_impersonate.pk})
+        self.client.force_login(user=self.staff_user)
+        self.client.post(
+            "/graphql/gh",
+            {"query": query},
+            content_type="application/json",
+        )
+
+        mock_call_to_fetch_repository.assert_has_calls(
+            [
+                call(
+                    self.owner_to_impersonate,
+                    repo.name,
+                    [],
+                    exclude_okta_enforced_repos=True,
+                ),
+                call(
+                    self.owner_to_impersonate,
+                    repo.name,
+                    [],
+                    exclude_okta_enforced_repos=False,
+                ),
+            ]
+        )
 
     def test_impersonation_non_staff(self):
         self.client.force_login(user=self.non_staff_user)

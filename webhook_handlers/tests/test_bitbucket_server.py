@@ -1,16 +1,13 @@
-import uuid
 from unittest.mock import patch
 
-import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.models import Branch, Commit, Pull, PullStates, Repository
+from core.models import Branch, PullStates
 from core.tests.factories import (
     BranchFactory,
-    CommitFactory,
     PullFactory,
     RepositoryFactory,
 )
@@ -132,7 +129,7 @@ class TestBitbucketServerWebhookHandler(APITestCase):
         assert self.pull.state == PullStates.CLOSED
 
     def test_repo_push_branch_deleted(self):
-        branch = BranchFactory(repository=self.repo, name="name-of-branch")
+        BranchFactory(repository=self.repo, name="name-of-branch")
         response = self._post_event_data(
             event=BitbucketServerWebhookEvents.REPO_REFS_CHANGED,
             data={

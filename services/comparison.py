@@ -14,7 +14,6 @@ from asgiref.sync import async_to_sync
 from django.db.models import Prefetch, QuerySet
 from django.utils.functional import cached_property
 from shared.helpers.yaml import walk
-from shared.reports.readonly import ReadOnlyReport
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
@@ -691,7 +690,7 @@ class Comparison(object):
 
     @property
     def git_comparison(self):
-        return self._fetch_comparison_and_reverse_comparison[0]
+        return self._fetch_comparison[0]
 
     @cached_property
     def base_report(self):
@@ -713,14 +712,21 @@ class Comparison(object):
             else:
                 raise e
 
-        report.apply_diff(self.git_comparison["diff"])
+        # Return the old report if the github API call fails for any reason
+        try:
+            report.apply_diff(self.git_comparison["diff"])
+        except Exception:
+            pass
         return report
 
     @cached_property
     def has_different_number_of_head_and_base_sessions(self):
-        self.validate()
+        log.info("has_different_number_of_head_and_base_sessions - Start")
         head_sessions = self.head_report.sessions
         base_sessions = self.base_report.sessions
+        log.info(
+            f"has_different_number_of_head_and_base_sessions - Retrieved sessions - head {len(head_sessions)} / base {len(base_sessions)}"
+        )
         # We're treating this case as false since considering CFF's complicates the logic
         if self._has_cff_sessions(head_sessions) or self._has_cff_sessions(
             base_sessions
@@ -731,10 +737,12 @@ class Comparison(object):
     # I feel this method should belong to the API Report class, but we're thinking of getting rid of that class soon
     # In truth, this should be in the shared.Report class
     def _has_cff_sessions(self, sessions) -> bool:
+        log.info(f"_has_cff_sessions - sessions count {len(sessions)}")
         for session in sessions.values():
             if session.session_type.value == "carriedforward":
+                log.info("_has_cff_sessions - Found carriedforward")
                 return True
-
+        log.info("_has_cff_sessions - No carriedforward")
         return False
 
     @property
@@ -763,10 +771,9 @@ class Comparison(object):
         return commits_queryset
 
     @cached_property
-    def _fetch_comparison_and_reverse_comparison(self):
+    def _fetch_comparison(self):
         """
-        Fetches comparison and reverse comparison concurrently, then
-        caches the result. Returns (comparison, reverse_comparison).
+        Fetches comparison, and caches the result.
         """
         adapter = RepoProviderService().get_adapter(
             self.user, self.base_commit.repository
@@ -775,12 +782,8 @@ class Comparison(object):
             self.base_commit.commitid, self.head_commit.commitid
         )
 
-        reverse_comparison_coro = adapter.get_compare(
-            self.head_commit.commitid, self.base_commit.commitid
-        )
-
         async def runnable():
-            return await asyncio.gather(comparison_coro, reverse_comparison_coro)
+            return await asyncio.gather(comparison_coro)
 
         return async_to_sync(runnable)()
 
@@ -791,18 +794,6 @@ class Comparison(object):
     def non_carried_forward_flags(self):
         flags_dict = self.head_report.flags
         return [flag for flag, vals in flags_dict.items() if not vals.carriedforward]
-
-    @cached_property
-    def has_unmerged_base_commits(self):
-        """
-        We use reverse comparison to detect if any commits exist in the
-        base reference but not in the head reference. We use this information
-        to show a message in the UI urging the user to integrate the changes
-        in the base reference in order to see accurate coverage information.
-        We compare with 1 because torngit injects the base commit into the commits
-        array because reasons.
-        """
-        return len(self._fetch_comparison_and_reverse_comparison[1]["commits"]) > 1
 
 
 class FlagComparison(object):
@@ -870,7 +861,7 @@ class ImpactedFile:
         """
         Returns `True` if the file has any additions or removals in the diff
         """
-        return (
+        return bool(
             self.added_diff_coverage
             and len(self.added_diff_coverage) > 0
             or self.removed_diff_coverage
@@ -954,7 +945,10 @@ class ImpactedFile:
             and self.head_coverage
             and self.head_coverage.coverage
         ):
-            return float(self.head_coverage.coverage - self.base_coverage.coverage)
+            return float(
+                float(self.head_coverage.coverage or 0)
+                - float(self.base_coverage.coverage or 0)
+            )
 
     @cached_property
     def file_name(self) -> Optional[str]:

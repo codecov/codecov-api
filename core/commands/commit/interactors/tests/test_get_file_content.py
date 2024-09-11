@@ -1,9 +1,6 @@
-import asyncio
 from unittest.mock import patch
 
 import pytest
-from asgiref.sync import async_to_sync
-from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 
@@ -65,7 +62,7 @@ class GetFileContentInteractorTest(TransactionTestCase):
             response_data=404, message="not found"
         )
         file_content = await self.execute(None, self.commit, "path")
-        assert file_content == None
+        assert file_content is None
 
     @patch("services.repo_providers.RepoProviderService.async_get_adapter")
     @pytest.mark.asyncio

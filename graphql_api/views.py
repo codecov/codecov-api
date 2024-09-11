@@ -12,7 +12,11 @@ from ariadne.types import Extension
 from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
-from django.http import HttpResponseBadRequest, HttpResponseNotAllowed, JsonResponse
+from django.http import (
+    HttpResponseBadRequest,
+    HttpResponseNotAllowed,
+    JsonResponse,
+)
 from graphql import DocumentNode
 from sentry_sdk import capture_exception
 from sentry_sdk import metrics as sentry_metrics
@@ -22,6 +26,7 @@ from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
 from codecov.db import sync_to_async
 from services import ServiceException
+from services.redis_configuration import get_redis_connection
 
 from .schema import schema
 
@@ -223,6 +228,16 @@ class AsyncGraphqlView(GraphQLAsyncView):
         log.info("GraphQL Request", extra=log_data)
         sentry_metrics.incr("graphql.info.request_made", tags={"path": req_path})
 
+        if self._check_ratelimit(request=request):
+            sentry_metrics.incr("graphql.error.rate_limit", tags={"path": req_path})
+            return JsonResponse(
+                data={
+                    "status": 429,
+                    "detail": "It looks like you've hit the rate limit of 300 req/min. Try again later.",
+                },
+                status=429,
+            )
+
         with RequestFinalizer(request):
             response = await super().post(request, *args, **kwargs)
 
@@ -263,7 +278,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         }
 
     def error_formatter(self, error, debug=False):
-        # the only way to check for a malformatted query
+        # the only way to check for a malformed query
         is_bad_query = "Cannot query field" in error.formatted["message"]
         if debug or is_bad_query:
             return format_error(error, debug)
@@ -289,6 +304,53 @@ class AsyncGraphqlView(GraphQLAsyncView):
         # while we're in a sync context
         if request.user:
             request.user.pk
+
+    def _check_ratelimit(self, request):
+        redis = get_redis_connection()
+
+        try:
+            # eagerly try to get user_id from request object
+            user_id = request.user.pk
+        except AttributeError:
+            user_id = None
+
+        if user_id:
+            key = f"rl-user:{user_id}"
+        else:
+            user_ip = self.get_client_ip(request)
+            key = f"rl-ip:{user_ip}"
+
+        limit = 300
+        window = 60  # in seconds
+
+        current_count = redis.get(key)
+        if current_count is None:
+            log.info(
+                "[GQL Rate Limit] - Setting new key",
+                extra=dict(key=key, user_id=user_id),
+            )
+            redis.setex(key, window, 1)
+        elif int(current_count) >= limit:
+            log.warning(
+                "[GQL Rate Limit] - Rate limit reached for key",
+                extra=dict(key=key, limit=limit, count=current_count, user_id=user_id),
+            )
+            return True
+        else:
+            log.warning(
+                "[GQL Rate Limit] - Incrementing rate limit for key",
+                extra=dict(key=key, limit=limit, count=current_count, user_id=user_id),
+            )
+            redis.incr(key)
+        return False
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(",")[0]
+        else:
+            ip = request.META.get("REMOTE_ADDR")
+        return ip
 
 
 BaseAriadneView = AsyncGraphqlView.as_view()

@@ -7,7 +7,7 @@ from rest_framework import filters, mixins, viewsets
 
 from api.shared.mixins import RepoPropertyMixin
 from codecov_auth.authentication.repo_auth import RepositoryLegacyTokenAuthentication
-from core.models import Commit, Pull
+from core.models import Commit
 from services.task import TaskService
 
 from .permissions import PullUpdatePermission

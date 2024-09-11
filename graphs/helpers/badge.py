@@ -1,11 +1,9 @@
-from math import floor
-
 from shared.helpers.color import coverage_to_color
 
 from graphs.badges.badges import large_badge, medium_badge, small_badge, unknown_badge
 
 
-def get_badge(coverage, coverage_range, precision):
+def get_badge(coverage: str | None, coverage_range: list[int], precision: str):
     """
     Returns and SVG string containing coverage badge
 

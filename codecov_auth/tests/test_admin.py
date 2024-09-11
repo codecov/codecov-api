@@ -1,25 +1,48 @@
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 from django.contrib.admin.sites import AdminSite
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from django.utils import timezone
+from shared.django_apps.codecov_auth.models import (
+    Account,
+    AccountsUsers,
+    InvoiceBilling,
+    StripeBilling,
+)
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    InvoiceBillingFactory,
+    StripeBillingFactory,
+)
 
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.admin import OrgUploadTokenInline, OwnerAdmin, UserAdmin
+from codecov_auth.admin import (
+    AccountAdmin,
+    InvoiceBillingAdmin,
+    OrgUploadTokenInline,
+    OwnerAdmin,
+    StripeBillingAdmin,
+    UserAdmin,
+    find_and_remove_stale_users,
+)
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
     SentryUserFactory,
+    SessionFactory,
     UserFactory,
 )
+from core.models import Pull
+from core.tests.factories import PullFactory, RepositoryFactory
 from plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
-    TrialStatus,
 )
-from utils.test_utils import APIClient
 
 
 class OwnerAdminTest(TestCase):
@@ -227,7 +250,7 @@ class OwnerAdminTest(TestCase):
             "organization_tokens-0-REFRESH": "on",
             "_continue": ["Save and continue editing"],
         }
-        response = self.client.post(request_url, data=fake_data)
+        self.client.post(request_url, data=fake_data)
         mock_refresh.assert_called_with(str(org_token.id))
 
     @patch(
@@ -263,7 +286,7 @@ class OwnerAdminTest(TestCase):
             "organization_tokens-0-token_type": ["upload"],
             "_continue": ["Save and continue editing"],
         }
-        response = self.client.post(request_url, data=fake_data)
+        self.client.post(request_url, data=fake_data)
         mock_refresh.assert_not_called()
 
     def test_start_trial_ui_display(self):
@@ -336,6 +359,21 @@ class OwnerAdminTest(TestCase):
         assert res.status_code == 302
         assert mock_start_trial_service.called
 
+    def test_account_widget(self):
+        owner = OwnerFactory(user=UserFactory(), plan="users-enterprisey")
+        rf = RequestFactory()
+        get_request = rf.get(f"/admin/codecov_auth/owner/{owner.ownerid}/change/")
+        get_request.user = self.staff_user
+        sample_input = {
+            "change": True,
+            "fields": ["account", "plan", "uses_invoice", "staff"],
+        }
+        form = self.owner_admin.get_form(request=get_request, obj=owner, **sample_input)
+        # admin user cannot create, edit, or delete Account objects from the OwnerAdmin
+        self.assertFalse(form.base_fields["account"].widget.can_add_related)
+        self.assertFalse(form.base_fields["account"].widget.can_change_related)
+        self.assertFalse(form.base_fields["account"].widget.can_delete_related)
+
 
 class UserAdminTest(TestCase):
     def setUp(self):
@@ -374,7 +412,7 @@ class SentryUserAdminTest(TestCase):
         sentry_user = SentryUserFactory()
         res = self.client.get(reverse("admin:codecov_auth_sentryuser_changelist"))
         assert res.status_code == 200
-        content = res.content.decode("utf-8")
+        res.content.decode("utf-8")
         assert sentry_user.name in res.content.decode("utf-8")
         assert sentry_user.email in res.content.decode("utf-8")
 
@@ -388,3 +426,460 @@ class SentryUserAdminTest(TestCase):
         assert sentry_user.email in res.content.decode("utf-8")
         assert sentry_user.access_token not in res.content.decode("utf-8")
         assert sentry_user.refresh_token not in res.content.decode("utf-8")
+
+
+def create_stale_users(
+    account: Account | None = None,
+) -> tuple[list[Owner], list[Owner]]:
+    org_1 = OwnerFactory(account=account)
+    org_2 = OwnerFactory(account=account)
+
+    now = timezone.now()
+
+    user_1 = OwnerFactory(user=UserFactory())  # stale, neither session nor PR
+
+    user_2 = OwnerFactory(user=UserFactory())  # semi-stale, semi-old session
+    SessionFactory(owner=user_2, lastseen=now - timedelta(days=45))
+
+    user_3 = OwnerFactory(user=UserFactory())  # stale, old session
+    SessionFactory(owner=user_3, lastseen=now - timedelta(days=120))
+
+    user_4 = OwnerFactory(user=UserFactory())  # semi-stale, semi-old PR
+    pull = PullFactory(
+        repository=RepositoryFactory(),
+        author=user_4,
+    )
+    pull.updatestamp = now - timedelta(days=45)
+    super(Pull, pull).save()  # `Pull` overrides the `updatestamp` on each save
+
+    user_5 = OwnerFactory(user=UserFactory())  # stale, old PR
+    pull = PullFactory(
+        repository=RepositoryFactory(),
+        author=user_5,
+    )
+    pull.updatestamp = now - timedelta(days=120)
+    super(Pull, pull).save()  # `Pull` overrides the `updatestamp` on each save
+
+    org_1.plan_activated_users = [
+        user_1.ownerid,
+        user_2.ownerid,
+    ]
+    org_1.save()
+
+    org_2.plan_activated_users = [
+        user_3.ownerid,
+        user_4.ownerid,
+        user_5.ownerid,
+    ]
+    org_2.save()
+
+    return ([org_1, org_2], [user_1, user_2, user_3, user_4, user_5])
+
+
+@pytest.mark.django_db()
+def test_stale_user_cleanup():
+    orgs, users = create_stale_users()
+
+    # remove stale users with default > 90 days
+    removed_users, affected_orgs = find_and_remove_stale_users(orgs)
+    assert removed_users == set([users[0].ownerid, users[2].ownerid, users[4].ownerid])
+    assert affected_orgs == set([orgs[0].ownerid, orgs[1].ownerid])
+
+    orgs = list(
+        Owner.objects.filter(ownerid__in=[org.ownerid for org in orgs])
+    )  # re-fetch orgs
+    # all good, nothing to do
+    removed_users, affected_orgs = find_and_remove_stale_users(orgs)
+    assert removed_users == set()
+    assert affected_orgs == set()
+
+    # remove even more stale users
+    removed_users, affected_orgs = find_and_remove_stale_users(orgs, timedelta(days=30))
+    assert removed_users == set([users[1].ownerid, users[3].ownerid])
+    assert affected_orgs == set([orgs[0].ownerid, orgs[1].ownerid])
+
+    orgs = list(
+        Owner.objects.filter(ownerid__in=[org.ownerid for org in orgs])
+    )  # re-fetch orgs
+    # all the users have been deactivated by now
+    for org in orgs:
+        assert len(org.plan_activated_users) == 0
+
+
+class AccountAdminTest(TestCase):
+    def setUp(self):
+        staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=staff_user)
+        admin_site = AdminSite()
+        admin_site.register(Account)
+        admin_site.register(StripeBilling)
+        admin_site.register(InvoiceBilling)
+        admin_site.register(AccountsUsers)
+        self.account_admin = AccountAdmin(Account, admin_site)
+
+        self.account = AccountFactory(plan_seat_count=4, free_seat_count=2)
+        self.org_1 = OwnerFactory(account=self.account)
+        self.org_2 = OwnerFactory(account=self.account)
+        self.owner_with_user_1 = OwnerFactory(user=UserFactory())
+        self.owner_with_user_2 = OwnerFactory(user=UserFactory())
+        self.owner_with_user_3 = OwnerFactory(user=UserFactory())
+        self.owner_without_user_1 = OwnerFactory(user=None)
+        self.owner_without_user_2 = OwnerFactory(user=None)
+        self.student = OwnerFactory(user=UserFactory(), student=True)
+        self.org_1.plan_activated_users = [
+            self.owner_with_user_2.ownerid,
+            self.owner_with_user_3.ownerid,
+            self.owner_without_user_1.ownerid,
+            self.student.ownerid,
+            self.owner_without_user_2.ownerid,
+        ]
+        self.org_2.plan_activated_users = [
+            self.owner_with_user_2.ownerid,
+            self.owner_with_user_3.ownerid,
+            self.owner_without_user_1.ownerid,
+            self.student.ownerid,
+            self.owner_with_user_1.ownerid,
+        ]
+        self.org_1.save()
+        self.org_2.save()
+
+    def test_list_page(self):
+        res = self.client.get(reverse("admin:codecov_auth_account_changelist"))
+        self.assertEqual(res.status_code, 200)
+        decoded_res = res.content.decode("utf-8")
+        self.assertIn("column-name", decoded_res)
+        self.assertIn("column-is_active", decoded_res)
+        self.assertIn(
+            '<a href="/admin/codecov_auth/account/add/" class="addlink">', decoded_res
+        )
+        self.assertIn(
+            '<option value="link_users_to_account">Link Users to Account</option>',
+            decoded_res,
+        )
+
+    def test_detail_page(self):
+        res = self.client.get(
+            reverse("admin:codecov_auth_account_change", args=[self.account.pk])
+        )
+        self.assertEqual(res.status_code, 200)
+        decoded_res = res.content.decode("utf-8")
+        self.assertIn(
+            '<option value="users-basic" selected>BASIC_PLAN_NAME</option>', decoded_res
+        )
+        self.assertIn("Organizations (read only)", decoded_res)
+        self.assertIn("Stripe Billing (click save to commit changes)", decoded_res)
+        self.assertIn("Invoice Billing (click save to commit changes)", decoded_res)
+
+    def test_link_users_to_account(self):
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+        self.assertEqual(self.account.accountsusers_set.all().count(), 0)
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[0].message, "Created a User for 2 Owners")
+        self.assertEqual(
+            messages[1].message, "Created 6 AccountsUsers, removed 0 AccountsUsers"
+        )
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 6)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 6
+        )
+
+        for org in [self.org_1, self.org_2]:
+            for active_owner_id in org.plan_activated_users:
+                owner_obj = Owner.objects.get(pk=active_owner_id)
+                self.assertTrue(
+                    AccountsUsers.objects.filter(
+                        account=self.account, user_id=owner_obj.user_id
+                    ).exists()
+                )
+
+        # another user joins
+        another_owner_with_user = OwnerFactory(user=UserFactory())
+        self.org_1.plan_activated_users.append(another_owner_with_user.ownerid)
+        self.org_1.save()
+        # rerun action to re-sync
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[2].message, "Created a User for 0 Owners")
+        self.assertEqual(
+            messages[3].message, "Created 1 AccountsUsers, removed 0 AccountsUsers"
+        )
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 7)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 7
+        )
+        self.assertIn(
+            another_owner_with_user.user_id,
+            self.account.accountsusers_set.all().values_list("user_id", flat=True),
+        )
+
+    def test_link_users_to_account_not_enough_seats(self):
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+        self.account.plan_seat_count = 1
+        self.account.save()
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[0].message,
+            "Request failed: Account plan does not have enough seats; current plan activated users (non-students): 5, total seats for account: 3",
+        )
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+
+    def test_seat_check(self):
+        # edge case: User has multiple Owners, one of which is a Student, but should still count as 1 seat on this Account
+        user = self.owner_with_user_1.user
+        OwnerFactory(
+            service="gitlab", user=user, student=False
+        )  # another owner on this user
+        OwnerFactory(
+            service="bitbucket", user=user, student=True
+        )  # student owner on this user
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+        self.account.plan_seat_count = 1
+        self.account.save()
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "seat_check",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[0].message,
+            "Request failed: Account plan does not have enough seats; current plan activated users (non-students): 5, total seats for account: 3",
+        )
+
+        self.account.plan_seat_count = 10
+        self.account.save()
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "seat_check",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[1].message,
+            "Request succeeded: Account plan has enough seats! current plan activated users (non-students): 5, total seats for account: 12",
+        )
+        self.assertEqual(AccountsUsers.objects.all().count(), 0)
+
+    def test_link_users_to_account_remove_unneeded_account_users(self):
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[0].message, "Created a User for 2 Owners")
+        self.assertEqual(
+            messages[1].message, "Created 6 AccountsUsers, removed 0 AccountsUsers"
+        )
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 6)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 6
+        )
+
+        for org in [self.org_1, self.org_2]:
+            for active_owner_id in org.plan_activated_users:
+                owner_obj = Owner.objects.get(pk=active_owner_id)
+                self.assertTrue(
+                    AccountsUsers.objects.filter(
+                        account=self.account, user_id=owner_obj.user_id
+                    ).exists()
+                )
+
+        # disconnect one of the orgs
+        self.org_2.account = None
+        self.org_2.save()
+
+        # re-sync to remove Account users from org 2 that are not connected to other account orgs (just owner_with_user_1)
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "link_users_to_account",
+                ACTION_CHECKBOX_NAME: [self.account.pk],
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.url, "/admin/codecov_auth/account/")
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(messages[2].message, "Created a User for 0 Owners")
+        self.assertEqual(
+            messages[3].message, "Created 0 AccountsUsers, removed 1 AccountsUsers"
+        )
+
+        self.assertEqual(AccountsUsers.objects.all().count(), 5)
+        self.assertEqual(
+            AccountsUsers.objects.filter(account_id=self.account.id).count(), 5
+        )
+        still_connected = [
+            self.owner_with_user_2,
+            self.owner_with_user_3,
+            self.owner_without_user_1,
+            self.owner_without_user_2,
+            self.student,
+        ]
+        for owner in still_connected:
+            owner.refresh_from_db()
+            self.assertTrue(
+                AccountsUsers.objects.filter(
+                    account=self.account, user_id=owner.user_id
+                ).exists()
+            )
+
+        self.owner_with_user_1.refresh_from_db()  # removed user
+        # no longer connected to account
+        self.assertFalse(
+            AccountsUsers.objects.filter(
+                account=self.account, user_id=self.owner_with_user_1.user_id
+            ).exists()
+        )
+        # still connected to org
+        self.assertIn(
+            self.owner_with_user_1.ownerid,
+            Owner.objects.get(pk=self.org_2.pk).plan_activated_users,
+        )
+        # user object still exists, with no account connections
+        self.assertIsNotNone(self.owner_with_user_1.user_id)
+        self.assertFalse(
+            AccountsUsers.objects.filter(user=self.owner_with_user_1.user).exists()
+        )
+
+    def test_deactivate_stale_users(self):
+        account = AccountFactory()
+        orgs, users = create_stale_users(account)
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "deactivate_stale_users",
+                ACTION_CHECKBOX_NAME: [account.pk],
+            },
+        )
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[-1].message, "Removed 3 stale users from 2 affected organizations."
+        )
+
+        res = self.client.post(
+            reverse("admin:codecov_auth_account_changelist"),
+            {
+                "action": "deactivate_stale_users",
+                ACTION_CHECKBOX_NAME: [account.pk],
+            },
+        )
+        messages = list(res.wsgi_request._messages)
+        self.assertEqual(
+            messages[-1].message,
+            "No stale users found in selected accounts / organizations.",
+        )
+
+
+class StripeBillingAdminTest(TestCase):
+    def setUp(self):
+        self.staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.staff_user)
+        admin_site = AdminSite()
+        admin_site.register(StripeBilling)
+        self.stripe_admin = StripeBillingAdmin(StripeBilling, admin_site)
+        self.account = AccountFactory()
+        self.obj = StripeBillingFactory(account=self.account)
+
+    def test_account_widget(self):
+        rf = RequestFactory()
+        get_request = rf.get(f"/admin/codecov_auth/stripebilling/{self.obj.id}/change/")
+        sample_input = {
+            "change": True,
+            "fields": [
+                "id",
+                "created_at",
+                "updated_at",
+                "account",
+                "customer_id",
+                "subscription_id",
+                "is_active",
+            ],
+        }
+        form = self.stripe_admin.get_form(
+            request=get_request, obj=self.obj, **sample_input
+        )
+        # admin user cannot create, edit, or delete Account objects from the StripeBillingAdmin
+        self.assertFalse(form.base_fields["account"].widget.can_add_related)
+        self.assertFalse(form.base_fields["account"].widget.can_change_related)
+        self.assertFalse(form.base_fields["account"].widget.can_delete_related)
+
+
+class InvoiceBillingAdminTest(TestCase):
+    def setUp(self):
+        self.staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.staff_user)
+        admin_site = AdminSite()
+        admin_site.register(InvoiceBilling)
+        self.invoice_admin = InvoiceBillingAdmin(InvoiceBilling, admin_site)
+        self.account = AccountFactory()
+        self.obj = InvoiceBillingFactory(account=self.account)
+
+    def test_account_widget(self):
+        rf = RequestFactory()
+        get_request = rf.get(
+            f"/admin/codecov_auth/invoicebilling/{self.obj.id}/change/"
+        )
+        sample_input = {
+            "change": True,
+            "fields": [
+                "id",
+                "created_at",
+                "updated_at",
+                "account",
+                "account_manager",
+                "invoice_notes",
+                "is_active",
+            ],
+        }
+        form = self.invoice_admin.get_form(
+            request=get_request, obj=self.obj, **sample_input
+        )
+        # admin user cannot create, edit, or delete Account objects from the InvoiceBillingAdmin
+        self.assertFalse(form.base_fields["account"].widget.can_add_related)
+        self.assertFalse(form.base_fields["account"].widget.can_change_related)
+        self.assertFalse(form.base_fields["account"].widget.can_delete_related)

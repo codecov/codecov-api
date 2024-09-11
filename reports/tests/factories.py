@@ -1,12 +1,10 @@
-from datetime import datetime
-
 import factory
 from factory.django import DjangoModelFactory
 
 from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum
 from reports import models
-from reports.models import ReportResults
+from reports.models import ReportResults, TestInstance
 
 
 class CommitReportFactory(DjangoModelFactory):
@@ -97,3 +95,27 @@ class ReportResultsFactory(DjangoModelFactory):
             ReportResults.ReportResultsStates.COMPLETED,
         ]
     )
+
+
+class TestFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = models.Test
+
+    id = factory.Faker("word")
+    name = factory.Faker("word")
+    repository = factory.SubFactory(RepositoryFactory)
+    commits_where_fail = []
+
+
+class TestInstanceFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = models.TestInstance
+
+    test = factory.SubFactory(TestFactory)
+    duration_seconds = 1.0
+    outcome = TestInstance.Outcome.FAILURE.value
+    failure_message = "Test failed"
+    branch = "master"
+    repoid = factory.SelfAttribute("test.repository.repoid")
+    commitid = "123456"
+    upload = factory.SubFactory(UploadFactory)

@@ -6,9 +6,7 @@ from graphql.language.ast import (
     SelectionSetNode,
     VariableNode,
 )
-from graphql.type import GraphQLInputType
 from graphql.type.definition import GraphQLResolveInfo
-from graphql.utilities.value_from_ast import value_from_ast
 
 
 class LookaheadNode:
@@ -56,7 +54,7 @@ class LookaheadNode:
             if isinstance(selection, FragmentSpreadNode):
                 fragment = self.info.fragments[selection.name.value]
                 for selection in fragment.selection_set.selections:
-                    selections.append(selection)
+                    selections.append(selection)  # noqa: PERF402
             else:
                 selections.append(selection)
         return selections

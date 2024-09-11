@@ -7,6 +7,20 @@ enum BundleAnalysisMeasurementsAssetType {
     ASSET_SIZE
 }
 
+enum BundleReportGroups {
+  JAVASCRIPT
+  STYLESHEET
+  FONT
+  IMAGE
+  UNKNOWN
+}
+
+enum BundleLoadTypes {
+  ENTRY
+  INITIAL
+  LAZY
+}
+
 type BundleSize {
   gzip: Int!
   uncompress: Int!
@@ -32,34 +46,39 @@ type BundleAsset {
   name: String!
   extension: String!
   normalizedName: String!
-  moduleExtensions: [String!]!
   modules: [BundleModule]!
   bundleData: BundleData!
   measurements(
     interval: MeasurementInterval!
     before: DateTime!
-    after: DateTime!
+    after: DateTime
     branch: String
   ): BundleAnalysisMeasurements
 }
 
 type BundleReport {
   name: String!
-  sizeTotal: Int!
-  loadTimeTotal: Float!
-  moduleExtensions: [String!]!
   moduleCount: Int!
-  assets(filters: BundleAnalysisReportFilters): [BundleAsset]!
+  assets: [BundleAsset]!
   asset(name: String!): BundleAsset
   bundleData: BundleData!
   measurements(
     interval: MeasurementInterval!
     before: DateTime!
-    after: DateTime!
+    after: DateTime
     branch: String
     orderingDirection: OrderingDirection
     filters: BundleAnalysisMeasurementsSetFilters
   ): [BundleAnalysisMeasurements!]
+  isCached: Boolean!
+  assetsPaginated(
+    ordering: AssetOrdering
+    orderingDirection: OrderingDirection
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): AssetConnection
 }
 
 type BundleAnalysisMeasurements{
@@ -68,4 +87,15 @@ type BundleAnalysisMeasurements{
     size: BundleData
     change: BundleData
     measurements: [Measurement!]
+}
+
+type AssetConnection {
+  edges: [AssetEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type AssetEdge {
+  cursor: String!
+  node: BundleAsset!
 }

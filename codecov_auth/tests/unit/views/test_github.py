@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from unittest.mock import call
 
 import pytest
 from django.http.cookie import SimpleCookie
@@ -54,7 +55,7 @@ def test_get_github_redirect_host_override(client, mocker, mock_redis, settings)
                 return default
         return curr
 
-    mock_get_config = mocker.patch(
+    mocker.patch(
         "shared.torngit.github.get_config",
         side_effect=fake_config,
     )
@@ -312,10 +313,6 @@ def test_get_github_already_with_code_with_email(
     assert owner.email == "thiago@codecov.io"
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
-    assert "session_expiry" in res.cookies
-    session_expiry_cookie = res.cookies["session_expiry"]
-    assert session_expiry_cookie.value == "2023-02-01T08:00:00Z"
-    assert session_expiry_cookie.get("domain") == ".simple.site"
 
 
 @freeze_time("2023-01-01T00:00:00")
@@ -355,6 +352,9 @@ def test_get_github_already_with_code_is_student(
             as_tuple=mocker.MagicMock(return_value=("a", "b"))
         ),
     )
+    mock_create_user_onboarding_metric = mocker.patch(
+        "shared.django_apps.codecov_metrics.service.codecov_metrics.UserOnboardingMetricsService.create_user_onboarding_metric"
+    )
 
     session = client.session
     session["github_oauth_state"] = "abc"
@@ -362,6 +362,13 @@ def test_get_github_already_with_code_is_student(
     mock_redis.setex("oauth-state-abc", 300, "http://localhost:3000/gh")
     url = reverse("github-login")
     res = client.get(url, {"code": "aaaaaaa", "state": "abc"})
+    expected_call = call(
+        org_id=client.session["current_owner_id"],
+        event="INSTALLED_APP",
+        payload={"login": "github"},
+    )
+    assert mock_create_user_onboarding_metric.call_args_list == [expected_call]
+
     assert res.status_code == 302
 
     owner = Owner.objects.get(pk=client.session["current_owner_id"])
@@ -371,10 +378,6 @@ def test_get_github_already_with_code_is_student(
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
     assert owner.student is True
-    assert "session_expiry" in res.cookies
-    session_expiry_cookie = res.cookies["session_expiry"]
-    assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
-    assert session_expiry_cookie.get("domain") == ".simple.site"
 
 
 @freeze_time("2023-01-01T00:00:00")
@@ -437,10 +440,6 @@ def test_get_github_already_owner_already_exist(
     assert owner.service_id == "44376991"
     assert owner.private_access is True
     assert res.url == "http://localhost:3000/gh"
-    assert "session_expiry" in res.cookies
-    session_expiry_cookie = res.cookies["session_expiry"]
-    assert session_expiry_cookie.value == "2023-01-01T08:00:00Z"
-    assert session_expiry_cookie.get("domain") == ".simple.site"
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,6 @@
 import logging
 
-from django.core.management.base import BaseCommand, CommandError, CommandParser
+from django.core.management.base import BaseCommand, CommandParser
 from redis import Redis
 from shared.config import get_config
 

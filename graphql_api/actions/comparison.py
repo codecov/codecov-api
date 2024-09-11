@@ -1,13 +1,11 @@
 from typing import Optional, Union
 
-from codecov.db import sync_to_async
 from compare.models import CommitComparison
 from graphql_api.types.comparison.comparison import (
     MissingBaseReport,
     MissingComparison,
     MissingHeadReport,
 )
-from services.comparison import Comparison, PullRequestComparison
 
 
 def validate_commit_comparison(

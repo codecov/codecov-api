@@ -1,5 +1,4 @@
 import dataclasses
-import hashlib
 import logging
 from typing import List
 
@@ -7,7 +6,6 @@ from rest_framework import serializers
 
 from api.internal.commit.serializers import CommitSerializer
 from api.shared.commit.serializers import ReportTotalsSerializer
-from compare.models import CommitComparison
 from services.comparison import (
     Comparison,
     ComparisonReport,
@@ -52,7 +50,6 @@ class ComparisonSerializer(serializers.Serializer):
     diff = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
     untracked = serializers.SerializerMethodField()
-    has_unmerged_base_commits = serializers.BooleanField()
 
     def get_untracked(self, comparison) -> List[str]:
         return [

@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from rest_framework.exceptions import APIException
-from rest_framework.test import APIRequestFactory
 
 from api.internal.tests.test_utils import (
     GetAdminErrorProviderAdapter,
@@ -193,5 +192,5 @@ class TestUserIsAdminPermissions(TestCase):
         org = OwnerFactory()
         user = OwnerFactory()
 
-        with self.assertRaises(APIException) as e:
+        with self.assertRaises(APIException):
             self.permissions_class._is_admin_on_provider(user, org)

@@ -12,7 +12,7 @@ from graphql_api.helpers.mutation import (
 @require_authenticated
 async def resolve_start_trial(_, info, input) -> None:
     command: OwnerCommands = info.context["executor"].get_command("owner")
-    await command.start_trial(input.get("orgUsername"))
+    await command.start_trial(input.get("org_username"))
     return None
 
 

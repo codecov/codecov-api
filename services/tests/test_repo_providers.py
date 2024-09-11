@@ -249,7 +249,7 @@ class TestRepoProviderService(InternalAPITest):
         user = OwnerFactory(service="github")
         repo = RepositoryFactory.create(author=user, bot=bot)
 
-        provider = RepoProviderService().get_adapter(
+        RepoProviderService().get_adapter(
             user, repo, use_ssl=True, token=repo.bot.oauth_token
         )
         mock_get_provider.call_args == (
@@ -285,7 +285,7 @@ class TestRepoProviderService(InternalAPITest):
         user = OwnerFactory(service="github")
         repo = RepositoryFactory.create(author=user, bot=bot)
 
-        provider = RepoProviderService().get_adapter(
+        RepoProviderService().get_adapter(
             user, repo, use_ssl=True, token=repo.bot.oauth_token
         )
         mock_get_provider.call_args == (

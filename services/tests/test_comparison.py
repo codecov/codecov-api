@@ -141,7 +141,7 @@ class FileComparisonTraverseManagerTests(TestCase):
 
     def test_pop_line_returns_none_if_no_diff_or_src(self):
         manager = FileComparisonTraverseManager()
-        assert manager.pop_line() == None
+        assert manager.pop_line() is None
 
     def test_pop_line_pops_first_line_in_segment_if_traversing_that_segment(self):
         expected_line_value = "+this is a line!"
@@ -244,7 +244,7 @@ class FileComparisonTraverseManagerTests(TestCase):
         manager.apply([visitor])
         assert visitor.line_numbers == [(1, 1), (2, 2), (3, None), (None, 3)]
 
-    def test_can_traverse_diff_with_difflike_lines(self):
+    def test_can_traverse_diff_with_diff_like_lines(self):
         src = [
             "- line 1",  # not part of diff
             "- line 2",  # not part of diff
@@ -371,7 +371,7 @@ class LineComparisonTests(TestCase):
         lc = LineComparison(None, [0, "", [], 0, 0], base_ln, head_ln, "+", False)
         assert lc.number == {"base": base_ln, "head": head_ln}
 
-    def test_number_shows_none_for_base_if_minux_not_part_of_diff(self):
+    def test_number_shows_none_for_base_if_minus_not_part_of_diff(self):
         base_ln = 3
         head_ln = 4
         lc = LineComparison(None, [0, "", [], 0, 0], base_ln, head_ln, "-", False)
@@ -451,16 +451,16 @@ class LineComparisonTests(TestCase):
 
     def test_hit_session_ids_no_coverage(self):
         lc = LineComparison(None, [0, "", [[0, 0, 0, 0, 0]], 0, 0], 0, 0, "", False)
-        assert lc.hit_session_ids == None
+        assert lc.hit_session_ids is None
 
     def test_hit_session_ids_no_head_line(self):
         lc = LineComparison(None, None, 0, 0, "", False)
-        assert lc.hit_session_ids == None
+        assert lc.hit_session_ids is None
 
 
 class FileComparisonConstructorTests(TestCase):
     def test_constructor_no_keyError_if_diff_data_segements_is_missing(self):
-        file_comp = FileComparison(
+        FileComparison(
             head_file=ReportFile("file1"), base_file=ReportFile("file1"), diff_data={}
         )
 
@@ -542,7 +542,7 @@ class FileComparisonTests(TestCase):
         self.file_comparison.diff_data = {"stats": expected_stats}
         assert self.file_comparison.stats == expected_stats
 
-    def test_lines_returns_emptylist_if_no_diff_or_src(self):
+    def test_lines_returns_empty_list_if_no_diff_or_src(self):
         assert self.file_comparison.lines == []
 
     # essentially a smoke/integration test
@@ -988,7 +988,7 @@ class PullRequestComparisonTests(TestCase):
     @patch("redis.Redis.get")
     def test_files_with_changes_returns_none_if_no_files_with_changes(self, mocked_get):
         mocked_get.return_value = None
-        assert self.comparison._files_with_changes == None
+        assert self.comparison._files_with_changes is None
 
     @patch("redis.Redis.get")
     def test_files_with_changes_doesnt_crash_if_redis_connection_problem(
@@ -1154,11 +1154,11 @@ class PullRequestComparisonTests(TestCase):
         with self.subTest("returns app settings value if exists, True if not"):
             get_config_mock.return_value = True
             comparison = PullRequestComparison(owner, pull)
-            comparison.allow_coverage_offsets is True
+            assert comparison.allow_coverage_offsets is True
 
             get_config_mock.return_value = False
             comparison = PullRequestComparison(owner, pull)
-            comparison.allow_coverage_offsets is False
+            assert comparison.allow_coverage_offsets is False
 
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_pseudo_diff_returns_diff_between_base_and_compared_to(
@@ -1317,22 +1317,6 @@ class ComparisonHasUnmergedBaseCommitsTests(TestCase):
         base, head = CommitFactory(author=owner), CommitFactory(author=owner)
         self.comparison = Comparison(user=owner, base_commit=base, head_commit=head)
         asyncio.set_event_loop(asyncio.new_event_loop())
-
-    def test_returns_true_if_reverse_comparison_has_commits(self, get_adapter_mock):
-        commits = ["a", "b"]
-        get_adapter_mock.return_value = (
-            ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
-        )
-        assert self.comparison.has_unmerged_base_commits is True
-
-    def test_returns_false_if_reverse_comparison_has_one_commit_or_less(
-        self, get_adapter_mock
-    ):
-        commits = ["a"]
-        get_adapter_mock.return_value = (
-            ComparisonHasUnmergedBaseCommitsTests.MockFetchDiffCoro(commits)
-        )
-        assert self.comparison.has_unmerged_base_commits is False
 
 
 class SegmentTests(TestCase):

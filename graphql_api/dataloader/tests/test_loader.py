@@ -19,7 +19,7 @@ class BaseLoaderTestCase(TransactionTestCase):
 
     async def test_unimplemented_load(self):
         loader = BaseLoader.loader(self.info)
-        with pytest.raises(NotImplementedError) as err_info:
+        with pytest.raises(NotImplementedError):
             await loader.load(self.record.id)
 
     async def test_default_key(self):

@@ -5,14 +5,16 @@ from django.utils import timezone
 from factory.django import DjangoModelFactory
 
 from codecov_auth.models import (
+    Account,
     DjangoSession,
+    OktaSettings,
     OktaUser,
     OrganizationLevelToken,
     Owner,
     OwnerProfile,
-    RepositoryToken,
+    RepositoryToken,  # noqa: F401
     SentryUser,
-    Service,
+    Service,  # noqa: F401
     Session,
     TokenTypeChoices,
     User,
@@ -31,6 +33,25 @@ class UserFactory(DjangoModelFactory):
     terms_agreement = False
     terms_agreement_at = None
     customer_intent = "Business"
+
+
+class AccountFactory(DjangoModelFactory):
+    class Meta:
+        model = Account
+
+    name = factory.Faker("name")
+
+
+class OktaSettingsFactory(DjangoModelFactory):
+    class Meta:
+        model = OktaSettings
+
+    account = factory.SubFactory(AccountFactory)
+    client_id = factory.Faker("uuid4")
+    client_secret = factory.Faker("uuid4")
+    url = factory.Faker("url")
+    enabled = True
+    enforced = False
 
 
 class OwnerFactory(DjangoModelFactory):

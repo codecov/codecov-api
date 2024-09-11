@@ -93,7 +93,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             or build["slug"] != f"{owner}/{repo}"
             or (
                 build["commit_sha"] != self.upload_params.get("commit")
-                and self.upload_params.get("pr") == None
+                and self.upload_params.get("pr") is None
             )
         ):
             self.log_warning(
@@ -116,7 +116,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
                 )
 
             finish_time_with_buffer = build_finish_date_obj + timedelta(minutes=10)
-            now = datetime.utcnow()
+            now = datetime.now()
             if not now <= finish_time_with_buffer:
                 log.warning(
                     "Actions workflow run is stale",

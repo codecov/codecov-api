@@ -4,7 +4,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
 from api.shared.mixins import RepoPropertyMixin
-from api.shared.pagination import PaginationMixin
 from api.shared.permissions import RepositoryArtifactPermissions
 from core.models import Commit
 

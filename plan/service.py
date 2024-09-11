@@ -21,6 +21,8 @@ from plan.constants import (
     TrialStatus,
 )
 from services import sentry
+from services.self_hosted import enterprise_has_seats_left, license_seats
+from utils.config import get_config
 
 log = logging.getLogger(__name__)
 
@@ -41,8 +43,7 @@ class PlanService:
         self.current_org = current_org
         if self.current_org.plan not in USER_PLAN_REPRESENTATIONS:
             raise ValueError("Unsupported plan")
-        else:
-            self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        self._plan_data = None
 
     def update_plan(self, name, user_count: int | None) -> None:
         if name not in USER_PLAN_REPRESENTATIONS:
@@ -51,7 +52,7 @@ class PlanService:
             raise ValueError("Quantity Needed")
         self.current_org.plan = name
         self.current_org.plan_user_count = user_count
-        self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        self._plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
         self.current_org.save()
 
     def current_org(self) -> Owner:
@@ -66,11 +67,34 @@ class PlanService:
         self.current_org.save()
 
     @property
+    def has_account(self) -> bool:
+        return False if self.current_org.account is None else True
+
+    @property
+    def plan_data(self) -> PlanData:
+        if self._plan_data is not None:
+            return self._plan_data
+
+        if self.has_account:
+            self._plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.account.plan]
+        else:
+            self._plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        return self._plan_data
+
+    @plan_data.setter
+    def set_plan_data(self, plan_data: PlanData | None) -> None:
+        self._plan_data = plan_data
+
+    @property
     def plan_name(self) -> str:
         return self.plan_data.value
 
     @property
     def plan_user_count(self) -> int:
+        if get_config("setup", "enterprise_license"):
+            return license_seats()
+        if self.has_account:
+            return self.current_org.account.total_seat_count
         return self.current_org.plan_user_count
 
     @property
@@ -147,7 +171,7 @@ class PlanService:
         end_date: Optional[datetime] = None,
         is_extension: bool = False,
     ) -> None:
-        start_date = datetime.utcnow()
+        start_date = datetime.now()
 
         # When they are not extending a trial, have to setup all the default values
         if not is_extension:
@@ -207,7 +231,7 @@ class PlanService:
     def cancel_trial(self) -> None:
         if not self.is_org_trialing:
             raise ValidationError("Cannot cancel a trial that is not ongoing")
-        now = datetime.utcnow()
+        now = datetime.now()
         self.current_org.trial_status = TrialStatus.EXPIRED.value
         self.current_org.trial_end_date = now
         self.set_default_plan_data()
@@ -230,7 +254,7 @@ class PlanService:
             self.current_org.plan_user_count = (
                 self.current_org.pretrial_users_count or 1
             )
-            self.current_org.trial_end_date = datetime.utcnow()
+            self.current_org.trial_end_date = datetime.now()
 
             self.current_org.save()
 
@@ -263,6 +287,14 @@ class PlanService:
 
     @property
     def has_seats_left(self) -> bool:
+        if get_config("setup", "enterprise_license"):
+            return enterprise_has_seats_left()
+        if self.has_account:
+            # edge case: IF the User is already a plan_activated_user on any of the Orgs in the Account,
+            # AND their Account is at capacity,
+            # AND they try to become a plan_activated_user on another Org in the Account,
+            # has_seats_left will evaluate as False even though the User should be allowed to activate on the Org.
+            return self.current_org.account.can_activate_user()
         return (
             self.plan_activated_users is None
             or len(self.plan_activated_users) < self.plan_user_count
