@@ -463,3 +463,44 @@ def test_okta_callback_perform_login_no_user_data(
 
     updated_session = signed_in_client.session
     assert updated_session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) is None
+
+
+@pytest.mark.django_db
+def test_okta_callback_perform_login_access_denied(
+    mocker: MockerFixture,
+    signed_in_client: TestClient,
+    caplog: LogCaptureFixture,
+    okta_org: Owner,
+    okta_account: Account,
+    mocked_okta_token_request: Any,
+):
+    state = "test-state"
+    session = signed_in_client.session
+    assert session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) is None
+    session["okta_cloud_oauth_state"] = state
+
+    session[OKTA_CURRENT_SESSION] = {
+        "org_ownerid": okta_org.ownerid,
+        "okta_settings_id": okta_account.okta_settings.first().id,
+    }
+    session.save()
+
+    mocked_okta_token_request.return_value = mocker.MagicMock(
+        status_code=403,
+    )
+
+    res = signed_in_client.get(
+        "/login/okta/callback",
+        data={
+            "state": state,
+            "error": "access_denied",
+        },
+    )
+    assert res.status_code == 302
+    assert (
+        res.url
+        == f"http://localhost:3000/github/{okta_org.username}?error=access_denied"
+    )
+
+    updated_session = signed_in_client.session
+    assert updated_session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) is None
