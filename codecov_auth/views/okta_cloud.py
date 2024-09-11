@@ -137,14 +137,11 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
         # Check for error in the callback
         error = request.GET.get("error")
         if error:
-            error_description = request.GET.get("error_description", "Unknown error")
             log.warning(
-                f"Okta authentication error: {error}. Description: {error_description}",
+                f"Okta authentication error: {error}",
                 extra=log_context,
             )
-            return redirect(
-                f"{app_redirect_url}?error={error}&error_description={error_description}"
-            )
+            return redirect(f"{app_redirect_url}?error={error}")
 
         # Redirect URL, need to validate and mark user as logged in
         if request.GET.get("code"):

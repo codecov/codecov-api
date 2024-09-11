@@ -409,7 +409,10 @@ def test_okta_callback_perform_login_invalid_state(
         },
     )
     assert res.status_code == 302
-    assert res.url == f"http://localhost:3000/github/{okta_org.username}"
+    assert (
+        res.url
+        == f"http://localhost:3000/github/{okta_org.username}?error=invalid_state"
+    )
 
     assert log_message_exists("Invalid state during Okta login", caplog.records)
 
@@ -448,7 +451,11 @@ def test_okta_callback_perform_login_no_user_data(
             "state": state,
         },
     )
-    assert res.status_code == 400
+    assert res.status_code == 302
+    assert (
+        res.url
+        == f"http://localhost:3000/github/{okta_org.username}?error=invalid_token_response"
+    )
 
     assert log_message_exists(
         "Can't log in. Invalid Okta Token Response", caplog.records
