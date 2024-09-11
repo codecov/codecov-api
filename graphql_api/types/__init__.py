@@ -67,10 +67,7 @@ from .segment_comparison import (
 from .self_hosted_license import self_hosted_license, self_hosted_license_bindable
 from .session import session, session_bindable
 from .test_results import test_result_bindable, test_results
-from .test_results_aggregates import (
-    test_results_aggregates,
-    test_results_aggregates_bindable,
-)
+from .test_results_headers import test_results_headers, test_results_headers_bindable
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 from .user_token import user_token, user_token_bindable
@@ -121,8 +118,8 @@ types = [
     account,
     okta_config,
     test_results,
-    test_results_aggregates,
     flake_aggregates,
+    test_results_headers,
 ]
 
 bindables = [
@@ -181,6 +178,6 @@ bindables = [
     account_bindable,
     okta_config_bindable,
     test_result_bindable,
-    test_results_aggregates_bindable,
     flake_aggregates_bindable,
+    test_results_headers_bindable,
 ]
