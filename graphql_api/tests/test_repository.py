@@ -1194,3 +1194,31 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
                 {"node": {"name": test.name, "failureRate": 0.2}},
             ]
         }
+
+    def test_test_results_headers(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, branch="main"
+        )
+
+        for i in range(0, 100):
+            test = TestFactory(repository=repo)
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                fail_count=1 if i % 5 == 0 else 0,
+                skip_count=1 if i % 10 == 0 else 0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+            )
+        res = self.fetch_repository(
+            repo.name,
+            """testResultsHeaders { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
+        )
+        assert res["testResultsHeaders"] == {
+            "totalRunTime": 5940.0,
+            "slowestTestsRunTime": 850.0,
+            "totalFails": 20,
+            "totalSkips": 10,
+        }
