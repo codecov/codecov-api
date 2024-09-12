@@ -161,7 +161,7 @@ class CommitReportSerializer(serializers.ModelSerializer):
         )
         fields = read_only_fields + ("code",)
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> tuple[CommitReport, bool]:
         report = (
             CommitReport.objects.coverage_reports()
             .filter(
@@ -174,8 +174,8 @@ class CommitReportSerializer(serializers.ModelSerializer):
             if report.report_type is None:
                 report.report_type = CommitReport.ReportType.COVERAGE
                 report.save()
-            return report
-        return super().create(validated_data)
+            return report, False
+        return super().create(validated_data), True
 
 
 class ReportResultsSerializer(serializers.ModelSerializer):

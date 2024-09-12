@@ -49,15 +49,17 @@ def measurements_by_ids(
 
 
 def measurements_last_uploaded_before_start_date(
+    owner_id: int,
     repo_id: int,
     measurable_name: str,
-    measurable_ids: List[int],
+    measurable_id: int,
     start_date: datetime,
     branch: Optional[str] = None,
 ) -> QuerySet:
     queryset = Measurement.objects.filter(
+        owner_id=owner_id,
         repo_id=repo_id,
-        measurable_id__in=measurable_ids,
+        measurable_id=measurable_id,
         name=measurable_name,
         timestamp__lt=start_date,
     )

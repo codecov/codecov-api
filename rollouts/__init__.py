@@ -9,8 +9,5 @@ def owner_slug(owner: Owner) -> str:
 
 __all__ = ["Feature"]
 
-NO_PREPROCESS_UPLOAD = Feature("no_PreProcessUpload")
-
-
 # By default, features have one variant:
 #    { "enabled": FeatureVariant(True, 1.0) }

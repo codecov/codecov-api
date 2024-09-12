@@ -1,6 +1,7 @@
 from asyncio import gather
 from typing import List, Optional
 
+import sentry_sdk
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from graphql.type.definition import GraphQLResolveInfo
 
@@ -237,6 +238,7 @@ def resolve_flag_comparisons_count(
     return get_flag_comparisons(comparison.commit_comparison).count()
 
 
+@sentry_sdk.trace
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")
 @sync_to_async
 def resolve_has_different_number_of_head_and_base_reports(

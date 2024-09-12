@@ -130,3 +130,9 @@ class BundleLoadTypes(enum.Enum):
     ENTRY = "ENTRY"
     INITIAL = "INITIAL"
     LAZY = "LAZY"
+
+
+class AssetOrdering(enum.Enum):
+    NAME = "name"
+    SIZE = "size"
+    TYPE = "asset_type"
