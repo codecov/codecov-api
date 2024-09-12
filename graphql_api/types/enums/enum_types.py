@@ -11,6 +11,7 @@ from timeseries.models import Interval as MeasurementInterval
 from timeseries.models import MeasurementName
 
 from .enums import (
+    AssetOrdering,
     BundleLoadTypes,
     CoverageLine,
     GoalOnboarding,
@@ -23,7 +24,7 @@ from .enums import (
     SyncProvider,
     TestResultsOrderingParameter,
     TypeProjectOnboarding,
-    UploadErrorEnum,
+    UploadErrorCode,
     UploadState,
     UploadType,
 )
@@ -39,7 +40,7 @@ enum_types = [
     EnumType("PullRequestState", PullRequestState),
     EnumType("UploadState", UploadState),
     EnumType("UploadType", UploadType),
-    EnumType("UploadErrorEnum", UploadErrorEnum),
+    EnumType("UploadErrorCode", UploadErrorCode),
     EnumType("MeasurementInterval", MeasurementInterval),
     EnumType("LoginProvider", LoginProvider),
     EnumType("ImpactedFileParameter", ImpactedFileParameter),
@@ -52,4 +53,5 @@ enum_types = [
     EnumType("YamlStates", YamlStates),
     EnumType("BundleLoadTypes", BundleLoadTypes),
     EnumType("TestResultsOrderingParameter", TestResultsOrderingParameter),
+    EnumType("AssetOrdering", AssetOrdering),
 ]

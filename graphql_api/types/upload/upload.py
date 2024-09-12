@@ -8,7 +8,7 @@ from codecov.db import sync_to_async
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import (
     OrderingDirection,
-    UploadErrorEnum,
+    UploadErrorCode,
     UploadState,
     UploadType,
 )
@@ -57,7 +57,7 @@ async def resolve_errors(report_session, info, **kwargs):
 
 @upload_error_bindable.field("errorCode")
 def resolve_error_code(error, info):
-    return UploadErrorEnum(error.error_code)
+    return UploadErrorCode(error.error_code)
 
 
 @upload_bindable.field("ciUrl")

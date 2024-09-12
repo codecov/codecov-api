@@ -207,6 +207,10 @@ class AssetReport(object):
         self.all_modules = None
 
     @cached_property
+    def id(self) -> int:
+        return self.asset.id
+
+    @cached_property
     def name(self) -> str:
         return self.asset.hashed_name
 
@@ -249,9 +253,17 @@ class BundleReport(object):
     def all_assets(self) -> List[AssetReport]:
         return [AssetReport(asset) for asset in self.report.asset_reports()]
 
-    def assets(self) -> List[AssetReport]:
+    def assets(
+        self, ordering: Optional[str] = None, ordering_desc: Optional[bool] = None
+    ) -> List[AssetReport]:
+        ordering_dict: Dict[str, Any] = {}
+        if ordering:
+            ordering_dict["ordering_column"] = ordering
+        if ordering_desc is not None:
+            ordering_dict["ordering_desc"] = ordering_desc
         return [
-            AssetReport(asset) for asset in self.report.asset_reports(**self.filters)
+            AssetReport(asset)
+            for asset in self.report.asset_reports(**{**ordering_dict, **self.filters})
         ]
 
     def asset(self, name: str) -> Optional[AssetReport]:
@@ -262,6 +274,10 @@ class BundleReport(object):
     @cached_property
     def size_total(self) -> int:
         return self.report.total_size(**self.filters)
+
+    @cached_property
+    def gzip_size_total(self) -> int:
+        return self.report.total_gzip_size(**self.filters)
 
     @cached_property
     def module_extensions(self) -> List[str]:
@@ -396,9 +412,10 @@ class BundleAnalysisMeasurementsService(object):
         for measurable_id, measurements in all_measurements.items():
             if self.after is not None and measurements[0]["timestamp_bin"] > self.after:
                 carryover_measurement = measurements_last_uploaded_before_start_date(
+                    owner_id=self.repository.author.ownerid,
                     repo_id=self.repository.repoid,
                     measurable_name=measurable_name,
-                    measurable_ids=[measurable_id],
+                    measurable_id=measurable_id,
                     start_date=self.after,
                     branch=self.branch,
                 )

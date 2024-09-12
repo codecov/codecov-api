@@ -1,6 +1,8 @@
 import enum
 from typing import Self
 
+from shared.upload.constants import UploadErrorCode as SharedUploadErrorCode
+
 
 class OrderingParameter(enum.Enum):
     NAME = "name"
@@ -75,10 +77,7 @@ class UploadType(enum.Enum):
     CARRIEDFORWARD = "carriedforward"
 
 
-class UploadErrorEnum(enum.Enum):
-    FILE_NOT_IN_STORAGE = "file_not_in_storage"
-    REPORT_EXPIRED = "report_expired"
-    REPORT_EMPTY = "report_empty"
+UploadErrorCode = SharedUploadErrorCode
 
 
 class LoginProvider(enum.Enum):
@@ -130,3 +129,9 @@ class BundleLoadTypes(enum.Enum):
     ENTRY = "ENTRY"
     INITIAL = "INITIAL"
     LAZY = "LAZY"
+
+
+class AssetOrdering(enum.Enum):
+    NAME = "name"
+    SIZE = "size"
+    TYPE = "asset_type"

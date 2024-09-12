@@ -1,4 +1,5 @@
 from .enums import (
+    AssetOrdering,
     BundleLoadTypes,
     CommitErrorCode,
     CommitErrorGeneralType,
@@ -14,12 +15,13 @@ from .enums import (
     SyncProvider,
     TestResultsOrderingParameter,
     TypeProjectOnboarding,
-    UploadErrorEnum,
+    UploadErrorCode,
     UploadState,
     UploadType,
 )
 
 __all__ = [
+    "AssetOrdering",
     "BundleLoadTypes",
     "CommitErrorCode",
     "CommitErrorGeneralType",
@@ -35,7 +37,7 @@ __all__ = [
     "SyncProvider",
     "TestResultsOrderingParameter",
     "TypeProjectOnboarding",
-    "UploadErrorEnum",
+    "UploadErrorCode",
     "UploadState",
     "UploadType",
 ]

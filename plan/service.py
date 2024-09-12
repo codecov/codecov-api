@@ -41,16 +41,9 @@ class PlanService:
             No value
         """
         self.current_org = current_org
-        self.has_account = False if self.current_org.account is None else True
         if self.current_org.plan not in USER_PLAN_REPRESENTATIONS:
             raise ValueError("Unsupported plan")
-        else:
-            if self.has_account:
-                self.plan_data = USER_PLAN_REPRESENTATIONS[
-                    self.current_org.account.plan
-                ]
-            else:
-                self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        self._plan_data = None
 
     def update_plan(self, name, user_count: int | None) -> None:
         if name not in USER_PLAN_REPRESENTATIONS:
@@ -59,7 +52,7 @@ class PlanService:
             raise ValueError("Quantity Needed")
         self.current_org.plan = name
         self.current_org.plan_user_count = user_count
-        self.plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        self._plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
         self.current_org.save()
 
     def current_org(self) -> Owner:
@@ -72,6 +65,25 @@ class PlanService:
         self.current_org.plan_user_count = 1
         self.current_org.stripe_subscription_id = None
         self.current_org.save()
+
+    @property
+    def has_account(self) -> bool:
+        return False if self.current_org.account is None else True
+
+    @property
+    def plan_data(self) -> PlanData:
+        if self._plan_data is not None:
+            return self._plan_data
+
+        if self.has_account:
+            self._plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.account.plan]
+        else:
+            self._plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        return self._plan_data
+
+    @plan_data.setter
+    def set_plan_data(self, plan_data: PlanData | None) -> None:
+        self._plan_data = plan_data
 
     @property
     def plan_name(self) -> str:
