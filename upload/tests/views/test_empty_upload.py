@@ -4,6 +4,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from shared.yaml.user_yaml import UserYaml
 
+from codecov_auth.tests.factories import OrganizationLevelTokenFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -473,6 +474,35 @@ def test_empty_upload_no_auth(db, mocker):
     response = client.post(
         url,
         headers={"Authorization": f"token {token}"},
+    )
+    response_json = response.json()
+    assert response.status_code == 401
+    assert (
+        response_json.get("detail")
+        == "Failed token authentication, please double-check that your repository token matches in the Codecov UI, "
+        "or review the docs https://docs.codecov.com/docs/adding-the-codecov-token"
+    )
+
+
+def test_empty_upload_org_token(db, mocker):
+    repository = RepositoryFactory(
+        name="the_repo", author__username="codecov", author__service="github"
+    )
+    org_token = OrganizationLevelTokenFactory.create(owner=repository.author)
+    commit = CommitFactory(repository=repository)
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.empty_upload",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+        ],
+    )
+    response = client.post(
+        url,
+        headers={"Authorization": f"token {org_token.token}"},
     )
     response_json = response.json()
     assert response.status_code == 401
