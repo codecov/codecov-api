@@ -3,7 +3,7 @@ from django.test import TransactionTestCase
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import CommitFactory, RepositoryFactory
-from graphql_api.types.enums import UploadErrorEnum, UploadState
+from graphql_api.types.enums import UploadErrorCode, UploadState
 from reports.tests.factories import (
     CommitReportFactory,
     UploadErrorFactory,
@@ -28,22 +28,22 @@ class GetUploadErrorInteractorTest(TransactionTestCase):
         commit_report = CommitReportFactory(commit=commit)
         upload = UploadFactory(report=commit_report, state=UploadState.ERROR.value)
         UploadErrorFactory(
-            report_session=upload, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
+            report_session=upload, error_code=UploadErrorCode.FILE_NOT_IN_STORAGE.value
         )
         UploadErrorFactory(
-            report_session=upload, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+            report_session=upload, error_code=UploadErrorCode.REPORT_EXPIRED.value
         )
         UploadErrorFactory(
-            report_session=upload, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+            report_session=upload, error_code=UploadErrorCode.REPORT_EXPIRED.value
         )
 
         interactor_errors = async_to_sync(self.execute)(None, upload)
 
         assert len(interactor_errors.values()) == 3
         assert set(interactor_errors.values_list("error_code", flat=True)) == {
-            UploadErrorEnum.FILE_NOT_IN_STORAGE.value,
-            UploadErrorEnum.REPORT_EXPIRED.value,
-            UploadErrorEnum.REPORT_EXPIRED.value,
+            UploadErrorCode.FILE_NOT_IN_STORAGE.value,
+            UploadErrorCode.REPORT_EXPIRED.value,
+            UploadErrorCode.REPORT_EXPIRED.value,
         }
 
     def test_get_upload_errors_no_error(self):

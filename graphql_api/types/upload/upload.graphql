@@ -26,5 +26,5 @@ type UploadErrorsEdge {
 }
 
 type UploadError {
-  errorCode: UploadErrorEnum
+  errorCode: UploadErrorCode
 }

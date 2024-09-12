@@ -15,7 +15,7 @@ from .enums import (
     SyncProvider,
     TestResultsOrderingParameter,
     TypeProjectOnboarding,
-    UploadErrorEnum,
+    UploadErrorCode,
     UploadState,
     UploadType,
 )
@@ -37,7 +37,7 @@ __all__ = [
     "SyncProvider",
     "TestResultsOrderingParameter",
     "TypeProjectOnboarding",
-    "UploadErrorEnum",
+    "UploadErrorCode",
     "UploadState",
     "UploadType",
 ]

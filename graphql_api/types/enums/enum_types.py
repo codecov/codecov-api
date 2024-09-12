@@ -24,7 +24,7 @@ from .enums import (
     SyncProvider,
     TestResultsOrderingParameter,
     TypeProjectOnboarding,
-    UploadErrorEnum,
+    UploadErrorCode,
     UploadState,
     UploadType,
 )
@@ -40,7 +40,7 @@ enum_types = [
     EnumType("PullRequestState", PullRequestState),
     EnumType("UploadState", UploadState),
     EnumType("UploadType", UploadType),
-    EnumType("UploadErrorEnum", UploadErrorEnum),
+    EnumType("UploadErrorCode", UploadErrorCode),
     EnumType("MeasurementInterval", MeasurementInterval),
     EnumType("LoginProvider", LoginProvider),
     EnumType("ImpactedFileParameter", ImpactedFileParameter),

@@ -15,7 +15,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
-from graphql_api.types.enums import CommitStatus, UploadErrorEnum, UploadState
+from graphql_api.types.enums import CommitStatus, UploadErrorCode, UploadState
 from graphql_api.types.enums.enums import UploadType
 from reports.models import CommitReport
 from reports.tests.factories import (
@@ -401,10 +401,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             report=self.report, provider="circleci", state=UploadState.ERROR.value
         )
         UploadErrorFactory(
-            report_session=session, error_code=UploadErrorEnum.REPORT_EXPIRED.value
+            report_session=session, error_code=UploadErrorCode.REPORT_EXPIRED.value
         )
         UploadErrorFactory(
-            report_session=session, error_code=UploadErrorEnum.FILE_NOT_IN_STORAGE.value
+            report_session=session, error_code=UploadErrorCode.FILE_NOT_IN_STORAGE.value
         )
 
         query = (
@@ -436,8 +436,8 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         errors = paginate_connection(upload["errors"])
 
         assert errors == [
-            {"errorCode": UploadErrorEnum.REPORT_EXPIRED.name},
-            {"errorCode": UploadErrorEnum.FILE_NOT_IN_STORAGE.name},
+            {"errorCode": UploadErrorCode.REPORT_EXPIRED.name},
+            {"errorCode": UploadErrorCode.FILE_NOT_IN_STORAGE.name},
         ]
 
     def test_yaml_return_default_state_if_default(self):
