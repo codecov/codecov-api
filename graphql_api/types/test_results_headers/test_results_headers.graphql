@@ -1,6 +1,0 @@
-type TestResultsHeaders {
-  totalRunTime: Float!
-  slowestTestsRunTime: Float!
-  totalFails: Int!
-  totalSkips: Int!
-}
