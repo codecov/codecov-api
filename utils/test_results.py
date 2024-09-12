@@ -48,9 +48,7 @@ def aggregate_test_results(
 
     """
     time_ago = (
-        dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
-        if history is not None
-        else thirty_days_ago
+        (dt.datetime.now(dt.UTC) - history) if history is not None else thirty_days_ago
     )
 
     pass_failure_error_test_instances = TestInstance.objects.filter(
