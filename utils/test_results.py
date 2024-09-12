@@ -9,15 +9,20 @@ from django.db.models import (
     Func,
     Max,
     OuterRef,
+    Q,
     QuerySet,
     Subquery,
     Sum,
 )
 from django.db.models.functions import Cast
 from shared.django_apps.core.models import Repository
-from shared.django_apps.reports.models import DailyTestRollup, TestInstance
+from shared.django_apps.reports.models import (
+    DailyTestRollup,
+    Flake,
+    TestInstance,
+)
 
-thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
+thirty_days_ago = dt.date.today() - dt.timedelta(days=30)
 
 SLOW_TEST_PERCENTILE = 95
 
@@ -38,7 +43,7 @@ class Array(Aggregate):
     function = "array"
 
 
-def aggregate_test_results(
+def generate_test_results(
     repoid: int,
     branch: str | None = None,
     history: dt.timedelta | None = None,
@@ -95,6 +100,16 @@ def aggregate_test_results(
                 + Cast(Sum(F("fail_count")), output_field=FloatField())
             )
         ),
+        flake_rate=(
+            Cast(Sum(F("flaky_fail_count")), output_field=FloatField())
+            / (
+                Cast(
+                    Sum(F("pass_count")),
+                    output_field=FloatField(),
+                )
+                + Cast(Sum(F("fail_count")), output_field=FloatField())
+            )
+        ),
         updated_at=Max("latest_run"),
         commits_where_fail=ArrayLength(Array(Subquery(commits_where_fail_sq))),
         last_duration=Subquery(latest_duration_sq),
@@ -105,7 +120,7 @@ def aggregate_test_results(
     return aggregation_of_test_results
 
 
-def test_results_headers(
+def generate_test_results_aggregates(
     repoid: int, history: dt.timedelta | None = None
 ) -> dict[str, float | int] | None:
     repo = Repository.objects.get(repoid=repoid)
@@ -159,3 +174,33 @@ def test_results_headers(
         return test_headers[0]
     else:
         return None
+
+
+def generate_flake_aggregates(repoid: int, history: dt.timedelta | None = None):
+    repo = Repository.objects.get(repoid=repoid)
+    time_ago = (dt.date.today() - history) if history is not None else thirty_days_ago
+
+    flakes = Flake.objects.filter(
+        Q(repository_id=repoid)
+        & (Q(end_date__date__isnull=True) | Q(end_date__date__gt=time_ago))
+    )
+
+    flake_count = flakes.count()
+
+    test_ids = [flake.test_id for flake in flakes]
+
+    test_rollups = DailyTestRollup.objects.filter(
+        repoid=repoid,
+        date__gt=time_ago,
+        branch=repo.branch,
+        test_id__in=test_ids,
+    )
+    numerator = 0
+    denominator = 0
+    for test_rollup in test_rollups:
+        numerator += test_rollup.flaky_fail_count
+        denominator += test_rollup.fail_count + test_rollup.pass_count
+
+    flake_rate = numerator / denominator
+
+    return {"flake_count": flake_count, "flake_rate": flake_rate}

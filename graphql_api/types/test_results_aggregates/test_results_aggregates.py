@@ -3,7 +3,7 @@ from typing import TypedDict
 from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
-test_results_headers_bindable = ObjectType("TestResultsHeaders")
+test_results_aggregates_bindable = ObjectType("TestResultsAggregates")
 
 
 class TestResultsHeaders(TypedDict):

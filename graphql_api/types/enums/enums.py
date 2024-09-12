@@ -17,6 +17,7 @@ class TestResultsOrderingParameter(enum.Enum):
     LAST_DURATION = "last_duration"
     AVG_DURATION = "avg_duration"
     FAILURE_RATE = "failure_rate"
+    FLAKE_RATE = "flake_rate"
     COMMITS_WHERE_FAIL = "commits_where_fail"
     UPDATED_AT = "updated_at"
 

@@ -1195,7 +1195,87 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    def test_test_results_headers(self) -> None:
+    def test_flake_rate_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            repoid=repo.repoid,
+            pass_count=1,
+            fail_count=1,
+            flaky_fail_count=1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=3,
+            fail_count=0,
+            flaky_fail_count=0,
+        )
+        test_2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test_2,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=2,
+            fail_count=3,
+            flaky_fail_count=1,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }) { edges { node { name flakeRate } } }""",
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test.name, "flakeRate": 0.2}},
+                {"node": {"name": test_2.name, "flakeRate": 0.2}},
+            ]
+        }
+
+    def test_desc_flake_rate_ordering_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            repoid=repo.repoid,
+            pass_count=1,
+            fail_count=1,
+            flaky_fail_count=1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=3,
+            fail_count=0,
+            flaky_fail_count=0,
+        )
+        test_2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test_2,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=2,
+            fail_count=3,
+            flaky_fail_count=1,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }) { edges { node { name flakeRate } } }""",
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_2.name, "flakeRate": 0.2}},
+                {"node": {"name": test.name, "flakeRate": 0.2}},
+            ]
+        }
+
+    def test_test_results_aggregates(self) -> None:
         repo = RepositoryFactory(
             author=self.owner, active=True, private=True, branch="main"
         )
