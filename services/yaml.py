@@ -34,14 +34,17 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
         )
         yaml_dict = safe_load(yaml_str)
         return validate_yaml(yaml_dict, show_secrets_for=None)
-    except Exception:
+    except Exception as e:
         # fetching, parsing, validating the yaml inside the commit can
         # have various exceptions, which we do not care about to get the final
         # yaml used for a commit, as any error here, the codecov.yaml would not
         # be used, so we return None here
         log.warning(
-            "Was not able to fetch yaml file for commit. Ignoring error and returning None.",
-            extra={"commit_id": commit.commitid},
+            f"Was not able to fetch yaml file for commit. Ignoring error and returning None. Exception: {e}",
+            extra={
+                "commit_id": commit.commitid,
+                "owner": owner.ownerid if owner else None,
+            },
         )
         return None
 
