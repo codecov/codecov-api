@@ -43,7 +43,7 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
             f"Was not able to fetch yaml file for commit. Ignoring error and returning None. Exception: {e}",
             extra={
                 "commit_id": commit.commitid,
-                "owner": owner,
+                "owner": owner.ownerid if owner else None,
             },
         )
         return None
