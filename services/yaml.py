@@ -8,7 +8,7 @@ from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
 from shared.yaml.validation import validate_yaml
 from yaml import safe_load
 
-from codecov_auth.models import Owner, get_config
+from codecov_auth.models import Owner, User, get_config
 from core.models import Commit
 from services.repo_providers import RepoProviderService
 
@@ -39,11 +39,21 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
         # have various exceptions, which we do not care about to get the final
         # yaml used for a commit, as any error here, the codecov.yaml would not
         # be used, so we return None here
+
+        if isinstance(owner, Owner):
+            owner_arg = owner.ownerid
+        elif isinstance(owner, User):
+            owner_arg = owner.pk
+        elif owner is not None:
+            owner_arg = str(type(owner))
+        else:
+            owner_arg = None
+
         log.warning(
             f"Was not able to fetch yaml file for commit. Ignoring error and returning None. Exception: {e}",
             extra={
                 "commit_id": commit.commitid,
-                "owner": owner.pk if owner else None,
+                "owner_arg": owner_arg,
             },
         )
         return None
