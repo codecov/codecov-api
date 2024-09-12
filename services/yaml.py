@@ -47,7 +47,7 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
         elif owner is not None:
             owner_arg = str(type(owner))
         else:
-            owner_arg = None
+            owner_arg = "None"
 
         log.warning(
             f"Was not able to fetch yaml file for commit. Ignoring error and returning None. Exception: {e}",
