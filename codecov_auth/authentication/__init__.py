@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from rest_framework import authentication, exceptions
 
@@ -28,7 +29,7 @@ class UserTokenAuthentication(authentication.TokenAuthentication):
     def authenticate_credentials(self, token):
         try:
             token = UserToken.objects.select_related("owner").get(token=token)
-        except UserToken.DoesNotExist:
+        except (UserToken.DoesNotExist, ValidationError):
             raise exceptions.AuthenticationFailed("Invalid token.")
 
         if token.valid_until is not None and token.valid_until <= timezone.now():
