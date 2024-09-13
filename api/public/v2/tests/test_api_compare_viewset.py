@@ -715,6 +715,7 @@ class TestCompareViewSetRetrieve(APITestCase):
             content_type="application/json",
         )
 
+        commit_components.assert_called_once_with(self.head, self.org)
         assert res.status_code == 200
         assert res.json() == [
             {

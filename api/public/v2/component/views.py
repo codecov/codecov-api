@@ -40,7 +40,7 @@ class ComponentViewSet(viewsets.ViewSet, RepoPropertyMixin):
         """
         commit = self.get_commit()
         report = commit.full_report
-        components = commit_components(commit, request.user)
+        components = commit_components(commit, self.owner)
         components_with_coverage = []
         for component in components:
             component_report = component_filtered_report(report, [component])
