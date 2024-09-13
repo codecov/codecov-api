@@ -98,7 +98,7 @@ class BaseReportViewSet(
             component = next(
                 (
                     component
-                    for component in commit_components(commit, self.request.user)
+                    for component in commit_components(commit, self.owner)
                     if component.component_id == component_id
                 ),
                 None,

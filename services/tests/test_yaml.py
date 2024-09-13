@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import pytest
 from django.test import TransactionTestCase
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 
@@ -31,3 +32,27 @@ class YamlServiceTest(TransactionTestCase):
         )
         config = yaml.final_commit_yaml(self.commit, None)
         assert config["codecov"]["require_ci_to_pass"] is True
+
+    @patch("services.yaml.fetch_current_yaml_from_provider_via_reference")
+    def test_when_commit_has_yaml_with_wrongly_typed_owner_arg(self, mock_fetch_yaml):
+        mock_fetch_yaml.return_value = """
+        codecov:
+          notify:
+            require_ci_to_pass: no
+        """
+        with pytest.raises(AssertionError) as exc_info:
+            yaml.final_commit_yaml(self.commit, "something else")
+        assert (
+            str(exc_info.value)
+            == "fetch_commit_yaml owner arg must be Owner or None. Provided: <class 'str'>"
+        )
+
+    @patch("services.yaml.fetch_current_yaml_from_provider_via_reference")
+    def test_when_commit_has_yaml_with_owner(self, mock_fetch_yaml):
+        mock_fetch_yaml.return_value = """
+        codecov:
+          notify:
+            require_ci_to_pass: no
+        """
+        config = yaml.final_commit_yaml(self.commit, self.org)
+        assert config["codecov"]["require_ci_to_pass"] is False

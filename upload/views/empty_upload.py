@@ -119,7 +119,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             owner = request.user
         elif isinstance(request.user, RepositoryAsUser):
             # repository token
-            owner = request.user._repository.owner
+            owner = request.user._repository.author
 
         yaml = final_commit_yaml(commit, owner).to_dict()
         token = try_to_get_best_possible_bot_token(repo)
