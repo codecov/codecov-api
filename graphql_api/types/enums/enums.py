@@ -13,6 +13,12 @@ class OrderingParameter(enum.Enum):
     LINES = "lines"
 
 
+class TestResultsFilterParameter(enum.Enum):
+    FLAKY_TESTS = "flaky_tests"
+    FAILED_TESTS = "failed_tests"
+    SLOWEST_TESTS = "slowest_tests"
+
+
 class TestResultsOrderingParameter(enum.Enum):
     LAST_DURATION = "last_duration"
     AVG_DURATION = "avg_duration"
