@@ -113,7 +113,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 status=status.HTTP_200_OK,
             )
 
-        # Depending on the authen class used, the request.user may need to be converted to a Owner
+        # Depending on the authentication class used, the request.user may need to be converted to a Owner
         owner = request.user
         if isinstance(request.user, RepositoryAsUser):
             owner = request.user._repository.author
