@@ -18,6 +18,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
     repo_auth_custom_exception_handler,
 )
+from codecov_auth.authentication.types import RepositoryAsUser
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
@@ -112,7 +113,12 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 status=status.HTTP_200_OK,
             )
 
-        yaml = final_commit_yaml(commit, request.user).to_dict()
+        # Depending on the authentication class used, the request.user may need to be converted to a Owner
+        owner = request.user
+        if isinstance(request.user, RepositoryAsUser):
+            owner = request.user._repository.author
+
+        yaml = final_commit_yaml(commit, owner).to_dict()
         token = try_to_get_best_possible_bot_token(repo)
         provider = RepoProviderService().get_adapter(repo.author, repo, token=token)
         pull_id = commit.pullid
