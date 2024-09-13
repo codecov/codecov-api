@@ -39,11 +39,12 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
         # have various exceptions, which we do not care about to get the final
         # yaml used for a commit, as any error here, the codecov.yaml would not
         # be used, so we return None here
+
         log.warning(
             f"Was not able to fetch yaml file for commit. Ignoring error and returning None. Exception: {e}",
             extra={
                 "commit_id": commit.commitid,
-                "owner": owner,
+                "owner_arg": type(owner),
             },
         )
         return None
