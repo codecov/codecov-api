@@ -30,9 +30,10 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
     # Previously this issue is masked by the catch all exception handling. Most badly typed calls have
     # been addressed, but there might still be some entrypoints unaccounted for, will fix new discoveries
     # from this assertion being raised.
-    assert owner is None or isinstance(
-        owner, Owner
-    ), f"fetch_commit_yaml owner arg must be Owner or None. Provided: {type(owner)}"
+    if owner is not None and not isinstance(owner, Owner):
+        raise TypeError(
+            f"fetch_commit_yaml owner arg must be Owner or None. Provided: {type(owner)}"
+        )
 
     try:
         repository_service = RepoProviderService().get_adapter(

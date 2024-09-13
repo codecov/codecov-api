@@ -40,7 +40,7 @@ class YamlServiceTest(TransactionTestCase):
           notify:
             require_ci_to_pass: no
         """
-        with pytest.raises(AssertionError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             yaml.final_commit_yaml(self.commit, "something else")
         assert (
             str(exc_info.value)
