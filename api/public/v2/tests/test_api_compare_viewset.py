@@ -627,16 +627,11 @@ class TestCompareViewSetRetrieve(APITestCase):
         new_callable=PropertyMock,
     )
     @patch(
-        "services.comparison.PullRequestComparison.allow_coverage_offsets",
-        new_callable=PropertyMock,
-    )
-    @patch(
         "services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff"
     )
     def test_pull_request_pseudo_comparison_can_update_base_report(
         self,
         update_base_report_mock,
-        allow_coverage_offsets_mock,
         pseudo_diff_adjusts_tracked_lines_mock,
         adapter_mock,
         base_report_mock,
@@ -645,8 +640,6 @@ class TestCompareViewSetRetrieve(APITestCase):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
-
-        allow_coverage_offsets_mock.return_value = True
 
         pseudo_diff_adjusts_tracked_lines_mock.return_value = True
 
