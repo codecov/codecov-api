@@ -1,0 +1,14 @@
+union SetTokensRequiredError =
+    UnauthenticatedError
+  | UnauthorizedError
+  | ValidationError
+
+type SetTokensRequiredPayload {
+  error: SetTokensRequiredError
+  tokensRequired: Boolean!
+}
+
+input SetTokensRequiredInput {
+  org_username: String!
+  tokensRequired: Boolean!
+}
