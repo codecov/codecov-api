@@ -1132,21 +1132,6 @@ class PullRequestComparison(Comparison):
         ) and bool(self.pull.compared_to)
 
     @cached_property
-    def allow_coverage_offsets(self):
-        """
-        Returns True if "coverage offsets" are allowed, False if not, according
-        to repository yaml settings or app yaml settings if not defined in repository
-        yaml settings.
-        """
-        return walk(
-            _dict=self.pull.repository.yaml,
-            keys=("codecov", "allow_coverage_offsets"),
-            _else=get_config(
-                ("site", "codecov", "allow_coverage_offsets"), default=False
-            ),
-        )
-
-    @cached_property
     def pseudo_diff(self):
         """
         Returns the diff between the 'self.pull.compared_to' field and the

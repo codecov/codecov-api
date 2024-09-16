@@ -1125,41 +1125,6 @@ class PullRequestComparisonTests(TestCase):
             comparison = PullRequestComparison(owner, pull)
             assert comparison.is_pseudo_comparison is False
 
-    @patch("services.comparison.get_config")
-    def test_allow_coverage_offsets(self, get_config_mock):
-        owner = OwnerFactory()
-        repository = RepositoryFactory(author=owner)
-        pull = PullFactory(
-            pullid=44,
-            repository=repository,
-            compared_to=CommitFactory(repository=repository).commitid,
-            head=CommitFactory(repository=repository).commitid,
-            base=CommitFactory(repository=repository).commitid,
-        )
-
-        with self.subTest("returns result in repo yaml if exists"):
-            repository.yaml = {"codecov": {"allow_coverage_offsets": True}}
-            repository.save()
-            comparison = PullRequestComparison(owner, pull)
-            assert comparison.allow_coverage_offsets is True
-
-            repository.yaml = {"codecov": {"allow_coverage_offsets": False}}
-            repository.save()
-            comparison = PullRequestComparison(owner, pull)
-            assert comparison.allow_coverage_offsets is False
-
-        repository.yaml = None
-        repository.save()
-
-        with self.subTest("returns app settings value if exists, True if not"):
-            get_config_mock.return_value = True
-            comparison = PullRequestComparison(owner, pull)
-            assert comparison.allow_coverage_offsets is True
-
-            get_config_mock.return_value = False
-            comparison = PullRequestComparison(owner, pull)
-            assert comparison.allow_coverage_offsets is False
-
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_pseudo_diff_returns_diff_between_base_and_compared_to(
         self, get_adapter_mock
