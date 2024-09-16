@@ -362,3 +362,7 @@ def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
         )
 
     return list(queryset.values_list("name", flat=True))
+@owner_bindable.field("tokensRequired")
+@require_part_of_org
+def resolve_tokens_required(owner: Owner, info) -> bool | None:
+    return owner.tokens_required

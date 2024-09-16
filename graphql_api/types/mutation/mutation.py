@@ -38,6 +38,7 @@ from .save_terms_agreement import (
     error_save_terms_agreement,
     resolve_save_terms_agreement,
 )
+from .set_tokens_required import error_set_tokens_required, resolve_set_tokens_required
 from .set_yaml_on_owner import error_set_yaml_error, resolve_set_yaml_on_owner
 from .start_trial import error_start_trial, resolve_start_trial
 from .store_event_metrics import error_store_event_metrics, resolve_store_event_metrics
@@ -94,6 +95,7 @@ mutation_bindable.field("encodeSecretString")(resolve_encode_secret_string)
 mutation_bindable.field("storeEventMetric")(resolve_store_event_metrics)
 
 mutation_bindable.field("saveOktaConfig")(resolve_save_okta_config)
+mutation_bindable.field("setTokensRequired")(resolve_set_tokens_required)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -122,4 +124,5 @@ mutation_resolvers = [
     error_encode_secret_string,
     error_store_event_metrics,
     error_save_okta_config,
+    error_set_tokens_required,
 ]

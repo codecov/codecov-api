@@ -11,7 +11,11 @@ from shared.django_apps.codecov_auth.tests.factories import OktaSettingsFactory
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
-from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
+from codecov.commands.exceptions import (
+    MissingService,
+    Unauthenticated,
+    UnauthorizedGuestAccess,
+)
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
 from codecov_auth.tests.factories import (
     AccountFactory,
@@ -950,3 +954,27 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (self.owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
+    def test_set_tokens_required(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """
+        mutation {
+            setTokensRequired(input: { org_username: "sample-owner", tokensRequired: true }) {
+                tokensRequired
+            }
+        }
+        """
+        data = self.gql_request(query, owner=owner)
+        assert data["setTokensRequired"]["tokensRequired"] == True
+
+    def test_set_tokens_required_unauthenticated_returns_None(self):
+        OwnerFactory(username="sample-owner", service="github")
+        query = """
+        mutation {
+            setTokensRequired(input: { org_username: "sample-owner", tokensRequired: true }) {
+                tokensRequired
+            }
+        }
+        """
+        data = self.gql_request(query, with_errors=True)
+        assert data["errors"][0]["message"] == Unauthenticated.message
+        assert data["setTokensRequired"] is None
