@@ -726,6 +726,73 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         assert dataset
         trigger_backfill.assert_called_once_with(dataset)
 
+    @patch("timeseries.models.Dataset.is_backfilled")
+    @patch("timeseries.helpers.trigger_backfill")
+    @patch("timeseries.models.Dataset.objects.get_or_create")
+    def test_backfill_trigger_on_dataset_creation(
+        self, mock_get_or_create, mock_trigger_backfill, mock_is_backfilled
+    ):
+        mock_is_backfilled.return_value = False
+        mock_get_or_create.return_value = (Dataset(), True)
+
+        CommitFactory(
+            commitid="commit1",
+            repository_id=self.repo.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "80.00"},
+        )
+
+        # Invoke the logic
+        repository_coverage_measurements_with_fallback(
+            self.repo,
+            Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+
+        # Ensure get_or_create was called with the expected arguments
+        mock_get_or_create.assert_called_once_with(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        # Ensure trigger_backfill was called when a new Dataset was created
+        mock_trigger_backfill.assert_called_once_with(
+            mock_get_or_create.return_value[0]
+        )
+
+    @patch("timeseries.models.Dataset.is_backfilled")
+    @patch("timeseries.helpers.trigger_backfill")
+    @patch("timeseries.models.Dataset.objects.get_or_create")
+    def test_backfill_not_triggered_if_no_dataset_creation(
+        self, mock_get_or_create, mock_trigger_backfill, mock_is_backfilled
+    ):
+        mock_is_backfilled.return_value = False
+        mock_get_or_create.return_value = (Dataset(), False)
+
+        CommitFactory(
+            commitid="commit1",
+            repository_id=self.repo.pk,
+            branch="master",
+            timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            totals={"c": "80.00"},
+        )
+
+        repository_coverage_measurements_with_fallback(
+            self.repo,
+            Interval.INTERVAL_1_DAY,
+            start_date=datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+        )
+
+        mock_get_or_create.assert_called_once_with(
+            name=MeasurementName.COVERAGE.value,
+            repository_id=self.repo.pk,
+        )
+
+        mock_trigger_backfill.assert_not_called()
+
 
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
