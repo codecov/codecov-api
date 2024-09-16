@@ -24,7 +24,7 @@ from shared.django_apps.reports.models import (
     Flake,
 )
 
-thirty_days_ago = dt.date.today() - dt.timedelta(days=30)
+thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
 
 SLOW_TEST_PERCENTILE = 95
 
@@ -174,17 +174,36 @@ def generate_test_results(
     return aggregation_of_test_results
 
 
-def generate_test_results_aggregates(
-    repoid: int, history: dt.timedelta | None = None
-) -> dict[str, float | int] | None:
-    repo = Repository.objects.get(repoid=repoid)
-    time_ago = (
-        (dt.datetime.now(dt.UTC) - history) if history is not None else thirty_days_ago
+def percent_diff(a: int | float, b: int | float) -> int | float:
+    c = (a - b) / b * 100
+    return c
+
+
+def helper(
+    ls: list[str],
+    curr_numbers: dict[str, int | float],
+    past_numbers: dict[str, int | float],
+) -> dict[str, int | float]:
+    diff_dict = {}
+
+    for s in ls:
+        if past_numbers.get(s):
+            diff_dict[f"{s}_percent_change"] = percent_diff(
+                curr_numbers[s], past_numbers[s]
+            )
+
+    return diff_dict
+
+
+def get_test_results_aggregate_numbers(
+    repo: Repository, since: dt.datetime, until: dt.datetime | None = None
+) -> dict[str, float | int]:
+    totals = DailyTestRollup.objects.filter(
+        repoid=repo.repoid, date__gt=since, branch=repo.branch
     )
 
-    totals = DailyTestRollup.objects.filter(
-        repoid=repoid, date__gt=time_ago, branch=repo.branch
-    )
+    if until:
+        totals = totals.filter(date__lte=until)
 
     num_tests = totals.distinct("test_id").count()
 
@@ -218,33 +237,65 @@ def generate_test_results_aggregates(
         fails=Sum("fail_count"),
     )
 
-    if test_headers:
-        return test_headers[0]
-    else:
-        return None
+    return test_headers[0] if len(test_headers) > 0 else {}
 
 
-def generate_flake_aggregates(
+def generate_test_results_aggregates(
     repoid: int, history: dt.timedelta | None = None
-) -> dict[str, int | float]:
+) -> dict[str, float | int] | None:
     repo = Repository.objects.get(repoid=repoid)
-    time_ago = (dt.date.today() - history) if history is not None else thirty_days_ago
-
-    flakes = Flake.objects.filter(
-        Q(repository_id=repoid)
-        & (Q(end_date__date__isnull=True) | Q(end_date__date__gt=time_ago))
+    time_ago = (
+        (dt.datetime.now(dt.UTC) - history) if history is not None else thirty_days_ago
     )
 
+    curr_numbers = get_test_results_aggregate_numbers(repo, time_ago)
+
+    double_time_ago = time_ago - (
+        history if history is not None else dt.timedelta(days=30)
+    )
+
+    past_numbers = get_test_results_aggregate_numbers(repo, double_time_ago, time_ago)
+
+    return curr_numbers | helper(
+        ["total_run_time", "slowest_tests_duration", "skips", "fails"],
+        curr_numbers,
+        past_numbers,
+    )
+
+
+def get_flake_aggregate_numbers(
+    repo: Repository, since: dt.datetime, until: dt.datetime | None = None
+) -> dict[str, int | float]:
+    if until is None:
+        flakes = Flake.objects.filter(
+            Q(repository_id=repo.repoid)
+            & (Q(end_date__isnull=True) | Q(end_date__date__gt=since.date()))
+        )
+    else:
+        flakes = Flake.objects.filter(
+            Q(repository_id=repo.repoid)
+            & (Q(end_date__date__lte=until.date()) & Q(end_date__date__gt=since.date()))
+        )
+
+    print(until, since)
     flake_count = flakes.count()
+    print(flakes.count(), len(flakes))
 
     test_ids = [flake.test_id for flake in flakes]
 
     test_rollups = DailyTestRollup.objects.filter(
-        repoid=repoid,
-        date__gt=time_ago,
+        repoid=repo.repoid,
+        date__gt=since.date(),
         branch=repo.branch,
         test_id__in=test_ids,
     )
+    if until:
+        test_rollups = test_rollups.filter(date__lte=until.date())
+
+    if len(test_rollups) == 0:
+        assert 0 == 2
+        return {"flake_count": 0, "flake_rate": 0}
+
     numerator = 0
     denominator = 0
     for test_rollup in test_rollups:
@@ -257,3 +308,28 @@ def generate_flake_aggregates(
         flake_rate = numerator / denominator
 
     return {"flake_count": flake_count, "flake_rate": flake_rate}
+
+
+def generate_flake_aggregates(
+    repoid: int, history: dt.timedelta | None = None
+) -> dict[str, int | float]:
+    repo = Repository.objects.get(repoid=repoid)
+    time_ago = (
+        (dt.datetime.today() - history) if history is not None else thirty_days_ago
+    )
+
+    curr_numbers = get_flake_aggregate_numbers(repo, time_ago)
+
+    double_time_ago = time_ago - (
+        history if history is not None else dt.timedelta(days=30)
+    )
+
+    past_numbers = get_flake_aggregate_numbers(repo, double_time_ago, time_ago)
+
+    print(past_numbers)
+
+    return curr_numbers | helper(
+        ["flake_count", "flake_rate"],
+        curr_numbers,
+        past_numbers,
+    )

@@ -33,3 +33,23 @@ def resolve_total_fails(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> in
 @test_results_aggregates_bindable.field("totalSkips")
 def resolve_total_skips(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
     return obj["skips"]
+
+
+@test_results_aggregates_bindable.field("totalRunTimePercentChange")
+def resolve_run_time_percent_change(obj, _) -> float | None:
+    return obj.get("total_run_time_percent_change")
+
+
+@test_results_aggregates_bindable.field("slowestTestsRunTimePercentChange")
+def resolve_slowest_tests_run_time_percent_change(obj, _) -> float | None:
+    return obj.get("slowest_tests_duration_percent_change")
+
+
+@test_results_aggregates_bindable.field("totalFailsPercentChange")
+def resolve_total_fails_percent_change(obj, _) -> float | None:
+    return obj.get("fails_percent_change")
+
+
+@test_results_aggregates_bindable.field("totalSkipsPercentChange")
+def resolve_total_skips_percent_change(obj, _) -> float | None:
+    return obj.get("skips_percent_change")

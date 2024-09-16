@@ -1295,7 +1295,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    def test_flake_rate_ordering_on_test_results(self) -> None:
+    def test_flake_rate_filtering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
         _ = DailyTestRollupFactory(
@@ -1380,25 +1380,78 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author=self.owner, active=True, private=True, branch="main"
         )
 
-        for i in range(0, 100):
+        for i in range(0, 30):
             test = TestFactory(repository=repo)
             _ = DailyTestRollupFactory(
                 test=test,
                 repoid=repo.repoid,
                 branch="main",
-                fail_count=1 if i % 5 == 0 else 0,
-                skip_count=1 if i % 10 == 0 else 0,
+                fail_count=1 if i % 3 == 0 else 0,
+                skip_count=1 if i % 6 == 0 else 0,
                 pass_count=1,
                 avg_duration_seconds=float(i),
                 last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+
+        for i in range(30, 60):
+            test = TestFactory(repository=repo)
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                fail_count=1 if i % 6 == 0 else 0,
+                skip_count=1 if i % 3 == 0 else 0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=(i)),
             )
         res = self.fetch_repository(
             repo.name,
-            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
+            """testResultsHeaders { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
-        assert res["testResultsAggregates"] == {
-            "totalRunTime": 5900.0,
-            "slowestTestsRunTime": 580.0,
-            "totalFails": 20,
-            "totalSkips": 10,
+        assert res["testResultsHeaders"] == {
+            "totalRunTime": 580.0,
+            "slowestTestsRunTime": 54.0,
+            "totalFails": 10,
+            "totalSkips": 5,
+            "totalRunTimePercentChange": -62.76083467094703,
+            "slowestTestsRunTimePercentChange": -50.0,
+            "totalFailsPercentChange": 100.0,
+            "totalSkipsPercentChange": -50.0,
+        }
+
+    def test_test_results_aggregates_no_history(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, branch="main"
+        )
+
+        for i in range(0, 30):
+            test = TestFactory(repository=repo)
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                fail_count=1 if i % 3 == 0 else 0,
+                skip_count=1 if i % 6 == 0 else 0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+
+        res = self.fetch_repository(
+            repo.name,
+            """testResultsHeaders { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+        )
+        assert res["testResultsHeaders"] == {
+            "totalRunTime": 580.0,
+            "slowestTestsRunTime": 54.0,
+            "totalFails": 10,
+            "totalSkips": 5,
+            "totalRunTimePercentChange": None,
+            "slowestTestsRunTimePercentChange": None,
+            "totalFailsPercentChange": None,
+            "totalSkipsPercentChange": None,
         }

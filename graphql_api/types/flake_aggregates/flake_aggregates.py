@@ -19,3 +19,13 @@ def resolve_flake_count(obj: FlakeAggregate, _: GraphQLResolveInfo) -> int:
 @flake_aggregates_bindable.field("flakeRate")
 def resolve_flake_rate(obj: FlakeAggregate, _: GraphQLResolveInfo) -> float:
     return obj["flake_rate"]
+
+
+@flake_aggregates_bindable.field("flakeCountPercentChange")
+def resolve_flake_count_percent_change(obj, _) -> float | None:
+    return obj.get("flake_count_percent_change")
+
+
+@flake_aggregates_bindable.field("flakeRatePercentChange")
+def resolve_flake_rate_percent_change(obj, _) -> float | None:
+    return obj.get("flake_rate_percent_change")
