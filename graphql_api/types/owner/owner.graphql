@@ -37,4 +37,6 @@ type Owner {
   ): RepositoryConnection! @cost(complexity: 25, multipliers: ["first", "last"])
   username: String
   yaml: String
+  aiFeaturesEnabled: Boolean!
+  aiEnabledRepos: [String]
 }
