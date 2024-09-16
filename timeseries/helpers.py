@@ -354,11 +354,12 @@ def repository_coverage_measurements_with_fallback(
     else:
         if settings.TIMESERIES_ENABLED and not dataset:
             # we need to backfill
-            dataset = Dataset.objects.create(
+            dataset, created = Dataset.objects.get_or_create(
                 name=MeasurementName.COVERAGE.value,
                 repository_id=repository.pk,
             )
-            trigger_backfill(dataset)
+            if created:
+                trigger_backfill(dataset)
 
         # we're still backfilling or timeseries is disabled
         return coverage_fallback_query(
