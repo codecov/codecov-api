@@ -155,6 +155,7 @@ class CoverageViewSetTests(APITestCase):
         ]
 
         build_report_from_commit.assert_called_once_with(self.commit1)
+        commit_components_mock.assert_called_once_with(self.commit1, self.current_owner)
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_sha(self, build_report_from_commit):
@@ -314,6 +315,7 @@ class CoverageViewSetTests(APITestCase):
         build_report_from_commit.return_value = sample_report()
         res = self._tree(components="ComponentOne")
         assert res.json() == []
+        commit_components_mock.assert_called_once_with(self.commit1, self.current_owner)
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.components.commit_components")
@@ -332,6 +334,7 @@ class CoverageViewSetTests(APITestCase):
         build_report_from_commit.return_value = sample_report()
         res = self._tree(components="Does_not_exist")
         assert res.status_code == 404
+        commit_components_mock.assert_called_once_with(self.commit1, self.current_owner)
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_tree_no_data_for_flags(self, build_report_from_commit):

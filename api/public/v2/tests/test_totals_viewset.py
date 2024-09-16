@@ -617,6 +617,7 @@ class TotalsViewSetTestCase(TestCase):
         build_report_from_commit.return_value = sample_report()
 
         res = self._request_report(component_id="foo")
+        commit_components.assert_called_once_with(self.commit1, self.org)
         assert res.status_code == 200
         assert res.json() == {
             "totals": {
