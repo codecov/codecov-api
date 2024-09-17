@@ -4,6 +4,7 @@ from django.urls import reverse
 from freezegun import freeze_time
 from rest_framework import status
 
+from django.test import override_settings
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
@@ -127,6 +128,109 @@ class TestResultsViewsetTests(InternalAPITest):
             )
         )
         assert res.status_code == status.HTTP_200_OK
+        assert res.json() == {
+            "id": self.test_instances[0].id,
+            "name": self.test_instances[0].test.name,
+            "test_id": self.test_instances[0].test_id,
+            "failure_message": self.test_instances[0].failure_message,
+            "duration_seconds": self.test_instances[0].duration_seconds,
+            "commitid": self.test_instances[0].commitid,
+            "outcome": self.test_instances[0].outcome,
+            "branch": self.test_instances[0].branch,
+            "repoid": self.test_instances[0].repoid,
+            "failure_rate": self.test_instances[0].test.failure_rate,
+            "commits_where_fail": self.test_instances[0].test.commits_where_fail,
+        }
+
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    @patch("api.shared.permissions.SuperTokenPermissions.has_permission")
+    def test_no_test_result_if_unauthenticated_token_request(
+        self,
+        super_token_permissions_has_permission,
+        repository_artifact_permisssions_has_permission,
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        super_token_permissions_has_permission.return_value = False
+
+        url = reverse(
+            "api-v2-tests-results-list",
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "repo_name": self.repo.name,
+            },
+        )
+        res = self.client.get(f"{url}?commit_id={self.test_instances[0].commitid}")
+
+        assert res.status_code == 403
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_no_result_if_not_super_token_nor_user_token(
+        self, repository_artifact_permisssions_has_permission
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        
+        res = self.client.get(
+            reverse(
+                "api-v2-tests-results-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pk": self.test_instances[0].pk,
+                },
+            ),
+            HTTP_AUTHORIZATION=f"Bearer 73c8d301-2e0b-42c0-9ace-95eef6b68e86"
+        )
+        assert res.status_code == 401
+        assert res.data["detail"] == "Invalid token."
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_no_result_if_super_token_but_no_GET_request(
+        self, repository_artifact_permisssions_has_permission
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        res = self.client.post(
+            reverse(
+                "api-v2-tests-results-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pk": self.test_instances[0].pk,
+                },
+            ),
+            HTTP_AUTHORIZATION=f"Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r"
+        )
+        assert res.status_code == 403
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_result_with_valid_super_token(
+        self, repository_artifact_permisssions_has_permission
+    ):
+        repository_artifact_permisssions_has_permission.return_value = False
+        res = self.client.get(
+            reverse(
+                "api-v2-tests-results-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pk": self.test_instances[0].pk,
+                },
+            ),
+            HTTP_AUTHORIZATION=f"Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r"
+        )
+        assert res.status_code == 200
         assert res.json() == {
             "id": self.test_instances[0].id,
             "name": self.test_instances[0].test.name,
