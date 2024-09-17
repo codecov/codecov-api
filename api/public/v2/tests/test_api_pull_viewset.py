@@ -224,7 +224,6 @@ class PullViewsetTests(InternalAPITest):
                 },
             )
         )
-        print(res)
         assert res.status_code == 403
         assert (
             res.data["detail"] == "You do not have permission to perform this action."
