@@ -49,12 +49,12 @@ def aggregate_test_results(
 ) -> QuerySet:
     """
     Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
-    The fields it calculates are: the test failure rate, commits where this test failed, and average duration of the test.
+    The fields it calculates are: the test failure rate, commits where this test failed, last duration and average duration of the test.
 
     :param repoid: repoid of the repository we want to calculate aggregates for
     :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into account.
     :param history: optional timedelta field for filtering test instances used to calculated the aggregates by time, the test instances used will be those with a created at larger than now - history.
-    :returns: dictionary mapping test id to dictionary containing
+    :returns: queryset object containing list of dictionaries of results
 
     """
     time_ago = (
@@ -73,8 +73,6 @@ def aggregate_test_results(
         )
 
     totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=time_ago)
-
-    print([(t.pass_count, t.fail_count) for t in totals], branch)
 
     if branch is not None:
         totals = totals.filter(branch=branch)
@@ -107,7 +105,5 @@ def aggregate_test_results(
         avg_duration=Avg("avg_duration_seconds"),
         name=F("test__name"),
     )
-
-    print(aggregation_of_test_results.query)
 
     return aggregation_of_test_results
