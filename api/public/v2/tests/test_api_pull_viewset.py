@@ -232,7 +232,7 @@ class PullViewsetTests(InternalAPITest):
 
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
-    def test_no_report_if_not_super_token_nor_user_token(
+    def test_no_pull_if_not_super_token_nor_user_token(
         self, repository_artifact_permisssions_has_permission
     ):
         repository_artifact_permisssions_has_permission.return_value = False
