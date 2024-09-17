@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
+from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
 
-from django.test import override_settings
 from codecov.tests.base_test import InternalAPITest
 from codecov_auth.tests.factories import OwnerFactory
 from core.models import Pull
@@ -236,7 +236,7 @@ class PullViewsetTests(InternalAPITest):
         self, repository_artifact_permisssions_has_permission
     ):
         repository_artifact_permisssions_has_permission.return_value = False
-        
+
         res = self.client.get(
             reverse(
                 "api-v2-pulls-detail",
@@ -247,7 +247,7 @@ class PullViewsetTests(InternalAPITest):
                     "pullid": self.pulls[0].pullid,
                 },
             ),
-            HTTP_AUTHORIZATION=f"Bearer 73c8d301-2e0b-42c0-9ace-95eef6b68e86"
+            HTTP_AUTHORIZATION="Bearer 73c8d301-2e0b-42c0-9ace-95eef6b68e86",
         )
         assert res.status_code == 401
         assert res.data["detail"] == "Invalid token."
@@ -268,7 +268,7 @@ class PullViewsetTests(InternalAPITest):
                     "pullid": self.pulls[0].pullid,
                 },
             ),
-            HTTP_AUTHORIZATION=f"Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r"
+            HTTP_AUTHORIZATION="Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r",
         )
         assert res.status_code == 403
         assert (
@@ -291,7 +291,7 @@ class PullViewsetTests(InternalAPITest):
                     "pullid": self.pulls[0].pullid,
                 },
             ),
-            HTTP_AUTHORIZATION=f"Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r"
+            HTTP_AUTHORIZATION="Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r",
         )
         assert res.status_code == 200
         assert res.json() == {
@@ -304,4 +304,3 @@ class PullViewsetTests(InternalAPITest):
             "ci_passed": None,
             "author": None,
         }
-
