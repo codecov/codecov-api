@@ -147,9 +147,9 @@ class TestResultsViewsetTests(InternalAPITest):
     def test_no_test_result_if_unauthenticated_token_request(
         self,
         super_token_permissions_has_permission,
-        repository_artifact_permisssions_has_permission,
+        repository_artifact_permissions_has_permission,
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
         super_token_permissions_has_permission.return_value = False
 
         url = reverse(
@@ -170,9 +170,9 @@ class TestResultsViewsetTests(InternalAPITest):
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_result_if_not_super_token_nor_user_token(
-        self, repository_artifact_permisssions_has_permission
+        self, repository_artifact_permissions_has_permission
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
 
         res = self.client.get(
             reverse(
@@ -192,9 +192,9 @@ class TestResultsViewsetTests(InternalAPITest):
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_result_if_super_token_but_no_GET_request(
-        self, repository_artifact_permisssions_has_permission
+        self, repository_artifact_permissions_has_permission
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
         res = self.client.post(
             reverse(
                 "api-v2-tests-results-detail",
@@ -215,9 +215,9 @@ class TestResultsViewsetTests(InternalAPITest):
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_result_with_valid_super_token(
-        self, repository_artifact_permisssions_has_permission
+        self, repository_artifact_permissions_has_permission
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
         res = self.client.get(
             reverse(
                 "api-v2-tests-results-detail",

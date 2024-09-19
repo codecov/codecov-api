@@ -580,10 +580,10 @@ class TotalsViewSetTestCase(TestCase):
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_report_if_unauthenticated_token_request(
         self,
-        repository_artifact_permisssions_has_permission,
+        repository_artifact_permissions_has_permission,
         _,
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
 
         res = self._request_report()
         assert res.status_code == 403
