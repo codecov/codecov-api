@@ -3,9 +3,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 
 from api.shared.mixins import RepoPropertyMixin
-from api.shared.permissions import RepositoryArtifactPermissions
+from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions
+from codecov_auth.authentication import (
+    SuperTokenAuthentication,
+    UserTokenAuthentication,
+)
 from reports.models import TestInstance
 
 from .serializers import TestInstanceSerializer
@@ -69,8 +74,15 @@ class TestResultsView(
     mixins.RetrieveModelMixin,
     RepoPropertyMixin,
 ):
+    authentication_classes = [
+        SuperTokenAuthentication,
+        UserTokenAuthentication,
+        BasicAuthentication,
+        SessionAuthentication,
+    ]
+
     serializer_class = TestInstanceSerializer
-    permission_classes = [RepositoryArtifactPermissions]
+    permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TestResultsFilters
 

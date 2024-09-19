@@ -2,10 +2,16 @@ import django_filters
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 
 from api.public.v2.schema import repo_parameters
 from api.shared.pagination import PaginationMixin
+from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions
 from api.shared.pull.mixins import PullViewSetMixin
+from codecov_auth.authentication import (
+    SuperTokenAuthentication,
+    UserTokenAuthentication,
+)
 from core.models import Pull, PullStates
 
 from .serializers import PullSerializer
@@ -26,6 +32,15 @@ class PullViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
 ):
+    authentication_classes = [
+        SuperTokenAuthentication,
+        UserTokenAuthentication,
+        BasicAuthentication,
+        SessionAuthentication,
+    ]
+
+    permission_classes = [SuperTokenPermissions | RepositoryArtifactPermissions]
+
     serializer_class = PullSerializer
     queryset = Pull.objects.none()
     filterset_class = PullFilters

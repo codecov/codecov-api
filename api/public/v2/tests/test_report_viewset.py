@@ -742,11 +742,11 @@ class ReportViewSetTestCase(TestCase):
     def test_no_report_if_unauthenticated_token_request(
         self,
         super_token_permissions_has_permission,
-        repository_artifact_permisssions_has_permission,
+        repository_artifact_permissions_has_permission,
         _,
     ):
         super_token_permissions_has_permission.return_value = False
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
 
         res = self._request_report()
         assert res.status_code == 403
@@ -757,9 +757,9 @@ class ReportViewSetTestCase(TestCase):
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_report_if_not_super_token_nor_user_token(
-        self, repository_artifact_permisssions_has_permission, _
+        self, repository_artifact_permissions_has_permission, _
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
         res = self._request_report("73c8d301-2e0b-42c0-9ace-95eef6b68e86")
         assert res.status_code == 401
         assert res.data["detail"] == "Invalid token."
@@ -767,9 +767,9 @@ class ReportViewSetTestCase(TestCase):
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_report_if_super_token_but_no_GET_request(
-        self, repository_artifact_permisssions_has_permission, _
+        self, repository_artifact_permissions_has_permission, _
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
         res = self._post_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
         assert res.status_code == 403
         assert (
