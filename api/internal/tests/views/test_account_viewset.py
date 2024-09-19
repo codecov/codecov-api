@@ -45,6 +45,10 @@ class MockSubscription(object):
         if customer_coupon:
             self.customer["discount"] = {"coupon": customer_coupon}
 
+        pending_update = subscription_params.get("pending_update")
+        if pending_update:
+            self.pending_update = pending_update
+
     def __getitem__(self, key):
         return getattr(self, key)
 
@@ -755,6 +759,7 @@ class AccountViewSetTests(APITestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        modify_subscription_mock.return_value = MockSubscription(subscription_params)
 
         response = self._update(
             kwargs={
@@ -773,6 +778,69 @@ class AccountViewSetTests(APITestCase):
         self.current_owner.refresh_from_db()
         assert self.current_owner.plan == desired_plan["value"]
         assert self.current_owner.plan_user_count == desired_plan["quantity"]
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Subscription.modify")
+    def test_upgrade_payment_failure(
+        self, modify_subscription_mock, retrieve_subscription_mock
+    ):
+        desired_plan = {"value": PlanName.CODECOV_PRO_MONTHLY.value, "quantity": 12}
+        self.current_owner.stripe_customer_id = "flsoe"
+        self.current_owner.stripe_subscription_id = "djfos"
+        self.current_owner.plan = PlanName.CODECOV_PRO_MONTHLY.value
+        self.current_owner.plan_user_count = 8
+        self.current_owner.delinquent = False
+        self.current_owner.save()
+
+        f = open("./services/tests/samples/stripe_invoice.json")
+
+        default_payment_method = {
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+                "should be": "removed",
+            }
+        }
+        subscription_params = {
+            "default_payment_method": default_payment_method,
+            "latest_invoice": json.load(f)["data"][0],
+            "schedule_id": None,
+            "collection_method": "charge_automatically",
+            "tax_ids": None,
+            "pending_update": {
+                "expires_at": 1571194285,
+                "subscription_items": [
+                    {
+                        "id": "si_09IkI4u3ZypJUk5onGUZpe8O",
+                        "price": "price_CBb6IXqvTLXp3f",
+                    }
+                ],
+            },
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        modify_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        response = self._update(
+            kwargs={
+                "service": self.current_owner.service,
+                "owner_username": self.current_owner.username,
+            },
+            data={"plan": desired_plan},
+        )
+
+        modify_subscription_mock.assert_called_once()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["plan"]["value"] == desired_plan["value"]
+        assert response.data["plan"]["quantity"] == 8
+
+        self.current_owner.refresh_from_db()
+        assert self.current_owner.plan == desired_plan["value"]
+        assert self.current_owner.plan_user_count == 8
+        assert self.current_owner.delinquent == True
 
     def test_update_requires_quantity_if_updating_to_paid_plan(self):
         desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value}
