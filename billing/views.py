@@ -1,8 +1,8 @@
 import logging
 
-from django.db.models import QuerySet
 import stripe
 from django.conf import settings
+from django.db.models import QuerySet
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -128,12 +128,14 @@ class StripeWebhookHandler(APIView):
                 ),
             )
 
-    def subscription_schedule_released(self, schedule: stripe.SubscriptionSchedule) -> None:
+    def subscription_schedule_released(
+        self, schedule: stripe.SubscriptionSchedule
+    ) -> None:
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
         print(schedule)
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
-            stripe_customer_id=subscription.customer
+            stripe_customer_id=subscription.customer,
         )
         if not owners.exists():
             log.error(
@@ -165,7 +167,6 @@ class StripeWebhookHandler(APIView):
                 requesting_user_id=requesting_user_id,
             ),
         )
-
 
     def customer_created(self, customer: stripe.Customer) -> None:
         # Based on what stripe doesn't gives us (an ownerid!)

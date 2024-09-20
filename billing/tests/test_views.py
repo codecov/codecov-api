@@ -47,13 +47,12 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
     # Creates a second owner that shares billing details with self.owner.
-    # This is used to test the case where owners are manually set to share a 
+    # This is used to test the case where owners are manually set to share a
     # subscription in Stripe.
     def add_second_owner(self):
         self.other_owner = OwnerFactory(
             stripe_customer_id="cus_123", stripe_subscription_id="sub_123"
         )
-
 
     def _send_event(self, payload, errorSig=None):
         timestamp = time.time_ns()
@@ -275,7 +274,8 @@ class StripeWebhookHandlerTests(APITestCase):
             self.owner.repository_set.filter(activated=True, active=True).count() == 3
         )
         assert (
-            self.other_owner.repository_set.filter(activated=True, active=True).count() == 3
+            self.other_owner.repository_set.filter(activated=True, active=True).count()
+            == 3
         )
 
         self._send_event(
@@ -295,7 +295,10 @@ class StripeWebhookHandlerTests(APITestCase):
             self.owner.repository_set.filter(activated=False, active=False).count() == 3
         )
         assert (
-            self.other_owner.repository_set.filter(activated=False, active=False).count() == 3
+            self.other_owner.repository_set.filter(
+                activated=False, active=False
+            ).count()
+            == 3
         )
 
     @patch("logging.Logger.info")
@@ -668,7 +671,8 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.other_owner.plan_auto_activate == False
         assert self.other_owner.stripe_subscription_id is None
         assert (
-            self.other_owner.repository_set.filter(active=True, activated=True).count() == 0
+            self.other_owner.repository_set.filter(active=True, activated=True).count()
+            == 0
         )
         pm_mock.assert_called_once_with(
             "pm_1LhiRsGlVGuVgOrkQguJXdeV", customer=self.owner.stripe_customer_id
@@ -840,7 +844,10 @@ class StripeWebhookHandlerTests(APITestCase):
         self.other_owner.refresh_from_db()
         assert self.owner.plan == settings.STRIPE_PLAN_VALS[self.new_params["new_plan"]]
         assert self.owner.plan_user_count == self.new_params["new_quantity"]
-        assert self.other_owner.plan == settings.STRIPE_PLAN_VALS[self.new_params["new_plan"]]
+        assert (
+            self.other_owner.plan
+            == settings.STRIPE_PLAN_VALS[self.new_params["new_plan"]]
+        )
         assert self.other_owner.plan_user_count == self.new_params["new_quantity"]
 
     @patch("services.billing.stripe.Subscription.retrieve")
