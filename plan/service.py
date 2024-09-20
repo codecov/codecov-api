@@ -53,6 +53,7 @@ class PlanService:
         self.current_org.plan = name
         self.current_org.plan_user_count = user_count
         self._plan_data = USER_PLAN_REPRESENTATIONS[self.current_org.plan]
+        self.current_org.delinquent = False
         self.current_org.save()
 
     def current_org(self) -> Owner:

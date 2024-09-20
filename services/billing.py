@@ -30,7 +30,7 @@ def _log_stripe_error(method):
         try:
             return method(*args, **kwargs)
         except stripe.StripeError as e:
-            log.warning(e.user_message)
+            log.warning(f"StripeError raised: {e.user_message}")
             raise
 
     return catch_and_raise

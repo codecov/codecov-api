@@ -1,6 +1,7 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import requests
 from django.conf import settings
 from django.test import TestCase
 from stripe import InvalidRequestError
@@ -541,6 +542,39 @@ class StripeServiceTests(TestCase):
         owner.refresh_from_db()
         assert owner.plan == desired_plan_name
         assert owner.plan_user_count == desired_user_count
+        assert owner.delinquent == False
+
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_but_stripe_is_broken(
+        self, retrieve_subscription_mock, subscription_modify_mock
+    ):
+        owner = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_YEARLY.value,
+            plan_user_count=10,
+            stripe_subscription_id="33043sdf",
+            delinquent=False,
+        )
+        subscription_params = {
+            "schedule_id": None,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": PlanName.CODECOV_PRO_YEARLY.value,
+            "id": 105,
+        }
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        subscription_modify_mock.side_effect = requests.exceptions.Timeout
+
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 100}
+        with self.assertRaises(requests.exceptions.Timeout):
+            # if stripe is erroring, it will pop up on sentry
+            self.stripe.modify_subscription(owner, desired_plan)
+
+        owner.refresh_from_db()
+        assert owner.plan == PlanName.CODECOV_PRO_YEARLY.value
+        assert owner.plan_user_count == 10
         assert owner.delinquent == False
 
     @patch("services.billing.stripe.Subscription.modify")
