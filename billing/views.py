@@ -38,12 +38,12 @@ class StripeWebhookHandler(APIView):
                 stripe_subscription_id=invoice.subscription,
             ),
         )
-        updated: QuerySet[Owner] = Owner.objects.filter(
+        updated: int = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription,
         ).update(delinquent=False)
 
-        self._log_updated(updated.count())
+        self._log_updated(updated)
 
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         log.info(
@@ -53,11 +53,11 @@ class StripeWebhookHandler(APIView):
                 stripe_subscription_id=invoice.subscription,
             ),
         )
-        updated: QuerySet[Owner] = Owner.objects.filter(
+        updated: int = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription,
         ).update(delinquent=True)
-        self._log_updated(updated.count())
+        self._log_updated(updated)
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         log.info(
