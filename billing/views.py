@@ -1,5 +1,6 @@
 import logging
 
+from django.http import HttpRequest
 import stripe
 from django.conf import settings
 from django.db.models import QuerySet
@@ -23,7 +24,7 @@ log = logging.getLogger(__name__)
 class StripeWebhookHandler(APIView):
     permission_classes = [AllowAny]
 
-    def _log_updated(self, updated) -> None:
+    def _log_updated(self, updated: int) -> None:
         if updated >= 1:
             log.info(f"Successfully updated info for {updated} customer(s)")
         else:
@@ -42,7 +43,7 @@ class StripeWebhookHandler(APIView):
             stripe_subscription_id=invoice.subscription,
         ).update(delinquent=False)
 
-        self._log_updated(updated)
+        self._log_updated(updated.count())
 
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         log.info(
@@ -52,11 +53,11 @@ class StripeWebhookHandler(APIView):
                 stripe_subscription_id=invoice.subscription,
             ),
         )
-        updated = Owner.objects.filter(
+        updated: QuerySet[Owner] = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription,
         ).update(delinquent=True)
-        self._log_updated(updated)
+        self._log_updated(updated.count())
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         log.info(
@@ -85,7 +86,7 @@ class StripeWebhookHandler(APIView):
             plan_service.set_default_plan_data()
             owner.repository_set.update(active=False, activated=False)
 
-        self._log_updated(len(owners))
+        self._log_updated(owners.count())
 
     def subscription_schedule_created(
         self, schedule: stripe.SubscriptionSchedule
@@ -356,7 +357,7 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated(1)
 
-    def post(self, request, *args, **kwargs) -> Response:
+    def post(self, request: HttpRequest, *args, **kwargs) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."
