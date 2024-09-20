@@ -63,6 +63,7 @@ class TestBundleComparison(TestCase):
             bundle_name="bundle1",
             change_type=BundleChange.ChangeType.ADDED,
             size_delta=1000000,
+            percentage_delta=0.0,
         )
 
         bundle_comparison = BundleComparison(
