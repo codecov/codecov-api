@@ -236,7 +236,7 @@ class ScheduleDetailSerializer(serializers.Serializer):
                 extra=dict(
                     ownerid=schedule.metadata.obo_organization,
                     requesting_user_id=schedule.metadata.obo,
-                    phases=schedule["phases"]
+                    phases=schedule["phases"],
                 ),
             )
             return None
