@@ -222,9 +222,20 @@ class StripeWebhookHandler(APIView):
             stripe_customer_id=subscription.customer,
         )
 
+        indication_of_payment_failure = getattr(subscription, "pending_update", None)
+        if indication_of_payment_failure:
+            # payment failed, raise this to user by setting as delinquent
+            owner.delinquent = True
+            owner.save()
+            log.info(
+                f"Stripe subscription upgrade failed for owner {owner.ownerid}",
+                extra=dict(pending_update=indication_of_payment_failure),
+            )
+            return
+
         # Properly attach the payment method on the customer
-        # This hook will be called after a checkout session completes, updating the subscription created
-        # with it
+        # This hook will be called after a checkout session completes,
+        # updating the subscription created with it
         default_payment_method = subscription.default_payment_method
         if default_payment_method and owner.stripe_customer_id is not None:
             stripe.PaymentMethod.attach(
@@ -235,11 +246,9 @@ class StripeWebhookHandler(APIView):
                 invoice_settings={"default_payment_method": default_payment_method},
             )
 
-        subscription_schedule_id = subscription.schedule
-        plan_service = PlanService(current_org=owner)
-
         # Only update if there isn't a scheduled subscription
-        if not subscription_schedule_id:
+        if not subscription.schedule:
+            plan_service = PlanService(current_org=owner)
             if subscription.status == "incomplete_expired":
                 log.info(
                     "Subscription status updated to incomplete_expired, cancelling to free",
@@ -267,9 +276,7 @@ class StripeWebhookHandler(APIView):
                 return
 
             plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
-
             plan_service.update_plan(name=plan_name, user_count=subscription.quantity)
-
             log.info(
                 "Successfully updated customer subscription",
                 extra=dict(

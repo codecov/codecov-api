@@ -30,7 +30,7 @@ def _log_stripe_error(method):
         try:
             return method(*args, **kwargs)
         except stripe.StripeError as e:
-            log.warning(e.user_message)
+            log.warning(f"StripeError raised: {e.user_message}")
             raise
 
     return catch_and_raise
@@ -225,7 +225,7 @@ class StripeService(AbstractPaymentService):
             log.info(
                 f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
             )
-            stripe.Subscription.modify(
+            subscription = stripe.Subscription.modify(
                 owner.stripe_subscription_id,
                 cancel_at_period_end=False,
                 items=[
@@ -237,16 +237,31 @@ class StripeService(AbstractPaymentService):
                 ],
                 metadata=self._get_checkout_session_and_subscription_metadata(owner),
                 proration_behavior=proration_behavior,
+                payment_behavior="pending_if_incomplete",
             )
-
-            plan_service = PlanService(current_org=owner)
-            plan_service.update_plan(
-                name=desired_plan["value"], user_count=desired_plan["quantity"]
-            )
-
             log.info(
-                f"Stripe subscription modified successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                f"Stripe subscription upgrade attempted for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
             )
+            indication_of_payment_failure = getattr(
+                subscription, "pending_update", None
+            )
+            if indication_of_payment_failure:
+                # payment failed, raise this to user by setting as delinquent
+                owner.delinquent = True
+                owner.save()
+                log.info(
+                    f"Stripe subscription upgrade failed for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+                    extra=dict(pending_update=indication_of_payment_failure),
+                )
+            else:
+                # payment successful
+                plan_service = PlanService(current_org=owner)
+                plan_service.update_plan(
+                    name=desired_plan["value"], user_count=desired_plan["quantity"]
+                )
+                log.info(
+                    f"Stripe subscription upgraded successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                )
         else:
             if not subscription_schedule_id:
                 schedule = stripe.SubscriptionSchedule.create(
@@ -431,7 +446,7 @@ class StripeService(AbstractPaymentService):
             owner.stripe_subscription_id, default_payment_method=payment_method
         )
         log.info(
-            "Successfully updated payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
+            f"Successfully updated payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
             extra=dict(
                 owner_id=owner.ownerid,
                 user_id=self.requesting_user.ownerid,
