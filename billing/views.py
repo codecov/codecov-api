@@ -86,7 +86,7 @@ class StripeWebhookHandler(APIView):
             return
 
         for owner in owners:
-            plan_service = PlanService(owner)
+            plan_service = PlanService(current_org=owner)
             plan_service.set_default_plan_data()
             owner.repository_set.update(active=False, activated=False)
 
@@ -155,7 +155,7 @@ class StripeWebhookHandler(APIView):
         sub_item_plan_id = subscription.plan.id
         plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
         for owner in owners:
-            plan_service = PlanService(owner)
+            plan_service = PlanService(current_org=owner)
             plan_service.update_plan(name=plan_name, user_count=subscription.quantity)
 
         requesting_user_id = subscription.metadata.get("obo")
@@ -298,7 +298,7 @@ class StripeWebhookHandler(APIView):
 
         owner_ids = []
         for owner in owners:
-            plan_service = PlanService(owner)
+            plan_service = PlanService(current_org=owner)
             if incomplete_expired:
                 plan_service.set_default_plan_data()
                 owner.repository_set.update(active=False, activated=False)
