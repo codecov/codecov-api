@@ -774,6 +774,37 @@ class StripeWebhookHandlerTests(APITestCase):
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
         )
 
+    @patch("logging.Logger.error")
+    def test_customer_subscription_updated_logs_error_if_no_matching_owners(
+        self, log_error_mock
+    ):
+        self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": "sub_notexist",
+                        "customer": "cus_notexist",
+                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "metadata": {"obo_organization": 1},
+                        "quantity": 8,
+                        "status": "active",
+                        "schedule": None,
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
+                    }
+                },
+            }
+        )
+
+        log_error_mock.assert_called_with(
+            "Subscription update requested with invalid plan",
+            extra={
+                "stripe_subscription_id": "sub_notexist",
+                "stripe_customer_id": "cus_notexist",
+                "plan_id": "plan_H6P16wij3lUuxg",
+            },
+        )
+
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_subscription_schedule_released_updates_owner_with_existing_subscription(
         self, retrieve_subscription_mock
@@ -849,6 +880,43 @@ class StripeWebhookHandlerTests(APITestCase):
             == settings.STRIPE_PLAN_VALS[self.new_params["new_plan"]]
         )
         assert self.other_owner.plan_user_count == self.new_params["new_quantity"]
+
+    @patch("logging.Logger.error")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_subscription_schedule_released_logs_error_if_owner_does_not_exist(
+        self,
+        retrieve_subscription_mock,
+        log_error_mock,
+    ):
+        self.new_params = {
+            "new_plan": "plan_H6P3KZXwmAbqPS",
+            "new_quantity": 7,
+            "subscription_id": "sub_notexist",
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(
+            self.owner, self.new_params
+        )
+
+        self._send_event(
+            payload={
+                "type": "subscription_schedule.released",
+                "data": {
+                    "object": {
+                        "released_subscription": "sub_sched_1K8xfkGlVGuVgOrkxvroyZdH"
+                    }
+                },
+            }
+        )
+
+        log_error_mock.assert_called_with(
+            "Subscription schedule released requested with invalid subscription",
+            extra={
+                "stripe_subscription_id": "sub_notexist",
+                "stripe_customer_id": "cus_123",
+                "plan_id": "plan_H6P3KZXwmAbqPS",
+            },
+        )
 
     @patch("services.billing.stripe.Subscription.retrieve")
     def test_subscription_schedule_created_logs_a_new_schedule(
