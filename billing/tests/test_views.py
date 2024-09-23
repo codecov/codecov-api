@@ -491,10 +491,11 @@ class StripeWebhookHandlerTests(APITestCase):
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
         )
 
+    @patch("logging.Logger.info")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_does_not_change_subscription_if_there_is_a_schedule(
-        self, c_mock, pm_mock
+        self, c_mock, pm_mock, log_info_mock
     ):
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
@@ -508,7 +509,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "?"},
+                        "plan": {"id": "plan_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
@@ -529,6 +530,11 @@ class StripeWebhookHandlerTests(APITestCase):
         c_mock.assert_called_once_with(
             self.owner.stripe_customer_id,
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
+        )
+
+        log_info_mock.assert_called_once_with(
+            "Stripe webhook event received",
+            extra={"stripe_webhook_event": "customer.subscription.updated"},
         )
 
     @patch("services.billing.stripe.PaymentMethod.attach")

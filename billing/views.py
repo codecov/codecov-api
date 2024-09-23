@@ -31,8 +31,6 @@ class StripeWebhookHandler(APIView):
                 f"Successfully updated info for {len(updated)} owner(s)",
                 extra=dict(owners=[owner.ownerid for owner in updated]),
             )
-        else:
-            log.warning("Could not find owner associated with customer")
 
     def invoice_payment_succeeded(self, invoice: stripe.Invoice) -> None:
         log.info(
