@@ -270,6 +270,9 @@ class StripeWebhookHandlerTests(APITestCase):
         RepositoryFactory(author=self.other_owner, activated=True, active=True)
         RepositoryFactory(author=self.other_owner, activated=True, active=True)
 
+        self.owner.refresh_from_db()
+        self.other_owner.refresh_from_db()
+
         assert (
             self.owner.repository_set.filter(activated=True, active=True).count() == 3
         )
@@ -797,7 +800,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         log_error_mock.assert_called_with(
-            "Subscription update requested with invalid plan",
+            "Subscription update requested with for plan attached to no owners",
             extra={
                 "stripe_subscription_id": "sub_notexist",
                 "stripe_customer_id": "cus_notexist",
