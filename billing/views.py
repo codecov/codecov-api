@@ -133,7 +133,6 @@ class StripeWebhookHandler(APIView):
         self, schedule: stripe.SubscriptionSchedule
     ) -> None:
         subscription = stripe.Subscription.retrieve(schedule["released_subscription"])
-        print(schedule)
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
