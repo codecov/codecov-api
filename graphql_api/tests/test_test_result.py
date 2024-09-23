@@ -5,7 +5,11 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from reports.tests.factories import DailyTestRollupFactory, TestFactory
+from reports.tests.factories import (
+    DailyTestRollupFactory,
+    TestFactory,
+    TestFlagBridgeFactory,
+)
 
 from .helper import GraphQLTestHelper
 
@@ -21,6 +25,17 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             name="Test\x1fName",
             repository=self.repository,
         )
+
+        self.test_with_flag = TestFactory(
+            name="Other Test",
+            repository=self.repository,
+        )
+
+        flag = RepositoryFlagFactory(
+            repository=self.repository, flag_name="test_flag_name"
+        )
+
+        bridge = TestFlagBridgeFactory(repository=self.repository, flag=flag)
 
         _ = DailyTestRollupFactory(
             test=self.test,
@@ -42,6 +57,14 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             date=date.today(),
             last_duration_seconds=5.0,
             avg_duration_seconds=3,
+            latest_run=datetime.now(),
+        )
+        _ = DailyTestRollupFactory(
+            test=self.test_with_flag,
+            commits_where_fail=["456"],
+            date=date.today(),
+            last_duration_seconds=10.0,
+            avg_duration_seconds=5,
             latest_run=datetime.now(),
         )
 

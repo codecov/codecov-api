@@ -22,6 +22,7 @@ from shared.django_apps.core.models import Repository
 from shared.django_apps.reports.models import (
     DailyTestRollup,
     Flake,
+    TestFlagBridge,
 )
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
@@ -63,6 +64,8 @@ def generate_test_results(
     branch: str | None = None,
     history: dt.timedelta = dt.timedelta(days=30),
     parameter: GENERATE_TEST_RESULT_PARAM | None = None,
+    testsuites: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> QuerySet:
     """
     Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
@@ -80,6 +83,19 @@ def generate_test_results(
 
     if branch is not None:
         totals = totals.filter(branch=branch)
+
+    if testsuites is not None:
+        totals = totals.filter(test__testsuite__in=testsuites)
+
+    if flags is not None:
+        # we're going to have to do the filtering in python somehow
+        bridges = TestFlagBridge.objects.select_related("flag").filter(
+            flag__flag_name__in=flags
+        )
+
+        test_ids = [bridge.test_id for bridge in bridges]
+
+        totals = totals.filter(test_id__in=test_ids)
 
     match parameter:
         case GENERATE_TEST_RESULT_PARAM.FLAKY:

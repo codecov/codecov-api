@@ -143,3 +143,11 @@ class DailyTestRollupFactory(factory.django.DjangoModelFactory):
     date = date.today()
 
     commits_where_fail = ["123", "456", "789"]
+
+
+class TestFlagBridgeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = models.TestFlagBridge
+
+    test = factory.SubFactory(TestFactory)
+    flag = factory.SubFactory(RepositoryFlagFactory)
