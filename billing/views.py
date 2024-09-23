@@ -299,13 +299,18 @@ class StripeWebhookHandler(APIView):
             return
 
         owner_ids = []
-        if incomplete_expired:
-            for owner in owners:
-                plan_service = PlanService(owner)
+        for owner in owners:
+            plan_service = PlanService(owner)
+            if incomplete_expired:
                 plan_service.set_default_plan_data()
                 owner.repository_set.update(active=False, activated=False)
-                owner_ids.append(owner.ownerid)
+            else:
+                plan_service.update_plan(
+                    name=plan_name, user_count=subscription.quantity
+                )
+            owner_ids.append(owner.ownerid)
 
+        if incomplete_expired:
             log.info(
                 "Subscription status updated to incomplete_expired, cancelling to free",
                 extra=dict(
@@ -315,12 +320,6 @@ class StripeWebhookHandler(APIView):
                 ),
             )
             return
-
-        for owner in owners:
-            plan_service = PlanService(owner)
-            plan_service.update_plan(name=plan_name, user_count=subscription.quantity)
-            owner_ids.append(owner.ownerid)
-
         log.info(
             "Successfully updated customer subscription",
             extra=dict(
