@@ -57,25 +57,6 @@ lint.check:
 	echo "Formatting..."
 	ruff format --check
 
-# lint.branch lints only those files changed between this branch and main
-# this command can be removed once we implement a pre-commit runner
-# run it from a virtual env on your local machine - `cd <path/to/codecov-api>; python -m venv ./venv; source venv/bin/activate; pip-compile requirements.in; make lint.branch`
-lint.branch:
-	make lint.install
-	echo "Linting files touched in this branch..."
-	changed_files=$$(git diff --name-only origin/main -- '*.py'); \
-	if [ -n "$$changed_files" ]; then \
-	  ruff check $$changed_files --fix; \
-	else \
-	  echo "No Python files to lint."; \
-	fi
-	echo "Formatting files touched in this branch..."
-	if [ -n "$$changed_files" ]; then \
-	  ruff format $$changed_files --fix; \
-	else \
-	  echo "No Python files to format."; \
-	fi
-
 build.requirements:
 	# if docker pull succeeds, we have already build this version of
 	# requirements.txt.  Otherwise, build and push a version tagged

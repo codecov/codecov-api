@@ -35,26 +35,30 @@ indent-width = 4
 # Assume Python 3.12
 target-version = "py312"
 
-lint.select = [
-    "F", # pyflakes - general Python errors, undefined names
-    "I", # isort - import sorting
-    "E", # pycodestyle - error rules
-    "W", # pycodestyle - warning rules
-    "PLC", # pylint - convention rules
-    "PLE", # pylint - error rules
-    "PERF", # perflint
-    "SIM", # flake8-simplify - async checks, including SIM117
-    "PIE", # flake8-pie - best practices, including PIE804 for async checks
-]
-
-# Ignored linting rules
-lint.ignore = ["F405", "F403", "E501", "E712"]
+[lint]
+# Currently only enabled for F (Pyflakes), I (isort), E,W (pycodestyle:Error/Warning), PLC/PLE (Pylint:Convention/Error) 
+# and PERF (Perflint) rules: https://docs.astral.sh/ruff/rules/
+select = ["F", "I", "E", "W", "PLC", "PLE", "PERF"]
+ignore = ["F405", "F403", "E501", "E712"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 # The preferred method (for now) w.r.t. fixable rules is to manually update the makefile
 # with --fix and re-run 'make lint'
-lint.fixable = ["ALL"]
-lint.unfixable = []
+fixable = ["ALL"]
+unfixable = []
 
 # Allow unused variables when underscore-prefixed.
-lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"

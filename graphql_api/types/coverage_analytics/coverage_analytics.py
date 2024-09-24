@@ -29,7 +29,7 @@ class CoverageAnalyticsProps:
 
 @coverage_analytics_result_bindable.type_resolver
 def resolve_coverage_analytics_result_type(
-        obj: Union[CoverageAnalyticsProps, NotFoundError], *_: Any
+    obj: Union[CoverageAnalyticsProps, NotFoundError], *_: Any
 ) -> Optional[str]:
     if isinstance(obj, CoverageAnalyticsProps):
         return "CoverageAnalyticsProps"
@@ -40,49 +40,51 @@ def resolve_coverage_analytics_result_type(
 
 @coverage_analytics_bindable.field("percentCovered")
 def resolve_percent_covered(
-        parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
+    parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
 ) -> Optional[float]:
     return parent.repository.recent_coverage if parent else None
 
 
 @coverage_analytics_bindable.field("commitSha")
 def resolve_commit_sha(
-        parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
+    parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
 ) -> Optional[str]:
     return parent.repository.coverage_sha if parent else None
 
 
 @coverage_analytics_bindable.field("hits")
 def resolve_hits(
-        parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
+    parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
 ) -> Optional[int]:
     return parent.repository.hits if parent else None
 
 
 @coverage_analytics_bindable.field("misses")
 def resolve_misses(
-        parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
+    parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
 ) -> Optional[int]:
     return parent.repository.misses if parent else None
 
 
 @coverage_analytics_bindable.field("lines")
 def resolve_lines(
-        parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
+    parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
 ) -> Optional[int]:
     return parent.repository.lines if parent else None
 
 
 @coverage_analytics_bindable.field("measurements")
 async def resolve_measurements(
-        parent: CoverageAnalyticsProps,
-        info: GraphQLResolveInfo,
-        interval: Optional[Interval] = None,
-        before: Optional[datetime] = None,
-        after: Optional[datetime] = None,
-        branch: Optional[str] = None,
+    parent: CoverageAnalyticsProps,
+    info: GraphQLResolveInfo,
+    interval: Interval,
+    before: Optional[datetime] = None,
+    after: Optional[datetime] = None,
+    branch: Optional[str] = None,
 ) -> Iterable[MeasurementSummary]:
-    coverage_data = await sync_to_async(timeseries_helpers.repository_coverage_measurements_with_fallback)(
+    coverage_data = await sync_to_async(
+        timeseries_helpers.repository_coverage_measurements_with_fallback
+    )(
         parent.repository,
         interval,
         start_date=after,

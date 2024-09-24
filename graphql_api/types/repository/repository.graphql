@@ -47,7 +47,6 @@ type Repository {
     last: Int
     before: String
   ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
-  # flags to be removed with #2282
   flags(
     filters: FlagSetFilters
     orderingDirection: OrderingDirection
@@ -103,12 +102,7 @@ type Repository {
   ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
 
   "CoverageAnalytics are fields related to Codecov's Coverage product offering"
-  coverageAnalytics(
-    interval: MeasurementInterval
-    after: DateTime
-    before: DateTime
-    branch: String
-  ): CoverageAnalytics
+  coverageAnalytics: CoverageAnalytics
 }
 
 type TestResultConnection {

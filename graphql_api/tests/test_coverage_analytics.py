@@ -1,91 +1,106 @@
 import datetime
+from typing import Any, Dict, Optional
 
 from django.test import TransactionTestCase
 from django.utils import timezone
+from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
-from core.models import Repository
+from core.models import Commit, Repository
 from core.tests.factories import (
     CommitFactory,
     RepositoryFactory,
 )
-
-from .helper import GraphQLTestHelper
-
-query_coverage_analytics_base_fields = """
-query CoverageAnalytics($owner:String!, $repo: String!) {
-    owner(username:$owner) {
-      repository(name: $repo) {
-        __typename
-        ... on Repository {
-          name
-          coverageAnalytics {
-            %s
-          }
-        }
-        ... on ResolverError {
-          message
-        }
-      }
-    }
-}
-"""
-
-default_coverage_analytics_base_fields = """
-    percentCovered
-    commitSha
-    hits
-    misses
-    lines
-"""
+from graphql_api.tests.helper import GraphQLTestHelper
+from graphql_api.types.coverage_analytics.coverage_analytics import (
+    CoverageAnalyticsProps,
+    resolve_coverage_analytics_result_type,
+)
+from graphql_api.types.errors.errors import NotFoundError
 
 
-class TestFetchCoverageAnalyticsBaseFields(GraphQLTestHelper, TransactionTestCase):
-    def fetch_coverage_analytics(
-        self, repo_name, fields=None
-    ):
-        query = query_coverage_analytics_base_fields % (fields or default_coverage_analytics_base_fields)
-        variables = {"owner": "codecov-user", "repo": repo_name}
-        return self.gql_request(query=query, owner=self.owner, variables=variables)
-
-    def setUp(self):
+class TestFetchCoverageAnalytics(GraphQLTestHelper, TransactionTestCase):
+    # SETUP
+    def setUp(self) -> None:
         self.owner = OwnerFactory(username="codecov-user")
         self.yaml = {"test": "test"}
 
-    def test_coverage_analytics_base_fields(self):
-        # Create repo, commit, and coverage data
-        repo = RepositoryFactory(
+    # some field resolvers require access to postgres or timeseries db
+    databases = {"default", "timeseries"}
+
+    # HELPERS
+    def run_gql_query(self, query: str, variables: Dict[str, Any]) -> Dict[str, Any]:
+        owner = self.owner
+        # Use the gql_request method from the parent class (GraphQLTestHelper)
+        return super().gql_request(query=query, owner=owner, variables=variables)
+
+    def create_repository(self, name: str) -> Repository:
+        return RepositoryFactory(
             author=self.owner,
             active=True,
             private=True,
-            name="b",
+            name=name,
             yaml=self.yaml,
             language="erlang",
             languages=[],
         )
+
+    @staticmethod
+    def create_commit(
+        repository: Repository,
+        coverage_totals: Dict[str, int],
+        timestamp: Optional[datetime.datetime] = None,
+    ) -> Commit:
+        if timestamp is None:
+            timestamp = timezone.now()
+        return CommitFactory(
+            repository=repository, totals=coverage_totals, timestamp=timestamp
+        )
+
+    # TESTS
+    def test_coverage_analytics_base_fields(self) -> None:
+        """Test case where to fetch coverage analytics fields"""
+
+        # Create repo, commit, and coverage data
+        repo = self.create_repository("myname")
         hour_ago = timezone.make_aware(datetime.datetime(2020, 12, 31, 23, 0))
-        coverage_commit = CommitFactory(
+        coverage_commit = self.create_commit(
             repository=repo,
-            totals={"c": 75, "h": 30, "m": 10, "n": 40},
+            coverage_totals={"c": 75, "h": 30, "m": 10, "n": 40},
             timestamp=hour_ago,
         )
-        CommitFactory(repository=repo, totals={"c": 85})
-
-        # Update the timestamp and save to db
+        self.create_commit(repository=repo, coverage_totals={"c": 85})
         repo.updatestamp = timezone.now()
         repo.save()
-        self.assertTrue(
-            repo.pk, "Repository should be saved and have a primary key."
-        )
+        self.assertTrue(repo.pk, "Repository should be saved and have a primary key.")
 
-        # Query the db using the repository model
-        repo_from_db = Repository.objects.get(pk=repo.pk)
-        self.assertIsNotNone(repo_from_db.updatestamp)
+        # Set up the GraphQL query and run
+        query = """
+        query CoverageAnalytics($owner: String!, $repo: String!) {
+            owner(username: $owner) {
+                repository(name: $repo) {
+                    __typename
+                    ... on Repository {
+                        name
+                        coverageAnalytics {
+                            percentCovered
+                            commitSha
+                            hits
+                            misses
+                            lines
+                        }
+                    }
+                    ... on ResolverError {
+                        message
+                    }
+                }
+            }
+        }
+        """
+        variables = {"owner": self.owner.username, "repo": repo.name}
+        resp = self.run_gql_query(query=query, variables=variables)
 
-        # Fetch the coverage analytics data
-        coverage_analytics_data = self.fetch_coverage_analytics(repo.name)
-
-        # Define the expected response
+        # Assert the response matches
         expected_response = {
             "__typename": "Repository",
             "name": repo.name,
@@ -97,48 +112,212 @@ class TestFetchCoverageAnalyticsBaseFields(GraphQLTestHelper, TransactionTestCas
                 "lines": 40,
             },
         }
+        assert resp["owner"]["repository"] == expected_response
 
-        # Compare the actual data with the expected data
-        assert coverage_analytics_data["owner"]["repository"] == expected_response
+    def test_coverage_analytics_base_fields_partial(self) -> None:
+        """Test case where the query only expects one of the fields in CoverageAnalytics"""
 
-    def test_coverage_analytics_base_fields_partial(self):
-        repo = RepositoryFactory(
-            author=self.owner,
-            active=True,
-            private=True,
-            name="b",
-            yaml=self.yaml,
-            language="erlang",
-            languages=[],
-        )
+        # Create repo and a single commit
+        repo = self.create_repository("testtest")
         hour_ago = timezone.make_aware(datetime.datetime(2020, 12, 31, 23, 0))
-        CommitFactory(repository=repo, totals={"c": 75, "h": 30, "m": 10, "n": 40}, timestamp=hour_ago)
+        self.create_commit(
+            repository=repo,
+            coverage_totals={"c": 75, "h": 30, "m": 10, "n": 40},
+            timestamp=hour_ago,
+        )
         repo.updatestamp = timezone.now()
         repo.save()
+        self.assertTrue(repo.pk, "Repository should be saved and have a primary key.")
 
-        fields = "percentCovered"
-        coverage_data = self.fetch_coverage_analytics(repo.name, fields=fields)
-        print(coverage_data)
-        assert coverage_data["owner"]["repository"]["coverageAnalytics"]["percentCovered"] == 75
+        # Set up the GraphQL query and run - requests only the `percentCovered` field
+        query = """
+        query CoverageAnalytics($owner: String!, $repo: String!) {
+            owner(username: $owner) {
+                repository(name: $repo) {
+                    __typename
+                    ... on Repository {
+                        coverageAnalytics {
+                            percentCovered
+                        }
+                    }
+                    ... on ResolverError {
+                        message
+                    }
+                }
+            }
+        }
+        """
+        variables = {"owner": "codecov-user", "repo": repo.name}
+        resp = self.run_gql_query(query=query, variables=variables)
 
-    def test_coverage_analytics_no_commit(self):
+        # Assert the response matches the expected percentCovered value
+        assert resp["owner"]["repository"]["coverageAnalytics"]["percentCovered"] == 75
+
+    def test_coverage_analytics_no_commit(self) -> None:
         """Test case where no commits exist for coverage data"""
-        repo = RepositoryFactory(
-            author=self.owner,
-            active=True,
-            private=True,
-            name="empty-repo",
-            yaml=self.yaml,
-            language="erlang",
-            languages=[],
-        )
-        repo.save()
 
-        coverage_data = self.fetch_coverage_analytics(repo.name)
-        assert coverage_data["owner"]["repository"]["coverageAnalytics"] == {
+        # Create repo without commits
+        repo = self.create_repository("empty-repo")
+        repo.updatestamp = timezone.now()
+        repo.save()
+        self.assertTrue(repo.pk, "Repository should be saved and have a primary key.")
+
+        # Set up the GraphQL query and run
+        query = """
+        query CoverageAnalytics($owner: String!, $repo: String!) {
+            owner(username: $owner) {
+                repository(name: $repo) {
+                    __typename
+                    ... on Repository {
+                        coverageAnalytics {
+                            percentCovered
+                            commitSha
+                            hits
+                            misses
+                            lines
+                        }
+                    }
+                    ... on ResolverError {
+                        message
+                    }
+                }
+            }
+        }
+        """
+        variables = {"owner": "codecov-user", "repo": repo.name}
+        resp = self.run_gql_query(query=query, variables=variables)
+
+        # Assert the response matches the expected structure with `None` values
+        assert resp["owner"]["repository"]["coverageAnalytics"] == {
             "percentCovered": None,
             "commitSha": None,
             "hits": None,
             "misses": None,
             "lines": None,
         }
+
+    def test_coverage_analytics_resolves_to_error(self) -> None:
+        """Test case where the query resolves to an error (e.g., repository not found)"""
+
+        # Set up and run the query to simulate a repository that doesn't exist
+        query = """
+        query CoverageAnalytics($owner: String!, $repo: String!) {
+            owner(username: $owner) {
+                repository(name: $repo) {
+                    __typename
+                    ... on Repository {  # Use an inline fragment for the Repository type
+                        coverageAnalytics {
+                            percentCovered
+                        }
+                    }
+                    ... on ResolverError {
+                        message
+                    }
+                }
+            }
+        }
+        """
+        variables = {"owner": "codecov-user", "repo": "non-existent-repo"}
+        coverage_data = self.run_gql_query(query=query, variables=variables)
+
+        # Assert that the response resolves to an error
+        assert coverage_data["owner"]["repository"]["__typename"] == "NotFoundError"
+        assert coverage_data["owner"]["repository"]["message"] == "Not found"
+
+    @freeze_time("2022-01-02")
+    def test_coverage_analytics_with_interval(self):
+        """Test with interval argument to fetch coverage data in a specific time range"""
+
+        # Create data to populate the timeseries graph
+        repo = self.create_repository("test-repo")
+        one_day_ago = timezone.make_aware(datetime.datetime(2022, 1, 1, 0, 0))
+        self.create_commit(
+            repository=repo,
+            coverage_totals={"c": 65, "h": 20, "m": 5, "n": 25},
+            timestamp=one_day_ago,
+        )
+
+        two_days_ago = timezone.make_aware(datetime.datetime(2022, 1, 2, 0, 0))
+        self.create_commit(
+            repository=repo,
+            coverage_totals={"c": 75, "h": 30, "m": 10, "n": 40},
+            timestamp=two_days_ago,
+        )
+
+        repo.updatestamp = timezone.now()
+        repo.save()
+        self.assertTrue(repo.pk, "Repository should be saved and have a primary key.")
+
+        # Set up GraphQL query and run
+        query = """
+        query CoverageAnalytics($owner:String!, $repo: String!, $interval: MeasurementInterval!) {
+            owner(username:$owner) {
+                repository(name: $repo) {
+                    __typename
+                    ... on Repository {
+                        name
+                        coverageAnalytics {
+                            measurements(interval: $interval) {
+                                timestamp
+                                avg
+                                min
+                                max
+                            }
+                        }
+                    }
+                    ... on ResolverError {
+                        message
+                    }
+                }
+            }
+        }
+        """
+        variables = {
+            "owner": "codecov-user",
+            "repo": repo.name,
+            "interval": "INTERVAL_1_DAY",
+        }
+        resp = self.run_gql_query(query=query, variables=variables)
+
+        expected_response = {
+            "__typename": "Repository",
+            "name": repo.name,
+            "coverageAnalytics": {
+                "measurements": [
+                    {
+                        "avg": 65.0,
+                        "max": 65.0,
+                        "min": 65.0,
+                        "timestamp": "2022-01-01T00:00:00+00:00",
+                    },
+                    {
+                        "avg": 75.0,
+                        "max": 75.0,
+                        "min": 75.0,
+                        "timestamp": "2022-01-02T00:00:00+00:00",
+                    },
+                ]
+            },
+        }
+
+        assert resp["owner"]["repository"] == expected_response
+
+    def test_resolve_coverage_analytics_result_type_for_coverage_analytics_props(
+        self,
+    ) -> None:
+        """Test that the resolver returns 'CoverageAnalyticsProps' when passed a CoverageAnalyticsProps object"""
+        repo = self.create_repository("test")
+        coverage_analytics_props = CoverageAnalyticsProps(repository=repo)
+        result_type = resolve_coverage_analytics_result_type(coverage_analytics_props)
+        self.assertEqual(result_type, "CoverageAnalyticsProps")
+
+    def test_resolve_coverage_analytics_result_type_for_not_found_error(self) -> None:
+        """Test that the resolver returns 'NotFoundError' when passed a NotFoundError object"""
+        result_type = resolve_coverage_analytics_result_type(NotFoundError())
+        self.assertEqual(result_type, "NotFoundError")
+
+    def test_resolve_coverage_analytics_result_type_for_unexpected_type(self) -> None:
+        """Test that the resolver returns None when passed an object of an unexpected type"""
+        unexpected_object = "unexpected_string"
+        result_type = resolve_coverage_analytics_result_type(unexpected_object)
+        self.assertIsNone(result_type)

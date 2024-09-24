@@ -2,13 +2,14 @@ import logging
 from datetime import datetime
 from typing import Iterable, List, Mapping, Optional
 
+import shared.rate_limits as rate_limits
 import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
+from shared.yaml import UserYaml
 
-import shared.rate_limits as rate_limits
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
@@ -34,7 +35,6 @@ from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedErro
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
-from shared.yaml import UserYaml
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
 from utils.test_results import aggregate_test_results

@@ -443,6 +443,40 @@ class StripeWebhookHandlerTests(APITestCase):
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
         )
 
+    def test_customer_subscription_updated_payment_failed(self):
+        self.owner.delinquent = False
+        self.owner.save()
+
+        self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {"id": "?"},
+                        "metadata": {"obo_organization": self.owner.ownerid},
+                        "quantity": 20,
+                        "status": "active",
+                        "schedule": None,
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
+                        "pending_update": {
+                            "expires_at": 1571194285,
+                            "subscription_items": [
+                                {
+                                    "id": "si_09IkI4u3ZypJUk5onGUZpe8O",
+                                    "price": "price_CBb6IXqvTLXp3f",
+                                }
+                            ],
+                        },
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.delinquent == True
+
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_sets_fields_on_success(

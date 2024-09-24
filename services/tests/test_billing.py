@@ -1,6 +1,7 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import requests
 from django.conf import settings
 from django.test import TestCase
 from stripe import InvalidRequestError
@@ -147,6 +148,16 @@ class MockSubscription(object):
         return getattr(self, key)
 
 
+class MockFailedSubscriptionUpgrade(object):
+    def __init__(self, subscription_params):
+        self.id = subscription_params["id"]
+        self.object = subscription_params["object"]
+        self.pending_update = subscription_params["pending_update"]
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
 class StripeServiceTests(TestCase):
     def setUp(self):
         self.user = OwnerFactory()
@@ -178,6 +189,7 @@ class StripeServiceTests(TestCase):
                 "obo": self.user.ownerid,
             },
             proration_behavior="always_invoice",
+            payment_behavior="pending_if_incomplete",
         )
 
     def _assert_schedule_modify(
@@ -360,6 +372,7 @@ class StripeServiceTests(TestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        subscription_modify_mock.return_value = MockSubscription(subscription_params)
 
         desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 20
@@ -402,6 +415,7 @@ class StripeServiceTests(TestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        subscription_modify_mock.return_value = MockSubscription(subscription_params)
 
         desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 10
@@ -415,6 +429,153 @@ class StripeServiceTests(TestCase):
         owner.refresh_from_db()
         assert owner.plan == desired_plan_name
         assert owner.plan_user_count == desired_user_count
+
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_payment_failure(
+        self,
+        retrieve_subscription_mock,
+        subscription_modify_mock,
+    ):
+        original_user_count = 10
+        original_plan = PlanName.CODECOV_PRO_YEARLY.value
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id="33043sdf",
+            delinquent=False,
+        )
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 105,
+        }
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        subscription_response = {
+            "id": 105,
+            "object": "subscription",
+            "application_fee_percent": None,
+            "pending_update": {
+                "expires_at": 1571194285,
+                "subscription_items": [
+                    {
+                        "id": "si_09IkI4u3ZypJUk5onGUZpe8O",
+                        "price": "price_CBb6IXqvTLXp3f",
+                    }
+                ],
+            },
+        }
+        subscription_modify_mock.return_value = MockFailedSubscriptionUpgrade(
+            subscription_response
+        )
+
+        desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
+        desired_user_count = 20
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
+        )
+
+        # changes to plan are rejected, owner becomes delinquent
+        owner.refresh_from_db()
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == original_user_count
+        assert owner.delinquent == True
+
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_payment_no_false_positives(
+        self,
+        retrieve_subscription_mock,
+        subscription_modify_mock,
+    ):
+        original_user_count = 10
+        original_plan = PlanName.CODECOV_PRO_YEARLY.value
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id="33043sdf",
+            delinquent=False,
+        )
+        schedule_id = None
+        current_subscription_start_date = 1639628096
+        current_subscription_end_date = 1644107871
+        subscription_params = {
+            "schedule_id": schedule_id,
+            "start_date": current_subscription_start_date,
+            "end_date": current_subscription_end_date,
+            "quantity": original_user_count,
+            "name": original_plan,
+            "id": 105,
+        }
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        subscription_response = {
+            "id": 105,
+            "object": "subscription",
+            "application_fee_percent": None,
+            "pending_update": {},
+        }
+        subscription_modify_mock.return_value = MockFailedSubscriptionUpgrade(
+            subscription_response
+        )
+
+        desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
+        desired_user_count = 20
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        self._assert_subscription_modify(
+            subscription_modify_mock, owner, subscription_params, desired_plan
+        )
+
+        # plan is updated, owner is not delinquent
+        owner.refresh_from_db()
+        assert owner.plan == desired_plan_name
+        assert owner.plan_user_count == desired_user_count
+        assert owner.delinquent == False
+
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    def test_modify_subscription_but_stripe_is_broken(
+        self, retrieve_subscription_mock, subscription_modify_mock
+    ):
+        owner = OwnerFactory(
+            plan=PlanName.CODECOV_PRO_YEARLY.value,
+            plan_user_count=10,
+            stripe_subscription_id="33043sdf",
+            delinquent=False,
+        )
+        subscription_params = {
+            "schedule_id": None,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": PlanName.CODECOV_PRO_YEARLY.value,
+            "id": 105,
+        }
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+
+        subscription_modify_mock.side_effect = requests.exceptions.Timeout
+
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 100}
+        with self.assertRaises(requests.exceptions.Timeout):
+            # if stripe is erroring, it will pop up on sentry
+            self.stripe.modify_subscription(owner, desired_plan)
+
+        owner.refresh_from_db()
+        assert owner.plan == PlanName.CODECOV_PRO_YEARLY.value
+        assert owner.plan_user_count == 10
+        assert owner.delinquent == False
 
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -444,6 +605,7 @@ class StripeServiceTests(TestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        subscription_modify_mock.return_value = MockSubscription(subscription_params)
 
         desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 15
@@ -673,6 +835,7 @@ class StripeServiceTests(TestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        subscription_modify_mock.return_value = MockSubscription(subscription_params)
 
         desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 26
@@ -760,6 +923,7 @@ class StripeServiceTests(TestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        subscription_modify_mock.return_value = MockSubscription(subscription_params)
 
         desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 15
@@ -806,6 +970,7 @@ class StripeServiceTests(TestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        subscription_modify_mock.return_value = MockSubscription(subscription_params)
 
         desired_plan_name = PlanName.CODECOV_PRO_YEARLY.value
         desired_user_count = 10
@@ -851,6 +1016,7 @@ class StripeServiceTests(TestCase):
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        subscription_modify_mock.return_value = MockSubscription(subscription_params)
 
         desired_plan_name = PlanName.CODECOV_PRO_MONTHLY.value
         desired_user_count = 20
