@@ -256,11 +256,15 @@ class StripeWebhookHandler(APIView):
         indication_of_payment_failure = getattr(subscription, "pending_update", None)
         if indication_of_payment_failure:
             # payment failed, raise this to user by setting as delinquent
-            owner.delinquent = True
-            owner.save()
+            owners.update(delinquent=True)
             log.info(
-                f"Stripe subscription upgrade failed for owner {owner.ownerid}",
-                extra=dict(pending_update=indication_of_payment_failure),
+                f"Stripe subscription upgrade failed",
+                extra=dict(
+                    pending_update=indication_of_payment_failure,
+                    stripe_subscription_id=subscription.id,
+                    stripe_customer_id=subscription.customer,
+                    owners=[owner.ownerid for owner in owners]
+                ),
             )
             return
 
