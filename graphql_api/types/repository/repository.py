@@ -27,6 +27,9 @@ from graphql_api.helpers.connection import (
     queryset_to_connection_sync,
 )
 from graphql_api.helpers.lookahead import lookahead
+from graphql_api.types.coverage_analytics.coverage_analytics import (
+    CoverageAnalyticsProps,
+)
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.components import ComponentMeasurements
@@ -585,11 +588,23 @@ async def resolve_test_results(
 
     return await queryset_to_connection(
         queryset,
-        ordering=(ordering.get("parameter"), "name")
-        if ordering
-        else ("avg_duration", "name"),
-        ordering_direction=ordering.get("direction")
-        if ordering
-        else OrderingDirection.DESC,
+        ordering=(
+            (ordering.get("parameter"), "name")
+            if ordering
+            else ("avg_duration", "name")
+        ),
+        ordering_direction=(
+            ordering.get("direction") if ordering else OrderingDirection.DESC
+        ),
         **kwargs,
+    )
+
+
+@repository_bindable.field("coverageAnalytics")
+def resolve_coverage_analytics(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+) -> CoverageAnalyticsProps:
+    return CoverageAnalyticsProps(
+        repository=repository,
     )

@@ -1,13 +1,21 @@
+"""
+Repository is a named collection of files uploaded
+"""
 type Repository {
   isFirstPullRequest: Boolean!
   name: String!
   active: Boolean!
   activated: Boolean!
   private: Boolean!
+  # coverage to be removed with #2282
   coverage: Float
+  # coverageSha to be removed with #2282
   coverageSha: String
+  # hits to be removed with #2282
   hits: Int
+  # misses to be removed with #2282
   misses: Int
+  # lines to be removed with #2282
   lines: Int
   oldestCommitAt: DateTime
   latestCommitAt: DateTime
@@ -59,6 +67,7 @@ type Repository {
   componentsMeasurementsActive: Boolean!
   componentsMeasurementsBackfilled: Boolean!
   componentsCount: Int!
+  # (coverage) measurements to be removed with #2282
   measurements(
     interval: MeasurementInterval!
     after: DateTime
@@ -91,6 +100,9 @@ type Repository {
     last: Int
     before: String
   ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
+
+  "CoverageAnalytics are fields related to Codecov's Coverage product offering"
+  coverageAnalytics: CoverageAnalytics
 }
 
 type TestResultConnection {

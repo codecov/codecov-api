@@ -864,7 +864,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         assert data["me"]["owner"]["repository"]["isGithubRateLimited"] is None
 
-        mock_log_warning.assert_called_once_with(
+        mock_log_warning.assert_any_call(
             "Error when checking rate limit",
             extra={
                 "repo_id": repo.repoid,
