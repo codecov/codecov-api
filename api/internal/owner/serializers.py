@@ -230,12 +230,14 @@ class ScheduleDetailSerializer(serializers.Serializer):
             return StripeScheduledPhaseSerializer(schedule["phases"][-1]).data
         else:
             # This error represents the phases object not having 2 phases; we are interested in the 2nd entry within phases
-            # since it represents the scheduled phase
+            # since it represents the scheduled phase.
+            # It should not be possible for a schedule to have one phase, but we have seen certain cases where this is true
+            # after manual intervention on a subscription.
             log.error(
                 "Expecting schedule object to have 2 phases, returning None",
                 extra=dict(
-                    ownerid=schedule.metadata.obo_organization,
-                    requesting_user_id=schedule.metadata.obo,
+                    ownerid=schedule.metadata.get("obo_organization"),
+                    requesting_user_id=schedule.metadata.get("obo"),
                     phases=schedule.get("phases", "no phases"),
                 ),
             )

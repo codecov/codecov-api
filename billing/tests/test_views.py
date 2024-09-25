@@ -270,6 +270,9 @@ class StripeWebhookHandlerTests(APITestCase):
         RepositoryFactory(author=self.other_owner, activated=True, active=True)
         RepositoryFactory(author=self.other_owner, activated=True, active=True)
 
+        self.owner.refresh_from_db()
+        self.other_owner.refresh_from_db()
+
         assert (
             self.owner.repository_set.filter(activated=True, active=True).count() == 3
         )
