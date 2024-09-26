@@ -237,7 +237,9 @@ class StripeService(AbstractPaymentService):
                 ],
                 metadata=self._get_checkout_session_and_subscription_metadata(owner),
                 proration_behavior=proration_behavior,
-                payment_behavior="pending_if_incomplete",
+                # TODO: we need to include this arg, but it means we need to remove some of the existing args
+                # on the .modify() call https://docs.stripe.com/billing/subscriptions/pending-updates-reference
+                # payment_behavior="pending_if_incomplete",
             )
             log.info(
                 f"Stripe subscription upgrade attempted for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"

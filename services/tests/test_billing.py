@@ -189,7 +189,7 @@ class StripeServiceTests(TestCase):
                 "obo": self.user.ownerid,
             },
             proration_behavior="always_invoice",
-            payment_behavior="pending_if_incomplete",
+            # payment_behavior="pending_if_incomplete",
         )
 
     def _assert_schedule_modify(
