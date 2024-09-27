@@ -12,7 +12,7 @@ from .compare.views import CompareViewSet
 from .component.views import ComponentViewSet
 from .coverage.views import CoverageViewSet, FlagCoverageViewSet
 from .flag.views import FlagViewSet
-from .owner.views import OwnersViewSet, OwnerViewSet, UserViewSet
+from .owner.views import OwnersViewSet, OwnerViewSet, UserSessionViewSet, UserViewSet
 from .pull.views import PullViewSet
 from .repo.views import RepositoryConfigView, RepositoryViewSet
 from .report.views import FileReportViewSet, ReportViewSet, TotalsViewSet
@@ -26,6 +26,9 @@ owners_router.register(r"", OwnerViewSet, basename="api-v2-owners")
 
 owner_artifacts_router = OptionalTrailingSlashRouter()
 owner_artifacts_router.register(r"users", UserViewSet, basename="api-v2-users")
+owner_artifacts_router.register(
+    r"user-sessions", UserSessionViewSet, basename="api-v2-user-sessions"
+)
 
 repository_router = OptionalTrailingSlashRouter()
 repository_router.register(r"repos", RepositoryViewSet, basename="api-v2-repos")
