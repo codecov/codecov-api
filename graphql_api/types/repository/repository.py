@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Iterable, List, Mapping, Optional
+from typing import List, Mapping, Optional
 
 import shared.rate_limits as rate_limits
 import yaml
@@ -10,7 +10,6 @@ from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
 from shared.yaml import UserYaml
 
-import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
 from core.models import Branch, Repository
@@ -35,8 +34,7 @@ from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedErro
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
-from timeseries.helpers import fill_sparse_measurements
-from timeseries.models import Dataset, Interval, MeasurementName, MeasurementSummary
+from timeseries.models import Dataset, Interval, MeasurementName
 from utils.test_results import aggregate_test_results
 
 log = logging.getLogger(__name__)
@@ -60,31 +58,6 @@ def resolve_oldest_commit_at(
         return repository.oldest_commit_at
     else:
         return None
-
-
-@repository_bindable.field("coverage")
-def resolve_coverage(repository: Repository, info: GraphQLResolveInfo):
-    return repository.recent_coverage
-
-
-@repository_bindable.field("coverageSha")
-def resolve_coverage_sha(repository: Repository, info: GraphQLResolveInfo):
-    return repository.coverage_sha
-
-
-@repository_bindable.field("hits")
-def resolve_hits(repository: Repository, info: GraphQLResolveInfo) -> Optional[int]:
-    return repository.hits
-
-
-@repository_bindable.field("misses")
-def resolve_misses(repository: Repository, info: GraphQLResolveInfo) -> Optional[int]:
-    return repository.misses
-
-
-@repository_bindable.field("lines")
-def resolve_lines(repository: Repository, info: GraphQLResolveInfo) -> Optional[int]:
-    return repository.lines
 
 
 @repository_bindable.field("branch")
@@ -372,30 +345,6 @@ def resolve_is_ats_configured(repository: Repository, info: GraphQLResolveInfo) 
     # flags. To use Automated Test Selection, a flag is required with Carryforward mode "labels".
     individual_flags = repository.yaml["flag_management"].get("individual_flags", {})
     return individual_flags.get("carryforward_mode") == "labels"
-
-
-@repository_bindable.field("measurements")
-@sync_to_async
-def resolve_measurements(
-    repository: Repository,
-    info: GraphQLResolveInfo,
-    interval: Interval,
-    before: Optional[datetime] = None,
-    after: Optional[datetime] = None,
-    branch: Optional[str] = None,
-) -> Iterable[MeasurementSummary]:
-    return fill_sparse_measurements(
-        timeseries_helpers.repository_coverage_measurements_with_fallback(
-            repository,
-            interval,
-            start_date=after,
-            end_date=before,
-            branch=branch,
-        ),
-        interval,
-        start_date=after,
-        end_date=before,
-    )
 
 
 @repository_bindable.field("repositoryConfig")

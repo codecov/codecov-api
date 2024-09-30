@@ -52,11 +52,6 @@ query Repositories($repoNames: [String!]!) {
 
 default_fields = """
     name
-    coverage
-    coverageSha
-    hits
-    misses
-    lines
     active
     private
     updatedAt
@@ -121,11 +116,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "name": "a",
             "active": True,
             "private": True,
-            "coverage": None,
-            "coverageSha": None,
-            "hits": None,
-            "misses": None,
-            "lines": None,
             "latestCommitAt": None,
             "oldestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
@@ -174,18 +164,24 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             repository_id=repo.repoid, token_type="profiling"
         ).key
         graphToken = repo.image_token
-        assert self.fetch_repository(repo.name) == {
+        assert self.fetch_repository(
+            repo.name,
+            default_fields
+            + "coverageAnalytics { percentCovered commitSha hits misses lines },",
+        ) == {
             "__typename": "Repository",
             "name": "b",
             "active": True,
             "latestCommitAt": None,
             "oldestCommitAt": "2020-12-31T23:00:00",  # hour ago
             "private": True,
-            "coverage": 75,
-            "coverageSha": coverage_commit.commitid,
-            "hits": 30,
-            "misses": 10,
-            "lines": 40,
+            "coverageAnalytics": {
+                "percentCovered": 75,
+                "commitSha": coverage_commit.commitid,
+                "hits": 30,
+                "misses": 10,
+                "lines": 40,
+            },
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
             "defaultBranch": "master",
