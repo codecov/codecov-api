@@ -100,6 +100,34 @@ query Repo(
 }
 """
 
+query_commit_coverage_components = """
+    query CommitComponents(
+        $org: String!
+        $repo: String!
+        $sha: String!
+    ) {
+        owner(username: $org) {
+            repository(name: $repo) {
+                ... on Repository {
+                    commit(id: $sha) {
+                        coverage {
+                            components {
+                                id
+                                name
+                                totals {
+                                    hitsCount
+                                    missesCount
+                                    percentCovered
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+"""
+
 
 class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
@@ -373,6 +401,299 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
                                 "name": "PyThOn",
                             },
                         ]
+                    }
+                }
+            }
+        }
+
+class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
+    def setUp(self):
+        self.org = OwnerFactory()
+        self.repo = RepositoryFactory(author=self.org, private=False)
+        self.commit = CommitFactory(repository=self.repo)
+
+    def test_no_components(self):
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+        }
+        data = self.gql_request(
+            query_commit_coverage_components, variables=variables, owner=OwnerFactory()
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverage": {
+                            "components": [],
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.components.commit_components")
+    def test_components(self, commit_components_mock, full_report_mock):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "python",
+                    "paths": [".*/*.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "golang",
+                    "paths": [".*/*.go"],
+                }
+            ),
+        ]
+
+        full_report_mock.return_value = sample_report()
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+        }
+        data = self.gql_request(
+            query_commit_coverage_components,
+            variables=variables,
+            owner=OwnerFactory(),
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverage": {
+                            "components": [
+                                {
+                                    "id": "python",
+                                    "name": "python",
+                                    "totals": {
+                                        "hitsCount": 1,
+                                        "missesCount": 0,
+                                        "percentCovered": 50.0,
+                                    },
+                                },
+                                {
+                                    "id": "golang",
+                                    "name": "golang",
+                                    "totals": {
+                                        "hitsCount": 5,
+                                        "missesCount": 3,
+                                        "percentCovered": 62.5,
+                                    },
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.components.commit_components")
+    def test_components_filtering(self, commit_components_mock, full_report_mock):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "python1.1",
+                    "name": "Python",
+                    "paths": [".*/*.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "golang1.2",
+                    "name": "Golang",
+                    "paths": [".*/*.go"],
+                }
+            ),
+        ]
+
+        full_report_mock.return_value = sample_report()
+
+        query_commit_coverage_components = """
+            query CommitComponents(
+                $org: String!
+                $repo: String!
+                $sha: String!
+                $filter: ComponentsFilters
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $sha) {
+                                coverage {
+                                    components (filters: $filter) {
+                                        id
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        # Find one item
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["Python"]},
+        }
+        data = self.gql_request(
+            query_commit_coverage_components, variables=variables, owner=OwnerFactory()
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverage": {
+                            "components": [
+                                {
+                                    "id": "python1.1",
+                                    "name": "Python",
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+
+        # Find no items
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["C++"]},
+        }
+        data = self.gql_request(query_commit_coverage_components, variables=variables)
+        assert data == {"owner": {"repository": {"commit": {"coverage": {"components": []}}}}}
+
+        # Find all items
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": []},
+        }
+        data = self.gql_request(query_commit_coverage_components, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverage": {
+                            "components": [
+                                {
+                                    "id": "python1.1",
+                                    "name": "Python",
+                                },
+                                {
+                                    "id": "golang1.2",
+                                    "name": "Golang",
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+
+        # Find some items
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["C", "Golang"]},
+        }
+        data = self.gql_request(
+            query_commit_coverage_components, variables=variables, owner=OwnerFactory()
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverage": {
+                            "components": [
+                                {
+                                    "id": "golang1.2",
+                                    "name": "Golang",
+                                },
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch("core.models.Commit.full_report", new_callable=PropertyMock)
+    @patch("services.components.commit_components")
+    def test_components_filtering_case_insensitive(
+        self, commit_components_mock, full_report_mock
+    ):
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "cpython",
+                    "name": "PyThOn",
+                    "paths": [".*/*.py"],
+                }
+            ),
+        ]
+
+        full_report_mock.return_value = sample_report()
+
+        query_commit_coverage_components = """
+            query CommitComponents(
+                $org: String!
+                $repo: String!
+                $sha: String!
+                $filter: ComponentsFilters
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $sha) {
+                                coverage {
+                                    components (filters: $filter) {
+                                        id
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "sha": self.commit.commitid,
+            "filter": {"components": ["pYtHoN"]},
+        }
+        data = self.gql_request(
+            query_commit_coverage_components, variables=variables, owner=OwnerFactory()
+        )
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverage": {
+                            "components": [
+                                {
+                                    "id": "cpython",
+                                    "name": "PyThOn",
+                                },
+                            ]
+                        }
                     }
                 }
             }

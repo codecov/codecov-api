@@ -2586,15 +2586,188 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             ],
         }
 
+    def test_coverage_totals(self):
+        ReportLevelTotalsFactory(report=self.report, coverage=12)
+        query = query_commit % "coverage { totals { percentCovered } } "
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["coverage"]["totals"]["percentCovered"] == 12
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    @patch("core.commands.commit.commit.CommitCommands.get_file_content")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_fetch_commit_coverage_file(
+        self, report_mock, content_mock, critical_files
+    ):
+        query = (
+            query_commit
+            % 'coverage { coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage} } }'
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+        }
+        fake_coverage = {
+            "content": "file content",
+            "coverage": [
+                {"line": 0, "coverage": "P"},
+                {"line": 1, "coverage": "H"},
+                {"line": 2, "coverage": "M"},
+            ],
+            "totals": {"coverage": 83.0},
+        }
+        content_mock.return_value = "file content"
+        critical_files.return_value = [CriticalFile("path")]
+
+        report_mock.return_value = MockReport()
+        data = self.gql_request(query, variables=variables)
+        coverageFile = data["owner"]["repository"]["commit"]["coverage"]["coverageFile"]
+        assert coverageFile["content"] == fake_coverage["content"]
+        assert coverageFile["coverage"] == fake_coverage["coverage"]
+        assert coverageFile["totals"] == fake_coverage["totals"]
+        assert coverageFile["isCriticalFile"] == True
+        assert coverageFile["hashedPath"] == hashlib.md5("path".encode()).hexdigest()
+
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_coverage_flag_names(self, report_mock):
+        query = query_commit % "coverage { flagNames }"
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+        }
+        report_mock.return_value = MockReport()
+        data = self.gql_request(query, variables=variables)
+        flags = data["owner"]["repository"]["commit"]["coverage"]["flagNames"]
+        assert flags == ["flag_a", "flag_b"]
+
+
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
-    def test_bundle_analysis_report_size_filtered(self, get_storage_service):
+    def test_coverage_bundle_analysis_compare(self, get_storage_service):
         storage = MemoryStorageService({})
         get_storage_service.return_value = storage
 
+        base_commit_report = CommitReportFactory(
+            commit=self.parent_commit,
+            report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,
+        )
         head_commit_report = CommitReportFactory(
             commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
         )
 
+        with open("./services/tests/samples/base_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=base_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = (
+            query_commit
+            % """
+            bundleAnalysis {
+                bundleAnalysisCompareWithParent {
+                    __typename
+                    ... on BundleAnalysisComparison {
+                        bundles {
+                            name
+                            changeType
+                            bundleData {
+                                size {
+                                    uncompress
+                                }
+                            }
+                            bundleChange {
+                                size {
+                                    uncompress
+                                }
+                            }
+                        }
+                        bundleData {
+                            size {
+                                uncompress
+                            }
+                        }
+                        bundleChange {
+                            size {
+                                uncompress
+                            }
+                        }
+                    }
+                }
+            }
+            """
+        )
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["bundleAnalysis"]["bundleAnalysisCompareWithParent"] == {
+            "__typename": "BundleAnalysisComparison",
+            "bundles": [
+                {
+                    "name": "b1",
+                    "changeType": "changed",
+                    "bundleData": {"size": {"uncompress": 20}},
+                    "bundleChange": {"size": {"uncompress": 5}},
+                },
+                {
+                    "name": "b2",
+                    "changeType": "changed",
+                    "bundleData": {"size": {"uncompress": 200}},
+                    "bundleChange": {"size": {"uncompress": 50}},
+                },
+                {
+                    "name": "b3",
+                    "changeType": "added",
+                    "bundleData": {"size": {"uncompress": 1500}},
+                    "bundleChange": {"size": {"uncompress": 1500}},
+                },
+                {
+                    "name": "b5",
+                    "changeType": "changed",
+                    "bundleData": {"size": {"uncompress": 200000}},
+                    "bundleChange": {"size": {"uncompress": 50000}},
+                },
+                {
+                    "name": "b4",
+                    "changeType": "removed",
+                    "bundleData": {"size": {"uncompress": 0}},
+                    "bundleChange": {"size": {"uncompress": -15000}},
+                },
+            ],
+            "bundleData": {"size": {"uncompress": 201720}},
+            "bundleChange": {"size": {"uncompress": 36555}},
+        }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_report_size_filtered(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
         with open(
             "./services/tests/samples/head_bundle_report_with_gzip_size.sqlite", "rb"
         ) as f:
@@ -2603,7 +2776,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 report_key=head_commit_report.external_id,
             )
             storage.write_file(get_bucket_name(), storage_path, f)
-
         query = """
             query FetchCommit($org: String!, $repo: String!, $commit: String!, $bundleFilters: BundleReportFilters) {
                 owner(username: $org) {
@@ -2630,7 +2802,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         """
-
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -2639,7 +2810,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-
         assert commit["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
@@ -2647,16 +2817,13 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "bundleDataFiltered": {"size": {"gzip": 6, "uncompress": 6}},
             },
         }
-
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
     def test_bundle_analysis_report_size_filtered_no_value(self, get_storage_service):
         storage = MemoryStorageService({})
         get_storage_service.return_value = storage
-
         head_commit_report = CommitReportFactory(
             commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
         )
-
         with open(
             "./services/tests/samples/head_bundle_report_with_gzip_size.sqlite", "rb"
         ) as f:
@@ -2665,7 +2832,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 report_key=head_commit_report.external_id,
             )
             storage.write_file(get_bucket_name(), storage_path, f)
-
         query = """
             query FetchCommit($org: String!, $repo: String!, $commit: String!, $bundleFilters: BundleReportFilters) {
                 owner(username: $org) {
@@ -2692,7 +2858,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 }
             }
         """
-
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -2701,7 +2866,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-
         assert commit["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
