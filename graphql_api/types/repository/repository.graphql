@@ -7,16 +7,6 @@ type Repository {
   active: Boolean!
   activated: Boolean!
   private: Boolean!
-  # coverage to be removed with #2282
-  coverage: Float
-  # coverageSha to be removed with #2282
-  coverageSha: String
-  # hits to be removed with #2282
-  hits: Int
-  # misses to be removed with #2282
-  misses: Int
-  # lines to be removed with #2282
-  lines: Int
   oldestCommitAt: DateTime
   latestCommitAt: DateTime
   updatedAt: DateTime
@@ -47,6 +37,7 @@ type Repository {
     last: Int
     before: String
   ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
+  # to be removed with #2290
   flags(
     filters: FlagSetFilters
     orderingDirection: OrderingDirection
@@ -61,19 +52,18 @@ type Repository {
   graphToken: String
   yaml: String
   bot: Owner
+  # to be removed with #2290
   flagsCount: Int!
+  # to be removed with #2290
   flagsMeasurementsActive: Boolean!
+  # to be removed with #2290
   flagsMeasurementsBackfilled: Boolean!
+  # to be removed with #2290
   componentsMeasurementsActive: Boolean!
+  # to be removed with #2290
   componentsMeasurementsBackfilled: Boolean!
+  # to be removed with #2290
   componentsCount: Int!
-  # (coverage) measurements to be removed with #2282
-  measurements(
-    interval: MeasurementInterval!
-    after: DateTime
-    before: DateTime
-    branch: String
-  ): [Measurement!]!
   repositoryConfig: RepositoryConfig
   staticAnalysisToken: String
   isATSConfigured: Boolean
@@ -81,6 +71,7 @@ type Repository {
   languages: [String!]
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
+  # to be removed with #2290
   components(
     interval: MeasurementInterval!
     before: DateTime!
@@ -89,6 +80,7 @@ type Repository {
     filters: ComponentMeasurementsSetFilters
     orderingDirection: OrderingDirection
   ): [ComponentMeasurements!]!
+  # to be removed with #2290
   componentsYaml(termId: String): [ComponentsYaml]!
   testAnalyticsEnabled: Boolean
   isGithubRateLimited: Boolean

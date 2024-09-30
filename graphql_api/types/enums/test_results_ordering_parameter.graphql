@@ -1,4 +1,5 @@
 enum TestResultsOrderingParameter {
+  LAST_DURATION
   AVG_DURATION
   FAILURE_RATE
   COMMITS_WHERE_FAIL
