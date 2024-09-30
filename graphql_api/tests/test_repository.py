@@ -111,11 +111,22 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             repository_id=repo.repoid, token_type="profiling"
         ).key
         graphToken = repo.image_token
-        assert self.fetch_repository(repo.name) == {
+        assert self.fetch_repository(
+            repo.name,
+            default_fields
+            + "coverageAnalytics { percentCovered commitSha hits misses lines },",
+        ) == {
             "__typename": "Repository",
             "name": "a",
             "active": True,
             "private": True,
+            "coverageAnalytics": {
+                "percentCovered": None,
+                "commitSha": None,
+                "hits": None,
+                "misses": None,
+                "lines": None,
+            },
             "latestCommitAt": None,
             "oldestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
