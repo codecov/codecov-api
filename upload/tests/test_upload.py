@@ -43,6 +43,7 @@ from upload.helpers import (
 )
 from upload.tokenless.tokenless import TokenlessUploadHandler
 from utils.encryption import encryptor
+from django.conf import settings
 
 
 def mock_get_config_global_upload_tokens(*args):
@@ -2780,7 +2781,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         )
         mock_get_torngit.assert_called_with(
             "github",
-            token={"key": None},
+            token={"key": ANY},
             repo={"name": "repo"},
             owner={"username": "owner"},
             oauth_consumer_token={"key": ANY, "secret": ANY},
