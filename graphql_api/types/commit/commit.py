@@ -89,7 +89,7 @@ def resolve_file(commit, info, path, flags=None, components=None):
 
 # to be removed with #2286
 @commit_bindable.field("totals")
-async def resolve_totals(commit, info):
+def resolve_totals(commit, info):
     command = info.context["executor"].get_command("commit")
     return command.fetch_totals(commit)
 

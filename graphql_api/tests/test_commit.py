@@ -210,7 +210,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     def test_fetch_commit_coverage(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
-        query = query_commit % "totals { coverage } "
+        query = query_commit % "totals { percentCovered } "
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -218,7 +218,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["totals"]["coverage"] == 12
+        assert commit["totals"]["percentCovered"] == 12
 
     def test_fetch_commit_build(self):
         session_one = UploadFactory(report=self.report, provider="circleci")
