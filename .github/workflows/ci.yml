@@ -47,6 +47,8 @@ jobs:
   test:
     name: Test
     needs: [build]
+    # Skip the ~10min test step when deploying to staging
+    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging' && github.repository_owner == 'codecov') }}
     uses: codecov/gha-workflows/.github/workflows/run-tests.yml@v1.2.23
     secrets: inherit
     with:
