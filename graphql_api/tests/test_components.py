@@ -406,6 +406,7 @@ class TestCommitComponents(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
+
 class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory()
@@ -575,7 +576,9 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
             "filter": {"components": ["C++"]},
         }
         data = self.gql_request(query_commit_coverage_components, variables=variables)
-        assert data == {"owner": {"repository": {"commit": {"coverage": {"components": []}}}}}
+        assert data == {
+            "owner": {"repository": {"commit": {"coverage": {"components": []}}}}
+        }
 
         # Find all items
         variables = {

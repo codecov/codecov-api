@@ -2651,6 +2651,220 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         flags = data["owner"]["repository"]["commit"]["coverage"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
+    def test_calvin_coverage_bundle_analysis_missing_report(self):
+        query = (
+            query_commit
+            % """
+            bundleAnalysis {
+                bundleAnalysisReport {
+                    __typename
+                    ... on MissingHeadReport {
+                        message
+                    }
+                }
+            }
+            """
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
+            "__typename": "MissingHeadReport",
+            "message": "Missing head report",
+        }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_calvin_coverage_bundle_analysis_report(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open("./services/tests/samples/head_bundle_report.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundles {
+                                                name
+                                                assets {
+                                                    normalizedName
+                                                }
+                                                asset(name: "not_exist") {
+                                                    normalizedName
+                                                }
+                                                bundleData {
+                                                    loadTime {
+                                                        threeG
+                                                        highSpeed
+                                                    }
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
+                                                }
+                                                isCached
+                                            }
+                                            bundleData {
+                                                loadTime {
+                                                    threeG
+                                                    highSpeed
+                                                }
+                                                size {
+                                                    gzip
+                                                    uncompress
+                                                }
+                                            }
+                                            bundle(name: "not_exist") {
+                                                name
+                                                isCached
+                                            }
+                                            isCached
+                                        }
+                                        ... on MissingHeadReport {
+                                            message
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundles": [
+                {
+                    "name": "b1",
+                    "assets": [
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
+                    ],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 0,
+                            "highSpeed": 0,
+                        },
+                        "size": {
+                            "gzip": 0,
+                            "uncompress": 20,
+                        },
+                    },
+                    "isCached": False,
+                },
+                {
+                    "name": "b2",
+                    "assets": [
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
+                    ],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 2,
+                            "highSpeed": 0,
+                        },
+                        "size": {
+                            "gzip": 0,
+                            "uncompress": 200,
+                        },
+                    },
+                    "isCached": False,
+                },
+                {
+                    "name": "b3",
+                    "assets": [
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
+                    ],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 16,
+                            "highSpeed": 0,
+                        },
+                        "size": {
+                            "gzip": 0,
+                            "uncompress": 1500,
+                        },
+                    },
+                    "isCached": False,
+                },
+                {
+                    "name": "b5",
+                    "assets": [
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/index-*.js"},
+                        {"normalizedName": "assets/LazyComponent-*.js"},
+                        {"normalizedName": "assets/index-*.css"},
+                        {"normalizedName": "assets/react-*.svg"},
+                    ],
+                    "asset": None,
+                    "bundleData": {
+                        "loadTime": {
+                            "threeG": 2133,
+                            "highSpeed": 53,
+                        },
+                        "size": {
+                            "gzip": 200,
+                            "uncompress": 200000,
+                        },
+                    },
+                    "isCached": False,
+                },
+            ],
+            "bundleData": {
+                "loadTime": {
+                    "threeG": 2151,
+                    "highSpeed": 53,
+                },
+                "size": {
+                    "gzip": 201,
+                    "uncompress": 201720,
+                },
+            },
+            "bundle": None,
+            "isCached": False,
+        }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
     def test_coverage_bundle_analysis_compare(self, get_storage_service):

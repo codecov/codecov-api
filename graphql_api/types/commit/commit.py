@@ -50,14 +50,15 @@ from services.yaml import (
 )
 
 commit_bindable = ObjectType("Commit")
-commit_coverage_bindable = ObjectType('CommitCoverage')
-commit_bundle_analysis_bindable = ObjectType('CommitBundleAnalysis')
+commit_coverage_bindable = ObjectType("CommitCoverage")
+commit_bundle_analysis_bindable = ObjectType("CommitBundleAnalysis")
 
 commit_bindable.set_alias("createdAt", "timestamp")
 commit_bindable.set_alias("pullId", "pullid")
 commit_bindable.set_alias("branchName", "branch")
 
 log = logging.getLogger(__name__)
+
 
 # to be removed with #2286
 @commit_bindable.field("coverageFile")
@@ -86,6 +87,7 @@ def resolve_file(commit, info, path, flags=None, components=None):
         "flags": flags,
         "components": components,
     }
+
 
 # to be removed with #2286
 @commit_bindable.field("totals")
@@ -164,6 +166,7 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
     if commit_comparison:
         return ComparisonReport(commit_comparison)
 
+
 # to be removed with #2286
 @commit_bindable.field("bundleAnalysisCompareWithParent")
 @sync_to_async
@@ -190,6 +193,7 @@ def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
 
     return bundle_analysis_comparison
 
+
 # to be removed with #2286
 @commit_bindable.field("bundleAnalysisReport")
 @sync_to_async
@@ -208,6 +212,7 @@ def resolve_bundle_analysis_report(
     info.context["commit"] = commit
 
     return bundle_analysis_report
+
 
 # to be removed with #2286
 @commit_bindable.field("flagNames")
@@ -328,6 +333,7 @@ async def resolve_total_uploads(commit, info):
     command = info.context["executor"].get_command("commit")
     return await command.get_uploads_number(commit)
 
+
 # to be removed with #2286
 @commit_bindable.field("components")
 @sync_to_async
@@ -357,26 +363,32 @@ def resolve_bundle_status(commit: Commit, info) -> Optional[CommitStatus]:
 def resolve_coverage_status(commit: Commit, info) -> Optional[CommitStatus]:
     return commit_status(commit, CommitReport.ReportType.COVERAGE)
 
+
 @commit_bindable.field("coverage")
 def resolve_commit_coverage(commit, info):
     return commit
+
 
 @commit_bindable.field("bundleAnalysis")
 def resolve_commit_bundle_analysis(commit, info):
     return commit
 
+
 ### Commit Coverage Bindable ###
+
 
 @commit_coverage_bindable.field("totals")
 def resolve_coverage_totals(commit, info):
     command = info.context["executor"].get_command("commit")
-    print('commit coverage - totals', command.fetch_totals(commit))
+    print("commit coverage - totals", command.fetch_totals(commit))
     return command.fetch_totals(commit)
+
 
 @commit_coverage_bindable.field("flagNames")
 @sync_to_async
 def resolve_coverage_flags(commit, info, **kwargs):
     return commit.full_report.flags.keys()
+
 
 @commit_coverage_bindable.field("coverageFile")
 @sync_to_async
@@ -405,6 +417,7 @@ def resolve_coverage_file(commit, info, path, flags=None, components=None):
         "components": components,
     }
 
+
 @commit_coverage_bindable.field("components")
 @sync_to_async
 def resolve_coverage_components(commit: Commit, info, filters=None) -> List[Component]:
@@ -419,7 +432,9 @@ def resolve_coverage_components(commit: Commit, info, filters=None) -> List[Comp
 
     return all_components
 
+
 ### Commit Bundle Analysis Bindable ###
+
 
 @commit_bundle_analysis_bindable.field("bundleAnalysisCompareWithParent")
 @sync_to_async

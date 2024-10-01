@@ -9,4 +9,8 @@ from .commit import (
 commit = ariadne_load_local_graphql(__file__, "commit.graphql")
 
 
-__all__ = ["commit_bindable", "commit_coverage_bindable", "commit_bundle_analysis_bindable"]
+__all__ = [
+    "commit_bindable",
+    "commit_coverage_bindable",
+    "commit_bundle_analysis_bindable",
+]
