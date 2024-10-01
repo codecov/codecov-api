@@ -2603,7 +2603,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     )
     @patch("core.commands.commit.commit.CommitCommands.get_file_content")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    def test_fetch_commit_coverage_file(
+    def test_fetch_commit_coverage_coverage_file(
         self, report_mock, content_mock, critical_files
     ):
         query = (
@@ -2637,6 +2637,120 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["isCriticalFile"] == True
         assert coverageFile["hashedPath"] == hashlib.md5("path".encode()).hexdigest()
 
+    @patch("services.components.component_filtered_report")
+    @patch("services.components.commit_components")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_fetch_commit_coverage_coverage_file_with_components(
+        self, report_mock, commit_components_mock, filtered_mock
+    ):
+        components = ["Global"]
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+            "components": components,
+        }
+
+        report_mock.return_value = MockReport()
+        commit_components_mock.return_value = [
+            Component.from_dict(
+                {
+                    "component_id": "c1",
+                    "name": "ComponentOne",
+                    "paths": ["fileA.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "c2",
+                    "name": "ComponentTwo",
+                    "paths": ["fileB.py"],
+                }
+            ),
+            Component.from_dict(
+                {
+                    "component_id": "global",
+                    "name": "Global",
+                    "paths": ["**/*.py"],
+                }
+            ),
+        ]
+        filtered_mock.return_value = MockReport()
+
+        query_files = """
+        query FetchCommit($org: String!, $repo: String!, $commit: String!, $components: [String!]!) {
+            owner(username: $org) {
+                repository(name: $repo) {
+                    ... on Repository {
+                        commit(id: $commit) {
+                            coverage {
+                                coverageFile(path: "path", components: $components) {
+                                    hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+
+        data = self.gql_request(query_files, variables=variables)
+
+        assert data == {
+            "owner": {
+                "repository": {
+                    "commit": {
+                        "coverage": {
+                            "coverageFile": {
+                                "content": None,
+                                "coverage": [
+                                    {"coverage": "P", "line": 0},
+                                    {"coverage": "H", "line": 1},
+                                    {"coverage": "M", "line": 2},
+                                ],
+                                "hashedPath": "d6fe1d0be6347b8ef2427fa629c04485",
+                                "isCriticalFile": False,
+                                "totals": {"coverage": 83.0},
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    @patch("core.commands.commit.commit.CommitCommands.get_file_content")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_fetch_commit_coverage_with_no_coverage_data(
+        self, report_mock, content_mock, critical_files
+    ):
+        query = (
+            query_commit
+            % 'coverage { coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }}'
+        )
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "path": "path",
+        }
+        fake_coverage = {"content": "file content", "coverage": [], "totals": None}
+        content_mock.return_value = "file content"
+        critical_files.return_value = []
+
+        report_mock.return_value = EmptyReport()
+        data = self.gql_request(query, variables=variables)
+        coverageFile = data["owner"]["repository"]["commit"]["coverage"]["coverageFile"]
+        assert coverageFile["content"] == fake_coverage["content"]
+        assert coverageFile["coverage"] == fake_coverage["coverage"]
+        assert coverageFile["totals"] == fake_coverage["totals"]
+        assert coverageFile["isCriticalFile"] == False
+
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_coverage_flag_names(self, report_mock):
         query = query_commit % "coverage { flagNames }"
@@ -2651,7 +2765,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         flags = data["owner"]["repository"]["commit"]["coverage"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
-    def test_calvin_coverage_bundle_analysis_missing_report(self):
+    def test_coverage_bundle_analysis_missing_report(self):
         query = (
             query_commit
             % """
@@ -2679,7 +2793,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
-    def test_calvin_coverage_bundle_analysis_report(self, get_storage_service):
+    def test_coverage_bundle_analysis_report(self, get_storage_service):
         storage = MemoryStorageService({})
         get_storage_service.return_value = storage
 
