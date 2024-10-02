@@ -3,15 +3,15 @@ from unittest.mock import patch
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.models import Branch, Commit, PullStates
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
     BranchFactory,
     CommitFactory,
+    OwnerFactory,
     PullFactory,
     RepositoryFactory,
 )
+
+from core.models import Branch, Commit, PullStates
 from webhook_handlers.constants import (
     BitbucketHTTPHeaders,
     BitbucketWebhookEvents,

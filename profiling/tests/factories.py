@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
+from shared.django_apps.core.tests.factories import RepositoryFactory
 
-from core.tests.factories import RepositoryFactory
 from profiling import models
 
 

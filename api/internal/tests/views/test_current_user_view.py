@@ -1,8 +1,7 @@
 from django.utils import timezone
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-
-from codecov_auth.tests.factories import OwnerFactory, UserFactory
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, UserFactory
 
 
 class CurrentUserViewTests(APITestCase):

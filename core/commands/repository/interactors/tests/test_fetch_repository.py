@@ -3,9 +3,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
 )
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from ..fetch_repository import FetchRepositoryInteractor
 

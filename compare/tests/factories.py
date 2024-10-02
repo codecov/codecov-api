@@ -1,6 +1,6 @@
 import factory
+from shared.django_apps.core.tests.factories import CommitFactory
 
-from core.tests.factories import CommitFactory
 from reports.tests.factories import RepositoryFlagFactory
 
 from ..models import CommitComparison, ComponentComparison, FlagComparison

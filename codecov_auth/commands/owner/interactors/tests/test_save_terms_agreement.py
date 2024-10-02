@@ -5,9 +5,9 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from freezegun.api import FakeDatetime
+from shared.django_apps.codecov_auth.tests.factories import UserFactory
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
-from codecov_auth.tests.factories import UserFactory
 
 from ..save_terms_agreement import SaveTermsAgreementInteractor
 

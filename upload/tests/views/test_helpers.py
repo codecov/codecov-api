@@ -1,7 +1,7 @@
 from django.test import TestCase
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from codecov_auth.models import Service
-from core.tests.factories import OwnerFactory, RepositoryFactory
 from upload.views.helpers import (
     get_repository_and_owner_from_string,
     get_repository_from_string,

@@ -4,9 +4,12 @@ import pytest
 from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from timeseries.models import MeasurementName
 from timeseries.tests.factories import DatasetFactory, MeasurementFactory

@@ -1,6 +1,10 @@
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 
-from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from graphql_api.dataloader.commit import CommitLoader
 
 

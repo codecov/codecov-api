@@ -2,16 +2,20 @@ from pathlib import Path
 from unittest.mock import PropertyMock, patch
 
 from rest_framework.reverse import reverse
+from shared.django_apps.core.tests.factories import (
+    CommitWithReportFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 from shared.reports.types import ReportTotals
 
 from codecov.tests.base_test import InternalAPITest
-from core.tests.factories import CommitWithReportFactory, PullFactory, RepositoryFactory
 
 current_file = Path(__file__)
 
 
 @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
-@patch("services.archive.ArchiveService.read_chunks")
+@patch("shared.api_archive.archive.ArchiveService.read_chunks")
 @patch("shared.reports.filtered.FilteredReport.apply_diff")
 @patch(
     "api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions",
@@ -83,8 +87,7 @@ class TestCompareFlagsView(InternalAPITest):
         )
 
         assert response.status_code == 200
-
-        expected_result = [
+        assert response.data == [
             {
                 "name": "unittests",
                 "base_report_totals": {
@@ -189,18 +192,6 @@ class TestCompareFlagsView(InternalAPITest):
             },
         ]
 
-        assert (
-            response.data[0]["base_report_totals"]
-            == expected_result[0]["base_report_totals"]
-        )
-        assert (
-            response.data[0]["head_report_totals"]
-            == expected_result[0]["head_report_totals"]
-        )
-        assert response.data[0] == expected_result[0]
-        assert response.data[1] == expected_result[1]
-        assert response.data == expected_result
-
     def test_compare_flags_with_report_with_cff_and_non_cff(
         self, diff_totals_mock, read_chunks_mock, git_comparison_mock
     ):
@@ -210,6 +201,12 @@ class TestCompareFlagsView(InternalAPITest):
             parent_commit_id=self.parent_commit.commitid,
             repository=self.repo,
         )
+        report = commit_with_custom_reports._report
+        report["sessions"]["0"].update(
+            st="carriedforward",
+            se={"carriedforward_from": "56e05fced214c44a37759efa2dfc25a65d8ae98d"},
+        )
+        commit_with_custom_reports.save()
 
         upload = (
             commit_with_custom_reports.reports.first()
@@ -220,14 +217,6 @@ class TestCompareFlagsView(InternalAPITest):
         upload.upload_extras = {
             "carriedforward_from": "56e05fced214c44a37759efa2dfc25a65d8ae98d"
         }
-        upload.save()
-
-        upload = (
-            commit_with_custom_reports.reports.first()
-            .sessions.filter(flags__flag_name="integrations")
-            .first()
-        )
-        upload.upload_type = "uploaded"
         upload.save()
 
         head_chunks = open(

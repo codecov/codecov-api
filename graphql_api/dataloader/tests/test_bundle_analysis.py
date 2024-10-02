@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.dataloader.bundle_analysis import (
     MissingBaseReportError,
     MissingHeadReportError,

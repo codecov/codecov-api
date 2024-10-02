@@ -1,8 +1,7 @@
 from django.test import TransactionTestCase
-from shared.django_apps.codecov_auth.tests.factories import AccountsUsersFactory
-
-from codecov_auth.tests.factories import (
+from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
+    AccountsUsersFactory,
     OktaSettingsFactory,
     OwnerFactory,
 )

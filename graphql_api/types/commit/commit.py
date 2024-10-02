@@ -2,16 +2,17 @@ import logging
 from typing import Any, List, Optional, Union
 
 import sentry_sdk
+import shared.reports.api_report_service as report_service
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from graphql import GraphQLResolveInfo
+from shared.reports.api_report_service import ReadOnlyReport
 from shared.reports.filtered import FilteredReportFile
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
 
 import services.components as components_service
 import services.path as path_service
-import services.report as report_service
 from codecov.db import sync_to_async
 from core.models import Commit
 from graphql_api.actions.commits import commit_status, commit_uploads
@@ -45,7 +46,6 @@ from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import ReportPaths
 from services.profiling import CriticalFile, ProfilingSummary
-from services.report import ReadOnlyReport
 from services.yaml import (
     YamlStates,
     get_yaml_state,

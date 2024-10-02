@@ -2,14 +2,14 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
-from shared.reports.types import ReportTotals
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
     CommitFactory,
     CommitWithReportFactory,
+    OwnerFactory,
     RepositoryFactory,
 )
+from shared.reports.types import ReportTotals
+
 from utils.test_utils import APIClient
 
 
@@ -139,7 +139,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
                         "username": "codecov",
                         "name": self.org.name,
                     },
-                    "branch": "master",
+                    "branch": "main",
                     "totals": {
                         "files": 3,
                         "lines": 24,
@@ -195,7 +195,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
                         "username": "codecov",
                         "name": self.org.name,
                     },
-                    "branch": "master",
+                    "branch": "main",
                     "totals": {
                         "files": 3,
                         "lines": 24,
@@ -220,7 +220,7 @@ class RepoCommitListTestCase(BaseRepoCommitTestCase):
 
 @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
 class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_commit_detail_not_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -275,7 +275,7 @@ class RepoCommitDetailTestCase(BaseRepoCommitTestCase):
                 "username": "codecov",
                 "name": self.org.name,
             },
-            "branch": "master",
+            "branch": "main",
             "totals": {
                 "files": 3,
                 "lines": 24,
@@ -410,7 +410,7 @@ class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
         # does not allow access to private repos
         assert response.status_code == 404
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_commit_uploads_authenticated(
         self, build_report_from_commit, get_repo_permissions
     ):
@@ -458,7 +458,7 @@ class RepoCommitUploadsTestCase(BaseRepoCommitTestCase):
             "methods": 0,
         }
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_commit_uploads_pagination(
         self, build_report_from_commit, get_repo_permissions
     ):

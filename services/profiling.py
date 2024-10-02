@@ -3,11 +3,11 @@ import logging
 from typing import List, Optional
 
 import regex
+import shared.reports.api_report_service as report_service
 from django.utils.functional import cached_property
 from shared.profiling import ProfilingSummaryDataAnalyzer
 from shared.yaml import UserYaml
 
-import services.report as report_service
 from core.models import Commit, Repository
 from profiling.models import ProfilingCommit
 from services.archive import ArchiveService

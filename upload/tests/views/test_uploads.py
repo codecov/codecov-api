@@ -6,12 +6,15 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient, APITestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.utils.test_utils import mock_config_helper
 
 from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import (
     CommitReport,
     ReportSession,
