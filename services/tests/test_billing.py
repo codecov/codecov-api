@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 import requests
 from django.conf import settings
 from django.test import TestCase
+from shared.django_apps.core.tests.factories import OwnerFactory
 from stripe import InvalidRequestError
 
 from codecov_auth.models import Service
-from codecov_auth.tests.factories import OwnerFactory
 from plan.constants import PlanName
 from services.billing import AbstractPaymentService, BillingService, StripeService
 

@@ -1,5 +1,6 @@
 import pytest
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import (
     NotFound,
@@ -7,7 +8,6 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-from codecov_auth.tests.factories import OwnerFactory
 
 from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 

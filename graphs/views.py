@@ -1,5 +1,6 @@
 import logging
 
+import shared.reports.api_report_service as report_service
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from rest_framework import exceptions
@@ -8,7 +9,6 @@ from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
-import services.report as report_service
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
 from graphs.settings import settings

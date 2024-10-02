@@ -10,19 +10,19 @@ from typing import List, Optional, Tuple
 
 import minio
 import pytz
+import shared.reports.api_report_service as report_service
 from asgiref.sync import async_to_sync
 from django.db.models import Prefetch, QuerySet
 from django.utils.functional import cached_property
+from shared.api_archive.archive import ArchiveService
 from shared.helpers.yaml import walk
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
-import services.report as report_service
 from compare.models import CommitComparison
 from core.models import Commit
 from reports.models import CommitReport, ReportDetails
 from services import ServiceException
-from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
 from utils.config import get_config

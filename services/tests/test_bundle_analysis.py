@@ -9,9 +9,9 @@ from shared.bundle_analysis import (
     StoragePaths,
 )
 from shared.bundle_analysis.storage import get_bucket_name
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 from shared.storage.memory import MemoryStorageService
 
-from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
 from reports.tests.factories import CommitReportFactory
 from services.archive import ArchiveService

@@ -1,13 +1,17 @@
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory, ComponentComparisonFactory
-from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.comparison import MissingComparisonReport
 from services.components import Component
 

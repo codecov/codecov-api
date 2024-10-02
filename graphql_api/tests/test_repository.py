@@ -3,14 +3,14 @@ from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
     CommitFactory,
+    OwnerFactory,
     PullFactory,
     RepositoryFactory,
     RepositoryTokenFactory,
 )
+
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -130,7 +130,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "oldestCommitAt": None,
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
-            "defaultBranch": "master",
+            "defaultBranch": "main",
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],
@@ -194,7 +194,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             },
             "updatedAt": "2021-01-01T00:00:00+00:00",
             "uploadToken": repo.upload_token,
-            "defaultBranch": "master",
+            "defaultBranch": "main",
             "author": {"username": "codecov-user"},
             "profilingToken": profiling_token,
             "criticalFiles": [],

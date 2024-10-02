@@ -8,13 +8,17 @@ import yaml
 from django.test import TransactionTestCase
 from shared.bundle_analysis import StoragePaths
 from shared.bundle_analysis.storage import get_bucket_name
+from shared.django_apps.core.tests.factories import (
+    CommitErrorFactory,
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.types import LineSession
 from shared.storage.memory import MemoryStorageService
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
 from graphql_api.types.enums import CommitStatus, UploadErrorEnum, UploadState
 from graphql_api.types.enums.enums import UploadType
 from reports.models import CommitReport

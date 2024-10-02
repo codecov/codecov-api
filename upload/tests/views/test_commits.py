@@ -4,9 +4,9 @@ import pytest
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
 from core.models import Commit
-from core.tests.factories import CommitFactory, RepositoryFactory
 from services.task import TaskService
 from upload.views.commits import CommitViews
 

@@ -5,9 +5,11 @@ import fakeredis
 import pytest
 from django.core.management import call_command
 from shared.config import ConfigHelper
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
 
 @pytest.mark.django_db

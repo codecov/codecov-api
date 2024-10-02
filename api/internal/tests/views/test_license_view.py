@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 from django.test import RequestFactory, override_settings
 from rest_framework.reverse import reverse
+from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.license import LicenseInformation
 
 from api.internal.license.views import LicenseView
 from codecov.tests.base_test import InternalAPITest
-from codecov_auth.tests.factories import OwnerFactory
 from utils.test_utils import Client
 
 
