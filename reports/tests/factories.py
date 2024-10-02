@@ -137,6 +137,7 @@ class DailyTestRollupFactory(factory.django.DjangoModelFactory):
     pass_count = 1
     skip_count = 2
     fail_count = 3
+    flaky_fail_count = 0
 
     latest_run = datetime.now()
     date = date.today()
