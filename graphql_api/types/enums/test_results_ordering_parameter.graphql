@@ -2,6 +2,7 @@ enum TestResultsOrderingParameter {
   LAST_DURATION
   AVG_DURATION
   FAILURE_RATE
+  FLAKE_RATE
   COMMITS_WHERE_FAIL
   UPDATED_AT
 }
