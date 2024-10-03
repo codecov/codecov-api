@@ -1,5 +1,5 @@
 import datetime as dt
-from dataclasses import dataclass
+from math import floor
 
 from django.db.models import (
     Aggregate,
@@ -14,16 +14,12 @@ from django.db.models import (
     Sum,
 )
 from django.db.models.functions import Cast
+from shared.django_apps.core.models import Repository
 from shared.django_apps.reports.models import DailyTestRollup, TestInstance
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
 
-
-@dataclass
-class TestResultsAggregation:
-    failure_rate: float | None
-    commits_where_fail: list[str] | None
-    average_duration: float | None
+SLOW_TEST_PERCENTILE = 95
 
 
 class ArrayLength(Func):
@@ -107,3 +103,59 @@ def aggregate_test_results(
     )
 
     return aggregation_of_test_results
+
+
+def test_results_headers(
+    repoid: int, history: dt.timedelta | None = None
+) -> dict[str, float | int] | None:
+    repo = Repository.objects.get(repoid=repoid)
+    time_ago = (
+        (dt.datetime.now(dt.UTC) - history) if history is not None else thirty_days_ago
+    )
+
+    totals = DailyTestRollup.objects.filter(
+        repoid=repoid, date__gt=time_ago, branch=repo.branch
+    )
+
+    num_tests = totals.distinct("test_id").count()
+
+    slow_test_threshold = floor(num_tests * (100 - SLOW_TEST_PERCENTILE) * 0.01)
+
+    if slow_test_threshold == 0:
+        if num_tests == 1:
+            slow_test_threshold = 1
+        else:
+            return None
+
+    slowest_test_ids = (
+        totals.values("test")
+        .annotate(
+            runtime=Avg("avg_duration_seconds")
+            * (Sum("pass_count") + Sum("fail_count"))
+        )
+        .order_by("-runtime")
+        .values("test_id")[0:slow_test_threshold]
+    )
+
+    slowest_tests_duration = (
+        totals.filter(test_id__in=slowest_test_ids)
+        .values("repoid")
+        .annotate(
+            slowest_tests=Avg("avg_duration_seconds")
+            * (Sum("pass_count") + Sum("fail_count"))
+        )
+        .values("slowest_tests")
+    )
+
+    test_headers = totals.values("repoid").annotate(
+        total_run_time=Avg("avg_duration_seconds")
+        * (Sum("pass_count") + Sum("fail_count")),
+        slowest_tests_duration=slowest_tests_duration,
+        skips=Sum("skip_count"),
+        fails=Sum("fail_count"),
+    )
+
+    if test_headers:
+        return test_headers[0]
+    else:
+        return None

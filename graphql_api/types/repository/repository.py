@@ -35,7 +35,7 @@ from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, Interval, MeasurementName
-from utils.test_results import aggregate_test_results
+from utils.test_results import aggregate_test_results, test_results_headers
 
 log = logging.getLogger(__name__)
 
@@ -557,3 +557,14 @@ def resolve_coverage_analytics(
     return CoverageAnalyticsProps(
         repository=repository,
     )
+
+
+@repository_bindable.field("testResultsHeaders")
+@convert_kwargs_to_snake_case
+async def resolve_test_results_headers(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+):
+    queryset = await sync_to_async(test_results_headers)(repoid=repository.repoid)
+
+    return queryset
