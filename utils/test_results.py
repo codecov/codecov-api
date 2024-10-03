@@ -277,9 +277,7 @@ def get_flake_aggregate_numbers(
             & (Q(end_date__date__lte=until.date()) & Q(end_date__date__gt=since.date()))
         )
 
-    print(until, since)
     flake_count = flakes.count()
-    print(flakes.count(), len(flakes))
 
     test_ids = [flake.test_id for flake in flakes]
 
@@ -325,8 +323,6 @@ def generate_flake_aggregates(
     )
 
     past_numbers = get_flake_aggregate_numbers(repo, double_time_ago, time_ago)
-
-    print(past_numbers)
 
     return curr_numbers | helper(
         ["flake_count", "flake_rate"],
