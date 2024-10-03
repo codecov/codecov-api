@@ -1409,9 +1409,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             )
         res = self.fetch_repository(
             repo.name,
-            """testResultsHeaders { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
-        assert res["testResultsHeaders"] == {
+        assert res["testResultsAggregates"] == {
             "totalRunTime": 580.0,
             "slowestTestsRunTime": 54.0,
             "totalFails": 10,
@@ -1443,9 +1443,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_repository(
             repo.name,
-            """testResultsHeaders { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
-        assert res["testResultsHeaders"] == {
+        assert res["testResultsAggregates"] == {
             "totalRunTime": 580.0,
             "slowestTestsRunTime": 54.0,
             "totalFails": 10,
