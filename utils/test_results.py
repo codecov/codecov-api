@@ -81,7 +81,6 @@ def generate_test_results(
 
     if branch is not None:
         totals = totals.filter(branch=branch)
-    print(parameter)
 
     match parameter:
         case GENERATE_TEST_RESULT_PARAM.FLAKY:
@@ -112,8 +111,6 @@ def generate_test_results(
             totals = totals.filter(test_id__in=test_ids)
         case GENERATE_TEST_RESULT_PARAM.SLOWEST:
             num_tests = totals.distinct("test_id").count()
-
-            print(num_tests, slow_test_threshold(num_tests))
 
             slowest_test_ids = (
                 totals.values("test")
