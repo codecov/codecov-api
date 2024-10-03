@@ -153,14 +153,14 @@ def generate_test_results(
         failure_rate=Case(
             When(
                 total_test_count=0,
-                then=Value(1.0),
+                then=Value(0.0),
             ),
             default=F("total_fail_count") / F("total_test_count"),
         ),
         flake_rate=Case(
             When(
                 total_test_count=0,
-                then=Value(1.0),
+                then=Value(0.0),
             ),
             default=F("total_flaky_fail_count") / F("total_test_count"),
         ),
@@ -191,8 +191,8 @@ def generate_test_results_aggregates(
     slowest_test_ids = (
         totals.values("test")
         .annotate(
-            runtime=Avg("avg_duration_seconds")
-            * (Sum("pass_count") + Sum("fail_count"))
+            runtime=Sum(F("avg_duration_seconds") * (F("pass_count") + F("fail_count")))
+            / Sum(F("pass_count") + F("fail_count"))
         )
         .order_by("-runtime")
         .values("test_id")[0 : slow_test_threshold(num_tests)]
@@ -202,15 +202,17 @@ def generate_test_results_aggregates(
         totals.filter(test_id__in=slowest_test_ids)
         .values("repoid")
         .annotate(
-            slowest_tests=Avg("avg_duration_seconds")
-            * (Sum("pass_count") + Sum("fail_count"))
+            slowest_tests=Sum(
+                F("avg_duration_seconds") * (F("pass_count") + F("fail_count"))
+            )
         )
         .values("slowest_tests")
     )
 
     test_headers = totals.values("repoid").annotate(
-        total_run_time=Avg("avg_duration_seconds")
-        * (Sum("pass_count") + Sum("fail_count")),
+        total_run_time=Sum(
+            F("avg_duration_seconds") * (F("pass_count") + F("fail_count"))
+        ),
         slowest_tests_duration=slowest_tests_duration,
         skips=Sum("skip_count"),
         fails=Sum("fail_count"),
@@ -250,7 +252,7 @@ def generate_flake_aggregates(
         denominator += test_rollup.fail_count + test_rollup.pass_count
 
     if denominator == 0:
-        flake_rate = 1.0
+        flake_rate = 0.0
     else:
         flake_rate = numerator / denominator
 

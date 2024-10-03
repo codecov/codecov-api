@@ -1397,8 +1397,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
         )
         assert res["testResultsAggregates"] == {
-            "totalRunTime": 5940.0,
-            "slowestTestsRunTime": 850.0,
+            "totalRunTime": 5900.0,
+            "slowestTestsRunTime": 580.0,
             "totalFails": 20,
             "totalSkips": 10,
         }
