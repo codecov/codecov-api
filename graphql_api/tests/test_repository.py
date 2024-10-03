@@ -1412,12 +1412,12 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
         assert res["testResultsAggregates"] == {
-            "totalRunTime": 580.0,
-            "slowestTestsRunTime": 54.0,
+            "totalRunTime": 570.0,
+            "slowestTestsRunTime": 29.0,
             "totalFails": 10,
             "totalSkips": 5,
-            "totalRunTimePercentChange": -62.76083467094703,
-            "slowestTestsRunTimePercentChange": -50.0,
+            "totalRunTimePercentChange": -63.10679611650486,
+            "slowestTestsRunTimePercentChange": -50.847457627118644,
             "totalFailsPercentChange": 100.0,
             "totalSkipsPercentChange": -50.0,
         }
@@ -1446,8 +1446,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
         assert res["testResultsAggregates"] == {
-            "totalRunTime": 580.0,
-            "slowestTestsRunTime": 54.0,
+            "totalRunTime": 570.0,
+            "slowestTestsRunTime": 29.0,
             "totalFails": 10,
             "totalSkips": 5,
             "totalRunTimePercentChange": None,
