@@ -43,7 +43,6 @@ from upload.helpers import (
 )
 from upload.tokenless.tokenless import TokenlessUploadHandler
 from utils.encryption import encryptor
-from django.conf import settings
 
 
 def mock_get_config_global_upload_tokens(*args):
