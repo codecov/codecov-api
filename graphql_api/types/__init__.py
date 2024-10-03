@@ -123,7 +123,6 @@ types = [
     test_results,
     flake_aggregates,
     test_results_aggregates,
-    flake_aggregates,
 ]
 
 bindables = [
@@ -182,7 +181,6 @@ bindables = [
     account_bindable,
     okta_config_bindable,
     test_result_bindable,
-    flake_aggregates_bindable,
     test_results_aggregates_bindable,
     flake_aggregates_bindable,
 ]
