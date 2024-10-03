@@ -19,4 +19,4 @@ def resolve_okta_config(account: Account, info: GraphQLResolveInfo) -> OktaSetti
 
 @account_bindable.field("totalSeatCount")
 def resolve_total_seat_count(account: Account, info: GraphQLResolveInfo) -> int:
-    return account.plan_seat_count + account.free_seat_count
+    return account.total_seat_count
