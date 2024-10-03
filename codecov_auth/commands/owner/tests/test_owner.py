@@ -135,11 +135,11 @@ class OwnerCommandsTest(TransactionTestCase):
         self.command.save_okta_config(input_dict)
         interactor_mock.assert_called_once_with(input_dict)
 
-    @patch("codecov_auth.commands.owner.owner.SetTokensRequiredInteractor.execute")
-    def test_set_tokens_required_delegate_to_interactor(self, interactor_mock):
+    @patch("codecov_auth.commands.owner.owner.SetUploadTokenRequiredInteractor.execute")
+    def test_set_upload_token_required_delegate_to_interactor(self, interactor_mock):
         input_dict = {
-            "tokens_required": True,
+            "upload_token_required": True,
             "org_username": "codecov-user",
         }
-        self.command.set_tokens_required(input_dict)
+        self.command.set_upload_token_required(input_dict)
         interactor_mock.assert_called_once_with(input_dict)

@@ -14,7 +14,7 @@ from .interactors.regenerate_org_upload_token import RegenerateOrgUploadTokenInt
 from .interactors.revoke_user_token import RevokeUserTokenInteractor
 from .interactors.save_okta_config import SaveOktaConfigInteractor
 from .interactors.save_terms_agreement import SaveTermsAgreementInteractor
-from .interactors.set_tokens_required import SetTokensRequiredInteractor
+from .interactors.set_upload_token_required import SetUploadTokenRequiredInteractor
 from .interactors.set_yaml_on_owner import SetYamlOnOwnerInteractor
 from .interactors.start_trial import StartTrialInteractor
 from .interactors.store_codecov_metric import StoreCodecovMetricInteractor
@@ -100,5 +100,5 @@ class OwnerCommands(BaseCommand):
     def save_okta_config(self, input) -> None:
         return self.get_interactor(SaveOktaConfigInteractor).execute(input)
 
-    def set_tokens_required(self, input) -> None:
-        return self.get_interactor(SetTokensRequiredInteractor).execute(input)
+    def set_upload_token_required(self, input) -> None:
+        return self.get_interactor(SetUploadTokenRequiredInteractor).execute(input)

@@ -362,7 +362,8 @@ def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
         )
 
     return list(queryset.values_list("name", flat=True))
-@owner_bindable.field("tokensRequired")
+
+@owner_bindable.field("uploadTokenRequired")
 @require_part_of_org
-def resolve_tokens_required(owner: Owner, info) -> bool | None:
-    return owner.tokens_required
+def resolve_upload_token_required(owner: Owner, info) -> bool | None:
+    return owner.upload_token_required_for_public_repos

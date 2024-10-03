@@ -8,12 +8,12 @@ from codecov_auth.models import Owner
 
 
 @dataclass
-class SetTokensRequiredInput:
-    tokens_required: bool
+class SetUploadTokenRequiredInput:
+    upload_token_required: bool
     org_username: str
 
 
-class SetTokensRequiredInteractor(BaseInteractor):
+class SetUploadTokenRequiredInteractor(BaseInteractor):
     def validate(self, owner_obj):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
@@ -26,8 +26,8 @@ class SetTokensRequiredInteractor(BaseInteractor):
 
     @sync_to_async
     def execute(self, input: dict):
-        typed_input = SetTokensRequiredInput(
-            tokens_required=input.get("tokens_required"),
+        typed_input = SetUploadTokenRequiredInput(
+            upload_token_required=input.get("upload_token_required"),
             org_username=input.get("org_username"),
         )
 
@@ -37,7 +37,7 @@ class SetTokensRequiredInteractor(BaseInteractor):
 
         self.validate(owner_obj)
 
-        owner_obj.tokens_required = typed_input.tokens_required
+        owner_obj.upload_token_required_for_public_repos = typed_input.upload_token_required
         owner_obj.save()
 
-        return typed_input.tokens_required
+        return typed_input.upload_token_required
