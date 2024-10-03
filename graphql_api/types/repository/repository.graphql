@@ -75,6 +75,7 @@ type Repository {
   componentsYaml(termId: String): [ComponentsYaml]!
   testAnalyticsEnabled: Boolean
   isGithubRateLimited: Boolean
+  # TODO - remove with #2291
   testResults(
     filters: TestResultsFilters
     ordering: TestResultsOrdering
@@ -86,17 +87,9 @@ type Repository {
 
   "CoverageAnalytics are fields related to Codecov's Coverage product offering"
   coverageAnalytics: CoverageAnalytics
-}
 
-type TestResultConnection {
-  edges: [TestResultEdge]!
-  totalCount: Int!
-  pageInfo: PageInfo!
-}
-
-type TestResultEdge {
-  cursor: String!
-  node: TestResult!
+  "TestAnalytics are fields related to Codecov's Test Analytics product offering"
+  testAnalytics: TestAnalytics
 }
 
 type PullConnection {

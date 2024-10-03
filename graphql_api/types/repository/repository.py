@@ -31,6 +31,9 @@ from graphql_api.types.coverage_analytics.coverage_analytics import (
 )
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from graphql_api.types.test_analytics.test_analytics import (
+    TestAnalyticsProps,
+)
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
@@ -522,6 +525,7 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
         return None
 
 
+# TODO - remove with #2291
 @repository_bindable.field("testResults")
 @convert_kwargs_to_snake_case
 async def resolve_test_results(
@@ -555,5 +559,15 @@ def resolve_coverage_analytics(
     info: GraphQLResolveInfo,
 ) -> CoverageAnalyticsProps:
     return CoverageAnalyticsProps(
+        repository=repository,
+    )
+
+
+@repository_bindable.field("testAnalytics")
+def resolve_test_analytics(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+) -> CoverageAnalyticsProps:
+    return TestAnalyticsProps(
         repository=repository,
     )

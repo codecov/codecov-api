@@ -1,0 +1,28 @@
+"""
+TestAnalytics is information related to a repo's test analytics
+"""
+type TestAnalytics {
+  "Test Results are results of test analytics"
+  results(
+    filters: TestResultsFilters
+    ordering: TestResultsOrdering
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
+}
+
+"TestAnalyticsResult is TestAnalytics or potential error(s)"
+union TestAnalyticsResult = TestAnalytics | NotFoundError
+
+type TestResultConnection {
+  edges: [TestResultEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type TestResultEdge {
+  cursor: String!
+  node: TestResult!
+}
