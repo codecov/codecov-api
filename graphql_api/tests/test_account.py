@@ -11,7 +11,9 @@ from .helper import GraphQLTestHelper
 
 class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.account = AccountFactory(name="Test Account", plan_seat_count=10, free_seat_count=1)
+        self.account = AccountFactory(
+            name="Test Account", plan_seat_count=10, free_seat_count=1
+        )
         self.owner = OwnerFactory(
             username="randomOwner", service="github", account=self.account
         )
@@ -58,4 +60,3 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
         assert "errors" not in result
         seatCount = result["owner"]["account"]["totalSeatCount"]
         assert seatCount == 11
-

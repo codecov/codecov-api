@@ -14,8 +14,11 @@ def resolve_name(account: Account, info: GraphQLResolveInfo) -> str:
 
 @account_bindable.field("oktaConfig")
 @sync_to_async
-def resolve_okta_config(account: Account, info: GraphQLResolveInfo) -> OktaSettings | None:
+def resolve_okta_config(
+    account: Account, info: GraphQLResolveInfo
+) -> OktaSettings | None:
     return OktaSettings.objects.filter(account_id=account.pk).first()
+
 
 @account_bindable.field("totalSeatCount")
 def resolve_total_seat_count(account: Account, info: GraphQLResolveInfo) -> int:
