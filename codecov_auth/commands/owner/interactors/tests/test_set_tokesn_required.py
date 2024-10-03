@@ -6,10 +6,10 @@ from django.test import TransactionTestCase
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
 from codecov_auth.tests.factories import OwnerFactory
 
-from ..set_tokens_required import SetTokensRequiredInteractor
+from ..set_upload_token_required import SetUploadTokenRequiredInteractor
 
 
-class SetTokensRequiredInteractorTest(TransactionTestCase):
+class SetUploadTokenRequiredInteractorTest(TransactionTestCase):
     def setUp(self):
         self.current_user = OwnerFactory(username="codecov-user")
         self.service = "github"
@@ -24,7 +24,7 @@ class SetTokensRequiredInteractorTest(TransactionTestCase):
             admins=[self.current_user.ownerid],
         )
 
-        self.interactor = SetTokensRequiredInteractor(
+        self.interactor = SetUploadTokenRequiredInteractor(
             current_owner=self.owner,
             service=self.service,
             current_user=self.current_user,
@@ -33,7 +33,7 @@ class SetTokensRequiredInteractorTest(TransactionTestCase):
     @async_to_sync
     async def execute(
         self,
-        interactor: SetTokensRequiredInteractor | None = None,
+        interactor: SetUploadTokenRequiredInteractor | None = None,
         input: dict | None = None,
     ):
         if not interactor:
@@ -44,7 +44,7 @@ class SetTokensRequiredInteractorTest(TransactionTestCase):
     async def test_user_is_not_authenticated(self):
         with pytest.raises(Unauthenticated):
             await self.execute(
-                interactor=SetTokensRequiredInteractor(
+                interactor=SetUploadTokenRequiredInteractor(
                     current_owner=None,
                     service=self.service,
                     current_user=AnonymousUser(),
@@ -82,7 +82,7 @@ class SetTokensRequiredInteractorTest(TransactionTestCase):
             "org_username": self.owner_with_admins.username,
         }
 
-        interactor = SetTokensRequiredInteractor(
+        interactor = SetUploadTokenRequiredInteractor(
             current_owner=self.current_user, service=self.service
         )
         result = await self.execute(interactor=interactor, input=input_data)
@@ -101,7 +101,7 @@ class SetTokensRequiredInteractorTest(TransactionTestCase):
             "org_username": self.owner_with_admins.username,
         }
 
-        interactor = SetTokensRequiredInteractor(
+        interactor = SetUploadTokenRequiredInteractor(
             current_owner=self.current_user, service=self.service
         )
         result = await self.execute(interactor=interactor, input=input_data)
