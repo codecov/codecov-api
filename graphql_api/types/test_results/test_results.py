@@ -37,6 +37,11 @@ def resolve_failure_rate(test: TestDict, _: GraphQLResolveInfo) -> float | None:
     return test["failure_rate"]
 
 
+@test_result_bindable.field("flakeRate")
+def resolve_flake_rate(test, info) -> float | None:
+    return test["flake_rate"]
+
+
 @test_result_bindable.field("avgDuration")
 def resolve_avg_duration(test: TestDict, _: GraphQLResolveInfo) -> float | None:
     return test["avg_duration"]

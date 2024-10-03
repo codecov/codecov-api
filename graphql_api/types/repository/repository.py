@@ -35,7 +35,11 @@ from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, Interval, MeasurementName
-from utils.test_results import aggregate_test_results, test_results_headers
+from utils.test_results import (
+    generate_flake_aggregates,
+    generate_test_results,
+    generate_test_results_aggregates,
+)
 
 log = logging.getLogger(__name__)
 
@@ -531,7 +535,7 @@ async def resolve_test_results(
     filters=None,
     **kwargs,
 ):
-    queryset = await sync_to_async(aggregate_test_results)(
+    queryset = await sync_to_async(generate_test_results)(
         repoid=repository.repoid, branch=filters.get("branch") if filters else None
     )
 
@@ -561,10 +565,20 @@ def resolve_coverage_analytics(
 
 @repository_bindable.field("testResultsHeaders")
 @convert_kwargs_to_snake_case
-async def resolve_test_results_headers(
+async def resolve_test_results_aggregates(
     repository: Repository,
     info: GraphQLResolveInfo,
 ):
-    queryset = await sync_to_async(test_results_headers)(repoid=repository.repoid)
+    queryset = await sync_to_async(generate_test_results_aggregates)(
+        repoid=repository.repoid
+    )
+
+    return queryset
+
+
+@repository_bindable.field("flakeAggregates")
+@convert_kwargs_to_snake_case
+async def resolve_flake_aggregates(repository: Repository, info: GraphQLResolveInfo):
+    queryset = await sync_to_async(generate_flake_aggregates)(repoid=repository.repoid)
 
     return queryset

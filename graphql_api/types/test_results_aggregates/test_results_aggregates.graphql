@@ -1,4 +1,4 @@
-type TestResultsHeaders {
+type TestResultsAggregates {
   totalRunTime: Float!
   slowestTestsRunTime: Float!
   totalFails: Int!

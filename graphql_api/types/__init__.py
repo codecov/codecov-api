@@ -29,6 +29,7 @@ from .enums import enum_types
 from .file import commit_file, file_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
+from .flake_aggregates import flake_aggregates, flake_aggregates_bindable
 from .impacted_file import (
     impacted_file,
     impacted_file_bindable,
@@ -66,7 +67,10 @@ from .segment_comparison import (
 from .self_hosted_license import self_hosted_license, self_hosted_license_bindable
 from .session import session, session_bindable
 from .test_results import test_result_bindable, test_results
-from .test_results_headers import test_results_headers, test_results_headers_bindable
+from .test_results_aggregates import (
+    test_results_aggregates,
+    test_results_aggregates_bindable,
+)
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 from .user_token import user_token, user_token_bindable
@@ -117,7 +121,8 @@ types = [
     account,
     okta_config,
     test_results,
-    test_results_headers,
+    test_results_aggregates,
+    flake_aggregates,
 ]
 
 bindables = [
@@ -176,5 +181,6 @@ bindables = [
     account_bindable,
     okta_config_bindable,
     test_result_bindable,
-    test_results_headers_bindable,
+    test_results_aggregates_bindable,
+    flake_aggregates_bindable,
 ]
