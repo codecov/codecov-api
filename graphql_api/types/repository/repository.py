@@ -547,6 +547,8 @@ async def resolve_test_results(
             generate_test_results_param = GENERATE_TEST_RESULT_PARAM.FAILED
         case TestResultsFilterParameter.SLOWEST_TESTS:
             generate_test_results_param = GENERATE_TEST_RESULT_PARAM.SLOWEST
+        case TestResultsFilterParameter.SKIPPED_TESTS:
+            generate_test_results_param = GENERATE_TEST_RESULT_PARAM.SKIPPED
 
     queryset = await sync_to_async(generate_test_results)(
         repoid=repository.repoid,
@@ -578,7 +580,7 @@ def resolve_coverage_analytics(
     )
 
 
-@repository_bindable.field("testResultsHeaders")
+@repository_bindable.field("testResultsAggregates")
 @convert_kwargs_to_snake_case
 async def resolve_test_results_aggregates(
     repository: Repository,

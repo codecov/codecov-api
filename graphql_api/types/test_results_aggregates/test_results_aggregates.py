@@ -14,20 +14,22 @@ class TestResultsAggregates(TypedDict):
 
 
 @test_results_aggregates_bindable.field("totalRunTime")
-def resolve_name(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float:
+def resolve_total_run_time(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float:
     return obj["total_run_time"]
 
 
 @test_results_aggregates_bindable.field("slowestTestsRunTime")
-def resolve_updated_at(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float:
+def resolve_slowest_tests_run_time(
+    obj: TestResultsAggregates, _: GraphQLResolveInfo
+) -> float:
     return obj["slowest_tests_duration"]
 
 
 @test_results_aggregates_bindable.field("totalFails")
-def resolve_commits_failed(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
+def resolve_total_fails(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
     return obj["fails"]
 
 
 @test_results_aggregates_bindable.field("totalSkips")
-def resolve_failure_rate(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
+def resolve_total_skips(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
     return obj["skips"]

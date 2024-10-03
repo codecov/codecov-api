@@ -54,6 +54,7 @@ class GENERATE_TEST_RESULT_PARAM:
     FLAKY = "flaky"
     FAILED = "failed"
     SLOWEST = "slowest"
+    SKIPPED = "skipped"
 
 
 def generate_test_results(
@@ -96,6 +97,15 @@ def generate_test_results(
                 totals.values("test")
                 .annotate(fail_count_sum=Sum("fail_count"))
                 .filter(fail_count_sum__gt=0)
+                .values("test_id")
+            )
+
+            totals = totals.filter(test_id__in=test_ids)
+        case GENERATE_TEST_RESULT_PARAM.SKIPPED:
+            test_ids = (
+                totals.values("test")
+                .annotate(skip_count_sum=Sum("skip_count"))
+                .filter(skip_count_sum__gt=0)
                 .values("test_id")
             )
 

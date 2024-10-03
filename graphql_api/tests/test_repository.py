@@ -966,6 +966,30 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
+    def test_skipped_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            skip_count=0,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="feature",
+            skip_count=1000,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { parameter: SKIPPED_TESTS }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
+
     def test_slowest_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1366,9 +1390,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             )
         res = self.fetch_repository(
             repo.name,
-            """testResultsHeaders { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
+            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
         )
-        assert res["testResultsHeaders"] == {
+        assert res["testResultsAggregates"] == {
             "totalRunTime": 5940.0,
             "slowestTestsRunTime": 850.0,
             "totalFails": 20,
