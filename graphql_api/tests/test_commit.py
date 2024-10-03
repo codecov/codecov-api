@@ -529,7 +529,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
+            % 'coverageAnalytics { coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } } }'
         )
         variables = {
             "org": self.org.username,
@@ -544,14 +544,16 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {"line": 1, "coverage": "H"},
                 {"line": 2, "coverage": "M"},
             ],
-            "totals": {"coverage": 83.0},
+            "totals": {"percentCovered": 83.0},
         }
         content_mock.return_value = "file content"
         critical_files.return_value = [CriticalFile("path")]
 
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
-        coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
+        coverageFile = data["owner"]["repository"]["commit"]["coverageAnalytics"][
+            "coverageFile"
+        ]
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
@@ -606,8 +608,10 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 repository(name: $repo) {
                     ... on Repository {
                         commit(id: $commit) {
-                            coverageFile(path: "path", components: $components) {
-                                hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage}
+                            coverageAnalytics {
+                                coverageFile(path: "path", components: $components) {
+                                    hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered }
+                                }
                             }
                         }
                     }
@@ -622,16 +626,18 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverageFile": {
-                            "content": None,
-                            "coverage": [
-                                {"coverage": "P", "line": 0},
-                                {"coverage": "H", "line": 1},
-                                {"coverage": "M", "line": 2},
-                            ],
-                            "hashedPath": "d6fe1d0be6347b8ef2427fa629c04485",
-                            "isCriticalFile": False,
-                            "totals": {"coverage": 83.0},
+                        "coverageAnalytics": {
+                            "coverageFile": {
+                                "content": None,
+                                "coverage": [
+                                    {"coverage": "P", "line": 0},
+                                    {"coverage": "H", "line": 1},
+                                    {"coverage": "M", "line": 2},
+                                ],
+                                "hashedPath": "d6fe1d0be6347b8ef2427fa629c04485",
+                                "isCriticalFile": False,
+                                "totals": {"percentCovered": 83.0},
+                            }
                         }
                     }
                 }
@@ -648,7 +654,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }'
+            % 'coverageAnalytics { coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } } }'
         )
         variables = {
             "org": self.org.username,
@@ -662,7 +668,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
         report_mock.return_value = EmptyReport()
         data = self.gql_request(query, variables=variables)
-        coverageFile = data["owner"]["repository"]["commit"]["coverageFile"]
+        coverageFile = data["owner"]["repository"]["commit"]["coverageAnalytics"][
+            "coverageFile"
+        ]
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
@@ -670,7 +678,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_flag_names(self, report_mock):
-        query = query_commit % "flagNames"
+        query = query_commit % "coverageAnalytics { flagNames }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -679,7 +687,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
-        flags = data["owner"]["repository"]["commit"]["flagNames"]
+        flags = data["owner"]["repository"]["commit"]["coverageAnalytics"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
     def test_fetch_commit_compare_call_the_command(self):
@@ -707,7 +715,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             query_commit
             % """
             compareWithParent { __typename ... on Comparison { state } }
-            bundleAnalysisCompareWithParent { __typename ... on BundleAnalysisComparison { bundleData { size { uncompress } } } }
+            bundleAnalysis {
+                bundleAnalysisCompareWithParent { __typename ... on BundleAnalysisComparison { bundleData { size { uncompress } } } }
+            }
             """
         )
         variables = {
@@ -719,7 +729,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         commit = data["owner"]["repository"]["commit"]
         assert commit["compareWithParent"]["__typename"] == "MissingBaseCommit"
         assert (
-            commit["bundleAnalysisCompareWithParent"]["__typename"]
+            commit["bundleAnalysis"]["bundleAnalysisCompareWithParent"]["__typename"]
             == "MissingBaseCommit"
         )
 
@@ -815,12 +825,24 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         query = (
             query_commit
             % """
-            bundleAnalysisCompareWithParent {
-                __typename
-                ... on BundleAnalysisComparison {
-                    bundles {
-                        name
-                        changeType
+            bundleAnalysis {
+                bundleAnalysisCompareWithParent {
+                    __typename
+                    ... on BundleAnalysisComparison {
+                        bundles {
+                            name
+                            changeType
+                            bundleData {
+                                size {
+                                    uncompress
+                                }
+                            }
+                            bundleChange {
+                                size {
+                                    uncompress
+                                }
+                            }
+                        }
                         bundleData {
                             size {
                                 uncompress
@@ -830,16 +852,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                             size {
                                 uncompress
                             }
-                        }
-                    }
-                    bundleData {
-                        size {
-                            uncompress
-                        }
-                    }
-                    bundleChange {
-                        size {
-                            uncompress
                         }
                     }
                 }
@@ -854,7 +866,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["bundleAnalysisCompareWithParent"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisCompareWithParent"] == {
             "__typename": "BundleAnalysisComparison",
             "bundles": [
                 {
@@ -959,17 +971,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         query = (
             query_commit
             % """
-            bundleAnalysisCompareWithParent {
-                __typename
-                ... on BundleAnalysisComparison {
-                    bundleData {
-                        size {
-                            uncompress
+            bundleAnalysis {
+                bundleAnalysisCompareWithParent {
+                    __typename
+                    ... on BundleAnalysisComparison {
+                        bundleData {
+                            size {
+                                uncompress
+                            }
                         }
-                    }
-                    bundleChange {
-                        size {
-                            uncompress
+                        bundleChange {
+                            size {
+                                uncompress
+                            }
                         }
                     }
                 }
@@ -984,7 +998,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["bundleAnalysisCompareWithParent"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisCompareWithParent"] == {
             "__typename": "BundleAnalysisComparison",
             "bundleData": {"size": {"uncompress": 201720}},
             "bundleChange": {"size": {"uncompress": 36555}},
@@ -1021,12 +1035,14 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         query = (
             query_commit
             % """
-            bundleAnalysisCompareWithParent {
-                __typename
-                ... on BundleAnalysisComparison {
-                    bundleData {
-                        size {
-                            uncompress
+            bundleAnalysis {
+                bundleAnalysisCompareWithParent {
+                    __typename
+                    ... on BundleAnalysisComparison {
+                        bundleData {
+                            size {
+                                uncompress
+                            }
                         }
                     }
                 }
@@ -1080,12 +1096,14 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         query = (
             query_commit
             % """
-            bundleAnalysisCompareWithParent {
-                __typename
-                ... on BundleAnalysisComparison {
-                    bundleData {
-                        size {
-                            uncompress
+            bundleAnalysis {
+                bundleAnalysisCompareWithParent {
+                    __typename
+                    ... on BundleAnalysisComparison {
+                        bundleData {
+                            size {
+                                uncompress
+                            }
                         }
                     }
                 }
@@ -1112,10 +1130,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         query = (
             query_commit
             % """
-            bundleAnalysisReport {
-                __typename
-                ... on MissingHeadReport {
-                    message
+            bundleAnalysis {
+                bundleAnalysisReport {
+                    __typename
+                    ... on MissingHeadReport {
+                        message
+                    }
                 }
             }
             """
@@ -1128,7 +1148,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "MissingHeadReport",
             "message": "Missing head report",
         }
@@ -1155,16 +1175,29 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundles {
-                                            name
-                                            assets {
-                                                normalizedName
-                                            }
-                                            asset(name: "not_exist") {
-                                                normalizedName
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundles {
+                                                name
+                                                assets {
+                                                    normalizedName
+                                                }
+                                                asset(name: "not_exist") {
+                                                    normalizedName
+                                                }
+                                                bundleData {
+                                                    loadTime {
+                                                        threeG
+                                                        highSpeed
+                                                    }
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
+                                                }
+                                                isCached
                                             }
                                             bundleData {
                                                 loadTime {
@@ -1176,26 +1209,15 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                     uncompress
                                                 }
                                             }
+                                            bundle(name: "not_exist") {
+                                                name
+                                                isCached
+                                            }
                                             isCached
                                         }
-                                        bundleData {
-                                            loadTime {
-                                                threeG
-                                                highSpeed
-                                            }
-                                            size {
-                                                gzip
-                                                uncompress
-                                            }
+                                        ... on MissingHeadReport {
+                                            message
                                         }
-                                        bundle(name: "not_exist") {
-                                            name
-                                            isCached
-                                        }
-                                        isCached
-                                    }
-                                    ... on MissingHeadReport {
-                                        message
                                     }
                                 }
                             }
@@ -1213,7 +1235,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundles": [
                 {
@@ -1349,28 +1371,30 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b1") {
-                                            assetsPaginated (
-                                                ordering: $ordering,
-                                                orderingDirection: $orderingDirection,
-                                                first: 2,
-                                                after: "5",
-                                            ){
-                                                totalCount
-                                                edges {
-                                                    cursor
-                                                    node {
-                                                        normalizedName
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b1") {
+                                                assetsPaginated (
+                                                    ordering: $ordering,
+                                                    orderingDirection: $orderingDirection,
+                                                    first: 2,
+                                                    after: "5",
+                                                ){
+                                                    totalCount
+                                                    edges {
+                                                        cursor
+                                                        node {
+                                                            normalizedName
+                                                        }
                                                     }
-                                                }
-                                                pageInfo {
-                                                    hasNextPage
-                                                    hasPreviousPage
-                                                    startCursor
-                                                    endCursor
+                                                    pageInfo {
+                                                        hasNextPage
+                                                        hasPreviousPage
+                                                        startCursor
+                                                        endCursor
+                                                    }
                                                 }
                                             }
                                         }
@@ -1393,7 +1417,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "assetsPaginated": {
@@ -1452,28 +1476,30 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b1") {
-                                            assetsPaginated (
-                                                ordering: $ordering,
-                                                orderingDirection: $orderingDirection,
-                                                first: 2,
-                                                after: "notanumber",
-                                            ){
-                                                totalCount
-                                                edges {
-                                                    cursor
-                                                    node {
-                                                        normalizedName
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b1") {
+                                                assetsPaginated (
+                                                    ordering: $ordering,
+                                                    orderingDirection: $orderingDirection,
+                                                    first: 2,
+                                                    after: "notanumber",
+                                                ){
+                                                    totalCount
+                                                    edges {
+                                                        cursor
+                                                        node {
+                                                            normalizedName
+                                                        }
                                                     }
-                                                }
-                                                pageInfo {
-                                                    hasNextPage
-                                                    hasPreviousPage
-                                                    startCursor
-                                                    endCursor
+                                                    pageInfo {
+                                                        hasNextPage
+                                                        hasPreviousPage
+                                                        startCursor
+                                                        endCursor
+                                                    }
                                                 }
                                             }
                                         }
@@ -1496,7 +1522,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "assetsPaginated": {
@@ -1555,28 +1581,30 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b1") {
-                                            assetsPaginated (
-                                                ordering: $ordering,
-                                                orderingDirection: $orderingDirection,
-                                                last: 2,
-                                                before: "1",
-                                            ){
-                                                totalCount
-                                                edges {
-                                                    cursor
-                                                    node {
-                                                        normalizedName
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b1") {
+                                                assetsPaginated (
+                                                    ordering: $ordering,
+                                                    orderingDirection: $orderingDirection,
+                                                    last: 2,
+                                                    before: "1",
+                                                ){
+                                                    totalCount
+                                                    edges {
+                                                        cursor
+                                                        node {
+                                                            normalizedName
+                                                        }
                                                     }
-                                                }
-                                                pageInfo {
-                                                    hasNextPage
-                                                    hasPreviousPage
-                                                    startCursor
-                                                    endCursor
+                                                    pageInfo {
+                                                        hasNextPage
+                                                        hasPreviousPage
+                                                        startCursor
+                                                        endCursor
+                                                    }
                                                 }
                                             }
                                         }
@@ -1599,7 +1627,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "assetsPaginated": {
@@ -1658,28 +1686,30 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b1") {
-                                            assetsPaginated (
-                                                ordering: $ordering,
-                                                orderingDirection: $orderingDirection,
-                                                last: 2,
-                                                before: "99999",
-                                            ){
-                                                totalCount
-                                                edges {
-                                                    cursor
-                                                    node {
-                                                        normalizedName
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b1") {
+                                                assetsPaginated (
+                                                    ordering: $ordering,
+                                                    orderingDirection: $orderingDirection,
+                                                    last: 2,
+                                                    before: "99999",
+                                                ){
+                                                    totalCount
+                                                    edges {
+                                                        cursor
+                                                        node {
+                                                            normalizedName
+                                                        }
                                                     }
-                                                }
-                                                pageInfo {
-                                                    hasNextPage
-                                                    hasPreviousPage
-                                                    startCursor
-                                                    endCursor
+                                                    pageInfo {
+                                                        hasNextPage
+                                                        hasPreviousPage
+                                                        startCursor
+                                                        endCursor
+                                                    }
                                                 }
                                             }
                                         }
@@ -1702,7 +1732,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "assetsPaginated": {
@@ -1761,17 +1791,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b1") {
-                                            assetsPaginated (
-                                                ordering: $ordering,
-                                                orderingDirection: $orderingDirection,
-                                                before: "1",
-                                                after: "2",
-                                            ){
-                                                totalCount
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b1") {
+                                                assetsPaginated (
+                                                    ordering: $ordering,
+                                                    orderingDirection: $orderingDirection,
+                                                    before: "1",
+                                                    after: "2",
+                                                ){
+                                                    totalCount
+                                                }
                                             }
                                         }
                                     }
@@ -1791,7 +1823,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, with_errors=True, variables=variables)
         commit = data["data"]["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {"assetsPaginated": None},
         }
@@ -1831,17 +1863,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b1") {
-                                            assetsPaginated (
-                                                ordering: $ordering,
-                                                orderingDirection: $orderingDirection,
-                                                first: 1,
-                                                last: 2,
-                                            ){
-                                                totalCount
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b1") {
+                                                assetsPaginated (
+                                                    ordering: $ordering,
+                                                    orderingDirection: $orderingDirection,
+                                                    first: 1,
+                                                    last: 2,
+                                                ){
+                                                    totalCount
+                                                }
                                             }
                                         }
                                     }
@@ -1861,7 +1895,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, with_errors=True, variables=variables)
         commit = data["data"]["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {"assetsPaginated": None},
         }
@@ -1895,27 +1929,16 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b5") {
-                                            moduleCount
-                                            asset(name: "assets/LazyComponent-fcbb0922.js") {
-                                                name
-                                                normalizedName
-                                                extension
-                                                bundleData {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
-                                                    }
-                                                    size {
-                                                        gzip
-                                                        uncompress
-                                                    }
-                                                }
-                                                modules {
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b5") {
+                                                moduleCount
+                                                asset(name: "assets/LazyComponent-fcbb0922.js") {
                                                     name
+                                                    normalizedName
+                                                    extension
                                                     bundleData {
                                                         loadTime {
                                                             threeG
@@ -1924,6 +1947,19 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                         size {
                                                             gzip
                                                             uncompress
+                                                        }
+                                                    }
+                                                    modules {
+                                                        name
+                                                        bundleData {
+                                                            loadTime {
+                                                                threeG
+                                                                highSpeed
+                                                            }
+                                                            size {
+                                                                gzip
+                                                                uncompress
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -1946,7 +1982,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        bundle_report = commit["bundleAnalysisReport"]["bundle"]
+        bundle_report = commit["bundleAnalysis"]["bundleAnalysisReport"]["bundle"]
         asset_report = bundle_report["asset"]
 
         assert bundle_report is not None
@@ -2039,13 +2075,15 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "b5", filters: $filters) {
-                                            moduleCount
-                                            assets {
-                                                name
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b5", filters: $filters) {
+                                                moduleCount
+                                                assets {
+                                                    name
+                                                }
                                             }
                                         }
                                     }
@@ -2117,7 +2155,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             variables["filters"] = input_d
             data = self.gql_request(query, variables=variables)
             assert (
-                data["owner"]["repository"]["commit"]["bundleAnalysisReport"]["bundle"]
+                data["owner"]["repository"]["commit"]["bundleAnalysis"][
+                    "bundleAnalysisReport"
+                ]["bundle"]
                 is not None
             )
             asset_reports_mock.assert_called_with(**output_d)
@@ -2511,15 +2551,17 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundles {
-                                            name
-                                            bundleData {
-                                                size {
-                                                    gzip
-                                                    uncompress
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundles {
+                                                name
+                                                bundleData {
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
                                                 }
                                             }
                                         }
@@ -2540,7 +2582,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundles": [
                 {
@@ -2588,7 +2630,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     def test_coverage_totals(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
-        query = query_commit % "coverage { totals { percentCovered } } "
+        query = query_commit % "coverageAnalytics { totals { percentCovered } } "
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -2596,7 +2638,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["coverage"]["totals"]["percentCovered"] == 12
+        assert commit["coverageAnalytics"]["totals"]["percentCovered"] == 12
 
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
@@ -2608,7 +2650,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverage { coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage} } }'
+            % 'coverageAnalytics { coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } } }'
         )
         variables = {
             "org": self.org.username,
@@ -2623,14 +2665,16 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 {"line": 1, "coverage": "H"},
                 {"line": 2, "coverage": "M"},
             ],
-            "totals": {"coverage": 83.0},
+            "totals": {"percentCovered": 83.0},
         }
         content_mock.return_value = "file content"
         critical_files.return_value = [CriticalFile("path")]
 
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
-        coverageFile = data["owner"]["repository"]["commit"]["coverage"]["coverageFile"]
+        coverageFile = data["owner"]["repository"]["commit"]["coverageAnalytics"][
+            "coverageFile"
+        ]
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
@@ -2685,9 +2729,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 repository(name: $repo) {
                     ... on Repository {
                         commit(id: $commit) {
-                            coverage {
+                            coverageAnalytics {
                                 coverageFile(path: "path", components: $components) {
-                                    hashedPath, content, isCriticalFile, coverage { line,coverage }, totals {coverage}
+                                    hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered }
                                 }
                             }
                         }
@@ -2703,7 +2747,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverage": {
+                        "coverageAnalytics": {
                             "coverageFile": {
                                 "content": None,
                                 "coverage": [
@@ -2713,7 +2757,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                 ],
                                 "hashedPath": "d6fe1d0be6347b8ef2427fa629c04485",
                                 "isCriticalFile": False,
-                                "totals": {"coverage": 83.0},
+                                "totals": {"percentCovered": 83.0},
                             }
                         }
                     }
@@ -2731,7 +2775,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverage { coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals {coverage} }}'
+            % 'coverageAnalytics { coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } }}'
         )
         variables = {
             "org": self.org.username,
@@ -2745,7 +2789,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
         report_mock.return_value = EmptyReport()
         data = self.gql_request(query, variables=variables)
-        coverageFile = data["owner"]["repository"]["commit"]["coverage"]["coverageFile"]
+        coverageFile = data["owner"]["repository"]["commit"]["coverageAnalytics"][
+            "coverageFile"
+        ]
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
@@ -2753,7 +2799,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_coverage_flag_names(self, report_mock):
-        query = query_commit % "coverage { flagNames }"
+        query = query_commit % "coverageAnalytics { flagNames }"
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -2762,7 +2808,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         report_mock.return_value = MockReport()
         data = self.gql_request(query, variables=variables)
-        flags = data["owner"]["repository"]["commit"]["coverage"]["flagNames"]
+        flags = data["owner"]["repository"]["commit"]["coverageAnalytics"]["flagNames"]
         assert flags == ["flag_a", "flag_b"]
 
     def test_coverage_bundle_analysis_missing_report(self):

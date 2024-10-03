@@ -111,45 +111,47 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "super") {
-                                            name
-                                            measurements(
-                                                filters: $filters
-                                                orderingDirection: $orderingDirection
-                                                after: $after
-                                                interval: $interval
-                                                before: $before
-                                            ){
-                                                assetType
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "super") {
                                                 name
-                                                size {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
-                                                    }
+                                                measurements(
+                                                    filters: $filters
+                                                    orderingDirection: $orderingDirection
+                                                    after: $after
+                                                    interval: $interval
+                                                    before: $before
+                                                ){
+                                                    assetType
+                                                    name
                                                     size {
-                                                        gzip
-                                                        uncompress
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                }
-                                                change {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
+                                                    change {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                    size {
-                                                        gzip
-                                                        uncompress
+                                                    measurements {
+                                                        avg
+                                                        min
+                                                        max
+                                                        timestamp
                                                     }
-                                                }
-                                                measurements {
-                                                    avg
-                                                    min
-                                                    max
-                                                    timestamp
                                                 }
                                             }
                                         }
@@ -176,7 +178,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "measurements": [
@@ -598,7 +600,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "measurements": [
@@ -689,44 +691,46 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "super") {
-                                            asset(name: $asset){
-                                                name
-                                                measurements(
-                                                    after: $after
-                                                    interval: $interval
-                                                    before: $before
-                                                ){
-                                                    assetType
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "super") {
+                                                asset(name: $asset){
                                                     name
-                                                    size {
-                                                        loadTime {
-                                                            threeG
-                                                            highSpeed
-                                                        }
+                                                    measurements(
+                                                        after: $after
+                                                        interval: $interval
+                                                        before: $before
+                                                    ){
+                                                        assetType
+                                                        name
                                                         size {
-                                                            gzip
-                                                            uncompress
+                                                            loadTime {
+                                                                threeG
+                                                                highSpeed
+                                                            }
+                                                            size {
+                                                                gzip
+                                                                uncompress
+                                                            }
                                                         }
-                                                    }
-                                                    change {
-                                                        loadTime {
-                                                            threeG
-                                                            highSpeed
+                                                        change {
+                                                            loadTime {
+                                                                threeG
+                                                                highSpeed
+                                                            }
+                                                            size {
+                                                                gzip
+                                                                uncompress
+                                                            }
                                                         }
-                                                        size {
-                                                            gzip
-                                                            uncompress
+                                                        measurements {
+                                                            avg
+                                                            min
+                                                            max
+                                                            timestamp
                                                         }
-                                                    }
-                                                    measurements {
-                                                        avg
-                                                        min
-                                                        max
-                                                        timestamp
                                                     }
                                                 }
                                             }
@@ -753,7 +757,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "asset": {
@@ -831,7 +835,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "asset": {
@@ -868,45 +872,47 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "super") {
-                                            name
-                                            measurements(
-                                                filters: $filters
-                                                orderingDirection: $orderingDirection
-                                                after: $after
-                                                interval: $interval
-                                                before: $before
-                                            ){
-                                                assetType
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "super") {
                                                 name
-                                                size {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
-                                                    }
+                                                measurements(
+                                                    filters: $filters
+                                                    orderingDirection: $orderingDirection
+                                                    after: $after
+                                                    interval: $interval
+                                                    before: $before
+                                                ){
+                                                    assetType
+                                                    name
                                                     size {
-                                                        gzip
-                                                        uncompress
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                }
-                                                change {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
+                                                    change {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                    size {
-                                                        gzip
-                                                        uncompress
+                                                    measurements {
+                                                        avg
+                                                        min
+                                                        max
+                                                        timestamp
                                                     }
-                                                }
-                                                measurements {
-                                                    avg
-                                                    min
-                                                    max
-                                                    timestamp
                                                 }
                                             }
                                         }
@@ -933,7 +939,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "measurements": [
@@ -1313,7 +1319,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "measurements": [
@@ -1399,45 +1405,47 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "super") {
-                                            name
-                                            measurements(
-                                                filters: $filters
-                                                orderingDirection: $orderingDirection
-                                                after: $after
-                                                interval: $interval
-                                                before: $before
-                                            ){
-                                                assetType
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "super") {
                                                 name
-                                                size {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
-                                                    }
+                                                measurements(
+                                                    filters: $filters
+                                                    orderingDirection: $orderingDirection
+                                                    after: $after
+                                                    interval: $interval
+                                                    before: $before
+                                                ){
+                                                    assetType
+                                                    name
                                                     size {
-                                                        gzip
-                                                        uncompress
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                }
-                                                change {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
+                                                    change {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                    size {
-                                                        gzip
-                                                        uncompress
+                                                    measurements {
+                                                        avg
+                                                        min
+                                                        max
+                                                        timestamp
                                                     }
-                                                }
-                                                measurements {
-                                                    avg
-                                                    min
-                                                    max
-                                                    timestamp
                                                 }
                                             }
                                         }
@@ -1464,7 +1472,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "measurements": [
@@ -1928,7 +1936,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "measurements": [
@@ -2046,46 +2054,48 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "super") {
-                                            name
-                                            measurements(
-                                                filters: $filters
-                                                orderingDirection: $orderingDirection
-                                                after: $after
-                                                interval: $interval
-                                                before: $before
-                                                branch: $branch
-                                            ){
-                                                assetType
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "super") {
                                                 name
-                                                size {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
-                                                    }
+                                                measurements(
+                                                    filters: $filters
+                                                    orderingDirection: $orderingDirection
+                                                    after: $after
+                                                    interval: $interval
+                                                    before: $before
+                                                    branch: $branch
+                                                ){
+                                                    assetType
+                                                    name
                                                     size {
-                                                        gzip
-                                                        uncompress
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                }
-                                                change {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
+                                                    change {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                    size {
-                                                        gzip
-                                                        uncompress
+                                                    measurements {
+                                                        avg
+                                                        min
+                                                        max
+                                                        timestamp
                                                     }
-                                                }
-                                                measurements {
-                                                    avg
-                                                    min
-                                                    max
-                                                    timestamp
                                                 }
                                             }
                                         }
@@ -2112,7 +2122,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "name": "super",
@@ -2255,46 +2265,48 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name: "super") {
-                                            name
-                                            measurements(
-                                                filters: $filters
-                                                orderingDirection: $orderingDirection
-                                                after: $after
-                                                interval: $interval
-                                                before: $before
-                                                branch: $branch
-                                            ){
-                                                assetType
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "super") {
                                                 name
-                                                size {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
-                                                    }
+                                                measurements(
+                                                    filters: $filters
+                                                    orderingDirection: $orderingDirection
+                                                    after: $after
+                                                    interval: $interval
+                                                    before: $before
+                                                    branch: $branch
+                                                ){
+                                                    assetType
+                                                    name
                                                     size {
-                                                        gzip
-                                                        uncompress
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                }
-                                                change {
-                                                    loadTime {
-                                                        threeG
-                                                        highSpeed
+                                                    change {
+                                                        loadTime {
+                                                            threeG
+                                                            highSpeed
+                                                        }
+                                                        size {
+                                                            gzip
+                                                            uncompress
+                                                        }
                                                     }
-                                                    size {
-                                                        gzip
-                                                        uncompress
+                                                    measurements {
+                                                        avg
+                                                        min
+                                                        max
+                                                        timestamp
                                                     }
-                                                }
-                                                measurements {
-                                                    avg
-                                                    min
-                                                    max
-                                                    timestamp
                                                 }
                                             }
                                         }
@@ -2321,7 +2333,7 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
 
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "name": "super",

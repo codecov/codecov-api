@@ -35,7 +35,7 @@ type Commit {
   components(filters: ComponentsFilters): [Component!]!
   bundleStatus: CommitStatus
   coverageStatus: CommitStatus
-  coverage: CommitCoverage
+  coverageAnalytics: CommitCoverage
   bundleAnalysis: CommitBundleAnalysis
 }
 

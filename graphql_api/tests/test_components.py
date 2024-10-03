@@ -110,7 +110,7 @@ query_commit_coverage_components = """
             repository(name: $repo) {
                 ... on Repository {
                     commit(id: $sha) {
-                        coverage {
+                        coverageAnalytics {
                             components {
                                 id
                                 name
@@ -426,7 +426,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverage": {
+                        "coverageAnalytics": {
                             "components": [],
                         }
                     }
@@ -468,7 +468,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverage": {
+                        "coverageAnalytics": {
                             "components": [
                                 {
                                     "id": "python",
@@ -528,7 +528,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $sha) {
-                                coverage {
+                                coverageAnalytics {
                                     components (filters: $filter) {
                                         id
                                         name
@@ -555,7 +555,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverage": {
+                        "coverageAnalytics": {
                             "components": [
                                 {
                                     "id": "python1.1",
@@ -577,7 +577,9 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query_commit_coverage_components, variables=variables)
         assert data == {
-            "owner": {"repository": {"commit": {"coverage": {"components": []}}}}
+            "owner": {
+                "repository": {"commit": {"coverageAnalytics": {"components": []}}}
+            }
         }
 
         # Find all items
@@ -592,7 +594,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverage": {
+                        "coverageAnalytics": {
                             "components": [
                                 {
                                     "id": "python1.1",
@@ -623,7 +625,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverage": {
+                        "coverageAnalytics": {
                             "components": [
                                 {
                                     "id": "golang1.2",
@@ -664,7 +666,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $sha) {
-                                coverage {
+                                coverageAnalytics {
                                     components (filters: $filter) {
                                         id
                                         name
@@ -689,7 +691,7 @@ class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
             "owner": {
                 "repository": {
                     "commit": {
-                        "coverage": {
+                        "coverageAnalytics": {
                             "components": [
                                 {
                                     "id": "cpython",
