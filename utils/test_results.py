@@ -4,6 +4,7 @@ from math import floor
 from django.db.models import (
     Aggregate,
     Avg,
+    Case,
     F,
     FloatField,
     Func,
@@ -13,6 +14,8 @@ from django.db.models import (
     QuerySet,
     Subquery,
     Sum,
+    Value,
+    When,
 )
 from django.db.models.functions import Cast
 from shared.django_apps.core.models import Repository
@@ -26,12 +29,10 @@ thirty_days_ago = dt.date.today() - dt.timedelta(days=30)
 SLOW_TEST_PERCENTILE = 95
 
 
-def slow_test_threshold(num_tests: int):
-    threshold = floor(num_tests * (100 - SLOW_TEST_PERCENTILE) * 0.01)
-    if threshold == 0:
-        if num_tests < (1 / ((100 - SLOW_TEST_PERCENTILE) * 0.01)):
-            threshold = 1
-    return threshold
+def slow_test_threshold(total_tests: int) -> int:
+    percentile = (100 - SLOW_TEST_PERCENTILE) / 100
+    slow_tests_to_return = floor(percentile * total_tests)
+    return max(slow_tests_to_return, 1)
 
 
 class ArrayLength(Func):
@@ -103,8 +104,12 @@ def generate_test_results(
         case GENERATE_TEST_RESULT_PARAM.SKIPPED:
             test_ids = (
                 totals.values("test")
-                .annotate(skip_count_sum=Sum("skip_count"))
-                .filter(skip_count_sum__gt=0)
+                .annotate(
+                    skip_count_sum=Sum("skip_count"),
+                    fail_count_sum=Sum("fail_count"),
+                    pass_count_sum=Sum("pass_count"),
+                )
+                .filter(skip_count_sum__gt=0, fail_count_sum=0, pass_count_sum=0)
                 .values("test_id")
             )
 
@@ -136,25 +141,28 @@ def generate_test_results(
     )
 
     aggregation_of_test_results = totals.values("test").annotate(
-        failure_rate=(
-            Cast(Sum(F("fail_count")), output_field=FloatField())
-            / (
-                Cast(
-                    Sum(F("pass_count")),
-                    output_field=FloatField(),
-                )
-                + Cast(Sum(F("fail_count")), output_field=FloatField())
-            )
+        total_test_count=Cast(
+            Sum(F("pass_count")),
+            output_field=FloatField(),
+        )
+        + Cast(Sum(F("fail_count")), output_field=FloatField()),
+        total_fail_count=Cast(Sum(F("fail_count")), output_field=FloatField()),
+        total_flaky_fail_count=Cast(
+            Sum(F("flaky_fail_count")), output_field=FloatField()
         ),
-        flake_rate=(
-            Cast(Sum(F("flaky_fail_count")), output_field=FloatField())
-            / (
-                Cast(
-                    Sum(F("pass_count")),
-                    output_field=FloatField(),
-                )
-                + Cast(Sum(F("fail_count")), output_field=FloatField())
-            )
+        failure_rate=Case(
+            When(
+                total_test_count=0,
+                then=Value(1.0),
+            ),
+            default=F("total_fail_count") / F("total_test_count"),
+        ),
+        flake_rate=Case(
+            When(
+                total_test_count=0,
+                then=Value(1.0),
+            ),
+            default=F("total_flaky_fail_count") / F("total_test_count"),
         ),
         updated_at=Max("latest_run"),
         commits_where_fail=ArrayLength(Array(Subquery(commits_where_fail_sq))),
@@ -214,7 +222,9 @@ def generate_test_results_aggregates(
         return None
 
 
-def generate_flake_aggregates(repoid: int, history: dt.timedelta | None = None):
+def generate_flake_aggregates(
+    repoid: int, history: dt.timedelta | None = None
+) -> dict[str, int | float]:
     repo = Repository.objects.get(repoid=repoid)
     time_ago = (dt.date.today() - history) if history is not None else thirty_days_ago
 
@@ -239,6 +249,9 @@ def generate_flake_aggregates(repoid: int, history: dt.timedelta | None = None):
         numerator += test_rollup.flaky_fail_count
         denominator += test_rollup.fail_count + test_rollup.pass_count
 
-    flake_rate = numerator / denominator
+    if denominator == 0:
+        flake_rate = 1.0
+    else:
+        flake_rate = numerator / denominator
 
     return {"flake_count": flake_count, "flake_rate": flake_rate}

@@ -975,7 +975,9 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             created_at=datetime.datetime.now(),
             repoid=repo.repoid,
             branch="main",
-            skip_count=0,
+            skip_count=10,
+            pass_count=10,
+            fail_count=10,
         )
         _ = DailyTestRollupFactory(
             test=test2,
@@ -983,6 +985,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             repoid=repo.repoid,
             branch="feature",
             skip_count=1000,
+            pass_count=0,
+            fail_count=0,
         )
         res = self.fetch_repository(
             repo.name,
