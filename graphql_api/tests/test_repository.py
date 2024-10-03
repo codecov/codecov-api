@@ -3,6 +3,7 @@ from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
+from shared.django_apps.reports.tests.factories import FlakeFactory
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import (
@@ -918,6 +919,105 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
+    def test_flaky_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+        _ = FlakeFactory(test=test2, repository=repo, end_date=None)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="feature",
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { parameter: FLAKY_TESTS }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
+
+    def test_failed_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            fail_count=0,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="feature",
+            fail_count=1000,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { parameter: FAILED_TESTS }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
+
+    def test_skipped_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            skip_count=10,
+            pass_count=10,
+            fail_count=10,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="feature",
+            skip_count=1000,
+            pass_count=0,
+            fail_count=0,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { parameter: SKIPPED_TESTS }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
+
+    def test_slowest_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { parameter: SLOWEST_TESTS }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
+
     def test_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1294,11 +1394,11 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             )
         res = self.fetch_repository(
             repo.name,
-            """testResultsHeaders { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
+            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
         )
-        assert res["testResultsHeaders"] == {
-            "totalRunTime": 5940.0,
-            "slowestTestsRunTime": 850.0,
+        assert res["testResultsAggregates"] == {
+            "totalRunTime": 5900.0,
+            "slowestTestsRunTime": 580.0,
             "totalFails": 20,
             "totalSkips": 10,
         }
