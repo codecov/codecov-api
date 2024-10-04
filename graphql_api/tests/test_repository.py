@@ -1072,7 +1072,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_repository(
             repo.name,
-            """testResults(filters: { testsuites: ["hello"] }) { edges { node { name } } }""",
+            """testResults(filters: { test_suites: ["hello"] }) { edges { node { name } } }""",
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 

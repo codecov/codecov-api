@@ -72,8 +72,14 @@ def generate_test_results(
     The fields it calculates are: the test failure rate, commits where this test failed, last duration and average duration of the test.
 
     :param repoid: repoid of the repository we want to calculate aggregates for
-    :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into account.
-    :param history: optional timedelta field for filtering test instances used to calculated the aggregates by time, the test instances used will be those with a created at larger than now - history.
+    :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account
+        test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into
+        account.
+    :param history: optional timedelta field for filtering test instances used to calculated the aggregates by time, the test instances used will be
+        those with a created at larger than now - history.
+    :param testsuites: optional list of testsuite names to filter by
+    :param flags: optional list of flag names to filter by, this is done via a union so if a user specifies multiple flags, we get all tests with any
+        of the flags, not tests that have all of the flags
     :returns: queryset object containing list of dictionaries of results
 
     """

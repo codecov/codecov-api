@@ -554,7 +554,7 @@ async def resolve_test_results(
         repoid=repository.repoid,
         branch=filters.get("branch") if filters else None,
         parameter=generate_test_results_param,
-        testsuites=filters.get("testsuites") if filters else None,
+        testsuites=filters.get("test_suites") if filters else None,
         flags=filters.get("flags") if filters else None,
     )
 

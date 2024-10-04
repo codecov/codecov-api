@@ -27,17 +27,6 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             repository=self.repository,
         )
 
-        self.test_with_flag = TestFactory(
-            name="Other Test",
-            repository=self.repository,
-        )
-
-        flag = RepositoryFlagFactory(
-            repository=self.repository, flag_name="test_flag_name"
-        )
-
-        _ = TestFlagBridgeFactory(repository=self.repository, flag=flag)
-
         _ = DailyTestRollupFactory(
             test=self.test,
             commits_where_fail=["123"],
@@ -60,14 +49,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             avg_duration_seconds=3,
             latest_run=datetime.now(),
         )
-        _ = DailyTestRollupFactory(
-            test=self.test_with_flag,
-            commits_where_fail=["456"],
-            date=date.today(),
-            last_duration_seconds=10.0,
-            avg_duration_seconds=5,
-            latest_run=datetime.now(),
-        )
+
 
     def test_fetch_test_result_name(self) -> None:
         query = """
