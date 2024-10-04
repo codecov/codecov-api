@@ -12,7 +12,12 @@ from core.tests.factories import (
     RepositoryFactory,
     RepositoryTokenFactory,
 )
-from reports.tests.factories import DailyTestRollupFactory, TestFactory
+from reports.tests.factories import (
+    DailyTestRollupFactory,
+    RepositoryFlagFactory,
+    TestFactory,
+    TestFlagBridgeFactory,
+)
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -1017,6 +1022,59 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             """testResults(filters: { parameter: SLOWEST_TESTS }) { edges { node { name } } }""",
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
+
+    def test_flags_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { flags: ["hello_world"] }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
+
+    def test_testsuites_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo, testsuite="hello")
+        test2 = TestFactory(repository=repo, testsuite="world")
+
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { test_suites: ["hello"] }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
     def test_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
