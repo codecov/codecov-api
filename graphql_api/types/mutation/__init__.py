@@ -18,7 +18,7 @@ from .revoke_user_token import gql_revoke_user_token
 from .save_okta_config import gql_save_okta_config
 from .save_sentry_state import gql_save_sentry_state
 from .save_terms_agreement import gql_save_terms_agreement
-from .set_tokens_required import gql_set_tokens_required
+from .set_upload_token_required import gql_set_upload_token_required
 from .set_yaml_on_owner import gql_set_yaml_on_owner
 from .start_trial import gql_start_trial
 from .store_event_metrics import gql_store_event_metrics
@@ -54,4 +54,4 @@ mutation = mutation + gql_regenerate_repository_upload_token
 mutation = mutation + gql_encode_secret_string
 mutation = mutation + gql_store_event_metrics
 mutation = mutation + gql_save_okta_config
-mutation = mutation + gql_set_tokens_required
+mutation = mutation + gql_set_upload_token_required

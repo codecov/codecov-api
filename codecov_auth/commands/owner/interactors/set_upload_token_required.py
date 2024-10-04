@@ -25,7 +25,7 @@ class SetUploadTokenRequiredInteractor(BaseInteractor):
             raise Unauthorized("Admin authorization required")
 
     @sync_to_async
-    def execute(self, input: dict):
+    def execute(self, input: dict[str, bool]):
         typed_input = SetUploadTokenRequiredInput(
             upload_token_required=input.get("upload_token_required"),
             org_username=input.get("org_username"),
@@ -37,7 +37,9 @@ class SetUploadTokenRequiredInteractor(BaseInteractor):
 
         self.validate(owner_obj)
 
-        owner_obj.upload_token_required_for_public_repos = typed_input.upload_token_required
+        owner_obj.upload_token_required_for_public_repos = (
+            typed_input.upload_token_required
+        )
         owner_obj.save()
 
-        return typed_input.upload_token_required
+        return

@@ -13,7 +13,6 @@ from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov.commands.exceptions import (
     MissingService,
-    Unauthenticated,
     UnauthorizedGuestAccess,
 )
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
@@ -954,27 +953,40 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (self.owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
-    def test_set_tokens_required(self):
-        owner = OwnerFactory(username="sample-owner", service="github")
-        query = """
-        mutation {
-            setTokensRequired(input: { org_username: "sample-owner", tokensRequired: true }) {
-                tokensRequired
-            }
-        }
-        """
-        data = self.gql_request(query, owner=owner)
-        assert data["setTokensRequired"]["tokensRequired"] == True
 
-    def test_set_tokens_required_unauthenticated_returns_None(self):
-        OwnerFactory(username="sample-owner", service="github")
-        query = """
-        mutation {
-            setTokensRequired(input: { org_username: "sample-owner", tokensRequired: true }) {
-                tokensRequired
+    def test_fetch_upload_token_required(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
             }
         }
-        """
-        data = self.gql_request(query, with_errors=True)
-        assert data["errors"][0]["message"] == Unauthenticated.message
-        assert data["setTokensRequired"] is None
+        """ % (owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["uploadTokenRequired"] == True
+
+    def test_fetch_upload_token_not_required(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        owner.upload_token_required_for_public_repos = False
+        owner.save()
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["uploadTokenRequired"] == False
+
+    def test_fetch_upload_token_user_not_part_of_org(self):
+        owner = OwnerFactory(username="sample", service="github")
+        user = OwnerFactory(username="sample-user", service="github")
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["uploadTokenRequired"] is None
