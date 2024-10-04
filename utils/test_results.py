@@ -22,6 +22,7 @@ from shared.django_apps.core.models import Repository
 from shared.django_apps.reports.models import (
     DailyTestRollup,
     Flake,
+    TestFlagBridge,
 )
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
@@ -63,14 +64,22 @@ def generate_test_results(
     branch: str | None = None,
     history: dt.timedelta = dt.timedelta(days=30),
     parameter: GENERATE_TEST_RESULT_PARAM | None = None,
+    testsuites: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> QuerySet:
     """
     Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
     The fields it calculates are: the test failure rate, commits where this test failed, last duration and average duration of the test.
 
     :param repoid: repoid of the repository we want to calculate aggregates for
-    :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into account.
-    :param history: optional timedelta field for filtering test instances used to calculated the aggregates by time, the test instances used will be those with a created at larger than now - history.
+    :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account
+        test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into
+        account.
+    :param history: optional timedelta field for filtering test instances used to calculated the aggregates by time, the test instances used will be
+        those with a created at larger than now - history.
+    :param testsuites: optional list of testsuite names to filter by
+    :param flags: optional list of flag names to filter by, this is done via a union so if a user specifies multiple flags, we get all tests with any
+        of the flags, not tests that have all of the flags
     :returns: queryset object containing list of dictionaries of results
 
     """
@@ -80,6 +89,19 @@ def generate_test_results(
 
     if branch is not None:
         totals = totals.filter(branch=branch)
+
+    if testsuites is not None:
+        totals = totals.filter(test__testsuite__in=testsuites)
+
+    if flags is not None:
+        # we're going to have to do the filtering in python somehow
+        bridges = TestFlagBridge.objects.select_related("flag").filter(
+            flag__flag_name__in=flags
+        )
+
+        test_ids = [bridge.test_id for bridge in bridges]
+
+        totals = totals.filter(test_id__in=test_ids)
 
     match parameter:
         case GENERATE_TEST_RESULT_PARAM.FLAKY:

@@ -6,7 +6,10 @@ from freezegun import freeze_time
 
 from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
-from reports.tests.factories import DailyTestRollupFactory, TestFactory
+from reports.tests.factories import (
+    DailyTestRollupFactory,
+    TestFactory,
+)
 
 from .helper import GraphQLTestHelper
 
