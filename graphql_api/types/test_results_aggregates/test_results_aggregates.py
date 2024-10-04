@@ -21,8 +21,11 @@ class TestResultsAggregates(TypedDict):
 def resolve_total_duration(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float:
     return obj["total_duration"]
 
+
 @test_results_aggregates_bindable.field("totalDurationPercentChange")
-def resolve_total_duration_percent_change(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float | None:
+def resolve_total_duration_percent_change(
+    obj: TestResultsAggregates, _: GraphQLResolveInfo
+) -> float | None:
     return obj.get("total_duration_percent_change")
 
 
@@ -32,8 +35,11 @@ def resolve_slowest_tests_duration(
 ) -> float:
     return obj["slowest_tests_duration"]
 
+
 @test_results_aggregates_bindable.field("slowestTestsDurationPercentChange")
-def resolve_slowest_tests_duration_percent_change(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float | None:
+def resolve_slowest_tests_duration_percent_change(
+    obj: TestResultsAggregates, _: GraphQLResolveInfo
+) -> float | None:
     return obj.get("slowest_tests_duration_percent_change")
 
 
@@ -41,8 +47,11 @@ def resolve_slowest_tests_duration_percent_change(obj: TestResultsAggregates, _:
 def resolve_total_fails(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
     return obj["fails"]
 
+
 @test_results_aggregates_bindable.field("totalFailsPercentChange")
-def resolve_total_fails_percent_change(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float | None:
+def resolve_total_fails_percent_change(
+    obj: TestResultsAggregates, _: GraphQLResolveInfo
+) -> float | None:
     return obj.get("fails_percent_change")
 
 
@@ -50,6 +59,9 @@ def resolve_total_fails_percent_change(obj: TestResultsAggregates, _: GraphQLRes
 def resolve_total_skips(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
     return obj["skips"]
 
+
 @test_results_aggregates_bindable.field("totalSkipsPercentChange")
-def resolve_total_skips_percent_change(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float | None:
+def resolve_total_skips_percent_change(
+    obj: TestResultsAggregates, _: GraphQLResolveInfo
+) -> float | None:
     return obj.get("skips_percent_change")

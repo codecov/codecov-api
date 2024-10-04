@@ -17,8 +17,11 @@ class FlakeAggregate(TypedDict):
 def resolve_flake_count(obj: FlakeAggregate, _: GraphQLResolveInfo) -> int:
     return obj["flake_count"]
 
+
 @flake_aggregates_bindable.field("flakeCountPercentChange")
-def resolve_flake_count_percent_change(obj: FlakeAggregate, _: GraphQLResolveInfo) -> float | None:
+def resolve_flake_count_percent_change(
+    obj: FlakeAggregate, _: GraphQLResolveInfo
+) -> float | None:
     return obj.get("flake_count_percent_change")
 
 
@@ -26,6 +29,9 @@ def resolve_flake_count_percent_change(obj: FlakeAggregate, _: GraphQLResolveInf
 def resolve_flake_rate(obj: FlakeAggregate, _: GraphQLResolveInfo) -> float:
     return obj["flake_rate"]
 
+
 @flake_aggregates_bindable.field("flakeRatePercentChange")
-def resolve_flake_rate_percent_change(obj: FlakeAggregate, _: GraphQLResolveInfo) -> float | None:
+def resolve_flake_rate_percent_change(
+    obj: FlakeAggregate, _: GraphQLResolveInfo
+) -> float | None:
     return obj.get("flake_rate_percent_change")
