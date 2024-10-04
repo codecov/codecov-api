@@ -95,8 +95,8 @@ type Repository {
 
   "CoverageAnalytics are fields related to Codecov's Coverage product offering"
   coverageAnalytics: CoverageAnalytics
-  testResultsAggregates: TestResultsAggregates
-  flakeAggregates: FlakeAggregates
+  testResultsAggregates(history: MeasurementInterval): TestResultsAggregates
+  flakeAggregates(history: MeasurementInterval): FlakeAggregates
 }
 
 type TestResultConnection {

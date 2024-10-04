@@ -61,8 +61,8 @@ class GENERATE_TEST_RESULT_PARAM:
 
 def generate_test_results(
     repoid: int,
+    history: dt.timedelta,
     branch: str | None = None,
-    history: dt.timedelta = dt.timedelta(days=30),
     parameter: GENERATE_TEST_RESULT_PARAM | None = None,
     testsuites: list[str] | None = None,
     flags: list[str] | None = None,
@@ -75,7 +75,7 @@ def generate_test_results(
     :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account
         test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into
         account.
-    :param history: optional timedelta field for filtering test instances used to calculated the aggregates by time, the test instances used will be
+    :param history: timedelta for filtering test instances used to calculated the aggregates by time, the test instances used will be
         those with a created at larger than now - history.
     :param testsuites: optional list of testsuite names to filter by
     :param flags: optional list of flag names to filter by, this is done via a union so if a user specifies multiple flags, we get all tests with any
@@ -199,14 +199,14 @@ def percent_diff(
 ) -> int | float | None:
     if past_value == 0:
         return None
-    return (current_value - past_value) / past_value * 100
+    return round((current_value - past_value) / past_value * 100, 5)
 
 
 def get_percent_change(
     fields: list[str],
     curr_numbers: dict[str, int | float],
     past_numbers: dict[str, int | float],
-) -> dict[str, int | float]:
+) -> dict[str, int | float | None]:
     percent_change_fields = {}
 
     percent_change_fields = {
@@ -267,7 +267,7 @@ def get_test_results_aggregate_numbers(
 
 def generate_test_results_aggregates(
     repoid: int, history: dt.timedelta = dt.timedelta(days=30)
-) -> dict[str, float | int] | None:
+) -> dict[str, float | int | None] | None:
     repo = Repository.objects.get(repoid=repoid)
     since = dt.datetime.now(dt.UTC) - history
 
@@ -296,11 +296,8 @@ def get_flake_aggregate_numbers(
         flakes = Flake.objects.filter(
             Q(repository_id=repo.repoid)
             & (
-                (Q(end_date__isnull=True))
-                | (
-                    Q(end_date__date__lte=until.date())
-                    & Q(end_date__date__gt=since.date())
-                )
+                Q(start_date__date__lte=until.date())
+                & (Q(end_date__date__gt=since.date()) | Q(end_date__isnull=True))
             )
         )
 
@@ -335,8 +332,8 @@ def get_flake_aggregate_numbers(
 
 
 def generate_flake_aggregates(
-    repoid: int, history: dt.timedelta = dt.timedelta(days=30)
-) -> dict[str, int | float]:
+    repoid: int, history: dt.timedelta
+) -> dict[str, int | float | None]:
     repo = Repository.objects.get(repoid=repoid)
     since = dt.datetime.today() - history
 
