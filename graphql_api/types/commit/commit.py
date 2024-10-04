@@ -52,7 +52,7 @@ from services.yaml import (
 )
 
 commit_bindable = ObjectType("Commit")
-commit_coverage_analytics_bindable = ObjectType("CommitCoverage")
+commit_coverage_analytics_bindable = ObjectType("CommitCoverageAnalytics")
 commit_bundle_analysis_bindable = ObjectType("CommitBundleAnalysis")
 
 commit_bindable.set_alias("createdAt", "timestamp")

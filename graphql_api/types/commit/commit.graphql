@@ -35,11 +35,11 @@ type Commit {
   components(filters: ComponentsFilters): [Component!]!
   bundleStatus: CommitStatus
   coverageStatus: CommitStatus
-  coverageAnalytics: CommitCoverage
+  coverageAnalytics: CommitCoverageAnalytics
   bundleAnalysis: CommitBundleAnalysis
 }
 
-type CommitCoverage {
+type CommitCoverageAnalytics {
   components(filters: ComponentsFilters): [Component!]!
   coverageFile(path: String!, flags: [String], components: [String]): File
   flagNames: [String]
