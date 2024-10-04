@@ -1,5 +1,6 @@
 input TestResultsFilters {
   branch: String
+  parameter: TestResultsFilterParameter
 }
 
 input TestResultsOrdering {

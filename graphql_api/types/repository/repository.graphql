@@ -88,6 +88,10 @@ type Repository {
   "CoverageAnalytics are fields related to Codecov's Coverage product offering"
   coverageAnalytics: CoverageAnalytics
 
+  testResultsAggregates: TestResultsAggregates
+  flakeAggregates: FlakeAggregates
+}
+
   "TestAnalytics are fields related to Codecov's Test Analytics product offering"
   testAnalytics: TestAnalytics
 }

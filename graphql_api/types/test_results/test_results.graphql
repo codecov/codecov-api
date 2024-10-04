@@ -3,6 +3,7 @@ type TestResult {
   name: String!
   commitsFailed: Int
   failureRate: Float
+  flakeRate: Float
   avgDuration: Float
   lastDuration: Float
 }

@@ -2780,7 +2780,7 @@ class UploadHandlerGithubActionsTokenlessTest(TestCase):
         )
         mock_get_torngit.assert_called_with(
             "github",
-            token={"key": None},
+            token={"key": ANY},
             repo={"name": "repo"},
             owner={"username": "owner"},
             oauth_consumer_token={"key": ANY, "secret": ANY},

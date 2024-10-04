@@ -1,0 +1,6 @@
+type TestResultsAggregates {
+  totalRunTime: Float!
+  slowestTestsRunTime: Float!
+  totalFails: Int!
+  totalSkips: Int!
+}
