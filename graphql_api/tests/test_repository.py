@@ -1030,7 +1030,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
 
-        bridge = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
         _ = DailyTestRollupFactory(
             test=test,
             created_at=datetime.datetime.now(),

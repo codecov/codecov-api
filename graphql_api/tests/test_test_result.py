@@ -7,6 +7,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from reports.tests.factories import (
     DailyTestRollupFactory,
+    RepositoryFlagFactory,
     TestFactory,
     TestFlagBridgeFactory,
 )
@@ -35,7 +36,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             repository=self.repository, flag_name="test_flag_name"
         )
 
-        bridge = TestFlagBridgeFactory(repository=self.repository, flag=flag)
+        _ = TestFlagBridgeFactory(repository=self.repository, flag=flag)
 
         _ = DailyTestRollupFactory(
             test=self.test,
