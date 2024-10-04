@@ -62,11 +62,13 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            flakeAggregates {
-                                flakeRate
-                                flakeCount
-                                flakeRatePercentChange
-                                flakeCountPercentChange
+                            testAnalytics {
+                                flakeAggregates {
+                                    flakeRate
+                                    flakeCount
+                                    flakeRatePercentChange
+                                    flakeCountPercentChange
+                                }
                             }
                         }
                     }
@@ -77,7 +79,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["flakeAggregates"] == {
+        assert result["owner"]["repository"]["testAnalytics"]["flakeAggregates"] == {
             "flakeRate": 0.2,
             "flakeCount": 30,
             "flakeRatePercentChange": -66.66666666666666,
