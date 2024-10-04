@@ -4,6 +4,7 @@ from math import floor
 from django.db.models import (
     Aggregate,
     Avg,
+    Case,
     F,
     FloatField,
     Func,
@@ -13,18 +14,25 @@ from django.db.models import (
     QuerySet,
     Subquery,
     Sum,
+    Value,
+    When,
 )
 from django.db.models.functions import Cast
 from shared.django_apps.core.models import Repository
 from shared.django_apps.reports.models import (
     DailyTestRollup,
     Flake,
-    TestInstance,
 )
 
 thirty_days_ago = dt.date.today() - dt.timedelta(days=30)
 
 SLOW_TEST_PERCENTILE = 95
+
+
+def slow_test_threshold(total_tests: int) -> int:
+    percentile = (100 - SLOW_TEST_PERCENTILE) / 100
+    slow_tests_to_return = floor(percentile * total_tests)
+    return max(slow_tests_to_return, 1)
 
 
 class ArrayLength(Func):
@@ -43,10 +51,18 @@ class Array(Aggregate):
     function = "array"
 
 
+class GENERATE_TEST_RESULT_PARAM:
+    FLAKY = "flaky"
+    FAILED = "failed"
+    SLOWEST = "slowest"
+    SKIPPED = "skipped"
+
+
 def generate_test_results(
     repoid: int,
     branch: str | None = None,
     history: dt.timedelta | None = None,
+    parameter: GENERATE_TEST_RESULT_PARAM | None = None,
 ) -> QuerySet:
     """
     Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
@@ -62,21 +78,56 @@ def generate_test_results(
         (dt.datetime.now(dt.UTC) - history) if history is not None else thirty_days_ago
     )
 
-    pass_failure_error_test_instances = TestInstance.objects.filter(
-        repoid=repoid,
-        created_at__gt=time_ago,
-        outcome__in=["pass", "failure", "error"],
-    )
-
-    if branch is not None:
-        pass_failure_error_test_instances = pass_failure_error_test_instances.filter(
-            branch=branch
-        )
-
     totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=time_ago)
 
     if branch is not None:
         totals = totals.filter(branch=branch)
+
+    match parameter:
+        case GENERATE_TEST_RESULT_PARAM.FLAKY:
+            flakes = Flake.objects.filter(
+                Q(repository_id=repoid)
+                & (Q(end_date__date__isnull=True) | Q(end_date__date__gt=time_ago))
+            )
+            test_ids = [flake.test_id for flake in flakes]
+
+            totals = totals.filter(test_id__in=test_ids)
+        case GENERATE_TEST_RESULT_PARAM.FAILED:
+            test_ids = (
+                totals.values("test")
+                .annotate(fail_count_sum=Sum("fail_count"))
+                .filter(fail_count_sum__gt=0)
+                .values("test_id")
+            )
+
+            totals = totals.filter(test_id__in=test_ids)
+        case GENERATE_TEST_RESULT_PARAM.SKIPPED:
+            test_ids = (
+                totals.values("test")
+                .annotate(
+                    skip_count_sum=Sum("skip_count"),
+                    fail_count_sum=Sum("fail_count"),
+                    pass_count_sum=Sum("pass_count"),
+                )
+                .filter(skip_count_sum__gt=0, fail_count_sum=0, pass_count_sum=0)
+                .values("test_id")
+            )
+
+            totals = totals.filter(test_id__in=test_ids)
+        case GENERATE_TEST_RESULT_PARAM.SLOWEST:
+            num_tests = totals.distinct("test_id").count()
+
+            slowest_test_ids = (
+                totals.values("test")
+                .annotate(
+                    runtime=Avg("avg_duration_seconds")
+                    * (Sum("pass_count") + Sum("fail_count"))
+                )
+                .order_by("-runtime")
+                .values("test_id")[0 : slow_test_threshold(num_tests)]
+            )
+
+            totals = totals.filter(test_id__in=slowest_test_ids)
 
     commits_where_fail_sq = (
         totals.filter(test_id=OuterRef("test_id"))
@@ -90,25 +141,28 @@ def generate_test_results(
     )
 
     aggregation_of_test_results = totals.values("test").annotate(
-        failure_rate=(
-            Cast(Sum(F("fail_count")), output_field=FloatField())
-            / (
-                Cast(
-                    Sum(F("pass_count")),
-                    output_field=FloatField(),
-                )
-                + Cast(Sum(F("fail_count")), output_field=FloatField())
-            )
+        total_test_count=Cast(
+            Sum(F("pass_count")),
+            output_field=FloatField(),
+        )
+        + Cast(Sum(F("fail_count")), output_field=FloatField()),
+        total_fail_count=Cast(Sum(F("fail_count")), output_field=FloatField()),
+        total_flaky_fail_count=Cast(
+            Sum(F("flaky_fail_count")), output_field=FloatField()
         ),
-        flake_rate=(
-            Cast(Sum(F("flaky_fail_count")), output_field=FloatField())
-            / (
-                Cast(
-                    Sum(F("pass_count")),
-                    output_field=FloatField(),
-                )
-                + Cast(Sum(F("fail_count")), output_field=FloatField())
-            )
+        failure_rate=Case(
+            When(
+                total_test_count=0,
+                then=Value(0.0),
+            ),
+            default=F("total_fail_count") / F("total_test_count"),
+        ),
+        flake_rate=Case(
+            When(
+                total_test_count=0,
+                then=Value(0.0),
+            ),
+            default=F("total_flaky_fail_count") / F("total_test_count"),
         ),
         updated_at=Max("latest_run"),
         commits_where_fail=ArrayLength(Array(Subquery(commits_where_fail_sq))),
@@ -134,37 +188,31 @@ def generate_test_results_aggregates(
 
     num_tests = totals.distinct("test_id").count()
 
-    slow_test_threshold = floor(num_tests * (100 - SLOW_TEST_PERCENTILE) * 0.01)
-
-    if slow_test_threshold == 0:
-        if num_tests == 1:
-            slow_test_threshold = 1
-        else:
-            return None
-
     slowest_test_ids = (
         totals.values("test")
         .annotate(
-            runtime=Avg("avg_duration_seconds")
-            * (Sum("pass_count") + Sum("fail_count"))
+            runtime=Sum(F("avg_duration_seconds") * (F("pass_count") + F("fail_count")))
+            / Sum(F("pass_count") + F("fail_count"))
         )
         .order_by("-runtime")
-        .values("test_id")[0:slow_test_threshold]
+        .values("test_id")[0 : slow_test_threshold(num_tests)]
     )
 
     slowest_tests_duration = (
         totals.filter(test_id__in=slowest_test_ids)
         .values("repoid")
         .annotate(
-            slowest_tests=Avg("avg_duration_seconds")
-            * (Sum("pass_count") + Sum("fail_count"))
+            slowest_tests=Sum(
+                F("avg_duration_seconds") * (F("pass_count") + F("fail_count"))
+            )
         )
         .values("slowest_tests")
     )
 
     test_headers = totals.values("repoid").annotate(
-        total_run_time=Avg("avg_duration_seconds")
-        * (Sum("pass_count") + Sum("fail_count")),
+        total_run_time=Sum(
+            F("avg_duration_seconds") * (F("pass_count") + F("fail_count"))
+        ),
         slowest_tests_duration=slowest_tests_duration,
         skips=Sum("skip_count"),
         fails=Sum("fail_count"),
@@ -176,7 +224,9 @@ def generate_test_results_aggregates(
         return None
 
 
-def generate_flake_aggregates(repoid: int, history: dt.timedelta | None = None):
+def generate_flake_aggregates(
+    repoid: int, history: dt.timedelta | None = None
+) -> dict[str, int | float]:
     repo = Repository.objects.get(repoid=repoid)
     time_ago = (dt.date.today() - history) if history is not None else thirty_days_ago
 
@@ -201,6 +251,9 @@ def generate_flake_aggregates(repoid: int, history: dt.timedelta | None = None):
         numerator += test_rollup.flaky_fail_count
         denominator += test_rollup.fail_count + test_rollup.pass_count
 
-    flake_rate = numerator / denominator
+    if denominator == 0:
+        flake_rate = 0.0
+    else:
+        flake_rate = numerator / denominator
 
     return {"flake_count": flake_count, "flake_rate": flake_rate}

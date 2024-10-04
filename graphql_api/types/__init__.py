@@ -121,8 +121,8 @@ types = [
     account,
     okta_config,
     test_results,
-    test_results_aggregates,
     flake_aggregates,
+    test_results_aggregates,
 ]
 
 bindables = [
