@@ -1,10 +1,10 @@
 type TestResultsAggregates {
   totalDuration: Float!
-  slowestTestsDuration: Float!
-  totalFails: Int!
-  totalSkips: Int!
   totalDurationPercentChange: Float
+  slowestTestsDuration: Float!
   slowestTestsDurationPercentChange: Float
+  totalFails: Int!
   totalFailsPercentChange: Float
+  totalSkips: Int!
   totalSkipsPercentChange: Float
 }

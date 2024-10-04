@@ -1,9 +1,9 @@
 type TestResult {
   updatedAt: DateTime!
   name: String!
-  commitsFailed: Int
-  failureRate: Float
-  flakeRate: Float
-  avgDuration: Float
-  lastDuration: Float
+  commitsFailed: Int!
+  failureRate: Float!
+  flakeRate: Float!
+  avgDuration: Float!
+  lastDuration: Float!
 }

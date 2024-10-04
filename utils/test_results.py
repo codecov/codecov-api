@@ -173,11 +173,11 @@ def generate_test_results(
 
 
 def percent_diff(
-    numerator: int | float, denominator: int | float
+    current_value: int | float, past_value: int | float
 ) -> int | float | None:
-    if denominator == 0:
+    if past_value == 0:
         return None
-    return (numerator - denominator) / denominator * 100
+    return (current_value - past_value) / past_value * 100
 
 
 def get_percent_change(
