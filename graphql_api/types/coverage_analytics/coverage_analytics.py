@@ -117,7 +117,6 @@ async def resolve_measurements(
 
 
 @coverage_analytics_bindable.field("components")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_component_measurements(
     parent: CoverageAnalyticsProps,
@@ -181,8 +180,7 @@ def resolve_component_measurements(
 
 
 @coverage_analytics_bindable.field("componentsYaml")
-@convert_kwargs_to_snake_case
-def resolve_component_yaml(
+def resolve_components_yaml(
     parent: CoverageAnalyticsProps, info: GraphQLResolveInfo, term_id: Optional[str]
 ) -> List[str]:
     components = UserYaml.get_final_yaml(

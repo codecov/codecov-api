@@ -22,7 +22,7 @@ type CoverageAnalytics {
   ): [Measurement!]! # formerly repository.measurements
 
   ## Flags ##
-  "Flags are the information about the flags for this repository"
+  "Flags are the measurements by flag for this repository"
   flags(
     filters: FlagSetFilters
     orderingDirection: OrderingDirection
@@ -39,7 +39,7 @@ type CoverageAnalytics {
   flagsMeasurementsBackfilled: Boolean!
 
   ## Components ##
-  "Components are information about the components for this repository"
+  "Components are the measurements by component for this repository"
   components(
     interval: MeasurementInterval!
     before: DateTime!
