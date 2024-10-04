@@ -7,19 +7,19 @@ test_results_aggregates_bindable = ObjectType("TestResultsAggregates")
 
 
 class TestResultsAggregates(TypedDict):
-    total_run_time: float
+    total_duration: float
     slowest_tests_duration: float
     fails: int
     skips: int
 
 
-@test_results_aggregates_bindable.field("totalRunTime")
-def resolve_total_run_time(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float:
-    return obj["total_run_time"]
+@test_results_aggregates_bindable.field("totalDuration")
+def resolve_total_duration(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> float:
+    return obj["total_duration"]
 
 
-@test_results_aggregates_bindable.field("slowestTestsRunTime")
-def resolve_slowest_tests_run_time(
+@test_results_aggregates_bindable.field("slowestTestsDuration")
+def resolve_slowest_tests_duration(
     obj: TestResultsAggregates, _: GraphQLResolveInfo
 ) -> float:
     return obj["slowest_tests_duration"]
@@ -35,13 +35,13 @@ def resolve_total_skips(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> in
     return obj["skips"]
 
 
-@test_results_aggregates_bindable.field("totalRunTimePercentChange")
-def resolve_run_time_percent_change(obj, _) -> float | None:
-    return obj.get("total_run_time_percent_change")
+@test_results_aggregates_bindable.field("totalDurationPercentChange")
+def resolve_duration_percent_change(obj, _) -> float | None:
+    return obj.get("total_duration_percent_change")
 
 
-@test_results_aggregates_bindable.field("slowestTestsRunTimePercentChange")
-def resolve_slowest_tests_run_time_percent_change(obj, _) -> float | None:
+@test_results_aggregates_bindable.field("slowestTestsDurationPercentChange")
+def resolve_slowest_tests_duration_percent_change(obj, _) -> float | None:
     return obj.get("slowest_tests_duration_percent_change")
 
 

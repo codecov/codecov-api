@@ -61,7 +61,7 @@ class GENERATE_TEST_RESULT_PARAM:
 def generate_test_results(
     repoid: int,
     branch: str | None = None,
-    history: dt.timedelta | None = None,
+    history: dt.timedelta = dt.timedelta(days=30),
     parameter: GENERATE_TEST_RESULT_PARAM | None = None,
 ) -> QuerySet:
     """
@@ -74,11 +74,9 @@ def generate_test_results(
     :returns: queryset object containing list of dictionaries of results
 
     """
-    time_ago = (
-        (dt.datetime.now(dt.UTC) - history) if history is not None else thirty_days_ago
-    )
+    since = (dt.datetime.now(dt.UTC) - history)
 
-    totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=time_ago)
+    totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
 
     if branch is not None:
         totals = totals.filter(branch=branch)
@@ -87,7 +85,7 @@ def generate_test_results(
         case GENERATE_TEST_RESULT_PARAM.FLAKY:
             flakes = Flake.objects.filter(
                 Q(repository_id=repoid)
-                & (Q(end_date__date__isnull=True) | Q(end_date__date__gt=time_ago))
+                & (Q(end_date__date__isnull=True) | Q(end_date__date__gt=since))
             )
             test_ids = [flake.test_id for flake in flakes]
 
@@ -187,11 +185,11 @@ def get_percent_change(
 ) -> dict[str, int | float]:
     percent_change_fields = {}
 
-    for field in fields:
-        if past_numbers.get(field):
-            percent_change_fields[f"{field}_percent_change"] = percent_diff(
-                curr_numbers[field], past_numbers[field]
-            )
+    percent_change_fields = {
+        f"{field}_percent_change": percent_diff(curr_numbers[field], past_numbers[field])
+        for field in fields
+        if past_numbers.get(field)
+    }
 
     return percent_change_fields
 
@@ -230,7 +228,7 @@ def get_test_results_aggregate_numbers(
     )
 
     test_headers = totals.values("repoid").annotate(
-        total_run_time=Sum(
+        total_duration=Sum(
             F("avg_duration_seconds") * (F("pass_count") + F("fail_count"))
         ),
         slowest_tests_duration=slowest_tests_duration,
@@ -242,23 +240,19 @@ def get_test_results_aggregate_numbers(
 
 
 def generate_test_results_aggregates(
-    repoid: int, history: dt.timedelta | None = None
+    repoid: int, history: dt.timedelta = dt.timedelta(days=30)
 ) -> dict[str, float | int] | None:
     repo = Repository.objects.get(repoid=repoid)
-    time_ago = (
-        (dt.datetime.now(dt.UTC) - history) if history is not None else thirty_days_ago
-    )
+    since = (dt.datetime.now(dt.UTC) - history)
 
-    curr_numbers = get_test_results_aggregate_numbers(repo, time_ago)
+    curr_numbers = get_test_results_aggregate_numbers(repo, since)
 
-    double_time_ago = time_ago - (
-        history if history is not None else dt.timedelta(days=30)
-    )
+    double_time_ago = since - history
 
-    past_numbers = get_test_results_aggregate_numbers(repo, double_time_ago, time_ago)
+    past_numbers = get_test_results_aggregate_numbers(repo, double_time_ago, since)
 
     return curr_numbers | get_percent_change(
-        ["total_run_time", "slowest_tests_duration", "skips", "fails"],
+        ["total_duration", "slowest_tests_duration", "skips", "fails"],
         curr_numbers,
         past_numbers,
     )
@@ -280,11 +274,9 @@ def get_flake_aggregate_numbers(
 
     flake_count = flakes.count()
 
-    print("flake_count", flake_count)
 
     test_ids = [flake.test_id for flake in flakes]
 
-    print("test_ids", test_ids)
 
     test_rollups = DailyTestRollup.objects.filter(
         repoid=repo.repoid,
@@ -296,7 +288,6 @@ def get_flake_aggregate_numbers(
         test_rollups = test_rollups.filter(date__lte=until.date())
 
 
-    print("len(test_rollups)", len(test_rollups))
 
     if len(test_rollups) == 0:
         return {"flake_count": 0, "flake_rate": 0}
@@ -316,20 +307,16 @@ def get_flake_aggregate_numbers(
 
 
 def generate_flake_aggregates(
-    repoid: int, history: dt.timedelta | None = None
+    repoid: int, history: dt.timedelta = dt.timedelta(days=30)
 ) -> dict[str, int | float]:
     repo = Repository.objects.get(repoid=repoid)
-    time_ago = (
-        (dt.datetime.today() - history) if history is not None else thirty_days_ago
-    )
+    since = (dt.datetime.today() - history)
 
-    curr_numbers = get_flake_aggregate_numbers(repo, time_ago)
+    curr_numbers = get_flake_aggregate_numbers(repo, since)
 
-    double_time_ago = time_ago - (
-        history if history is not None else dt.timedelta(days=30)
-    )
+    double_time_ago = since - history
 
-    past_numbers = get_flake_aggregate_numbers(repo, double_time_ago, time_ago)
+    past_numbers = get_flake_aggregate_numbers(repo, double_time_ago, since)
 
     return curr_numbers | get_percent_change(
         ["flake_count", "flake_rate"],

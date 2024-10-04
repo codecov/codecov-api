@@ -586,16 +586,12 @@ async def resolve_test_results_aggregates(
     repository: Repository,
     info: GraphQLResolveInfo,
 ):
-    queryset = await sync_to_async(generate_test_results_aggregates)(
+    return await sync_to_async(generate_test_results_aggregates)(
         repoid=repository.repoid
     )
-
-    return queryset
 
 
 @repository_bindable.field("flakeAggregates")
 @convert_kwargs_to_snake_case
 async def resolve_flake_aggregates(repository: Repository, info: GraphQLResolveInfo):
-    queryset = await sync_to_async(generate_flake_aggregates)(repoid=repository.repoid)
-
-    return queryset
+    return await sync_to_async(generate_flake_aggregates)(repoid=repository.repoid)

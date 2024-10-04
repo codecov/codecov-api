@@ -1409,15 +1409,15 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             )
         res = self.fetch_repository(
             repo.name,
-            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
         assert res["testResultsAggregates"] == {
-            "totalRunTime": 570.0,
-            "slowestTestsRunTime": 29.0,
+            "totalDuration": 570.0,
+            "slowestTestsDuration": 29.0,
             "totalFails": 10,
             "totalSkips": 5,
-            "totalRunTimePercentChange": -63.10679611650486,
-            "slowestTestsRunTimePercentChange": -50.847457627118644,
+            "totalDurationPercentChange": -63.10679611650486,
+            "slowestTestsDurationPercentChange": -50.847457627118644,
             "totalFailsPercentChange": 100.0,
             "totalSkipsPercentChange": -50.0,
         }
@@ -1443,16 +1443,16 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_repository(
             repo.name,
-            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
 
         assert res["testResultsAggregates"] == {
-            "totalRunTime": 570.0,
-            "slowestTestsRunTime": 29.0,
+            "totalDuration": 570.0,
+            "slowestTestsDuration": 29.0,
             "totalFails": 10,
             "totalSkips": 5,
-            "totalRunTimePercentChange": None,
-            "slowestTestsRunTimePercentChange": None,
+            "totalDurationPercentChange": None,
+            "slowestTestsDurationPercentChange": None,
             "totalFailsPercentChange": None,
             "totalSkipsPercentChange": None,
         }
