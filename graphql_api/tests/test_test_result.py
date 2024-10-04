@@ -7,9 +7,7 @@ from codecov_auth.tests.factories import OwnerFactory
 from core.tests.factories import RepositoryFactory
 from reports.tests.factories import (
     DailyTestRollupFactory,
-    RepositoryFlagFactory,
     TestFactory,
-    TestFlagBridgeFactory,
 )
 
 from .helper import GraphQLTestHelper
@@ -49,7 +47,6 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             avg_duration_seconds=3,
             latest_run=datetime.now(),
         )
-
 
     def test_fetch_test_result_name(self) -> None:
         query = """
