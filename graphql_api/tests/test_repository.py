@@ -1464,11 +1464,36 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
         test = TestFactory(repository=repo)
 
-        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=1), end_date=None)
-        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=90), end_date=None)
-        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=70), end_date=datetime.datetime.now() - datetime.timedelta(days=30))
-        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=80), end_date=datetime.datetime.now() - datetime.timedelta(days=59))
-        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=70), end_date=datetime.datetime.now() - datetime.timedelta(days=61))
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=1),
+            end_date=None,
+        )
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=90),
+            end_date=None,
+        )
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=70),
+            end_date=datetime.datetime.now() - datetime.timedelta(days=30),
+        )
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=80),
+            end_date=datetime.datetime.now() - datetime.timedelta(days=59),
+        )
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=70),
+            end_date=datetime.datetime.now() - datetime.timedelta(days=61),
+        )
 
         for i in range(0, 30):
             _ = DailyTestRollupFactory(
@@ -1515,7 +1540,12 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         test = TestFactory(repository=repo)
-        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=1), end_date=None)
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=1),
+            end_date=None,
+        )
 
         for i in range(0, 30):
             _ = DailyTestRollupFactory(

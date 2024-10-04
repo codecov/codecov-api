@@ -74,7 +74,7 @@ def generate_test_results(
     :returns: queryset object containing list of dictionaries of results
 
     """
-    since = (dt.datetime.now(dt.UTC) - history)
+    since = dt.datetime.now(dt.UTC) - history
 
     totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
 
@@ -172,7 +172,9 @@ def generate_test_results(
     return aggregation_of_test_results
 
 
-def percent_diff(numerator: int | float, denominator: int | float) -> int | float | None:
+def percent_diff(
+    numerator: int | float, denominator: int | float
+) -> int | float | None:
     if denominator == 0:
         return None
     return (numerator - denominator) / denominator * 100
@@ -186,7 +188,9 @@ def get_percent_change(
     percent_change_fields = {}
 
     percent_change_fields = {
-        f"{field}_percent_change": percent_diff(curr_numbers[field], past_numbers[field])
+        f"{field}_percent_change": percent_diff(
+            curr_numbers[field], past_numbers[field]
+        )
         for field in fields
         if past_numbers.get(field)
     }
@@ -243,7 +247,7 @@ def generate_test_results_aggregates(
     repoid: int, history: dt.timedelta = dt.timedelta(days=30)
 ) -> dict[str, float | int] | None:
     repo = Repository.objects.get(repoid=repoid)
-    since = (dt.datetime.now(dt.UTC) - history)
+    since = dt.datetime.now(dt.UTC) - history
 
     curr_numbers = get_test_results_aggregate_numbers(repo, since)
 
@@ -269,14 +273,18 @@ def get_flake_aggregate_numbers(
     else:
         flakes = Flake.objects.filter(
             Q(repository_id=repo.repoid)
-            & ((Q(end_date__isnull=True)) | (Q(end_date__date__lte=until.date()) & Q(end_date__date__gt=since.date())))
+            & (
+                (Q(end_date__isnull=True))
+                | (
+                    Q(end_date__date__lte=until.date())
+                    & Q(end_date__date__gt=since.date())
+                )
+            )
         )
 
     flake_count = flakes.count()
 
-
     test_ids = [flake.test_id for flake in flakes]
-
 
     test_rollups = DailyTestRollup.objects.filter(
         repoid=repo.repoid,
@@ -286,8 +294,6 @@ def get_flake_aggregate_numbers(
     )
     if until:
         test_rollups = test_rollups.filter(date__lte=until.date())
-
-
 
     if len(test_rollups) == 0:
         return {"flake_count": 0, "flake_rate": 0}
@@ -310,7 +316,7 @@ def generate_flake_aggregates(
     repoid: int, history: dt.timedelta = dt.timedelta(days=30)
 ) -> dict[str, int | float]:
     repo = Repository.objects.get(repoid=repoid)
-    since = (dt.datetime.today() - history)
+    since = dt.datetime.today() - history
 
     curr_numbers = get_flake_aggregate_numbers(repo, since)
 
