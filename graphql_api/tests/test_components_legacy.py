@@ -78,11 +78,9 @@ query Repo(
     owner(username: $org) {
         repository(name: $repo) {
             ... on Repository {
-                coverageAnalytics {
-                    componentsMeasurementsActive
-                    componentsMeasurementsBackfilled
-                    componentsCount
-                }
+                componentsMeasurementsActive
+                componentsMeasurementsBackfilled
+                componentsCount
                 commit(id: $sha) {
                         components {
                             id
@@ -737,18 +735,8 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                 "sha": self.commit.commitid,
             },
         )
-        assert (
-            data["owner"]["repository"]["coverageAnalytics"][
-                "componentsMeasurementsActive"
-            ]
-            == False
-        )
-        assert (
-            data["owner"]["repository"]["coverageAnalytics"][
-                "componentsMeasurementsBackfilled"
-            ]
-            == False
-        )
+        assert data["owner"]["repository"]["componentsMeasurementsActive"] == False
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == False
 
     def test_repository_components_metadata_active(self):
         DatasetFactory(
@@ -764,18 +752,8 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                 "sha": self.commit.commitid,
             },
         )
-        assert (
-            data["owner"]["repository"]["coverageAnalytics"][
-                "componentsMeasurementsActive"
-            ]
-            == True
-        )
-        assert (
-            data["owner"]["repository"]["coverageAnalytics"][
-                "componentsMeasurementsBackfilled"
-            ]
-            == False
-        )
+        assert data["owner"]["repository"]["componentsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == False
 
     @patch("timeseries.models.Dataset.is_backfilled")
     def test_repository_components_metadata_backfilled_true(self, is_backfilled):
@@ -794,18 +772,8 @@ class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
                 "sha": self.commit.commitid,
             },
         )
-        assert (
-            data["owner"]["repository"]["coverageAnalytics"][
-                "componentsMeasurementsActive"
-            ]
-            == True
-        )
-        assert (
-            data["owner"]["repository"]["coverageAnalytics"][
-                "componentsMeasurementsBackfilled"
-            ]
-            == True
-        )
+        assert data["owner"]["repository"]["componentsMeasurementsActive"] == True
+        assert data["owner"]["repository"]["componentsMeasurementsBackfilled"] == True
 
 
 query_component_measurements = """
@@ -822,21 +790,19 @@ query ComponentMeasurements(
     owner(username: $name) {
         repository(name: $repo) {
             ... on Repository {
-                coverageAnalytics {
-                    components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
-                        __typename
-                        ... on ComponentMeasurements {
-                            name
-                            percentCovered
-                            percentChange
-                            measurements {
-                                avg
-                                min
-                                max
-                                timestamp
-                            }
-                            lastUploaded
+                components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+                    __typename
+                    ... on ComponentMeasurements {
+                        name
+                        percentCovered
+                        percentChange
+                        measurements {
+                            avg
+                            min
+                            max
+                            timestamp
                         }
+                        lastUploaded
                     }
                 }
             }
@@ -950,76 +916,74 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "coverageAnalytics": {
-                        "components": [
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "golang",
-                                "percentCovered": 90.0,
-                                "percentChange": 5.0,
-                                "measurements": [
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-20T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 85.0,
-                                        "min": 85.0,
-                                        "max": 85.0,
-                                        "timestamp": "2022-06-21T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 90.0,
-                                        "min": 85.0,
-                                        "max": 95.0,
-                                        "timestamp": "2022-06-22T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-23T00:00:00+00:00",
-                                    },
-                                ],
-                                "lastUploaded": "2022-06-22T01:00:00+00:00",
-                            },
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "pythonName",
-                                "percentCovered": 80.0,
-                                "percentChange": 5.0,
-                                "measurements": [
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-20T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 75.0,
-                                        "min": 75.0,
-                                        "max": 75.0,
-                                        "timestamp": "2022-06-21T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 80.0,
-                                        "min": 75.0,
-                                        "max": 85.0,
-                                        "timestamp": "2022-06-22T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-23T00:00:00+00:00",
-                                    },
-                                ],
-                                "lastUploaded": "2022-06-22T01:00:00+00:00",
-                            },
-                        ]
-                    }
+                    "components": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "percentCovered": 90.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 85.0,
+                                    "min": 85.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 90.0,
+                                    "min": 85.0,
+                                    "max": 95.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                            "lastUploaded": "2022-06-22T01:00:00+00:00",
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "pythonName",
+                            "percentCovered": 80.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 75.0,
+                                    "min": 75.0,
+                                    "max": 75.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 80.0,
+                                    "min": 75.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                            "lastUploaded": "2022-06-22T01:00:00+00:00",
+                        },
+                    ]
                 }
             }
         }
@@ -1036,26 +1000,24 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "coverageAnalytics": {
-                        "components": [
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "golang",
-                                "percentCovered": None,
-                                "percentChange": None,
-                                "measurements": [],
-                                "lastUploaded": None,
-                            },
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "pythonName",
-                                "percentCovered": None,
-                                "percentChange": None,
-                                "measurements": [],
-                                "lastUploaded": None,
-                            },
-                        ]
-                    }
+                    "components": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "percentCovered": None,
+                            "percentChange": None,
+                            "measurements": [],
+                            "lastUploaded": None,
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "pythonName",
+                            "percentCovered": None,
+                            "percentChange": None,
+                            "measurements": [],
+                            "lastUploaded": None,
+                        },
+                    ]
                 }
             }
         }
@@ -1070,9 +1032,7 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
             "before": timezone.datetime(2022, 6, 23),
         }
         data = self.gql_request(query_component_measurements, variables=variables)
-        assert data == {
-            "owner": {"repository": {"coverageAnalytics": {"components": []}}}
-        }
+        assert data == {"owner": {"repository": {"components": []}}}
 
     def test_component_measurements_with_filter(self):
         MeasurementFactory(
@@ -1149,43 +1109,41 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "coverageAnalytics": {
-                        "components": [
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "pythonName",
-                                "percentCovered": 80.0,
-                                "percentChange": 5.0,
-                                "measurements": [
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-20T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 75.0,
-                                        "min": 75.0,
-                                        "max": 75.0,
-                                        "timestamp": "2022-06-21T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 80.0,
-                                        "min": 75.0,
-                                        "max": 85.0,
-                                        "timestamp": "2022-06-22T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-23T00:00:00+00:00",
-                                    },
-                                ],
-                                "lastUploaded": "2022-06-22T01:00:00+00:00",
-                            },
-                        ]
-                    }
+                    "components": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "pythonName",
+                            "percentCovered": 80.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 75.0,
+                                    "min": 75.0,
+                                    "max": 75.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 80.0,
+                                    "min": 75.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                            "lastUploaded": "2022-06-22T01:00:00+00:00",
+                        },
+                    ]
                 }
             }
         }
@@ -1265,51 +1223,49 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "coverageAnalytics": {
-                        "components": [
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "golang",
-                                "percentCovered": 90.0,
-                                "percentChange": 5.0,
-                                "measurements": [
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-20T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 85.0,
-                                        "min": 85.0,
-                                        "max": 85.0,
-                                        "timestamp": "2022-06-21T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": 90.0,
-                                        "min": 85.0,
-                                        "max": 95.0,
-                                        "timestamp": "2022-06-22T00:00:00+00:00",
-                                    },
-                                    {
-                                        "avg": None,
-                                        "min": None,
-                                        "max": None,
-                                        "timestamp": "2022-06-23T00:00:00+00:00",
-                                    },
-                                ],
-                                "lastUploaded": "2022-06-22T01:00:00+00:00",
-                            },
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "pythonName",
-                                "percentCovered": None,
-                                "percentChange": None,
-                                "measurements": [],
-                                "lastUploaded": None,
-                            },
-                        ]
-                    }
+                    "components": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "percentCovered": 90.0,
+                            "percentChange": 5.0,
+                            "measurements": [
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-20T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 85.0,
+                                    "min": 85.0,
+                                    "max": 85.0,
+                                    "timestamp": "2022-06-21T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": 90.0,
+                                    "min": 85.0,
+                                    "max": 95.0,
+                                    "timestamp": "2022-06-22T00:00:00+00:00",
+                                },
+                                {
+                                    "avg": None,
+                                    "min": None,
+                                    "max": None,
+                                    "timestamp": "2022-06-23T00:00:00+00:00",
+                                },
+                            ],
+                            "lastUploaded": "2022-06-22T01:00:00+00:00",
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "pythonName",
+                            "percentCovered": None,
+                            "percentChange": None,
+                            "measurements": [],
+                            "lastUploaded": None,
+                        },
+                    ]
                 }
             }
         }
@@ -1377,33 +1333,31 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         )
 
         query = """
-           query ComponentMeasurements(
-               $name: String!
-               $repo: String!
-               $interval: MeasurementInterval!
-               $after: DateTime!
-               $before: DateTime!
-               $branch: String
-               $filters: ComponentMeasurementsSetFilters
-               $orderingDirection: OrderingDirection
-           ) {
-               owner(username: $name) {
-                   repository: repository(name: $repo) {
-                       ... on Repository {
-                            coverageAnalytics {
-                               components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
-                                   __typename
-                                   ... on ComponentMeasurements {
-                                       name
-                                       componentId
-                                   }
-                               }
-                           }
-                       }
-                   }
-               }
-           }
-           """
+        query ComponentMeasurements(
+            $name: String!
+            $repo: String!
+            $interval: MeasurementInterval!
+            $after: DateTime!
+            $before: DateTime!
+            $branch: String
+            $filters: ComponentMeasurementsSetFilters
+            $orderingDirection: OrderingDirection
+        ) {
+            owner(username: $name) {
+                repository: repository(name: $repo) {
+                    ... on Repository {
+                        components(filters: $filters, orderingDirection: $orderingDirection, after: $after, before: $before, branch: $branch, interval: $interval) {
+                            __typename
+                            ... on ComponentMeasurements {
+                                name
+                                componentId
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
 
         variables = {
             "name": self.org.username,
@@ -1418,20 +1372,18 @@ class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "repository": {
-                    "coverageAnalytics": {
-                        "components": [
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "golang",
-                                "componentId": "golang",
-                            },
-                            {
-                                "__typename": "ComponentMeasurements",
-                                "name": "pythonName",
-                                "componentId": "python",
-                            },
-                        ]
-                    }
+                    "components": [
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "golang",
+                            "componentId": "golang",
+                        },
+                        {
+                            "__typename": "ComponentMeasurements",
+                            "name": "pythonName",
+                            "componentId": "python",
+                        },
+                    ]
                 }
             }
         }
