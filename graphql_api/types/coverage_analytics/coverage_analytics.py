@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterable, List, Mapping, Optional, Union
 
-from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
@@ -118,7 +118,7 @@ async def resolve_measurements(
 
 @coverage_analytics_bindable.field("components")
 @sync_to_async
-def resolve_component_measurements(
+def resolve_components_measurements(
     parent: CoverageAnalyticsProps,
     info: GraphQLResolveInfo,
     interval: Interval,
@@ -251,7 +251,6 @@ def resolve_components_count(
 
 
 @coverage_analytics_bindable.field("flags")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_flags(
     parent: CoverageAnalyticsProps,
