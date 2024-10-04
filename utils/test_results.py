@@ -174,25 +174,26 @@ def generate_test_results(
     return aggregation_of_test_results
 
 
-def percent_diff(a: int | float, b: int | float) -> int | float:
-    c = (a - b) / b * 100
-    return c
+def percent_diff(numerator: int | float, denominator: int | float) -> int | float | None:
+    if denominator == 0:
+        return None
+    return (numerator - denominator) / denominator * 100
 
 
-def helper(
-    ls: list[str],
+def get_percent_change(
+    fields: list[str],
     curr_numbers: dict[str, int | float],
     past_numbers: dict[str, int | float],
 ) -> dict[str, int | float]:
-    diff_dict = {}
+    percent_change_fields = {}
 
-    for s in ls:
-        if past_numbers.get(s):
-            diff_dict[f"{s}_percent_change"] = percent_diff(
-                curr_numbers[s], past_numbers[s]
+    for field in fields:
+        if past_numbers.get(field):
+            percent_change_fields[f"{field}_percent_change"] = percent_diff(
+                curr_numbers[field], past_numbers[field]
             )
 
-    return diff_dict
+    return percent_change_fields
 
 
 def get_test_results_aggregate_numbers(
@@ -256,7 +257,7 @@ def generate_test_results_aggregates(
 
     past_numbers = get_test_results_aggregate_numbers(repo, double_time_ago, time_ago)
 
-    return curr_numbers | helper(
+    return curr_numbers | get_percent_change(
         ["total_run_time", "slowest_tests_duration", "skips", "fails"],
         curr_numbers,
         past_numbers,
@@ -274,12 +275,16 @@ def get_flake_aggregate_numbers(
     else:
         flakes = Flake.objects.filter(
             Q(repository_id=repo.repoid)
-            & (Q(end_date__date__lte=until.date()) & Q(end_date__date__gt=since.date()))
+            & ((Q(end_date__isnull=True)) | (Q(end_date__date__lte=until.date()) & Q(end_date__date__gt=since.date())))
         )
 
     flake_count = flakes.count()
 
+    print("flake_count", flake_count)
+
     test_ids = [flake.test_id for flake in flakes]
+
+    print("test_ids", test_ids)
 
     test_rollups = DailyTestRollup.objects.filter(
         repoid=repo.repoid,
@@ -290,8 +295,10 @@ def get_flake_aggregate_numbers(
     if until:
         test_rollups = test_rollups.filter(date__lte=until.date())
 
+
+    print("len(test_rollups)", len(test_rollups))
+
     if len(test_rollups) == 0:
-        assert 0 == 2
         return {"flake_count": 0, "flake_rate": 0}
 
     numerator = 0
@@ -324,7 +331,7 @@ def generate_flake_aggregates(
 
     past_numbers = get_flake_aggregate_numbers(repo, double_time_ago, time_ago)
 
-    return curr_numbers | helper(
+    return curr_numbers | get_percent_change(
         ["flake_count", "flake_rate"],
         curr_numbers,
         past_numbers,

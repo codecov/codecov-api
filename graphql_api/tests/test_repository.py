@@ -1445,6 +1445,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             repo.name,
             """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips, totalRunTimePercentChange, slowestTestsRunTimePercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
+
         assert res["testResultsAggregates"] == {
             "totalRunTime": 570.0,
             "slowestTestsRunTime": 29.0,
@@ -1454,4 +1455,90 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "slowestTestsRunTimePercentChange": None,
             "totalFailsPercentChange": None,
             "totalSkipsPercentChange": None,
+        }
+
+    def test_flake_aggregates(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, branch="main"
+        )
+
+        test = TestFactory(repository=repo)
+
+        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=1), end_date=None)
+        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=90), end_date=None)
+        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=70), end_date=datetime.datetime.now() - datetime.timedelta(days=30))
+        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=80), end_date=datetime.datetime.now() - datetime.timedelta(days=59))
+        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=70), end_date=datetime.datetime.now() - datetime.timedelta(days=61))
+
+        for i in range(0, 30):
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                flaky_fail_count=1 if i % 6 == 0 else 0,
+                fail_count=1 if i % 3 == 0 else 0,
+                skip_count=0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+        for i in range(30, 60):
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                flaky_fail_count=5 if i % 3 == 0 else 0,
+                fail_count=5 if i % 3 == 0 else 0,
+                skip_count=0,
+                pass_count=5,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+
+        res = self.fetch_repository(
+            repo.name,
+            """flakeAggregates { flakeCount, flakeRate, flakeCountPercentChange, flakeRatePercentChange }""",
+        )
+
+        assert res["flakeAggregates"] == {
+            "flakeCount": 2,
+            "flakeRate": 0.125,
+            "flakeCountPercentChange": -50.0,
+            "flakeRatePercentChange": -50.0,
+        }
+
+    def test_flake_aggregates_no_history(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, branch="main"
+        )
+
+        test = TestFactory(repository=repo)
+        _ = FlakeFactory(repository=repo, test=test, start_date=datetime.datetime.now() - datetime.timedelta(days=1), end_date=None)
+
+        for i in range(0, 30):
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                flaky_fail_count=1 if i % 3 == 0 else 0,
+                fail_count=1 if i % 3 == 0 else 0,
+                skip_count=0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+
+        res = self.fetch_repository(
+            repo.name,
+            """flakeAggregates { flakeCount, flakeRate, flakeCountPercentChange, flakeRatePercentChange }""",
+        )
+
+        assert res["flakeAggregates"] == {
+            "flakeCount": 1,
+            "flakeRate": 0.25,
+            "flakeCountPercentChange": None,
+            "flakeRatePercentChange": None,
         }
