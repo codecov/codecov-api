@@ -17,7 +17,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         self.owner = OwnerFactory(username="randomOwner")
         self.repository = RepositoryFactory(author=self.owner, branch="main")
 
-        for i in range(1, 31):
+        for i in range(0, 30):
             test = TestFactory(repository=self.repository)
             _ = FlakeFactory(
                 repository=self.repository,
@@ -36,6 +36,26 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                 branch="main",
             )
 
+        for i in range(30, 60):
+            test = TestFactory(repository=self.repository)
+            if i % 2 == 0:
+                _ = FlakeFactory(
+                    repository=self.repository,
+                    test=test,
+                    end_date=datetime.now() - timedelta(days=i),
+                )
+                _ = DailyTestRollupFactory(
+                    test=test,
+                    date=date.today() - timedelta(days=i),
+                    avg_duration_seconds=float(i),
+                    latest_run=datetime.now() - timedelta(days=i),
+                    fail_count=1,
+                    skip_count=1,
+                    pass_count=0,
+                    flaky_fail_count=3 if i % 5 == 0 else 0,
+                    branch="main",
+                )
+
     def test_fetch_test_result_total_runtime(self) -> None:
         query = """
             query {
@@ -43,27 +63,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             flakeAggregates {
-                                flakeCount
-                            }
-                        }
-                    }
-                 }
-            }
-        """ % (self.owner.username, self.repository.name)
-
-        result = self.gql_request(query, owner=self.owner)
-
-        assert "errors" not in result
-        assert result["owner"]["repository"]["flakeAggregates"]["flakeCount"] == 29
-
-    def test_fetch_test_result_slowest_tests_runtime(self) -> None:
-        query = """
-            query {
-               owner(username: "%s") {
-                    repository(name: "%s") {
-                        ... on Repository {
-                            flakeAggregates {
                                 flakeRate
+                                flakeCount
+                                flakeRatePercentChange
+                                flakeCountPercentChange
                             }
                         }
                     }
@@ -74,4 +77,9 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["flakeAggregates"]["flakeRate"] == 5 / 29
+        assert result["owner"]["repository"]["flakeAggregates"] == {
+            "flakeRate": 0.2,
+            "flakeCount": 30,
+            "flakeRatePercentChange": -66.66666666666666,
+            "flakeCountPercentChange": 100.0,
+        }

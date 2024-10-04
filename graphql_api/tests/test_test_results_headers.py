@@ -37,7 +37,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testResultsAggregates {
-                                totalRunTime
+                                totalDuration
                             }
                         }
                     }
@@ -49,7 +49,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResultsAggregates"]["totalRunTime"]
+            result["owner"]["repository"]["testResultsAggregates"]["totalDuration"]
             == 435.0
         )
 
@@ -60,7 +60,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testResultsAggregates {
-                                slowestTestsRunTime
+                                slowestTestsDuration
                             }
                         }
                     }
@@ -73,7 +73,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         assert "errors" not in result
         assert (
             result["owner"]["repository"]["testResultsAggregates"][
-                "slowestTestsRunTime"
+                "slowestTestsDuration"
             ]
             == 29.0
         )
