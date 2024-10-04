@@ -1,8 +1,8 @@
 """
-TestAnalytics is information related to a repo's test analytics
+TestAnalytics are fields related to Codecov's Test Analytics product offering
 """
 type TestAnalytics {
-  "Test Results are results of test analytics"
+  "Results are test analytics data per test"
   results(
     filters: TestResultsFilters
     ordering: TestResultsOrdering
@@ -11,10 +11,13 @@ type TestAnalytics {
     last: Int
     before: String
   ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
-}
 
-"TestAnalyticsResult is TestAnalytics or potential error(s)"
-union TestAnalyticsResult = TestAnalytics | NotFoundError
+  "Results aggregates are test analytics data totals across all tests"
+  resultsAggregates: TestResultsAggregates
+
+  "Flake aggregates are flake totals across all tests"
+  flakeAggregates: FlakeAggregates
+}
 
 type TestResultConnection {
   edges: [TestResultEdge]!

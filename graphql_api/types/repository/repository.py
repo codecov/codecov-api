@@ -31,18 +31,13 @@ from graphql_api.types.coverage_analytics.coverage_analytics import (
 )
 from graphql_api.types.enums import OrderingDirection, TestResultsFilterParameter
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from graphql_api.types.test_analytics.test_analytics import (
-    TestAnalyticsProps,
-)
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, Interval, MeasurementName
 from utils.test_results import (
     GENERATE_TEST_RESULT_PARAM,
-    generate_flake_aggregates,
     generate_test_results,
-    generate_test_results_aggregates,
 )
 
 log = logging.getLogger(__name__)
@@ -588,28 +583,8 @@ def resolve_coverage_analytics(
 def resolve_test_analytics(
     repository: Repository,
     info: GraphQLResolveInfo,
-) -> CoverageAnalyticsProps:
-    return TestAnalyticsProps(
-        repository=repository,
-    )
-
-
-@repository_bindable.field("testResultsAggregates")
-@convert_kwargs_to_snake_case
-async def resolve_test_results_aggregates(
-    repository: Repository,
-    info: GraphQLResolveInfo,
-):
-    queryset = await sync_to_async(generate_test_results_aggregates)(
-        repoid=repository.repoid
-    )
-
-    return queryset
-
-
-@repository_bindable.field("flakeAggregates")
-@convert_kwargs_to_snake_case
-async def resolve_flake_aggregates(repository: Repository, info: GraphQLResolveInfo):
-    queryset = await sync_to_async(generate_flake_aggregates)(repoid=repository.repoid)
-
-    return queryset
+) -> Repository:
+    """
+    resolve_test_analytics defines the data that will get passed to the testAnalytics resolvers
+    """
+    return repository

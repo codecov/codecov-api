@@ -880,7 +880,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             },
         )
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -891,7 +891,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_test_results_no_tests(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         res = self.fetch_repository(
@@ -899,7 +899,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": []}
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_branch_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -922,9 +922,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
-<<<<<<< HEAD
-    # TODO - remove this file with #2291
-=======
+    # TODO - remove this with #2291
     def test_flaky_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1057,7 +1055,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_desc_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1091,7 +1089,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_last_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1127,7 +1125,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_desc_last_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1163,7 +1161,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_avg_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1198,7 +1196,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_desc_avg_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1232,7 +1230,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_failure_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1270,7 +1268,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    # TODO - remove this file with #2291
+    # TODO - remove this with #2291
     def test_desc_failure_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1308,6 +1306,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_flake_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1348,6 +1347,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_desc_flake_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1388,6 +1388,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_test_results_aggregates(self) -> None:
         repo = RepositoryFactory(
             author=self.owner, active=True, private=True, branch="main"

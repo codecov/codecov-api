@@ -1,43 +1,25 @@
 import logging
-from dataclasses import dataclass
-from typing import Any, Optional, Union
 
-from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, convert_kwargs_to_snake_case
 from graphql.type.definition import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
 from core.models import Repository
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import OrderingDirection
-from graphql_api.types.errors.errors import NotFoundError
-from utils.test_results import aggregate_test_results
+from utils.test_results import (
+    aggregate_test_results,
+    generate_flake_aggregates,
+    generate_test_results_aggregates,
+)
 
 log = logging.getLogger(__name__)
 
 # Bindings for GraphQL types
 test_analytics_bindable: ObjectType = ObjectType("TestAnalytics")
-test_analytics_result_bindable: UnionType = UnionType("TestAnalyticsResult")
 
 
-# TestAnalyticsProps is information passed from parent resolver (repository)
-# to the test analytics resolver
-@dataclass
-class TestAnalyticsProps:
-    repository: Repository
-
-
-@test_analytics_result_bindable.type_resolver
-def resolve_test_analytics_result_type(
-    obj: Union[TestAnalyticsProps, NotFoundError], *_: Any
-) -> Optional[str]:
-    if isinstance(obj, TestAnalyticsProps):
-        return "TestAnalyticsProps"
-    elif isinstance(obj, NotFoundError):
-        return "NotFoundError"
-    return None
-
-
-@test_analytics_bindable.field("testResults")
+@test_analytics_bindable.field("results")
 @convert_kwargs_to_snake_case
 async def resolve_test_results(
     repository: Repository,
@@ -62,3 +44,24 @@ async def resolve_test_results(
         ),
         **kwargs,
     )
+
+
+@test_analytics_bindable.field("testResultsAggregates")
+@convert_kwargs_to_snake_case
+async def resolve_test_results_aggregates(
+    repository: Repository,
+    info: GraphQLResolveInfo,
+):
+    queryset = await sync_to_async(generate_test_results_aggregates)(
+        repoid=repository.repoid
+    )
+
+    return queryset
+
+
+@test_analytics_bindable.field("flakeAggregates")
+@convert_kwargs_to_snake_case
+async def resolve_flake_aggregates(repository: Repository, info: GraphQLResolveInfo):
+    queryset = await sync_to_async(generate_flake_aggregates)(repoid=repository.repoid)
+
+    return queryset
