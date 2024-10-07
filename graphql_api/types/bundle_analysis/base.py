@@ -227,6 +227,20 @@ def resolve_bundle_data(
     )
 
 
+@bundle_report_bindable.field("bundleDataFiltered")
+def resolve_bundle_report_filtered(
+    bundle_report: BundleReport,
+    info: GraphQLResolveInfo,
+    filters: dict[str, list[str]] = {},
+) -> BundleData:
+    group = filters.get("report_group")
+
+    return BundleData(
+        bundle_report.report.total_size(asset_types=[group] if group else None),
+        bundle_report.report.total_gzip_size(asset_types=[group] if group else None),
+    )
+
+
 @bundle_report_bindable.field("measurements")
 @convert_kwargs_to_snake_case
 @sync_to_async
