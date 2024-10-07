@@ -37,9 +37,7 @@ from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, Interval, MeasurementName
 from utils.test_results import (
     GENERATE_TEST_RESULT_PARAM,
-    generate_flake_aggregates,
     generate_test_results,
-    generate_test_results_aggregates,
 )
 
 log = logging.getLogger(__name__)
@@ -527,6 +525,7 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
         return None
 
 
+# TODO - remove with #2291
 @repository_bindable.field("testResults")
 @convert_kwargs_to_snake_case
 async def resolve_test_results(
@@ -582,18 +581,12 @@ def resolve_coverage_analytics(
     )
 
 
-@repository_bindable.field("testResultsAggregates")
-@convert_kwargs_to_snake_case
-async def resolve_test_results_aggregates(
+@repository_bindable.field("testAnalytics")
+def resolve_test_analytics(
     repository: Repository,
     info: GraphQLResolveInfo,
-):
-    return await sync_to_async(generate_test_results_aggregates)(
-        repoid=repository.repoid
-    )
-
-
-@repository_bindable.field("flakeAggregates")
-@convert_kwargs_to_snake_case
-async def resolve_flake_aggregates(repository: Repository, info: GraphQLResolveInfo):
-    return await sync_to_async(generate_flake_aggregates)(repoid=repository.repoid)
+) -> Repository:
+    """
+    resolve_test_analytics defines the data that will get passed to the testAnalytics resolvers
+    """
+    return repository

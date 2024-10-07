@@ -74,6 +74,7 @@ from .segment_comparison import (
 )
 from .self_hosted_license import self_hosted_license, self_hosted_license_bindable
 from .session import session, session_bindable
+from .test_analytics import test_analytics, test_analytics_bindable
 from .test_results import test_result_bindable, test_results
 from .test_results_aggregates import (
     test_results_aggregates,
@@ -123,6 +124,7 @@ types = [
     segment_comparison,
     self_hosted_license,
     session,
+    test_analytics,
     upload,
     user_token,
     user,
@@ -183,6 +185,7 @@ bindables = [
     segments_result_bindable,
     self_hosted_license_bindable,
     session_bindable,
+    test_analytics_bindable,
     tracking_metadata_bindable,
     upload_bindable,
     upload_error_bindable,
