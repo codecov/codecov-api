@@ -950,3 +950,40 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (self.owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
+
+    def test_fetch_activated_user_count(self):
+        user = OwnerFactory(username="sample-user")
+        user2 = OwnerFactory(username="sample-user-2")
+        user3 = OwnerFactory(username="sample-user-3")
+        owner = OwnerFactory(
+            username="sample-org",
+            plan_activated_users=[user.ownerid, user2.ownerid, user3.ownerid],
+        )
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                activatedUserCount
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["activatedUserCount"] == 3
+
+    def test_fetch_activated_user_count_returns_null_if_not_in_org(self):
+        user = OwnerFactory(username="sample-user")
+        user2 = OwnerFactory(username="sample-user-2")
+        user3 = OwnerFactory(username="sample-user-3")
+        owner = OwnerFactory(
+            username="sample-org", plan_activated_users=[user2.ownerid, user3.ownerid]
+        )
+
+        query = """{
+            owner(username: "%s") {
+                activatedUserCount
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["activatedUserCount"] is None
