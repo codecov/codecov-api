@@ -18,7 +18,12 @@ from .bundle_analysis import (
     bundle_module_bindable,
     bundle_report_bindable,
 )
-from .commit import commit, commit_bindable
+from .commit import (
+    commit,
+    commit_bindable,
+    commit_bundle_analysis_bindable,
+    commit_coverage_analytics_bindable,
+)
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .component import component, component_bindable
 from .component_comparison import component_comparison, component_comparison_bindable
@@ -142,6 +147,8 @@ bindables = [
     bundle_module_bindable,
     bundle_report_bindable,
     commit_bindable,
+    commit_bundle_analysis_bindable,
+    commit_coverage_analytics_bindable,
     comparison_bindable,
     comparison_result_bindable,
     component_bindable,
