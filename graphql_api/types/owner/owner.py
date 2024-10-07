@@ -373,5 +373,4 @@ def resolve_ai_enabled_repos(
 @sync_to_async
 @require_part_of_org
 def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int | None:
-    print(owner.activated_user_count)
     return owner.activated_user_count
