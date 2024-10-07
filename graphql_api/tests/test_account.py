@@ -1,4 +1,5 @@
 from django.test import TransactionTestCase
+from shared.django_apps.codecov_auth.tests.factories import AccountsUsersFactory
 
 from codecov_auth.tests.factories import (
     AccountFactory,
@@ -60,3 +61,23 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
         assert "errors" not in result
         seatCount = result["owner"]["account"]["totalSeatCount"]
         assert seatCount == 11
+
+    def test_fetch_activated_user_count(self) -> None:
+        for _ in range(7):
+            AccountsUsersFactory(account=self.account)
+
+        query = """
+            query {
+                owner(username: "%s") {
+                    account {
+                        activatedUserCount
+                    }
+                }
+            }
+        """ % (self.owner.username)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        activatedUserCount = result["owner"]["account"]["activatedUserCount"]
+        assert activatedUserCount == 7
