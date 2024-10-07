@@ -3156,7 +3156,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysis
+                                bundleAnalysis {
                                     bundleAnalysisReport {
                                         __typename
                                         ... on BundleAnalysisReport {
@@ -3171,6 +3171,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                             }
                                         }
                                     }
+                                }
                             }
                         }
                     }
@@ -3185,7 +3186,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "name": "b1",
@@ -3244,7 +3245,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["bundleAnalysisReport"] == {
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
             "__typename": "BundleAnalysisReport",
             "bundle": {
                 "name": "b1",
