@@ -94,7 +94,11 @@ class GithubWebhookHandler(APIView):
             or expected_sig is None
             or len(computed_sig) != len(expected_sig)
             or not constant_time_compare(computed_sig, expected_sig)
-        ):
+        ):  
+            log.info(
+                f"Error validating signature {request}, {request.META}, "
+                f"Failed to validate signature for request" 
+            )
             _incr("invalid_signature")
             raise PermissionDenied()
 
