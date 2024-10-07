@@ -3156,20 +3156,21 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name:"b1") {
-                                            name
-                                            bundleDataFiltered(filters: $bundleFilters) {
-                                                size {
-                                                    gzip
-                                                    uncompress
+                                bundleAnalysis
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name:"b1") {
+                                                name
+                                                bundleDataFiltered(filters: $bundleFilters) {
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
                             }
                         }
                     }
@@ -3191,6 +3192,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "bundleDataFiltered": {"size": {"gzip": 6, "uncompress": 6}},
             },
         }
+
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
     def test_bundle_analysis_report_size_filtered_no_value(self, get_storage_service):
         storage = MemoryStorageService({})
@@ -3212,15 +3214,17 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                     repository(name: $repo) {
                         ... on Repository {
                             commit(id: $commit) {
-                                bundleAnalysisReport {
-                                    __typename
-                                    ... on BundleAnalysisReport {
-                                        bundle(name:"b1") {
-                                            name
-                                            bundleDataFiltered(filters: $bundleFilters) {
-                                                size {
-                                                    gzip
-                                                    uncompress
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name:"b1") {
+                                                name
+                                                bundleDataFiltered(filters: $bundleFilters) {
+                                                    size {
+                                                        gzip
+                                                        uncompress
+                                                    }
                                                 }
                                             }
                                         }

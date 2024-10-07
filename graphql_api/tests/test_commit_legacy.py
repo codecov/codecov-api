@@ -2585,3 +2585,117 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 },
             ],
         }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_report_size_filtered(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+        with open(
+            "./services/tests/samples/head_bundle_report_with_gzip_size.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!, $bundleFilters: BundleReportFilters) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name:"b1") {
+                                            name
+                                            bundleDataFiltered(filters: $bundleFilters) {
+                                                size {
+                                                    gzip
+                                                    uncompress
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "bundleFilters": {"reportGroup": "JAVASCRIPT"},
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "name": "b1",
+                "bundleDataFiltered": {"size": {"gzip": 6, "uncompress": 6}},
+            },
+        }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_report_size_filtered_no_value(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+        with open(
+            "./services/tests/samples/head_bundle_report_with_gzip_size.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!, $bundleFilters: BundleReportFilters) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysisReport {
+                                    __typename
+                                    ... on BundleAnalysisReport {
+                                        bundle(name:"b1") {
+                                            name
+                                            bundleDataFiltered(filters: $bundleFilters) {
+                                                size {
+                                                    gzip
+                                                    uncompress
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "bundleFilters": {},
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+        assert commit["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "name": "b1",
+                "bundleDataFiltered": {"size": {"gzip": 20, "uncompress": 20}},
+            },
+        }
