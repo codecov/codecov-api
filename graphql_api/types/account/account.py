@@ -23,3 +23,9 @@ def resolve_okta_config(
 @account_bindable.field("totalSeatCount")
 def resolve_total_seat_count(account: Account, info: GraphQLResolveInfo) -> int:
     return account.total_seat_count
+
+
+@account_bindable.field("activatedUserCount")
+@sync_to_async
+def resolve_activated_user_count(account: Account, info: GraphQLResolveInfo) -> int:
+    return account.activated_user_count
