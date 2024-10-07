@@ -372,5 +372,5 @@ def resolve_ai_enabled_repos(
 @owner_bindable.field("activatedUserCount")
 @sync_to_async
 @require_part_of_org
-def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int | None:
+def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count
