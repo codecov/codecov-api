@@ -4,29 +4,27 @@ from codecov_auth.models import Owner, Service
 from core.models import Repository
 
 
-def get_repository_from_string(
-    service: Service, repo_identifier: str, include_owner: bool = False
-) -> typing.Optional[Repository] | tuple[Repository | None, Owner | None]:
+def get_repository_and_owner_from_string(
+    service: Service, repo_identifier: str
+) -> tuple[Repository | None, Owner | None]:
     if not isinstance(service, Service):
         # if we pass this value to the db, it just raises DataError
         # No need for that
-        return (None, None) if include_owner else None
+        return None, None
 
     if "::::" not in repo_identifier:
-        return (None, None) if include_owner else None
+        return None, None
 
     owner_identifier, repo_name_identifier = repo_identifier.rsplit("::::", 1)
     owner = _get_owner_from_string(service, owner_identifier)
     if not owner:
-        return (None, None) if include_owner else None
+        return None, None
     try:
         repository = Repository.objects.get(author=owner, name=repo_name_identifier)
     except Repository.DoesNotExist:
-        return (None, None) if include_owner else None
+        return None, None
 
-    if include_owner:
-        return repository, owner
-    return repository
+    return repository, owner
 
 
 def _get_owner_from_string(
@@ -40,9 +38,10 @@ def _get_owner_from_string(
         return None
 
 
-def get_repository_and_owner_from_string(
+def get_repository_from_string(
     service: Service, repo_identifier: str
-) -> tuple[Repository | None, Owner | None]:
-    return get_repository_from_string(
-        service=service, repo_identifier=repo_identifier, include_owner=True
+) -> Repository | None:
+    repository, _ = get_repository_and_owner_from_string(
+        service=service, repo_identifier=repo_identifier
     )
+    return repository

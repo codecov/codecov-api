@@ -289,40 +289,40 @@ class TestGitHubOIDCTokenAuthentication(object):
 
 
 valid_params_to_test = [
-    ("/upload/github/ownerSEPARATORthe_repo/commits", "owner/the_repo", None),
-    ("/upload/github/ownerSEPARATORthe_repo/commits/", "owner/the_repo", None),
+    ("/upload/github/owner::::the_repo/commits", "owner/the_repo", None),
+    ("/upload/github/owner::::the_repo/commits/", "owner/the_repo", None),
     (
-        "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports",
+        "/upload/github/owner::::the_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports",
         "owner/the_repo",
         "9652fb7ff577f554588ea83afded9000acd084ee",
     ),
     (
-        "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/",
+        "/upload/github/owner::::the_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/",
         "owner/the_repo",
         "9652fb7ff577f554588ea83afded9000acd084ee",
     ),
     (
-        "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/default/uploads",
+        "/upload/github/owner::::the_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/default/uploads",
         "owner/the_repo",
         "9652fb7ff577f554588ea83afded9000acd084ee",
     ),
     (
-        "/upload/github/ownerSEPARATORthe_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/default/uploads/",
+        "/upload/github/owner::::the_repo/commits/9652fb7ff577f554588ea83afded9000acd084ee/reports/default/uploads/",
         "owner/the_repo",
         "9652fb7ff577f554588ea83afded9000acd084ee",
     ),
     (
-        "/upload/github/ownerSEPARATORexample-repo/commits",
+        "/upload/github/owner::::example-repo/commits",
         "owner/example-repo",
         None,
     ),
     (
-        "/upload/github/ownerSEPARATOR__example-repo__/commits",
+        "/upload/github/owner::::__example-repo__/commits",
         "owner/__example-repo__",
         None,
     ),
     (
-        "/upload/github/ownerSEPARATOR~example-repo:copy/commits",
+        "/upload/github/owner::::~example-repo:copy/commits",
         "owner/~example-repo:copy",
         None,
     ),
@@ -487,12 +487,6 @@ class TestTokenlessAuth(object):
     @pytest.mark.parametrize("request_uri,repo_slug,commitid", valid_params_to_test)
     def test_tokenless_matches_paths(self, request_uri, repo_slug, commitid, db):
         author_name, repo_name = repo_slug.split("/")
-        # Doing this because of ATS.
-        # For pytest '::' is the divider between a test class and a test function.
-        # There's a non-zero chance that the full test name would be mis-interpreted by pytest
-        # And these tests would never work with ATS.
-        # Sadly there's no way to escape the '::' sequence
-        request_uri = request_uri.replace("SEPARATOR", "::::")
         repo = RepositoryFactory(
             name=repo_name, author__username=author_name, private=False
         )
@@ -607,12 +601,6 @@ class TestUploadTokenRequiredAuthenticationCheck(object):
         self, request_uri, repo_slug, commitid, private, token_required, db
     ):
         author_name, repo_name = repo_slug.split("/")
-        # Doing this because of ATS.
-        # For pytest '::' is the divider between a test class and a test function.
-        # There's a non-zero chance that the full test name would be mis-interpreted by pytest
-        # And these tests would never work with ATS.
-        # Sadly there's no way to escape the '::' sequence
-        request_uri = request_uri.replace("SEPARATOR", "::::")
         repo = RepositoryFactory(
             name=repo_name,
             author__username=author_name,
