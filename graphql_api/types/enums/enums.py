@@ -41,6 +41,11 @@ class RepositoryOrdering(enum.Enum):
     NAME = "name"
 
 
+class AccountOrganizationOrdering(enum.Enum):
+    NAME = "username"
+    ACTIVATED_USERS = "plan_activated_users"
+
+
 class OrderingDirection(enum.Enum):
     ASC = "ascending"
     DESC = "descending"

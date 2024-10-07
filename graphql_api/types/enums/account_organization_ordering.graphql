@@ -1,0 +1,4 @@
+enum AccountOrganizationOrdering {
+  NAME
+  ACTIVATED_USERS
+}
