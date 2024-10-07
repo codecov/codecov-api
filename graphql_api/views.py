@@ -329,7 +329,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
                 "[GQL Rate Limit] - Setting new key",
                 extra=dict(key=key, user_id=user_id),
             )
-            redis.setex(key, window, 1)
+            redis.set(name=key, ex=window, value=1)
         elif int(current_count) >= limit:
             log.warning(
                 "[GQL Rate Limit] - Rate limit reached for key",
