@@ -6,6 +6,7 @@ import shared.rate_limits as rate_limits
 import stripe
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from graphql import GraphQLResolveInfo
 
 import services.activation as activation
 import timeseries.helpers as timeseries_helpers
@@ -80,13 +81,13 @@ def resolve_repositories(
 
 @owner_bindable.field("isCurrentUserPartOfOrg")
 @sync_to_async
-def resolve_is_current_user_part_of_org(owner, info):
+def resolve_is_current_user_part_of_org(owner, info: GraphQLResolveInfo):
     current_owner = info.context["request"].current_owner
     return current_user_part_of_org(current_owner, owner)
 
 
 @owner_bindable.field("yaml")
-def resolve_yaml(owner: Owner, info):
+def resolve_yaml(owner: Owner, info: GraphQLResolveInfo):
     if owner.yaml is None:
         return
     current_owner = info.context["request"].current_owner
@@ -97,14 +98,14 @@ def resolve_yaml(owner: Owner, info):
 
 @owner_bindable.field("plan")
 @require_part_of_org
-def resolve_plan(owner: Owner, info) -> PlanService:
+def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
     return PlanService(current_org=owner)
 
 
 @owner_bindable.field("pretrialPlan")
 @convert_kwargs_to_snake_case
 @require_part_of_org
-def resolve_plan_representation(owner: Owner, info) -> PlanData:
+def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
     return FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
 
@@ -112,7 +113,7 @@ def resolve_plan_representation(owner: Owner, info) -> PlanData:
 @owner_bindable.field("availablePlans")
 @convert_kwargs_to_snake_case
 @require_part_of_org
-def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
+def resolve_available_plans(owner: Owner, info: GraphQLResolveInfo) -> List[PlanData]:
     plan_service = PlanService(current_org=owner)
     info.context["plan_service"] = plan_service
     owner = info.context["request"].current_owner
@@ -122,13 +123,13 @@ def resolve_available_plans(owner: Owner, info) -> List[PlanData]:
 @owner_bindable.field("hasPrivateRepos")
 @sync_to_async
 @require_part_of_org
-def resolve_has_private_repos(owner: Owner, info) -> List[PlanData]:
+def resolve_has_private_repos(owner: Owner, info: GraphQLResolveInfo) -> List[PlanData]:
     return owner.has_private_repos
 
 
 @owner_bindable.field("ownerid")
 @require_part_of_org
-def resolve_ownerid(owner: Owner, info) -> int:
+def resolve_ownerid(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.ownerid
 
 
@@ -180,7 +181,7 @@ async def resolve_number_of_uploads(owner: Owner, info, **kwargs):
 
 @owner_bindable.field("isAdmin")
 @require_part_of_org
-def resolve_is_current_user_an_admin(owner: Owner, info):
+def resolve_is_current_user_an_admin(owner: Owner, info: GraphQLResolveInfo):
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
     return command.get_is_current_user_an_admin(owner, current_owner)
@@ -188,7 +189,7 @@ def resolve_is_current_user_an_admin(owner: Owner, info):
 
 @owner_bindable.field("hashOwnerid")
 @require_part_of_org
-def resolve_hash_ownerid(owner: Owner, info):
+def resolve_hash_ownerid(owner: Owner, info: GraphQLResolveInfo):
     hash_ownerid = sha1(str(owner.ownerid).encode())
     return hash_ownerid.hexdigest()
 
@@ -255,7 +256,7 @@ def resolve_measurements(
 
 @owner_bindable.field("isCurrentUserActivated")
 @sync_to_async
-def resolve_is_current_user_activated(owner: Owner, info):
+def resolve_is_current_user_activated(owner: Owner, info: GraphQLResolveInfo):
     current_user = info.context["request"].user
     if not current_user.is_authenticated:
         return False
@@ -277,13 +278,15 @@ def resolve_is_current_user_activated(owner: Owner, info):
 
 @owner_bindable.field("invoices")
 @require_part_of_org
-def resolve_owner_invoices(owner: Owner, info) -> list | None:
+def resolve_owner_invoices(owner: Owner, info: GraphQLResolveInfo) -> list | None:
     return BillingService(requesting_user=owner).list_filtered_invoices(owner, 100)
 
 
 @owner_bindable.field("isGithubRateLimited")
 @sync_to_async
-def resolve_is_github_rate_limited(owner: Owner, info) -> bool | None:
+def resolve_is_github_rate_limited(
+    owner: Owner, info: GraphQLResolveInfo
+) -> bool | None:
     if owner.service != SERVICE_GITHUB and owner.service != SERVICE_GITHUB_ENTERPRISE:
         return False
     redis_connection = get_redis_connection()
@@ -309,7 +312,7 @@ def resolve_owner_invoice(
 @owner_bindable.field("account")
 @require_part_of_org
 @sync_to_async
-def resolve_owner_account(owner: Owner, info) -> dict:
+def resolve_owner_account(owner: Owner, info: GraphQLResolveInfo) -> dict:
     account_id = owner.account_id
     return Account.objects.filter(pk=account_id).first()
 
@@ -317,7 +320,7 @@ def resolve_owner_account(owner: Owner, info) -> dict:
 @owner_bindable.field("isUserOktaAuthenticated")
 @sync_to_async
 @require_part_of_org
-def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
+def resolve_is_user_okta_authenticated(owner: Owner, info: GraphQLResolveInfo) -> bool:
     okta_signed_in_accounts = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY,
         [],
@@ -329,14 +332,14 @@ def resolve_is_user_okta_authenticated(owner: Owner, info) -> bool:
 
 @owner_bindable.field("delinquent")
 @require_part_of_org
-def resolve_delinquent(owner: Owner, info) -> bool | None:
+def resolve_delinquent(owner: Owner, info: GraphQLResolveInfo) -> bool | None:
     return owner.delinquent
 
 
 @owner_bindable.field("aiFeaturesEnabled")
 @sync_to_async
 @require_part_of_org
-def resolve_ai_features_enabled(owner: Owner, info) -> bool:
+def resolve_ai_features_enabled(owner: Owner, info: GraphQLResolveInfo) -> bool:
     return GithubAppInstallation.objects.filter(
         app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).exists()
@@ -345,7 +348,9 @@ def resolve_ai_features_enabled(owner: Owner, info) -> bool:
 @owner_bindable.field("aiEnabledRepos")
 @sync_to_async
 @require_part_of_org
-def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
+def resolve_ai_enabled_repos(
+    owner: Owner, info: GraphQLResolveInfo
+) -> List[str] | None:
     ai_features_app_install = GithubAppInstallation.objects.filter(
         app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).first()
@@ -362,3 +367,11 @@ def resolve_ai_enabled_repos(owner: Owner, info) -> List[str] | None:
         )
 
     return list(queryset.values_list("name", flat=True))
+
+
+@owner_bindable.field("activatedUserCount")
+@sync_to_async
+@require_part_of_org
+def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int | None:
+    print(owner.activated_user_count)
+    return owner.activated_user_count

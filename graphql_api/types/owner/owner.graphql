@@ -39,4 +39,5 @@ type Owner {
   yaml: String
   aiFeaturesEnabled: Boolean!
   aiEnabledRepos: [String]
+  activatedUserCount: Int
 }
