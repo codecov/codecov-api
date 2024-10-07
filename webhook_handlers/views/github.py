@@ -96,7 +96,7 @@ class GithubWebhookHandler(APIView):
             or not constant_time_compare(computed_sig, expected_sig)
         ):
             log.info(
-                f"Error validating signature {request}, {request.META}, "
+                f"Error validating signature {request}, Headers: {list(request.META.keys())}, "
                 f"Failed to validate signature for request"
             )
             _incr("invalid_signature")
