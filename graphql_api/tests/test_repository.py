@@ -1184,7 +1184,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test.name, "lastDuration":0.0}},
+                {"node": {"name": test.name, "lastDuration": 0.0}},
                 {"node": {"name": test_2.name, "lastDuration": 0.0}},
             ]
         }
