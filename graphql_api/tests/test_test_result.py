@@ -103,9 +103,12 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
-            "node"
-        ]["name"] == self.test.computed_name
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
+                "node"
+            ]["name"]
+            == self.test.computed_name
+        )
 
     def test_fetch_test_result_updated_at(self) -> None:
         query = """
