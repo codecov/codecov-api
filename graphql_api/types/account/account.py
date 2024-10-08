@@ -1,4 +1,4 @@
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
@@ -40,7 +40,6 @@ def resolve_activated_user_count(account: Account, info: GraphQLResolveInfo) -> 
 
 
 @account_bindable.field("organizations")
-@convert_kwargs_to_snake_case
 def resolve_organizations(
     account: Account,
     info: GraphQLResolveInfo,
