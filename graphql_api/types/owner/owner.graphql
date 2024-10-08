@@ -39,5 +39,6 @@ type Owner {
   yaml: String
   aiFeaturesEnabled: Boolean!
   aiEnabledRepos: [String]
+  uploadTokenRequired: Boolean
   activatedUserCount: Int
 }
