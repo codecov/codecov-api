@@ -369,6 +369,12 @@ def resolve_ai_enabled_repos(
     return list(queryset.values_list("name", flat=True))
 
 
+@owner_bindable.field("uploadTokenRequired")
+@require_part_of_org
+def resolve_upload_token_required(owner: Owner, info) -> bool | None:
+    return owner.upload_token_required_for_public_repos
+
+
 @owner_bindable.field("activatedUserCount")
 @sync_to_async
 @require_part_of_org

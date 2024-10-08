@@ -2,8 +2,8 @@
 TestAnalytics are fields related to Codecov's Test Analytics product offering
 """
 type TestAnalytics {
-  "Results are analytics data per test"
-  results(
+  "Test results are analytics data per test"
+  testResults(
     filters: TestResultsFilters
     ordering: TestResultsOrdering
     first: Int
@@ -12,8 +12,8 @@ type TestAnalytics {
     before: String
   ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
 
-  "Results aggregates are analytics data totals across all tests"
-  resultsAggregates(history: MeasurementInterval): TestResultsAggregates
+  "Test results aggregates are analytics data totals across all tests"
+  testResultsAggregates: TestResultsAggregates
 
   "Flake aggregates are flake totals across all tests"
   flakeAggregates(history: MeasurementInterval): FlakeAggregates

@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from graphql.type.definition import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
@@ -22,8 +22,8 @@ log = logging.getLogger(__name__)
 test_analytics_bindable: ObjectType = ObjectType("TestAnalytics")
 
 
-@test_analytics_bindable.field("results")
-async def resolve_results(
+@test_analytics_bindable.field("testResults")
+async def resolve_test_results(
     repository: Repository,
     info: GraphQLResolveInfo,
     ordering=None,
@@ -64,9 +64,8 @@ async def resolve_results(
     )
 
 
-@test_analytics_bindable.field("resultsAggregates")
-@convert_kwargs_to_snake_case
-async def resolve_results_aggregates(
+@test_analytics_bindable.field("testResultsAggregates")
+async def resolve_test_results_aggregates(
     repository: Repository,
     info: GraphQLResolveInfo,
     history: MeasurementInterval | None = None,
@@ -79,7 +78,6 @@ async def resolve_results_aggregates(
 
 
 @test_analytics_bindable.field("flakeAggregates")
-@convert_kwargs_to_snake_case
 async def resolve_flake_aggregates(
     repository: Repository,
     info: GraphQLResolveInfo,
