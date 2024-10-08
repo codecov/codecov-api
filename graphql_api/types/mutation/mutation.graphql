@@ -38,4 +38,5 @@ type Mutation {
   encodeSecretString(input: EncodeSecretStringInput!): EncodeSecretStringPayload
   storeEventMetric(input: StoreEventMetricsInput!): StoreEventMetricsPayload
   saveOktaConfig(input: SaveOktaConfigInput!): SaveOktaConfigPayload
+  setUploadTokenRequired(input: SetUploadTokenRequiredInput!): SetUploadTokenRequiredPayload
 }

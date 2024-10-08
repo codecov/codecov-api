@@ -1,0 +1,13 @@
+union SetUploadTokenRequiredError =
+    UnauthenticatedError
+  | UnauthorizedError
+  | ValidationError
+
+type SetUploadTokenRequiredPayload {
+  error: SetUploadTokenRequiredError
+}
+
+input SetUploadTokenRequiredInput {
+  orgUsername: String!
+  uploadTokenRequired: Boolean!
+}

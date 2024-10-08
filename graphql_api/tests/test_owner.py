@@ -11,7 +11,10 @@ from shared.django_apps.codecov_auth.tests.factories import OktaSettingsFactory
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
-from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
+from codecov.commands.exceptions import (
+    MissingService,
+    UnauthorizedGuestAccess,
+)
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
 from codecov_auth.tests.factories import (
     AccountFactory,
@@ -950,6 +953,43 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (self.owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
+
+    def test_fetch_upload_token_required(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["uploadTokenRequired"] == True
+
+    def test_fetch_upload_token_not_required(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        owner.upload_token_required_for_public_repos = False
+        owner.save()
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["uploadTokenRequired"] == False
+
+    def test_fetch_upload_token_user_not_part_of_org(self):
+        owner = OwnerFactory(username="sample", service="github")
+        user = OwnerFactory(username="sample-user", service="github")
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["uploadTokenRequired"] is None
 
     def test_fetch_activated_user_count(self):
         user = OwnerFactory(username="sample-user")
