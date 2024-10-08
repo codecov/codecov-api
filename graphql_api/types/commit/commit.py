@@ -1,11 +1,13 @@
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional, Union
 
 import sentry_sdk
 import yaml
 from ariadne import ObjectType, convert_kwargs_to_snake_case
+from graphql import GraphQLResolveInfo
 from shared.reports.filtered import FilteredReportFile
 from shared.reports.resources import ReportFile
+from shared.reports.types import ReportTotals
 
 import services.components as components_service
 import services.path as path_service
@@ -50,6 +52,8 @@ from services.yaml import (
 )
 
 commit_bindable = ObjectType("Commit")
+commit_coverage_analytics_bindable = ObjectType("CommitCoverageAnalytics")
+commit_bundle_analysis_bindable = ObjectType("CommitBundleAnalysis")
 
 commit_bindable.set_alias("createdAt", "timestamp")
 commit_bindable.set_alias("pullId", "pullid")
@@ -58,6 +62,7 @@ commit_bindable.set_alias("branchName", "branch")
 log = logging.getLogger(__name__)
 
 
+# to be removed with #2286
 @commit_bindable.field("coverageFile")
 @sync_to_async
 def resolve_file(commit, info, path, flags=None, components=None):
@@ -86,6 +91,7 @@ def resolve_file(commit, info, path, flags=None, components=None):
     }
 
 
+# to be removed with #2286
 @commit_bindable.field("totals")
 def resolve_totals(commit, info):
     command = info.context["executor"].get_command("commit")
@@ -163,9 +169,10 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
         return ComparisonReport(commit_comparison)
 
 
+# to be removed with #2286
 @commit_bindable.field("bundleAnalysisCompareWithParent")
 @sync_to_async
-def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
+def resolve_bundle_analysis_compare_with_parent(commit: Commit, info):
     base_commit = Commit.objects.filter(commitid=commit.parent_commit_id).first()
     if not base_commit:
         return MissingBaseCommit()
@@ -189,11 +196,10 @@ def resolve_bundle_analysis_compare_with_parent(commit: Commit, info, **kwargs):
     return bundle_analysis_comparison
 
 
+# to be removed with #2286
 @commit_bindable.field("bundleAnalysisReport")
 @sync_to_async
-def resolve_bundle_analysis_report(
-    commit: Commit, info, **kwargs
-) -> BundleAnalysisReport:
+def resolve_bundle_analysis_report(commit: Commit, info) -> BundleAnalysisReport:
     bundle_analysis_report = load_bundle_analysis_report(commit)
 
     # Store the created SQLite DB path in info.context
@@ -208,9 +214,10 @@ def resolve_bundle_analysis_report(
     return bundle_analysis_report
 
 
+# to be removed with #2286
 @commit_bindable.field("flagNames")
 @sync_to_async
-def resolve_flags(commit, info, **kwargs):
+def resolve_flags(commit, info):
     return commit.full_report.flags.keys()
 
 
@@ -327,6 +334,7 @@ async def resolve_total_uploads(commit, info):
     return await command.get_uploads_number(commit)
 
 
+# to be removed with #2286
 @commit_bindable.field("components")
 @sync_to_async
 def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
@@ -354,3 +362,121 @@ def resolve_bundle_status(commit: Commit, info) -> Optional[CommitStatus]:
 @sync_to_async
 def resolve_coverage_status(commit: Commit, info) -> Optional[CommitStatus]:
     return commit_status(commit, CommitReport.ReportType.COVERAGE)
+
+
+@commit_bindable.field("coverageAnalytics")
+def resolve_commit_coverage(commit, info):
+    return commit
+
+
+@commit_bindable.field("bundleAnalysis")
+def resolve_commit_bundle_analysis(commit, info):
+    return commit
+
+
+### Commit Coverage Bindable ###
+
+
+@commit_coverage_analytics_bindable.field("totals")
+def resolve_coverage_totals(
+    commit: Commit, info: GraphQLResolveInfo
+) -> Optional[ReportTotals]:
+    command = info.context["executor"].get_command("commit")
+    return command.fetch_totals(commit)
+
+
+@commit_coverage_analytics_bindable.field("flagNames")
+@sync_to_async
+def resolve_coverage_flags(commit: Commit, info: GraphQLResolveInfo) -> List[str]:
+    return commit.full_report.flags.keys()
+
+
+@commit_coverage_analytics_bindable.field("coverageFile")
+@sync_to_async
+def resolve_coverage_file(commit, info, path, flags=None, components=None):
+    _else, paths = None, []
+    if components:
+        all_components = components_service.commit_components(
+            commit, info.context["request"].current_owner
+        )
+        filtered_components = components_service.filter_components_by_name(
+            all_components, components
+        )
+        for fc in filtered_components:
+            paths.extend(fc.paths)
+        _else = FilteredReportFile(ReportFile(path), [])
+
+    commit_report = commit.full_report.filter(flags=flags, paths=paths)
+    file_report = commit_report.get(path, _else=_else)
+
+    return {
+        "commit_report": commit_report,
+        "file_report": file_report,
+        "commit": commit,
+        "path": path,
+        "flags": flags,
+        "components": components,
+    }
+
+
+@commit_coverage_analytics_bindable.field("components")
+@sync_to_async
+def resolve_coverage_components(commit: Commit, info, filters=None) -> List[Component]:
+    info.context["component_commit"] = commit
+    current_owner = info.context["request"].current_owner
+    all_components = components_service.commit_components(commit, current_owner)
+
+    if filters and filters.get("components"):
+        return components_service.filter_components_by_name(
+            all_components, filters["components"]
+        )
+
+    return all_components
+
+
+### Commit Bundle Analysis Bindable ###
+
+
+@commit_bundle_analysis_bindable.field("bundleAnalysisCompareWithParent")
+@sync_to_async
+def resolve_commit_bundle_analysis_compare_with_parent(
+    commit: Commit, info: GraphQLResolveInfo
+) -> Union[BundleAnalysisComparison, Any]:
+    base_commit = Commit.objects.filter(commitid=commit.parent_commit_id).first()
+    if not base_commit:
+        return MissingBaseCommit()
+
+    bundle_analysis_comparison = load_bundle_analysis_comparison(base_commit, commit)
+
+    # Store the created SQLite DB path in info.context
+    # when the request is fully handled, have the file deleted
+    if isinstance(bundle_analysis_comparison, BundleAnalysisComparison):
+        info.context[
+            "request"
+        ].bundle_analysis_base_report_db_path = (
+            bundle_analysis_comparison.comparison.base_report.db_path
+        )
+        info.context[
+            "request"
+        ].bundle_analysis_head_report_db_path = (
+            bundle_analysis_comparison.comparison.head_report.db_path
+        )
+
+    return bundle_analysis_comparison
+
+
+@commit_bundle_analysis_bindable.field("bundleAnalysisReport")
+@sync_to_async
+def resolve_commit_bundle_analysis_report(commit: Commit, info) -> BundleAnalysisReport:
+    bundle_analysis_report = load_bundle_analysis_report(commit)
+
+    # Store the created SQLite DB path in info.context
+    # when the request is fully handled, have the file deleted
+    if isinstance(bundle_analysis_report, BundleAnalysisReport):
+        info.context[
+            "request"
+        ].bundle_analysis_head_report_db_path = bundle_analysis_report.report.db_path
+
+    info.context["commit"] = commit
+
+    return bundle_analysis_report

@@ -12,7 +12,12 @@ from core.tests.factories import (
     RepositoryFactory,
     RepositoryTokenFactory,
 )
-from reports.tests.factories import DailyTestRollupFactory, TestFactory
+from reports.tests.factories import (
+    DailyTestRollupFactory,
+    RepositoryFlagFactory,
+    TestFactory,
+    TestFlagBridgeFactory,
+)
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -880,6 +885,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             },
         )
 
+    # TODO - remove this with #2291
     def test_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -890,6 +896,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
+    # TODO - remove this with #2291
     def test_test_results_no_tests(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         res = self.fetch_repository(
@@ -897,6 +904,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": []}
 
+    # TODO - remove this with #2291
     def test_branch_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -919,6 +927,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
+    # TODO - remove this with #2291
     def test_flaky_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -942,6 +951,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
+    # TODO - remove this with #2291
     def test_failed_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -966,6 +976,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
+    # TODO - remove this with #2291
     def test_skipped_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -994,6 +1005,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
+    # TODO - remove this with #2291
     def test_slowest_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1018,6 +1030,62 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
+    # TODO - remove this with #2291
+    def test_flags_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { flags: ["hello_world"] }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
+
+    # TODO - remove this with #2291
+    def test_testsuites_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo, testsuite="hello")
+        test2 = TestFactory(repository=repo, testsuite="world")
+
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_repository(
+            repo.name,
+            """testResults(filters: { test_suites: ["hello"] }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
+
+    # TODO - remove this with #2291
     def test_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1051,6 +1119,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_desc_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1084,6 +1153,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_last_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1119,6 +1189,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_desc_last_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1154,6 +1225,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_avg_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1188,6 +1260,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_desc_avg_duration_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1221,6 +1294,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_failure_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1258,6 +1332,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_desc_failure_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1295,7 +1370,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
-    def test_flake_rate_ordering_on_test_results(self) -> None:
+    # TODO - remove this with #2291
+    def test_flake_rate_filtering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
         _ = DailyTestRollupFactory(
@@ -1335,6 +1411,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    # TODO - remove this with #2291
     def test_desc_flake_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1373,32 +1450,4 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
                 {"node": {"name": test_2.name, "flakeRate": 0.2}},
                 {"node": {"name": test.name, "flakeRate": 0.2}},
             ]
-        }
-
-    def test_test_results_aggregates(self) -> None:
-        repo = RepositoryFactory(
-            author=self.owner, active=True, private=True, branch="main"
-        )
-
-        for i in range(0, 100):
-            test = TestFactory(repository=repo)
-            _ = DailyTestRollupFactory(
-                test=test,
-                repoid=repo.repoid,
-                branch="main",
-                fail_count=1 if i % 5 == 0 else 0,
-                skip_count=1 if i % 10 == 0 else 0,
-                pass_count=1,
-                avg_duration_seconds=float(i),
-                last_duration_seconds=float(i),
-            )
-        res = self.fetch_repository(
-            repo.name,
-            """testResultsAggregates { totalRunTime, slowestTestsRunTime, totalFails, totalSkips }""",
-        )
-        assert res["testResultsAggregates"] == {
-            "totalRunTime": 5900.0,
-            "slowestTestsRunTime": 580.0,
-            "totalFails": 20,
-            "totalSkips": 10,
         }

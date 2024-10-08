@@ -1,6 +1,8 @@
 input TestResultsFilters {
   branch: String
   parameter: TestResultsFilterParameter
+  test_suites: [String!]
+  flags: [String!]
 }
 
 input TestResultsOrdering {

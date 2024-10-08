@@ -1,7 +1,7 @@
 import datetime
 from typing import Any, Dict, Optional
 
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 
@@ -56,6 +56,26 @@ class TestFetchCoverageAnalytics(GraphQLTestHelper, TransactionTestCase):
         return CommitFactory(
             repository=repository, totals=coverage_totals, timestamp=timestamp
         )
+
+    query_builder = """
+    query Repository($name: String!){
+        me {
+            owner {
+                repository(name: $name) {
+                    __typename
+                    ... on Repository {
+                        coverageAnalytics {
+                            %s
+                        }
+                    }
+                    ... on ResolverError {
+                        message
+                    }
+                }
+            }
+        }
+    }
+    """
 
     # TESTS
     def test_coverage_analytics_base_fields(self) -> None:
@@ -321,3 +341,184 @@ class TestFetchCoverageAnalytics(GraphQLTestHelper, TransactionTestCase):
         unexpected_object = "unexpected_string"
         result_type = resolve_coverage_analytics_result_type(unexpected_object)
         self.assertIsNone(result_type)
+
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_repository_flags_metadata(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user)
+        data = self.gql_request(
+            self.query_builder
+            % """
+            flagsMeasurementsActive
+            flagsMeasurementsBackfilled
+            """,
+            owner=user,
+            variables={"name": repo.name},
+        )
+        assert (
+            data["me"]["owner"]["repository"]["coverageAnalytics"][
+                "flagsMeasurementsActive"
+            ]
+            == False
+        )
+        assert (
+            data["me"]["owner"]["repository"]["coverageAnalytics"][
+                "flagsMeasurementsBackfilled"
+            ]
+            == False
+        )
+
+    @override_settings(TIMESERIES_ENABLED=False)
+    def test_repository_components_metadata(self):
+        user = OwnerFactory()
+        repo = RepositoryFactory(author=user)
+        data = self.gql_request(
+            self.query_builder
+            % """
+            componentsMeasurementsActive
+            componentsMeasurementsBackfilled
+            """,
+            owner=user,
+            variables={"name": repo.name},
+        )
+        assert (
+            data["me"]["owner"]["repository"]["coverageAnalytics"][
+                "componentsMeasurementsActive"
+            ]
+            == False
+        )
+        assert (
+            data["me"]["owner"]["repository"]["coverageAnalytics"][
+                "componentsMeasurementsBackfilled"
+            ]
+            == False
+        )
+
+    def test_repository_has_components_count(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {"component_id": "blah", "paths": [r".*\.go"]},
+                        {"component_id": "cool_rules"},
+                    ],
+                }
+            },
+        )
+
+        data = self.gql_request(
+            self.query_builder
+            % """
+            componentsCount
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert (
+            data["me"]["owner"]["repository"]["coverageAnalytics"]["componentsCount"]
+            == 2
+        )
+
+    def test_repository_no_components_count(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={"component_management": {}},
+        )
+
+        data = self.gql_request(
+            self.query_builder
+            % """
+            componentsCount
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert (
+            data["me"]["owner"]["repository"]["coverageAnalytics"]["componentsCount"]
+            == 0
+        )
+
+    def test_repository_components_select(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {
+                            "component_id": "blah",
+                            "paths": [r".*\.go"],
+                            "name": "blah_name",
+                        },
+                        {"component_id": "cool_rules", "name": "cool_name"},
+                    ],
+                }
+            },
+        )
+
+        data = self.gql_request(
+            self.query_builder
+            % """
+            componentsYaml(termId: null) {
+                id
+                name
+            }
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["coverageAnalytics"][
+            "componentsYaml"
+        ] == [
+            {"id": "blah", "name": "blah_name"},
+            {"id": "cool_rules", "name": "cool_name"},
+        ]
+
+    def test_repository_components_select_with_search(self):
+        repo = RepositoryFactory(
+            author=self.owner,
+            active=True,
+            private=True,
+            yaml={
+                "component_management": {
+                    "default_rules": {},
+                    "individual_components": [
+                        {
+                            "component_id": "blah",
+                            "paths": [r".*\.go"],
+                            "name": "blah_name",
+                        },
+                        {"component_id": "cool_rules", "name": "cool_name"},
+                    ],
+                }
+            },
+        )
+
+        data = self.gql_request(
+            self.query_builder
+            % """
+            componentsYaml(termId: "blah") {
+                id
+                name
+            }
+            """,
+            owner=self.owner,
+            variables={"name": repo.name},
+        )
+
+        assert data["me"]["owner"]["repository"]["coverageAnalytics"][
+            "componentsYaml"
+        ] == [
+            {"id": "blah", "name": "blah_name"},
+        ]

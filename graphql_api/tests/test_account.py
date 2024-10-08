@@ -1,4 +1,5 @@
 from django.test import TransactionTestCase
+from shared.django_apps.codecov_auth.tests.factories import AccountsUsersFactory
 
 from codecov_auth.tests.factories import (
     AccountFactory,
@@ -11,7 +12,9 @@ from .helper import GraphQLTestHelper
 
 class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
-        self.account = AccountFactory(name="Test Account")
+        self.account = AccountFactory(
+            name="Test Account", plan_seat_count=10, free_seat_count=1
+        )
         self.owner = OwnerFactory(
             username="randomOwner", service="github", account=self.account
         )
@@ -41,3 +44,40 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
         data = result["owner"]["account"]
         assert data["oktaConfig"]["clientId"] == "test-client-id"
         assert data["oktaConfig"]["clientSecret"] == "test-client-secret"
+
+    def test_fetch_total_seat_count(self) -> None:
+        query = """
+            query {
+                owner(username: "%s"){
+                    account {
+                        totalSeatCount
+                    }
+                }
+            }
+        """ % (self.owner.username)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        seatCount = result["owner"]["account"]["totalSeatCount"]
+        assert seatCount == 11
+
+    def test_fetch_activated_user_count(self) -> None:
+        for _ in range(7):
+            AccountsUsersFactory(account=self.account)
+
+        query = """
+            query {
+                owner(username: "%s") {
+                    account {
+                        activatedUserCount
+                    }
+                }
+            }
+        """ % (self.owner.username)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        activatedUserCount = result["owner"]["account"]["activatedUserCount"]
+        assert activatedUserCount == 7

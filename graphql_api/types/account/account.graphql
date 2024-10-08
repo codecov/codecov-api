@@ -1,4 +1,6 @@
 type Account {
   name: String!
   oktaConfig: OktaConfig
+  totalSeatCount: Int!
+  activatedUserCount: Int!
 }

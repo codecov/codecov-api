@@ -36,8 +36,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResultsAggregates {
-                                totalRunTime
+                            testAnalytics {
+                                resultsAggregates {
+                                    totalDuration
+                                }
                             }
                         }
                     }
@@ -49,7 +51,9 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResultsAggregates"]["totalRunTime"]
+            result["owner"]["repository"]["testAnalytics"]["resultsAggregates"][
+                "totalDuration"
+            ]
             == 435.0
         )
 
@@ -59,8 +63,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResultsAggregates {
-                                slowestTestsRunTime
+                            testAnalytics {
+                                resultsAggregates {
+                                    slowestTestsDuration
+                                }
                             }
                         }
                     }
@@ -72,8 +78,8 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResultsAggregates"][
-                "slowestTestsRunTime"
+            result["owner"]["repository"]["testAnalytics"]["resultsAggregates"][
+                "slowestTestsDuration"
             ]
             == 29.0
         )
@@ -84,8 +90,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResultsAggregates {
-                                totalFails
+                            testAnalytics {
+                                resultsAggregates {
+                                    totalFails
+                                }
                             }
                         }
                     }
@@ -97,7 +105,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResultsAggregates"]["totalFails"] == 29
+            result["owner"]["repository"]["testAnalytics"]["resultsAggregates"][
+                "totalFails"
+            ]
+            == 29
         )
 
     def test_fetch_test_result_skipped_tests(self) -> None:
@@ -106,8 +117,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResultsAggregates {
-                                totalSkips
+                            testAnalytics {
+                                resultsAggregates {
+                                    totalSkips
+                                }
                             }
                         }
                     }
@@ -119,5 +132,8 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResultsAggregates"]["totalSkips"] == 29
+            result["owner"]["repository"]["testAnalytics"]["resultsAggregates"][
+                "totalSkips"
+            ]
+            == 29
         )

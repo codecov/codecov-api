@@ -18,12 +18,20 @@ from .bundle_analysis import (
     bundle_module_bindable,
     bundle_report_bindable,
 )
-from .commit import commit, commit_bindable
+from .commit import (
+    commit,
+    commit_bindable,
+    commit_bundle_analysis_bindable,
+    commit_coverage_analytics_bindable,
+)
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .component import component, component_bindable
 from .component_comparison import component_comparison, component_comparison_bindable
 from .config import config, config_bindable
-from .coverage_analytics import coverage_analytics, coverage_analytics_bindable
+from .coverage_analytics import (
+    coverage_analytics,
+    coverage_analytics_bindable,
+)
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types
 from .file import commit_file, file_bindable
@@ -66,6 +74,7 @@ from .segment_comparison import (
 )
 from .self_hosted_license import self_hosted_license, self_hosted_license_bindable
 from .session import session, session_bindable
+from .test_analytics import test_analytics, test_analytics_bindable
 from .test_results import test_result_bindable, test_results
 from .test_results_aggregates import (
     test_results_aggregates,
@@ -115,6 +124,7 @@ types = [
     segment_comparison,
     self_hosted_license,
     session,
+    test_analytics,
     upload,
     user_token,
     user,
@@ -139,6 +149,8 @@ bindables = [
     bundle_module_bindable,
     bundle_report_bindable,
     commit_bindable,
+    commit_bundle_analysis_bindable,
+    commit_coverage_analytics_bindable,
     comparison_bindable,
     comparison_result_bindable,
     component_bindable,
@@ -173,6 +185,7 @@ bindables = [
     segments_result_bindable,
     self_hosted_license_bindable,
     session_bindable,
+    test_analytics_bindable,
     tracking_metadata_bindable,
     upload_bindable,
     upload_error_bindable,

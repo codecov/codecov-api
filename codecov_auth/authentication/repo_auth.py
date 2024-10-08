@@ -11,6 +11,7 @@ from jwt import PyJWTError
 from rest_framework import authentication, exceptions
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.views import exception_handler
+from shared.django_apps.codecov_auth.models import Owner
 
 from codecov_auth.authentication.helpers import get_upload_info_from_request_path
 from codecov_auth.authentication.types import RepositoryAsUser, RepositoryAuthInterface
@@ -22,7 +23,10 @@ from codecov_auth.models import (
 )
 from core.models import Commit, Repository
 from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
-from upload.views.helpers import get_repository_from_string
+from upload.views.helpers import (
+    get_repository_and_owner_from_string,
+    get_repository_from_string,
+)
 from utils import is_uuid
 
 log = logging.getLogger(__name__)
@@ -348,3 +352,49 @@ class BundleAnalysisTokenlessAuthentication(TokenlessAuthentication):
             raise exceptions.AuthenticationFailed(self.auth_failed_message)
 
         return body.get("branch")
+
+
+class UploadTokenRequiredAuthenticationCheck(authentication.TokenAuthentication):
+    """
+    If repo is public, OwnerOrg can set upload_token_required_for_public_repos=False
+    to allow uploads with no token. If this is the case, catch it first and exclude from
+    other Auth checks.
+    """
+
+    def _get_info_from_request_path(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        upload_info = get_upload_info_from_request_path(request)
+
+        if upload_info is None:
+            return None, None  # continue to next auth class
+        service, encoded_slug, _ = upload_info
+        # Validate provider
+        try:
+            service_enum = Service(service)
+        except ValueError:
+            return None, None  # continue to next auth class
+
+        repository, owner = get_repository_and_owner_from_string(
+            service_enum, encoded_slug
+        )
+
+        return repository, owner
+
+    def authenticate(
+        self, request: HttpRequest
+    ) -> tuple[RepositoryAsUser, TokenlessAuth] | None:
+        repository, owner = self._get_info_from_request_path(request)
+
+        if (
+            repository is None
+            or repository.private
+            or owner is None
+            or owner.upload_token_required_for_public_repos
+        ):
+            return None  # continue to next auth class
+
+        return (
+            RepositoryAsUser(repository),
+            TokenlessAuth(repository),
+        )
