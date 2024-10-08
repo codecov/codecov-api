@@ -14,7 +14,7 @@ class SetUploadTokenRequiredInput:
 
 
 class SetUploadTokenRequiredInteractor(BaseInteractor):
-    def validate(self, owner_obj):
+    def validate(self, owner_obj, upload_token_required):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
         if not owner_obj:
@@ -23,6 +23,8 @@ class SetUploadTokenRequiredInteractor(BaseInteractor):
             raise Unauthorized()
         if not owner_obj.is_admin(self.current_owner):
             raise Unauthorized("Admin authorization required")
+        if upload_token_required is None:
+            raise ValidationError("upload_token_required must be either True or False")
 
     @sync_to_async
     def execute(self, input: dict[str, bool]):
@@ -35,9 +37,9 @@ class SetUploadTokenRequiredInteractor(BaseInteractor):
             username=typed_input.org_username, service=self.service
         ).first()
 
-        self.validate(owner_obj)
+        self.validate(owner_obj, typed_input.upload_token_required)
 
-        owner_obj.upload_token_required_for_public_repos = (
+        owner_obj.upload_token_required_for_public_repos = bool(
             typed_input.upload_token_required
         )
         owner_obj.save()

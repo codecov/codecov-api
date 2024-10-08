@@ -32,7 +32,7 @@ class SetUploadTokenRequiredTests(GraphQLTestHelper, TransactionTestCase):
             query,
             owner=user,
             variables={
-                "input": {"org_username": "codecov", "uploadTokenRequired": True}
+                "input": {"orgUsername": "codecov", "uploadTokenRequired": True}
             },
         )
 
@@ -44,7 +44,7 @@ class SetUploadTokenRequiredTests(GraphQLTestHelper, TransactionTestCase):
             owner=self.org,
             variables={
                 "input": {
-                    "org_username": "non_existent_org",
+                    "orgUsername": "non_existent_org",
                     "uploadTokenRequired": True,
                 }
             },
@@ -62,7 +62,7 @@ class SetUploadTokenRequiredTests(GraphQLTestHelper, TransactionTestCase):
             query,
             owner=non_admin_user,
             variables={
-                "input": {"org_username": "codecov", "uploadTokenRequired": True}
+                "input": {"orgUsername": "codecov", "uploadTokenRequired": True}
             },
         )
 
@@ -74,7 +74,7 @@ class SetUploadTokenRequiredTests(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(
             query,
             variables={
-                "input": {"org_username": "codecov", "uploadTokenRequired": True}
+                "input": {"orgUsername": "codecov", "uploadTokenRequired": True}
             },
         )
 
@@ -92,7 +92,7 @@ class SetUploadTokenRequiredTests(GraphQLTestHelper, TransactionTestCase):
             query,
             owner=non_part_of_org_user,
             variables={
-                "input": {"org_username": "codecov", "uploadTokenRequired": True}
+                "input": {"orgUsername": "codecov", "uploadTokenRequired": True}
             },
         )
 

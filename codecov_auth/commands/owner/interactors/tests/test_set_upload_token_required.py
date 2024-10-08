@@ -79,3 +79,14 @@ class SetUploadTokenRequiredInteractorTest(TransactionTestCase):
 
         self.owner_with_admins.refresh_from_db()
         assert self.owner_with_admins.upload_token_required_for_public_repos == False
+
+    def test_set_upload_token_required_to_null_raises_validation_error(self):
+        self.current_user.organizations = [self.owner_with_admins.ownerid]
+        self.current_user.save()
+
+        with pytest.raises(ValidationError):
+            self.execute(
+                current_user=self.current_user,
+                org_username=self.owner_with_admins.username,
+                upload_token_required=None,
+            )
