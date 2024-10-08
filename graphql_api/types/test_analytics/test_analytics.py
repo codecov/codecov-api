@@ -1,6 +1,6 @@
 import logging
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from graphql.type.definition import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
@@ -64,9 +64,8 @@ async def resolve_results(
     )
 
 
-@test_analytics_bindable.field("resultsAggregates")
-@convert_kwargs_to_snake_case
-async def resolve_results_aggregates(
+@test_analytics_bindable.field("testResultsAggregates")
+async def resolve_test_results_aggregates(
     repository: Repository,
     info: GraphQLResolveInfo,
 ):
@@ -76,6 +75,5 @@ async def resolve_results_aggregates(
 
 
 @test_analytics_bindable.field("flakeAggregates")
-@convert_kwargs_to_snake_case
 async def resolve_flake_aggregates(repository: Repository, info: GraphQLResolveInfo):
     return await sync_to_async(generate_flake_aggregates)(repoid=repository.repoid)
