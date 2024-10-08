@@ -13,10 +13,10 @@ type TestAnalytics {
   ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
 
   "Results aggregates are analytics data totals across all tests"
-  resultsAggregates: TestResultsAggregates
+  resultsAggregates(history: MeasurementInterval): TestResultsAggregates
 
   "Flake aggregates are flake totals across all tests"
-  flakeAggregates: FlakeAggregates
+  flakeAggregates(history: MeasurementInterval): FlakeAggregates
 }
 
 type TestResultConnection {

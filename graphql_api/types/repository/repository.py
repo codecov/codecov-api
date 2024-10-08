@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Mapping, Optional
 
 import shared.rate_limits as rate_limits
@@ -30,6 +30,7 @@ from graphql_api.types.coverage_analytics.coverage_analytics import (
     CoverageAnalyticsProps,
 )
 from graphql_api.types.enums import OrderingDirection, TestResultsFilterParameter
+from graphql_api.types.enums.enum_types import MeasurementInterval
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
@@ -526,6 +527,38 @@ def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
 
 
 # TODO - remove with #2291
+def convert_history_to_timedelta(interval: MeasurementInterval | None) -> timedelta:
+    if interval is None:
+        return timedelta(days=30)
+
+    match interval:
+        case MeasurementInterval.INTERVAL_1_DAY:
+            return timedelta(days=1)
+        case MeasurementInterval.INTERVAL_7_DAY:
+            return timedelta(days=7)
+        case MeasurementInterval.INTERVAL_30_DAY:
+            return timedelta(days=30)
+
+
+# TODO - remove with #2291
+def convert_test_results_filter_parameter(
+    parameter: TestResultsFilterParameter | None,
+) -> GENERATE_TEST_RESULT_PARAM | None:
+    if parameter is None:
+        return None
+
+    match parameter:
+        case TestResultsFilterParameter.FLAKY_TESTS:
+            return GENERATE_TEST_RESULT_PARAM.FLAKY
+        case TestResultsFilterParameter.FAILED_TESTS:
+            return GENERATE_TEST_RESULT_PARAM.FAILED
+        case TestResultsFilterParameter.SLOWEST_TESTS:
+            return GENERATE_TEST_RESULT_PARAM.SLOWEST
+        case TestResultsFilterParameter.SKIPPED_TESTS:
+            return GENERATE_TEST_RESULT_PARAM.SKIPPED
+
+
+# TODO - remove with #2291
 @repository_bindable.field("testResults")
 @convert_kwargs_to_snake_case
 async def resolve_test_results(
@@ -535,24 +568,22 @@ async def resolve_test_results(
     filters=None,
     **kwargs,
 ):
-    parameter = None
-    generate_test_results_param = None
-    if filters:
-        parameter = filters.get("parameter")
-    match parameter:
-        case TestResultsFilterParameter.FLAKY_TESTS:
-            generate_test_results_param = GENERATE_TEST_RESULT_PARAM.FLAKY
-        case TestResultsFilterParameter.FAILED_TESTS:
-            generate_test_results_param = GENERATE_TEST_RESULT_PARAM.FAILED
-        case TestResultsFilterParameter.SLOWEST_TESTS:
-            generate_test_results_param = GENERATE_TEST_RESULT_PARAM.SLOWEST
-        case TestResultsFilterParameter.SKIPPED_TESTS:
-            generate_test_results_param = GENERATE_TEST_RESULT_PARAM.SKIPPED
+    parameter = (
+        convert_test_results_filter_parameter(filters.get("parameter"))
+        if filters
+        else None
+    )
+    history = (
+        convert_history_to_timedelta(filters.get("history"))
+        if filters
+        else timedelta(days=30)
+    )
 
     queryset = await sync_to_async(generate_test_results)(
         repoid=repository.repoid,
+        history=history,
         branch=filters.get("branch") if filters else None,
-        parameter=generate_test_results_param,
+        parameter=parameter,
         testsuites=filters.get("test_suites") if filters else None,
         flags=filters.get("flags") if filters else None,
     )
