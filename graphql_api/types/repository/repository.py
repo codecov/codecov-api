@@ -560,7 +560,6 @@ def convert_test_results_filter_parameter(
 
 # TODO - remove with #2291
 @repository_bindable.field("testResults")
-@convert_kwargs_to_snake_case
 async def resolve_test_results(
     repository: Repository,
     info: GraphQLResolveInfo,
