@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 test_analytics_bindable: ObjectType = ObjectType("TestAnalytics")
 
 
-@test_analytics_bindable.field("results")
+@test_analytics_bindable.field("testResults")
 async def resolve_results(
     repository: Repository,
     info: GraphQLResolveInfo,
