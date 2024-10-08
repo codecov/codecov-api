@@ -16,7 +16,7 @@ type TestAnalytics {
   testResultsAggregates: TestResultsAggregates
 
   "Flake aggregates are flake totals across all tests"
-  flakeAggregates: FlakeAggregates
+  flakeAggregates(history: MeasurementInterval): FlakeAggregates
 }
 
 type TestResultConnection {

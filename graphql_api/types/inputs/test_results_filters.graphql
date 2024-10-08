@@ -3,6 +3,7 @@ input TestResultsFilters {
   parameter: TestResultsFilterParameter
   test_suites: [String!]
   flags: [String!]
+  history: MeasurementInterval
 }
 
 input TestResultsOrdering {
