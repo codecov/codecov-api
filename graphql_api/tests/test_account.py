@@ -83,12 +83,22 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
         assert activatedUserCount == 7
 
     def test_fetch_organizations(self) -> None:
-        for i in range(3):
-            OwnerFactory(
-                username=f"owner-{i}",
-                plan_activated_users=[j for j in range(i)],
-                account=self.account,
-            )
+        account = AccountFactory(name="account")
+        owner = OwnerFactory(
+            username="owner-0",
+            plan_activated_users=[],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-1",
+            plan_activated_users=[0],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-2",
+            plan_activated_users=[0, 1],
+            account=account,
+        )
 
         query = """
             query {
@@ -105,9 +115,9 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
                     }
                 }
             }
-        """ % (self.owner.username)
+        """ % (owner.username)
 
-        result = self.gql_request(query, owner=self.owner)
+        result = self.gql_request(query, owner=owner)
 
         assert "errors" not in result
 
@@ -116,15 +126,25 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             for node in result["owner"]["account"]["organizations"]["edges"]
         ]
 
-        assert orgs == ["owner-2", "owner-1", "randomOwner", "owner-0"]
+        assert orgs == ["owner-2", "owner-1", "owner-0"]
 
     def test_fetch_organizations_order_by_activated_users_asc(self) -> None:
-        for i in range(3):
-            OwnerFactory(
-                username=f"owner-{i}",
-                plan_activated_users=[j for j in range(i)],
-                account=self.account,
-            )
+        account = AccountFactory(name="account")
+        owner = OwnerFactory(
+            username="owner-0",
+            plan_activated_users=[],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-1",
+            plan_activated_users=[0],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-2",
+            plan_activated_users=[0, 1],
+            account=account,
+        )
 
         query = """
             query {
@@ -141,9 +161,9 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
                     }
                 }
             }
-        """ % (self.owner.username)
+        """ % (owner.username)
 
-        result = self.gql_request(query, owner=self.owner)
+        result = self.gql_request(query, owner=owner)
 
         assert "errors" not in result
 
@@ -152,15 +172,25 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             for node in result["owner"]["account"]["organizations"]["edges"]
         ]
 
-        assert orgs == ["randomOwner", "owner-0", "owner-1", "owner-2"]
+        assert orgs == ["owner-0", "owner-1", "owner-2"]
 
     def test_fetch_organizations_order_by_name(self) -> None:
-        for i in range(3):
-            OwnerFactory(
-                username=f"owner-{i}",
-                plan_activated_users=[j for j in range(i)],
-                account=self.account,
-            )
+        account = AccountFactory(name="account")
+        owner = OwnerFactory(
+            username="owner-0",
+            plan_activated_users=[],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-1",
+            plan_activated_users=[0],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-2",
+            plan_activated_users=[0, 1],
+            account=account,
+        )
 
         query = """
             query {
@@ -177,9 +207,9 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
                     }
                 }
             }
-        """ % (self.owner.username)
+        """ % (owner.username)
 
-        result = self.gql_request(query, owner=self.owner)
+        result = self.gql_request(query, owner=owner)
 
         assert "errors" not in result
 
@@ -188,15 +218,25 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             for node in result["owner"]["account"]["organizations"]["edges"]
         ]
 
-        assert orgs == ["randomOwner", "owner-2", "owner-1", "owner-0"]
+        assert orgs == ["owner-2", "owner-1", "owner-0"]
 
     def test_fetch_organizations_order_by_name_asc(self) -> None:
-        for i in range(3):
-            OwnerFactory(
-                username=f"owner-{i}",
-                plan_activated_users=[j for j in range(i)],
-                account=self.account,
-            )
+        account = AccountFactory(name="account")
+        owner = OwnerFactory(
+            username="owner-0",
+            plan_activated_users=[],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-1",
+            plan_activated_users=[0],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-2",
+            plan_activated_users=[0, 1],
+            account=account,
+        )
 
         query = """
             query {
@@ -213,9 +253,9 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
                     }
                 }
             }
-        """ % (self.owner.username)
+        """ % (owner.username)
 
-        result = self.gql_request(query, owner=self.owner)
+        result = self.gql_request(query, owner=owner)
 
         assert "errors" not in result
 
@@ -224,15 +264,25 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             for node in result["owner"]["account"]["organizations"]["edges"]
         ]
 
-        assert orgs == ["owner-0", "owner-1", "owner-2", "randomOwner"]
+        assert orgs == ["owner-0", "owner-1", "owner-2"]
 
     def test_fetch_organizations_pagination(self) -> None:
-        for i in range(3):
-            OwnerFactory(
-                username=f"owner-{i}",
-                plan_activated_users=[j for j in range(i)],
-                account=self.account,
-            )
+        account = AccountFactory(name="account")
+        owner = OwnerFactory(
+            username="owner-0",
+            plan_activated_users=[],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-1",
+            plan_activated_users=[0],
+            account=account,
+        )
+        OwnerFactory(
+            username="owner-2",
+            plan_activated_users=[0, 1],
+            account=account,
+        )
 
         query = """
             query {
@@ -253,15 +303,15 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
                     }
                 }
             }
-        """ % (self.owner.username)
+        """ % (owner.username)
 
-        result = self.gql_request(query, owner=self.owner)
+        result = self.gql_request(query, owner=owner)
 
         assert "errors" not in result
 
         totalCount = result["owner"]["account"]["organizations"]["totalCount"]
 
-        assert totalCount == 4
+        assert totalCount == 3
 
         orgs = [
             node["node"]["username"]
