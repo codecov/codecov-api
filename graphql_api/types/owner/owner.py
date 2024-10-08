@@ -374,9 +374,9 @@ def resolve_ai_enabled_repos(
 def resolve_upload_token_required(owner: Owner, info) -> bool | None:
     return owner.upload_token_required_for_public_repos
 
+
 @owner_bindable.field("activatedUserCount")
 @sync_to_async
 @require_part_of_org
 def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count
-
