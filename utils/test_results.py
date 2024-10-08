@@ -154,11 +154,13 @@ def generate_test_results(
         .annotate(v=Distinct(Unnest(F("commits_where_fail"))))
         .values("v")
     )
-    latest_duration_sq = (
-        totals.filter(test_id=OuterRef("test_id"))
-        .values("last_duration_seconds")
-        .order_by("-latest_run")[:1]
-    )
+
+    # TODO: add back in latest duration when performance is acceptable
+    #  latest_duration_sq = (
+    #     totals.filter(test_id=OuterRef("test_id"))
+    #     .values("last_duration_seconds")
+    #     .order_by("-latest_run")[:1]
+    # )
 
     aggregation_of_test_results = totals.values("test").annotate(
         total_test_count=Cast(
@@ -186,7 +188,7 @@ def generate_test_results(
         ),
         updated_at=Max("latest_run"),
         commits_where_fail=ArrayLength(Array(Subquery(commits_where_fail_sq))),
-        last_duration=Subquery(latest_duration_sq),
+        last_duration=Value(0.0),
         avg_duration=Avg("avg_duration_seconds"),
         name=F("test__name"),
     )
