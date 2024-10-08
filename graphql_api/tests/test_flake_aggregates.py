@@ -17,8 +17,8 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         self.owner = OwnerFactory(username="randomOwner")
         self.repository = RepositoryFactory(author=self.owner, branch="main")
 
+        test = TestFactory(repository=self.repository)
         for i in range(0, 30):
-            test = TestFactory(repository=self.repository)
             _ = FlakeFactory(
                 repository=self.repository,
                 test=test,
@@ -31,17 +31,17 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                 latest_run=datetime.now() - timedelta(days=i),
                 fail_count=1,
                 skip_count=1,
-                pass_count=0,
+                pass_count=1,
                 flaky_fail_count=1 if i % 5 == 0 else 0,
                 branch="main",
             )
 
         for i in range(30, 60):
-            test = TestFactory(repository=self.repository)
             if i % 2 == 0:
                 _ = FlakeFactory(
                     repository=self.repository,
                     test=test,
+                    start_date=datetime.now() - timedelta(days=i + 1),
                     end_date=datetime.now() - timedelta(days=i),
                 )
                 _ = DailyTestRollupFactory(
@@ -49,9 +49,9 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     date=date.today() - timedelta(days=i),
                     avg_duration_seconds=float(i),
                     latest_run=datetime.now() - timedelta(days=i),
-                    fail_count=1,
+                    fail_count=3,
                     skip_count=1,
-                    pass_count=0,
+                    pass_count=1,
                     flaky_fail_count=3 if i % 5 == 0 else 0,
                     branch="main",
                 )
@@ -80,8 +80,8 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert result["owner"]["repository"]["testAnalytics"]["flakeAggregates"] == {
-            "flakeRate": 0.2,
+            "flakeRate": 0.1,
             "flakeCount": 30,
-            "flakeRatePercentChange": -66.66666666666666,
+            "flakeRatePercentChange": -33.33333,
             "flakeCountPercentChange": 100.0,
         }
