@@ -14,6 +14,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -32,6 +33,7 @@ log = logging.getLogger(__name__)
 
 class UploadTestResultsPermission(BasePermission):
     def has_permission(self, request, view):
+        print("##################")
         return request.auth is not None and "upload" in request.auth.get_scopes()
 
 
@@ -54,6 +56,7 @@ class TestResultsView(
 ):
     permission_classes = [UploadTestResultsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,

@@ -171,6 +171,84 @@ def test_reports_post_tokenless(client, db, mocker, private, branch, branch_sent
         assert response.json().get("detail") == "Not valid tokenless upload"
 
 
+@pytest.mark.parametrize("private", [False, True])
+@pytest.mark.parametrize("branch", ["main", "fork:branch", "someone/fork:branch"])
+@pytest.mark.parametrize(
+    "branch_sent",
+    [
+        None,
+        "branch",
+        "fork:branch",
+        "someone/fork:branch",
+    ],
+)
+@pytest.mark.parametrize("upload_token_required_for_public_repos", [True, False])
+def test_reports_post_upload_token_required_auth_check(
+    client,
+    db,
+    mocker,
+    private,
+    branch,
+    branch_sent,
+    upload_token_required_for_public_repos,
+):
+    mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=private,
+        author__upload_token_required_for_public_repos=upload_token_required_for_public_repos,
+    )
+    commit = CommitFactory(repository=repository)
+    commit.branch = branch
+    repository.save()
+    commit.save()
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.reports",
+        args=["github", "codecov::::the_repo", commit.commitid],
+    )
+
+    data = {"code": "code1"}
+    if branch_sent:
+        data["branch"] = branch_sent
+    response = client.post(
+        url,
+        data=data,
+        headers={},
+    )
+
+    assert (
+        url == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports"
+    )
+
+    # when TokenlessAuthentication is removed, this test should use `if private == False and upload_token_required_for_public_repos == False:`
+    # but TokenlessAuthentication lets some additional uploads through.
+    authorized_by_tokenless_auth_class = ":" in branch
+
+    if private == False and (
+        upload_token_required_for_public_repos == False
+        or authorized_by_tokenless_auth_class
+    ):
+        assert response.status_code == 201
+        assert CommitReport.objects.filter(
+            commit_id=commit.id,
+            code="code1",
+            report_type=CommitReport.ReportType.COVERAGE,
+        ).exists()
+        mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
+    else:
+        assert response.status_code == 401
+        assert not CommitReport.objects.filter(
+            commit_id=commit.id,
+            code="code1",
+            report_type=CommitReport.ReportType.COVERAGE,
+        ).exists()
+        assert response.json().get("detail") == "Not valid tokenless upload"
+
+
 def test_create_report_already_exists(client, db, mocker):
     mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
     repository = RepositoryFactory(
@@ -314,6 +392,82 @@ def test_reports_results_post_successful_github_oidc_auth(
             "position": "end",
         },
     )
+
+
+@pytest.mark.parametrize("private", [False, True])
+@pytest.mark.parametrize("branch", ["main", "fork:branch", "someone/fork:branch"])
+@pytest.mark.parametrize(
+    "branch_sent",
+    [
+        None,
+        "branch",
+        "fork:branch",
+        "someone/fork:branch",
+    ],
+)
+@pytest.mark.parametrize("upload_token_required_for_public_repos", [True, False])
+def test_reports_results_post_upload_token_required_auth_check(
+    client,
+    db,
+    mocker,
+    private,
+    branch,
+    branch_sent,
+    upload_token_required_for_public_repos,
+):
+    mocked_task = mocker.patch("services.task.TaskService.create_report_results")
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=private,
+        author__upload_token_required_for_public_repos=upload_token_required_for_public_repos,
+    )
+    commit = CommitFactory(repository=repository)
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    commit.branch = branch
+    repository.save()
+    commit.save()
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.reports_results",
+        args=["github", "codecov::::the_repo", commit.commitid, "code"],
+    )
+
+    data = {"code": "code1"}
+    if branch_sent:
+        data["branch"] = branch_sent
+    response = client.post(
+        url,
+        data=data,
+        headers={},
+    )
+
+    assert (
+        url
+        == f"/upload/github/codecov::::the_repo/commits/{commit.commitid}/reports/code/results"
+    )
+
+    # when TokenlessAuthentication is removed, this test should use `if private == False and upload_token_required_for_public_repos == False:`
+    # but TokenlessAuthentication lets some additional uploads through.
+    authorized_by_tokenless_auth_class = ":" in branch
+
+    if private == False and (
+        upload_token_required_for_public_repos == False
+        or authorized_by_tokenless_auth_class
+    ):
+        assert response.status_code == 201
+        assert ReportResults.objects.filter(
+            report_id=commit_report.id,
+        ).exists()
+        mocked_task.assert_called_once()
+    else:
+        assert response.status_code == 401
+        assert not ReportResults.objects.filter(
+            report_id=commit_report.id,
+        ).exists()
+        assert response.json().get("detail") == "Not valid tokenless upload"
 
 
 def test_reports_results_already_exists_post_successful(client, db, mocker):

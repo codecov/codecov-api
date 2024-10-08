@@ -428,6 +428,159 @@ def test_uploads_post_tokenless(
         assert response.json().get("detail") == "Not valid tokenless upload"
 
 
+@patch("shared.metrics.metrics.incr")
+@pytest.mark.parametrize("private", [False, True])
+@pytest.mark.parametrize("branch", ["branch", "fork:branch", "someone/fork:branch"])
+@pytest.mark.parametrize(
+    "branch_sent", [None, "branch", "fork:branch", "someone/fork:branch"]
+)
+@pytest.mark.parametrize("upload_token_required_for_public_repos", [True, False])
+def test_uploads_post_token_required_auth_check(
+    mock_metrics,
+    db,
+    mocker,
+    mock_redis,
+    private,
+    branch,
+    branch_sent,
+    upload_token_required_for_public_repos,
+):
+    presigned_put_mock = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="presigned put",
+    )
+    upload_task_mock = mocker.patch(
+        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+    )
+    analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
+
+    repository = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        private=private,
+        author__upload_token_required_for_public_repos=upload_token_required_for_public_repos,
+    )
+    commit = CommitFactory(repository=repository)
+    commit.branch = branch
+    commit_report = CommitReport.objects.create(commit=commit, code="code")
+    repository.save()
+    commit_report.save()
+    commit.save()
+
+    client = APIClient()
+    url = reverse(
+        "new_upload.uploads",
+        args=[
+            "github",
+            "codecov::::the_repo",
+            commit.commitid,
+            commit_report.code,
+        ],
+    )
+    if branch_sent is not None:
+        data = {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+            "branch": branch_sent,
+        }
+    else:
+        data = {
+            "state": "uploaded",
+            "flags": ["flag1", "flag2"],
+            "version": "version",
+        }
+    response = client.post(
+        url,
+        data,
+    )
+
+    # when TokenlessAuthentication is removed, this test should use `if private == False and upload_token_required_for_public_repos == False:`
+    # but TokenlessAuthentication lets some additional uploads through.
+    authorized_by_tokenless_auth_class = ":" in branch
+
+    if private == False and (
+        upload_token_required_for_public_repos == False
+        or authorized_by_tokenless_auth_class
+    ):
+        assert response.status_code == 201
+        response_json = response.json()
+        upload = ReportSession.objects.filter(
+            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        ).first()
+        assert all(
+            map(
+                lambda x: x in response_json.keys(),
+                ["external_id", "created_at", "raw_upload_location", "url"],
+            )
+        )
+        assert (
+            response_json.get("url")
+            == f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+        )
+
+        assert ReportSession.objects.filter(
+            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        ).exists()
+        assert RepositoryFlag.objects.filter(
+            repository_id=repository.repoid, flag_name="flag1"
+        ).exists()
+        assert RepositoryFlag.objects.filter(
+            repository_id=repository.repoid, flag_name="flag2"
+        ).exists()
+        flag1 = RepositoryFlag.objects.filter(
+            repository_id=repository.repoid, flag_name="flag1"
+        ).first()
+        flag2 = RepositoryFlag.objects.filter(
+            repository_id=repository.repoid, flag_name="flag2"
+        ).first()
+        assert UploadFlagMembership.objects.filter(
+            report_session_id=upload.id, flag_id=flag1.id
+        ).exists()
+        assert UploadFlagMembership.objects.filter(
+            report_session_id=upload.id, flag_id=flag2.id
+        ).exists()
+        assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+        mock_metrics.assert_has_calls(
+            [call("upload.cli.version"), call("uploads.accepted", 1)]
+        )
+
+        archive_service = ArchiveService(repository)
+        assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
+            version="v4",
+            date=upload.created_at.strftime("%Y-%m-%d"),
+            repo_hash=archive_service.storage_hash,
+            commit_sha=commit.commitid,
+            reportid=commit_report.external_id,
+            uploadid=upload.external_id,
+        )
+        presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)
+        upload_task_mock.assert_called()
+        analytics_service_mock.return_value.account_uploaded_coverage_report.assert_called_with(
+            commit.repository.author.ownerid,
+            {
+                "commit": commit.commitid,
+                "branch": commit.branch,
+                "pr": commit.pullid,
+                "repo": commit.repository.name,
+                "repository_name": commit.repository.name,
+                "repository_id": commit.repository.repoid,
+                "service": commit.repository.service,
+                "build": upload.build_code,
+                "build_url": upload.build_url,
+                "flags": "",
+                "owner": commit.repository.author.ownerid,
+                "token": "tokenless_upload",
+                "version": "version",
+                "uploader_type": "CLI",
+            },
+        )
+    else:
+        assert response.status_code == 401
+        assert response.json().get("detail") == "Not valid tokenless upload"
+
+
 @patch("upload.views.uploads.AnalyticsService")
 @patch("upload.helpers.jwt.decode")
 @patch("upload.helpers.PyJWKClient")
