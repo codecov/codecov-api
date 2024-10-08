@@ -85,17 +85,17 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         _ = DailyTestRollupFactory(test=test)
         res = self.fetch_test_analytics(
-            repo.name, """results { edges { node { name } } }"""
+            repo.name, """testResults { edges { node { name } } }"""
         )
 
-        assert res["results"] == {"edges": [{"node": {"name": test.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
     def test_test_results_no_tests(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         res = self.fetch_test_analytics(
-            repo.name, """results { edges { node { name } } }"""
+            repo.name, """testResults { edges { node { name } } }"""
         )
-        assert res["results"] == {"edges": []}
+        assert res["testResults"] == {"edges": []}
 
     def test_branch_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -115,9 +115,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(filters: { branch: "main"}) { edges { node { name } } }""",
+            """testResults(filters: { branch: "main"}) { edges { node { name } } }""",
         )
-        assert res["results"] == {"edges": [{"node": {"name": test.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
     def test_flaky_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -138,9 +138,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(filters: { parameter: FLAKY_TESTS }) { edges { node { name } } }""",
+            """testResults(filters: { parameter: FLAKY_TESTS }) { edges { node { name } } }""",
         )
-        assert res["results"] == {"edges": [{"node": {"name": test2.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
     def test_failed_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -162,9 +162,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(filters: { parameter: FAILED_TESTS }) { edges { node { name } } }""",
+            """testResults(filters: { parameter: FAILED_TESTS }) { edges { node { name } } }""",
         )
-        assert res["results"] == {"edges": [{"node": {"name": test2.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
     def test_skipped_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -190,9 +190,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(filters: { parameter: SKIPPED_TESTS }) { edges { node { name } } }""",
+            """testResults(filters: { parameter: SKIPPED_TESTS }) { edges { node { name } } }""",
         )
-        assert res["results"] == {"edges": [{"node": {"name": test2.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
     def test_slowest_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -214,9 +214,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(filters: { parameter: SLOWEST_TESTS }) { edges { node { name } } }""",
+            """testResults(filters: { parameter: SLOWEST_TESTS }) { edges { node { name } } }""",
         )
-        assert res["results"] == {"edges": [{"node": {"name": test2.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
     def test_flags_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -242,9 +242,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(filters: { flags: ["hello_world"] }) { edges { node { name } } }""",
+            """testResults(filters: { flags: ["hello_world"] }) { edges { node { name } } }""",
         )
-        assert res["results"] == {"edges": [{"node": {"name": test.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
     def test_testsuites_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -267,9 +267,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(filters: { test_suites: ["hello"] }) { edges { node { name } } }""",
+            """testResults(filters: { test_suites: ["hello"] }) { edges { node { name } } }""",
         )
-        assert res["results"] == {"edges": [{"node": {"name": test.name}}]}
+        assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
     def test_commits_failed_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
@@ -295,9 +295,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: COMMITS_WHERE_FAIL, direction: ASC }) { edges { node { name commitsFailed } } }""",
+            """testResults(ordering: { parameter: COMMITS_WHERE_FAIL, direction: ASC }) { edges { node { name commitsFailed } } }""",
         )
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test_2.name, "commitsFailed": 1}},
                 {"node": {"name": test.name, "commitsFailed": 2}},
@@ -328,9 +328,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: COMMITS_WHERE_FAIL, direction: DESC }) { edges { node { name commitsFailed } } }""",
+            """testResults(ordering: { parameter: COMMITS_WHERE_FAIL, direction: DESC }) { edges { node { name commitsFailed } } }""",
         )
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test.name, "commitsFailed": 2}},
                 {"node": {"name": test_2.name, "commitsFailed": 1}},
@@ -363,9 +363,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: LAST_DURATION, direction: ASC }) { edges { node { name lastDuration } } }""",
+            """testResults(ordering: { parameter: LAST_DURATION, direction: ASC }) { edges { node { name lastDuration } } }""",
         )
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test.name, "lastDuration": 0.0}},
                 {"node": {"name": test_2.name, "lastDuration": 0.0}},
@@ -398,9 +398,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: LAST_DURATION, direction: DESC }) { edges { node { name lastDuration } } }""",
+            """testResults(ordering: { parameter: LAST_DURATION, direction: DESC }) { edges { node { name lastDuration } } }""",
         )
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test_2.name, "lastDuration": 0.0}},
                 {"node": {"name": test.name, "lastDuration": 0.0}},
@@ -432,9 +432,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: AVG_DURATION, direction: ASC }) { edges { node { name avgDuration } } }""",
+            """testResults(ordering: { parameter: AVG_DURATION, direction: ASC }) { edges { node { name avgDuration } } }""",
         )
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test.name, "avgDuration": 1.5}},
                 {"node": {"name": test_2.name, "avgDuration": 3}},
@@ -465,9 +465,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: AVG_DURATION, direction: DESC }) { edges { node { name avgDuration } } }""",
+            """testResults(ordering: { parameter: AVG_DURATION, direction: DESC }) { edges { node { name avgDuration } } }""",
         )
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test_2.name, "avgDuration": 3}},
                 {"node": {"name": test.name, "avgDuration": 1.5}},
@@ -501,10 +501,10 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: FAILURE_RATE, direction: ASC }) { edges { node { name failureRate } } }""",
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }) { edges { node { name failureRate } } }""",
         )
 
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test.name, "failureRate": 0.2}},
                 {"node": {"name": test_2.name, "failureRate": 0.6}},
@@ -538,10 +538,10 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: FAILURE_RATE, direction: DESC }) { edges { node { name failureRate } } }""",
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }) { edges { node { name failureRate } } }""",
         )
 
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test_2.name, "failureRate": 0.6}},
                 {"node": {"name": test.name, "failureRate": 0.2}},
@@ -578,10 +578,10 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: FAILURE_RATE, direction: ASC }) { edges { node { name flakeRate } } }""",
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }) { edges { node { name flakeRate } } }""",
         )
 
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test.name, "flakeRate": 0.2}},
                 {"node": {"name": test_2.name, "flakeRate": 0.2}},
@@ -618,10 +618,10 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """results(ordering: { parameter: FAILURE_RATE, direction: DESC }) { edges { node { name flakeRate } } }""",
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }) { edges { node { name flakeRate } } }""",
         )
 
-        assert res["results"] == {
+        assert res["testResults"] == {
             "edges": [
                 {"node": {"name": test_2.name, "flakeRate": 0.2}},
                 {"node": {"name": test.name, "flakeRate": 0.2}},
@@ -662,15 +662,15 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             )
         res = self.fetch_test_analytics(
             repo.name,
-            """resultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
-        assert res["resultsAggregates"] == {
+        assert res["testResultsAggregates"] == {
             "totalDuration": 570.0,
             "slowestTestsDuration": 29.0,
             "totalFails": 10,
             "totalSkips": 5,
-            "totalDurationPercentChange": -63.10679611650486,
-            "slowestTestsDurationPercentChange": -50.847457627118644,
+            "totalDurationPercentChange": -63.1068,
+            "slowestTestsDurationPercentChange": -50.84746,
             "totalFailsPercentChange": 100.0,
             "totalSkipsPercentChange": -50.0,
         }
@@ -696,10 +696,10 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_test_analytics(
             repo.name,
-            """resultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
         )
 
-        assert res["resultsAggregates"] == {
+        assert res["testResultsAggregates"] == {
             "totalDuration": 570.0,
             "slowestTestsDuration": 29.0,
             "totalFails": 10,
@@ -732,19 +732,19 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         _ = FlakeFactory(
             repository=repo,
             test=test,
-            start_date=datetime.datetime.now() - datetime.timedelta(days=70),
+            start_date=datetime.datetime.now() - datetime.timedelta(days=90),
             end_date=datetime.datetime.now() - datetime.timedelta(days=30),
         )
         _ = FlakeFactory(
             repository=repo,
             test=test,
-            start_date=datetime.datetime.now() - datetime.timedelta(days=80),
+            start_date=datetime.datetime.now() - datetime.timedelta(days=90),
             end_date=datetime.datetime.now() - datetime.timedelta(days=59),
         )
         _ = FlakeFactory(
             repository=repo,
             test=test,
-            start_date=datetime.datetime.now() - datetime.timedelta(days=70),
+            start_date=datetime.datetime.now() - datetime.timedelta(days=90),
             end_date=datetime.datetime.now() - datetime.timedelta(days=61),
         )
 
@@ -783,7 +783,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         assert res["flakeAggregates"] == {
             "flakeCount": 2,
             "flakeRate": 0.125,
-            "flakeCountPercentChange": -50.0,
+            "flakeCountPercentChange": -33.33333,
             "flakeRatePercentChange": -50.0,
         }
 
@@ -824,4 +824,69 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             "flakeRate": 0.25,
             "flakeCountPercentChange": None,
             "flakeRatePercentChange": None,
+        }
+
+    def test_flake_aggregates_7_days(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, branch="main"
+        )
+
+        test = TestFactory(repository=repo)
+
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=1),
+            end_date=None,
+        )
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=11),
+            end_date=datetime.datetime.now() - datetime.timedelta(days=8),
+        )
+        _ = FlakeFactory(
+            repository=repo,
+            test=test,
+            start_date=datetime.datetime.now() - datetime.timedelta(days=30),
+            end_date=datetime.datetime.now() - datetime.timedelta(days=10),
+        )
+
+        for i in range(0, 7):
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                flaky_fail_count=1 if i % 7 == 0 else 0,
+                fail_count=1 if i % 7 == 0 else 0,
+                skip_count=0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+        for i in range(7, 14):
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                flaky_fail_count=1 if i % 3 == 0 else 0,
+                fail_count=1 if i % 3 == 0 else 0,
+                skip_count=0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """flakeAggregates(history: INTERVAL_7_DAY) { flakeCount, flakeRate, flakeCountPercentChange, flakeRatePercentChange }""",
+        )
+
+        assert res["flakeAggregates"] == {
+            "flakeCount": 1,
+            "flakeRate": 0.125,
+            "flakeCountPercentChange": -50.0,
+            "flakeRatePercentChange": -43.75,
         }

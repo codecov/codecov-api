@@ -55,7 +55,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testAnalytics {
-                                results {
+                                testResults {
                                     edges {
                                         node {
                                             name
@@ -72,9 +72,9 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
-            "node"
-        ]["name"] == self.test.name.replace("\x1f", " ")
+        assert result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][
+            0
+        ]["node"]["name"] == self.test.name.replace("\x1f", " ")
 
     def test_fetch_test_result_updated_at(self) -> None:
         query = """
@@ -83,7 +83,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testAnalytics {
-                                results {
+                                testResults {
                                     edges {
                                         node {
                                             updatedAt
@@ -101,7 +101,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
                 "node"
             ]["updatedAt"]
             == datetime.now(UTC).isoformat()
@@ -114,7 +114,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testAnalytics {
-                                results {
+                                testResults {
                                     edges {
                                         node {
                                             commitsFailed
@@ -132,7 +132,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
                 "node"
             ]["commitsFailed"]
             == 3
@@ -145,7 +145,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testAnalytics {
-                                results {
+                                testResults {
                                     edges {
                                         node {
                                             failureRate
@@ -163,7 +163,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
                 "node"
             ]["failureRate"]
             == 0.75
@@ -176,7 +176,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testAnalytics {
-                                results {
+                                testResults {
                                     edges {
                                         node {
                                             lastDuration
@@ -194,7 +194,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
                 "node"
             ]["lastDuration"]
             == 0.0
@@ -207,7 +207,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testAnalytics {
-                                results {
+                                testResults {
                                     edges {
                                         node {
                                             avgDuration
@@ -224,6 +224,6 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
-            "node"
-        ]["avgDuration"] == (5.6 / 3)
+        assert result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][
+            0
+        ]["node"]["avgDuration"] == (5.6 / 3)
