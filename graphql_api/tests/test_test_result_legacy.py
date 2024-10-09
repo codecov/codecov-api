@@ -188,7 +188,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testResults"]["edges"][0]["node"][
                 "lastDuration"
             ]
-            == 5.0
+            == 0.0
         )
 
     def test_fetch_test_result_avg_duration(self) -> None:

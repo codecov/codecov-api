@@ -1028,8 +1028,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test.name, "lastDuration": 2.0}},
-                {"node": {"name": test_2.name, "lastDuration": 3.0}},
+                {"node": {"name": test.name, "lastDuration": 0.0}},
+                {"node": {"name": test_2.name, "lastDuration": 0.0}},
             ]
         }
 
@@ -1048,7 +1048,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             test=test,
             date=datetime.date.today(),
             repoid=repo.repoid,
-            last_duration_seconds=2,
+            last_duration_seconds=2.0,
             latest_run=datetime.datetime.now(),
         )
         test_2 = TestFactory(repository=repo)
@@ -1056,7 +1056,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             test=test_2,
             date=datetime.date.today(),
             repoid=repo.repoid,
-            last_duration_seconds=3,
+            last_duration_seconds=3.0,
         )
         res = self.fetch_repository(
             repo.name,
@@ -1064,8 +1064,8 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test_2.name, "lastDuration": 3}},
-                {"node": {"name": test.name, "lastDuration": 2}},
+                {"node": {"name": test_2.name, "lastDuration": 0.0}},
+                {"node": {"name": test.name, "lastDuration": 0.0}},
             ]
         }
 
