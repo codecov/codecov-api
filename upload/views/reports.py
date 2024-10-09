@@ -11,6 +11,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from reports.models import CommitReport, ReportResults
@@ -27,6 +28,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitReportSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
@@ -91,6 +93,7 @@ class ReportResultsView(
     serializer_class = ReportResultsSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,

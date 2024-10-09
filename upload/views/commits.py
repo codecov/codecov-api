@@ -10,6 +10,7 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
@@ -25,6 +26,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
