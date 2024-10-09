@@ -33,7 +33,6 @@ log = logging.getLogger(__name__)
 
 class UploadTestResultsPermission(BasePermission):
     def has_permission(self, request, view):
-        print("##################")
         return request.auth is not None and "upload" in request.auth.get_scopes()
 
 
