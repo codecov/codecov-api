@@ -77,6 +77,7 @@ class OwnerFactory(DjangoModelFactory):
     )
     user = factory.SubFactory(UserFactory)
     trial_status = TrialStatus.NOT_STARTED.value
+    upload_token_required_for_public_repos = True
 
 
 class SentryUserFactory(DjangoModelFactory):
