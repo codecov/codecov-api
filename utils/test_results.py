@@ -112,12 +112,12 @@ def generate_base_query(
         [
             f"rt.{order_field}"
             if order_field in {"name", "computed_name"}
-            else f"foo.{order_field}"
+            else f"results.{order_field}"
             for order_field in ordering
         ]
     )
     order_by = ",".join(
-        [f"bar.{order} {ordering_direction.name}" for order in ordering]
+        [f"with_cursor.{order} {ordering_direction.name}" for order in ordering]
     )
 
     params: list[int | str | tuple[str, ...] | None] = [
@@ -149,7 +149,7 @@ base_cte as (
         { "and rt.testsuite in %s" if testsuites else ""}
         { "and rt.name like %s" if term else ""}
 ),
-cte1 as (
+failure_rate_cte as (
 	select
 		test_id,
 		CASE
@@ -161,48 +161,48 @@ cte1 as (
 			ELSE SUM(flaky_fail_count)::float / (SUM(pass_count) + SUM(fail_count))
 		END as flake_rate,
 		MAX(latest_run) as updated_at,
-		AVG(rd.avg_duration_seconds) AS avg_duration,
+		AVG(avg_duration_seconds) AS avg_duration,
         SUM(fail_count) as total_fail_count,
         SUM(pass_count) as total_pass_count,
         SUM(skip_count) as total_skip_count
-	from base_cte rd
+	from base_cte
 	group by test_id
 ),
-cte2 as (
+commits_where_fail_cte as (
 	select test_id, array_length((array_agg(distinct unnested_cwf)), 1) as failed_commits_count from (
 		select test_id, commits_where_fail as cwf
-		from base_cte rd
+		from base_cte
 		where array_length(commits_where_fail,1) > 0
 	) as foo, unnest(cwf) as unnested_cwf group by test_id
 ),
-cte3 as (
-	select rd.test_id, last_duration_seconds from base_cte rd
+last_duration_cte as (
+	select base_cte.test_id, last_duration_seconds from base_cte
 	join (
 		select
 			test_id,
 			max(created_at) as created_at
-		from base_cte base
+		from base_cte
 		group by test_id
-	) as foo
-	on rd.created_at = foo.created_at
+	) as latest_rollups
+    on base_cte.created_at = latest_rollups.created_at
 )
 
 select * from (
     select
     rt.name,
     rt.computed_name,
-    foo.*,
+    results.*,
     row({order}) as _cursor
     from
     (
-        select cte1.*, coalesce(cte2.failed_commits_count, 0) as commits_where_fail, cte3.last_duration_seconds as last_duration
-        from cte1
-        full outer join cte2 using (test_id)
-        full outer join cte3 using (test_id)
-    ) as foo join reports_test rt on foo.test_id = rt.id
-) as bar
-{"where bar._cursor > %s" if after else ""}
-{"where bar._cursor < %s" if before else ""}
+        select failure_rate_cte.*, coalesce(commits_where_fail_cte.failed_commits_count, 0) as commits_where_fail, last_duration_cte.last_duration_seconds as last_duration
+        from failure_rate_cte
+        full outer join commits_where_fail_cte using (test_id)
+        full outer join last_duration_cte using (test_id)
+    ) as results join reports_test rt on results.test_id = rt.id
+) as with_cursor
+{"where with_cursor._cursor > %s" if after else ""}
+{"where with_cursor._cursor < %s" if before else ""}
 order by {order_by}
 limit %s
 """
