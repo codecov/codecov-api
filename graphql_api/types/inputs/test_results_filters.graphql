@@ -4,6 +4,7 @@ input TestResultsFilters {
   test_suites: [String!]
   flags: [String!]
   history: MeasurementInterval
+  term: String
 }
 
 input TestResultsOrdering {

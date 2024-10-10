@@ -66,6 +66,7 @@ def generate_test_results(
     parameter: GENERATE_TEST_RESULT_PARAM | None = None,
     testsuites: list[str] | None = None,
     flags: list[str] | None = None,
+    term: str | None = None,
 ) -> QuerySet:
     """
     Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
@@ -102,6 +103,9 @@ def generate_test_results(
         test_ids = [bridge.test_id for bridge in bridges]
 
         totals = totals.filter(test_id__in=test_ids)
+
+    if term is not None:
+        totals = totals.filter(test__name__icontains=term)
 
     match parameter:
         case GENERATE_TEST_RESULT_PARAM.FLAKY:
