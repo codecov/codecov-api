@@ -662,17 +662,19 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             )
         res = self.fetch_test_analytics(
             repo.name,
-            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalSlowTests, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange, totalSlowTestsPercentChange }""",
         )
         assert res["testResultsAggregates"] == {
             "totalDuration": 570.0,
-            "slowestTestsDuration": 29.0,
-            "totalFails": 10,
-            "totalSkips": 5,
             "totalDurationPercentChange": -63.1068,
+            "slowestTestsDuration": 29.0,
             "slowestTestsDurationPercentChange": -50.84746,
+            "totalFails": 10,
             "totalFailsPercentChange": 100.0,
+            "totalSkips": 5,
             "totalSkipsPercentChange": -50.0,
+            "totalSlowTests": 1,
+            "totalSlowTestsPercentChange": 0.0,
         }
 
     def test_test_results_aggregates_no_history(self) -> None:
@@ -696,18 +698,20 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_test_analytics(
             repo.name,
-            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalSlowTests, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange, totalSlowTestsPercentChange }""",
         )
 
         assert res["testResultsAggregates"] == {
             "totalDuration": 570.0,
-            "slowestTestsDuration": 29.0,
-            "totalFails": 10,
-            "totalSkips": 5,
             "totalDurationPercentChange": None,
+            "slowestTestsDuration": 29.0,
             "slowestTestsDurationPercentChange": None,
+            "totalFails": 10,
             "totalFailsPercentChange": None,
+            "totalSkips": 5,
             "totalSkipsPercentChange": None,
+            "totalSlowTests": 1,
+            "totalSlowTestsPercentChange": None,
         }
 
     def test_flake_aggregates(self) -> None:

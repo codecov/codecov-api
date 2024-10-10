@@ -264,6 +264,7 @@ def get_test_results_aggregate_numbers(
         slowest_tests_duration=slowest_tests_duration,
         skips=Sum("skip_count"),
         fails=Sum("fail_count"),
+        total_slow_tests=Value(slow_test_threshold(num_tests)),
     )
 
     return test_headers[0] if len(test_headers) > 0 else {}
@@ -282,7 +283,13 @@ def generate_test_results_aggregates(
     past_numbers = get_test_results_aggregate_numbers(repo, double_time_ago, since)
 
     return curr_numbers | get_percent_change(
-        ["total_duration", "slowest_tests_duration", "skips", "fails"],
+        [
+            "total_duration",
+            "slowest_tests_duration",
+            "skips",
+            "fails",
+            "total_slow_tests",
+        ],
         curr_numbers,
         past_numbers,
     )
