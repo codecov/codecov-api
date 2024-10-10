@@ -1,40 +1,28 @@
 import logging
 from datetime import datetime
-from typing import List, Mapping, Optional
+from typing import List, Optional
 
 import shared.rate_limits as rate_limits
 import yaml
 from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
-from django.conf import settings
-from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
-from shared.yaml import UserYaml
 
 from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
 from core.models import Branch, Repository
 from graphql_api.actions.commits import repo_commits
-from graphql_api.actions.components import (
-    component_measurements,
-    component_measurements_last_uploaded,
-)
-from graphql_api.actions.flags import flag_measurements, flags_for_repo
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import (
     queryset_to_connection,
-    queryset_to_connection_sync,
 )
-from graphql_api.helpers.lookahead import lookahead
 from graphql_api.types.coverage_analytics.coverage_analytics import (
     CoverageAnalyticsProps,
 )
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from services.components import ComponentMeasurements
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
-from timeseries.models import Dataset, Interval, MeasurementName
 
 log = logging.getLogger(__name__)
 
@@ -197,142 +185,9 @@ def resolve_repo_bot(repository: Repository, info: GraphQLResolveInfo):
     return repository.bot
 
 
-@repository_bindable.field("flags")
-@convert_kwargs_to_snake_case
-@sync_to_async
-def resolve_flags(
-    repository: Repository,
-    info: GraphQLResolveInfo,
-    filters: Mapping = None,
-    ordering_direction: OrderingDirection = OrderingDirection.ASC,
-    **kwargs,
-):
-    queryset = flags_for_repo(repository, filters)
-    connection = queryset_to_connection_sync(
-        queryset,
-        ordering=("flag_name",),
-        ordering_direction=ordering_direction,
-        **kwargs,
-    )
-
-    # We fetch the measurements in this resolver since there are multiple child
-    # flag resolvers that depend on this data.  Additionally, we're able to fetch
-    # measurements for all the flags being returned at once.
-    # Use the lookahead to make sure we don't overfetch measurements that we don't
-    # need.
-    node = lookahead(info, ("edges", "node", "measurements"))
-    if node:
-        if settings.TIMESERIES_ENABLED:
-            # TODO: is there a way to have these automatically casted at a
-            # lower level (i.e. based on the schema)?
-            interval = node.args["interval"]
-            if isinstance(interval, str):
-                interval = Interval[interval]
-            after = node.args["after"]
-            if isinstance(after, str):
-                after = from_current_timezone(datetime.fromisoformat(after))
-            before = node.args["before"]
-            if isinstance(before, str):
-                before = from_current_timezone(datetime.fromisoformat(before))
-
-            flag_ids = [edge["node"].pk for edge in connection.edges]
-
-            info.context["flag_measurements"] = flag_measurements(
-                repository, flag_ids, interval, after, before
-            )
-        else:
-            info.context["flag_measurements"] = {}
-
-    return connection
-
-
 @repository_bindable.field("active")
 def resolve_active(repository: Repository, info: GraphQLResolveInfo) -> bool:
     return repository.active or False
-
-
-@repository_bindable.field("flagsCount")
-@sync_to_async
-def resolve_flags_count(repository: Repository, info: GraphQLResolveInfo) -> int:
-    return repository.flags.filter(deleted__isnot=True).count()
-
-
-@repository_bindable.field("flagsMeasurementsActive")
-@sync_to_async
-def resolve_flags_measurements_active(
-    repository: Repository, info: GraphQLResolveInfo
-) -> bool:
-    if not settings.TIMESERIES_ENABLED:
-        return False
-
-    return Dataset.objects.filter(
-        name=MeasurementName.FLAG_COVERAGE.value,
-        repository_id=repository.pk,
-    ).exists()
-
-
-@repository_bindable.field("flagsMeasurementsBackfilled")
-@sync_to_async
-def resolve_flags_measurements_backfilled(
-    repository: Repository, info: GraphQLResolveInfo
-) -> bool:
-    if not settings.TIMESERIES_ENABLED:
-        return False
-
-    dataset = Dataset.objects.filter(
-        name=MeasurementName.FLAG_COVERAGE.value,
-        repository_id=repository.pk,
-    ).first()
-
-    if not dataset:
-        return False
-
-    return dataset.is_backfilled()
-
-
-@repository_bindable.field("componentsMeasurementsActive")
-@sync_to_async
-def resolve_components_measurements_active(
-    repository: Repository, info: GraphQLResolveInfo
-) -> bool:
-    if not settings.TIMESERIES_ENABLED:
-        return False
-
-    return Dataset.objects.filter(
-        name=MeasurementName.COMPONENT_COVERAGE.value,
-        repository_id=repository.pk,
-    ).exists()
-
-
-@repository_bindable.field("componentsMeasurementsBackfilled")
-@sync_to_async
-def resolve_components_measurements_backfilled(
-    repository: Repository, info: GraphQLResolveInfo
-) -> bool:
-    if not settings.TIMESERIES_ENABLED:
-        return False
-
-    dataset = Dataset.objects.filter(
-        name=MeasurementName.COMPONENT_COVERAGE.value,
-        repository_id=repository.pk,
-    ).first()
-
-    if not dataset:
-        return False
-
-    return dataset.is_backfilled()
-
-
-@repository_bindable.field("componentsCount")
-@sync_to_async
-def resolve_components_count(repository: Repository, info: GraphQLResolveInfo) -> int:
-    repo_yaml_components = UserYaml.get_final_yaml(
-        owner_yaml=repository.author.yaml,
-        repo_yaml=repository.yaml,
-        ownerid=repository.author.ownerid,
-    ).get_components()
-
-    return len(repo_yaml_components)
 
 
 @repository_bindable.field("isATSConfigured")
@@ -393,95 +248,6 @@ def resolve_repository_result_type(obj, *_):
         return "OwnerNotActivatedError"
     elif isinstance(obj, NotFoundError):
         return "NotFoundError"
-
-
-@repository_bindable.field("components")
-@convert_kwargs_to_snake_case
-@sync_to_async
-def resolve_component_measurements(
-    repository: Repository,
-    info: GraphQLResolveInfo,
-    interval: Interval,
-    before: datetime,
-    after: datetime,
-    branch: Optional[str] = None,
-    filters: Optional[Mapping] = None,
-    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
-):
-    components = UserYaml.get_final_yaml(
-        owner_yaml=repository.author.yaml,
-        repo_yaml=repository.yaml,
-        ownerid=repository.author.ownerid,
-    ).get_components()
-
-    if not settings.TIMESERIES_ENABLED or not components:
-        return []
-
-    if filters and "components" in filters:
-        components = [c for c in components if c.component_id in filters["components"]]
-
-    component_ids = [c.component_id for c in components]
-    all_measurements = component_measurements(
-        repository, component_ids, interval, after, before, branch
-    )
-
-    last_measurements = component_measurements_last_uploaded(
-        owner_id=repository.author.ownerid,
-        repo_id=repository.repoid,
-        measurable_ids=component_ids,
-        branch=branch,
-    )
-    last_measurements_mapping = {
-        row["measurable_id"]: row["last_uploaded"] for row in last_measurements
-    }
-
-    components_mapping = {
-        component.component_id: component.name for component in components
-    }
-
-    queried_measurements = [
-        ComponentMeasurements(
-            raw_measurements=all_measurements.get(component_id, []),
-            component_id=component_id,
-            interval=interval,
-            after=after,
-            before=before,
-            last_measurement=last_measurements_mapping.get(component_id),
-            components_mapping=components_mapping,
-        )
-        for component_id in component_ids
-    ]
-
-    return sorted(
-        queried_measurements,
-        key=lambda c: c.name,
-        reverse=ordering_direction == OrderingDirection.DESC,
-    )
-
-
-@repository_bindable.field("componentsYaml")
-@convert_kwargs_to_snake_case
-def resolve_component_yaml(
-    repository: Repository, info: GraphQLResolveInfo, term_id: Optional[str]
-) -> List[str]:
-    components = UserYaml.get_final_yaml(
-        owner_yaml=repository.author.yaml,
-        repo_yaml=repository.yaml,
-        ownerid=repository.author.ownerid,
-    ).get_components()
-
-    components = [
-        {
-            "id": c.component_id,
-            "name": c.name,
-        }
-        for c in components
-    ]
-
-    if term_id:
-        components = filter(lambda c: term_id in c["id"], components)
-
-    return components
 
 
 @repository_bindable.field("isFirstPullRequest")
