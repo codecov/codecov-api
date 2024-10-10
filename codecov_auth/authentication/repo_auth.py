@@ -24,6 +24,7 @@ from codecov_auth.models import (
 from core.models import Commit, Repository
 from upload.helpers import get_global_tokens, get_repo_with_github_actions_oidc_token
 from upload.views.helpers import (
+    get_repository_and_owner_from_slug_and_commit,
     get_repository_and_owner_from_string,
     get_repository_from_string,
 )
@@ -345,7 +346,7 @@ class BundleAnalysisTokenlessAuthentication(TokenlessAuthentication):
         body = json.loads(str(request.body, "utf8"))
 
         # If commit is not created yet (ie first upload for this commit), we just validate branch format.
-        # However if a commit exists already (ie not the first upload for this commit), we must additionally
+        # However, if a commit exists already (ie not the first upload for this commit), we must additionally
         # validate the saved commit branch matches what is requested in this upload call.
         commit = Commit.objects.filter(repository_id=repoid, commitid=commitid).first()
         if commit and commit.branch != body.get("branch"):
@@ -381,10 +382,15 @@ class UploadTokenRequiredAuthenticationCheck(authentication.TokenAuthentication)
 
         return repository, owner
 
+    def get_repository_and_owner(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        return self._get_info_from_request_path(request)
+
     def authenticate(
         self, request: HttpRequest
     ) -> tuple[RepositoryAsUser, TokenlessAuth] | None:
-        repository, owner = self._get_info_from_request_path(request)
+        repository, owner = self.get_repository_and_owner(request)
 
         if (
             repository is None
@@ -398,3 +404,86 @@ class UploadTokenRequiredAuthenticationCheck(authentication.TokenAuthentication)
             RepositoryAsUser(repository),
             TokenlessAuth(repository),
         )
+
+
+class TestResultsUploadTokenRequiredAuthenticationCheck(
+    UploadTokenRequiredAuthenticationCheck
+):
+    """
+    Repository and Owner are not in the path for this endpoint, have to get them another way,
+    then use the same authenticate() as parent class.
+    """
+
+    def _get_info_from_request_data(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        from upload.views.test_results import UploadSerializer  # circular imports
+
+        try:
+            body = json.loads(str(request.body, "utf8"))
+        except json.JSONDecodeError:
+            return None, None  # continue to next auth class
+
+        serializer = UploadSerializer(data=body)
+        if not serializer.is_valid():
+            return None, None  # continue to next auth class
+
+        # these fields are required=True
+        slug = serializer.validated_data["slug"]
+        commitid = serializer.validated_data["commit"]
+
+        return get_repository_and_owner_from_slug_and_commit(
+            slug=slug, commitid=commitid
+        )
+
+    def get_repository_and_owner(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        return self._get_info_from_request_data(request)
+
+
+class BundleAnalysisUploadTokenRequiredAuthenticationCheck(
+    UploadTokenRequiredAuthenticationCheck
+):
+    """
+    Repository and Owner are not in the path for this endpoint, have to get them another way,
+    then use the same authenticate() as parent class.
+    """
+
+    def _get_info_from_request_data(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        from upload.views.bundle_analysis import UploadSerializer  # circular imports
+
+        try:
+            body = json.loads(str(request.body, "utf8"))
+        except json.JSONDecodeError:
+            return None, None  # continue to next auth class
+
+        serializer = UploadSerializer(data=body)
+        if not serializer.is_valid():
+            return None, None  # continue to next auth class
+
+        # these fields are required=True
+        slug = serializer.validated_data["slug"]
+        commitid = serializer.validated_data["commit"]
+
+        # this field is required=False but is much better for getting repository and owner
+        service = serializer.validated_data.get("git_service")
+        if service:
+            try:
+                service_enum = Service(service)
+            except ValueError:
+                return None, None
+            return get_repository_and_owner_from_string(
+                service=service_enum, repo_identifier=slug
+            )
+
+        return get_repository_and_owner_from_slug_and_commit(
+            slug=slug, commitid=commitid
+        )
+
+    def get_repository_and_owner(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        return self._get_info_from_request_data(request)

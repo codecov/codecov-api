@@ -10,14 +10,18 @@ from django.utils import timezone
 from jwt import PyJWTError
 from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
+from shared.django_apps.codecov_auth.models import Owner, Service
+from shared.django_apps.core.models import Repository
 
 from codecov_auth.authentication.repo_auth import (
+    BundleAnalysisUploadTokenRequiredAuthenticationCheck,
     GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyQueryTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     RepositoryTokenAuthentication,
+    TestResultsUploadTokenRequiredAuthenticationCheck,
     TokenlessAuth,
     TokenlessAuthentication,
     UploadTokenRequiredAuthenticationCheck,
@@ -597,7 +601,7 @@ class TestUploadTokenRequiredAuthenticationCheck(object):
     @pytest.mark.parametrize("request_uri,repo_slug,commitid", valid_params_to_test)
     @pytest.mark.parametrize("private", [False, True])
     @pytest.mark.parametrize("token_required", [False, True])
-    def test_token_not_required_matches_paths(
+    def test_get_repository_and_owner(
         self, request_uri, repo_slug, commitid, private, token_required, db
     ):
         author_name, repo_name = repo_slug.split("/")
@@ -612,7 +616,7 @@ class TestUploadTokenRequiredAuthenticationCheck(object):
             request_uri, {"branch": "fork:branch"}, format="json"
         )
         authentication = UploadTokenRequiredAuthenticationCheck()
-        assert authentication._get_info_from_request_path(request) == (
+        assert authentication.get_repository_and_owner(request) == (
             repo,
             repo.author,
         )
@@ -659,6 +663,451 @@ class TestUploadTokenRequiredAuthenticationCheck(object):
             )
 
         authentication = UploadTokenRequiredAuthenticationCheck()
+
+        if not private and not token_required:
+            res = authentication.authenticate(request)
+            assert res is not None
+            repo_as_user, auth_class = res
+
+            assert repo_as_user.is_authenticated() is True
+            assert isinstance(auth_class, TokenlessAuth)
+        else:
+            res = authentication.authenticate(request)
+            assert res is None
+
+
+class TestTestResultsUploadTokenRequiredAuthenticationCheck(object):
+    def test_token_not_required_invalid_data(self):
+        request = APIRequestFactory().post(
+            "/endpoint",
+            data={"slug": 123, "commit": 456},
+            format="json",
+        )
+        authentication = TestResultsUploadTokenRequiredAuthenticationCheck()
+        res = authentication.authenticate(request)
+        assert res is None
+
+    def test_token_not_required_no_data(self):
+        request = APIRequestFactory().post(
+            "/endpoint",
+            format="json",
+        )
+        authentication = TestResultsUploadTokenRequiredAuthenticationCheck()
+        res = authentication.authenticate(request)
+        assert res is None
+
+    def test_token_not_required_unknown_repository(self, db):
+        an_owner = OwnerFactory(upload_token_required_for_public_repos=False)
+        # their repo
+        RepositoryFactory(author=an_owner, private=False)
+        request_uri = f"/upload/github/{an_owner.username}::::bad/commits"
+        request = APIRequestFactory().post(
+            request_uri,
+            data={
+                "slug": f"{an_owner.username}::::bad",
+                "commit": "this is a commitid",
+            },
+            format="json",
+        )
+        authentication = TestResultsUploadTokenRequiredAuthenticationCheck()
+        res = authentication.authenticate(request)
+        assert res is None
+
+    def test_token_not_required_unknown_owner(self, db):
+        repo = RepositoryFactory(
+            private=False, author__upload_token_required_for_public_repos=False
+        )
+        request_uri = f"/upload/github/bad::::{repo.name}/commits"
+        request = APIRequestFactory().post(
+            request_uri,
+            data={"slug": f"bad::::{repo.name}", "commit": "this is a commitid"},
+            format="json",
+        )
+        authentication = TestResultsUploadTokenRequiredAuthenticationCheck()
+        res = authentication.authenticate(request)
+        assert res is None
+
+    @pytest.mark.parametrize("request_uri,repo_slug,commitid", valid_params_to_test)
+    @pytest.mark.parametrize("private", [False, True])
+    @pytest.mark.parametrize("token_required", [False, True])
+    def test_get_repository_and_owner(
+        self, request_uri, repo_slug, commitid, private, token_required, db
+    ):
+        author_name, repo_name = repo_slug.split("/")
+        repo = RepositoryFactory(
+            name=repo_name,
+            author__username=author_name,
+            private=private,
+            author__upload_token_required_for_public_repos=token_required,
+        )
+        assert repo.service == "github"
+        request = APIRequestFactory().post(
+            request_uri,
+            data={"slug": f"{author_name}::::{repo_name}", "commit": commitid},
+            format="json",
+        )
+        authentication = TestResultsUploadTokenRequiredAuthenticationCheck()
+
+        if commitid is None:
+            # fails serializer validation for this endpoint
+            assert authentication.get_repository_and_owner(request) == (None, None)
+        else:
+            assert authentication.get_repository_and_owner(request) == (
+                repo,
+                repo.author,
+            )
+
+    def test_get_repository_and_owner_by_commitid(self, db):
+        authentication = TestResultsUploadTokenRequiredAuthenticationCheck()
+        repo_name = "the-repo"
+        owner_username = "the-author"
+        for name, _ in Service.choices:
+            owner = OwnerFactory(service=name, username=owner_username)
+            RepositoryFactory(name=repo_name, author=owner)
+
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={"slug": f"{owner_username}::::{repo_name}", "commit": "new commit"},
+            format="json",
+        )
+        assert authentication.get_repository_and_owner(request) == (None, None)
+
+        commit_on_random_repo = CommitFactory()
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={
+                "slug": f"{owner_username}::::{repo_name}",
+                "commit": commit_on_random_repo.commitid,
+            },
+            format="json",
+        )
+        assert authentication.get_repository_and_owner(request) == (None, None)
+
+        matching_repo = Repository.objects.filter(
+            name=repo_name, author__username=owner_username
+        ).first()
+        commit_on_matching_repo = CommitFactory(repository=matching_repo)
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={
+                "slug": f"{owner_username}::::{repo_name}",
+                "commit": commit_on_matching_repo.commitid,
+            },
+            format="json",
+        )
+        assert authentication.get_repository_and_owner(request) == (
+            matching_repo,
+            matching_repo.author,
+        )
+
+    @pytest.mark.parametrize("private", [False, True])
+    @pytest.mark.parametrize("branch", ["branch", "fork:branch"])
+    @pytest.mark.parametrize(
+        "existing_commit,commit_branch",
+        [(False, None), (True, "branch"), (True, "fork:branch")],
+    )
+    @pytest.mark.parametrize("token_required", [False, True])
+    def test_token_not_required_fork_branch_public_private(
+        self,
+        db,
+        mocker,
+        private,
+        branch,
+        existing_commit,
+        commit_branch,
+        token_required,
+    ):
+        repo = RepositoryFactory(
+            private=private,
+            author__upload_token_required_for_public_repos=token_required,
+        )
+
+        if existing_commit:
+            commit = CommitFactory()
+            commit.branch = commit_branch
+            commit.repository = repo
+            commit.save()
+
+            request = APIRequestFactory().post(
+                f"/upload/github/{repo.author.username}::::{repo.name}/commits/{commit.commitid}/reports/report_code/uploads",
+                data={
+                    "slug": f"{repo.author.username}::::{repo.name}",
+                    "commit": commit.commitid,
+                },
+                format="json",
+            )
+
+        else:
+            request = APIRequestFactory().post(
+                f"/upload/github/{repo.author.username}::::{repo.name}/commits",
+                data={
+                    "slug": f"{repo.author.username}::::{repo.name}",
+                    "commit": "this is a commitid",
+                },
+                format="json",
+            )
+
+        authentication = TestResultsUploadTokenRequiredAuthenticationCheck()
+
+        if not private and not token_required:
+            res = authentication.authenticate(request)
+            assert res is not None
+            repo_as_user, auth_class = res
+
+            assert repo_as_user.is_authenticated() is True
+            assert isinstance(auth_class, TokenlessAuth)
+        else:
+            res = authentication.authenticate(request)
+            assert res is None
+
+
+class TestBundleAnalysisUploadTokenRequiredAuthenticationCheck(object):
+    def test_token_not_required_invalid_data(self):
+        request = APIRequestFactory().post(
+            "/endpoint",
+            data={"slug": 123, "commit": 456},
+            format="json",
+        )
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
+        res = authentication.authenticate(request)
+        assert res is None
+
+    def test_token_not_required_no_data(self):
+        request = APIRequestFactory().post(
+            "/endpoint",
+            format="json",
+        )
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
+        res = authentication.authenticate(request)
+        assert res is None
+
+    def test_token_not_required_unknown_repository(self, db):
+        an_owner = OwnerFactory(upload_token_required_for_public_repos=False)
+        # their repo
+        RepositoryFactory(author=an_owner, private=False)
+        request_uri = f"/upload/github/{an_owner.username}::::bad/commits"
+        request = APIRequestFactory().post(
+            request_uri,
+            data={
+                "slug": f"{an_owner.username}::::bad",
+                "commit": "this is a commitid",
+                "service": an_owner.service,
+            },
+            format="json",
+        )
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
+        assert authentication.get_repository_and_owner(request) == (None, None)
+        res = authentication.authenticate(request)
+        assert res is None
+
+    def test_token_not_required_unknown_owner(self, db):
+        repo = RepositoryFactory(
+            private=False, author__upload_token_required_for_public_repos=False
+        )
+        request_uri = f"/upload/github/bad::::{repo.name}/commits"
+        request = APIRequestFactory().post(
+            request_uri,
+            data={"slug": f"bad::::{repo.name}", "commit": "this is a commitid"},
+            format="json",
+        )
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
+        res = authentication.authenticate(request)
+        assert res is None
+
+    @pytest.mark.parametrize("request_uri,repo_slug,commitid", valid_params_to_test)
+    @pytest.mark.parametrize("private", [False, True])
+    @pytest.mark.parametrize("token_required", [False, True])
+    def test_get_repository_and_owner(
+        self, request_uri, repo_slug, commitid, private, token_required, db
+    ):
+        author_name, repo_name = repo_slug.split("/")
+        repo = RepositoryFactory(
+            name=repo_name,
+            author__username=author_name,
+            private=private,
+            author__upload_token_required_for_public_repos=token_required,
+        )
+        assert repo.service == "github"
+        request = APIRequestFactory().post(
+            request_uri,
+            data={"slug": f"{author_name}::::{repo_name}", "commit": commitid},
+            format="json",
+        )
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
+
+        if commitid is None:
+            # fails serializer validation for this endpoint
+            assert authentication.get_repository_and_owner(request) == (None, None)
+        else:
+            assert authentication.get_repository_and_owner(request) == (
+                repo,
+                repo.author,
+            )
+
+    def test_get_repository_and_owner_by_commitid(self, db):
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
+        repo_name = "the-repo"
+        owner_username = "the-author"
+        for name, _ in Service.choices:
+            owner = OwnerFactory(service=name, username=owner_username)
+            RepositoryFactory(name=repo_name, author=owner)
+
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={"slug": f"{owner_username}::::{repo_name}", "commit": "new commit"},
+            format="json",
+        )
+        assert authentication.get_repository_and_owner(request) == (None, None)
+
+        commit_on_random_repo = CommitFactory()
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={
+                "slug": f"{owner_username}::::{repo_name}",
+                "commit": commit_on_random_repo.commitid,
+            },
+            format="json",
+        )
+        assert authentication.get_repository_and_owner(request) == (None, None)
+
+        matching_repo = Repository.objects.filter(
+            name=repo_name, author__username=owner_username
+        ).first()
+        commit_on_matching_repo = CommitFactory(repository=matching_repo)
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={
+                "slug": f"{owner_username}::::{repo_name}",
+                "commit": commit_on_matching_repo.commitid,
+            },
+            format="json",
+        )
+        assert authentication.get_repository_and_owner(request) == (
+            matching_repo,
+            matching_repo.author,
+        )
+
+    def test_get_repository_and_owner_with_service(self, db):
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
+        repo_name = "the-repo"
+        owner_username = "the-author"
+        for name, _ in Service.choices:
+            owner = OwnerFactory(service=name, username=owner_username)
+            RepositoryFactory(name=repo_name, author=owner)
+
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={
+                "slug": f"{owner_username}::::{repo_name}",
+                "commit": "new commit",
+                "git_service": Service.BITBUCKET.value,
+            },
+            format="json",
+        )
+        matching_owner = Owner.objects.get(
+            service=Service.BITBUCKET.value, username=owner_username
+        )
+        matching_repo = Repository.objects.get(
+            name=repo_name, author__service=Service.BITBUCKET.value
+        )
+        assert authentication.get_repository_and_owner(request) == (
+            matching_repo,
+            matching_owner,
+        )
+
+        commit_on_random_repo = CommitFactory()
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={
+                "slug": f"{owner_username}::::{repo_name}",
+                "commit": commit_on_random_repo.commitid,
+                "git_service": Service.GITLAB.value,
+            },
+            format="json",
+        )
+        matching_owner = Owner.objects.get(
+            service=Service.GITLAB.value, username=owner_username
+        )
+        matching_repo = Repository.objects.get(
+            name=repo_name, author__service=Service.GITLAB.value
+        )
+        assert authentication.get_repository_and_owner(request) == (
+            matching_repo,
+            matching_owner,
+        )
+
+        matching_repo = Repository.objects.filter(
+            name=repo_name, author__username=owner_username
+        ).first()
+        commit_on_matching_repo = CommitFactory(repository=matching_repo)
+        request = APIRequestFactory().post(
+            "endpoint/",
+            data={
+                "slug": f"{owner_username}::::{repo_name}",
+                "commit": commit_on_matching_repo.commitid,
+                "git_service": Service.GITHUB.value,
+            },
+            format="json",
+        )
+        matching_owner = Owner.objects.get(
+            service=Service.GITHUB.value, username=owner_username
+        )
+        matching_repo = Repository.objects.get(
+            name=repo_name, author__service=Service.GITHUB.value
+        )
+        assert authentication.get_repository_and_owner(request) == (
+            matching_repo,
+            matching_owner,
+        )
+
+    @pytest.mark.parametrize("private", [False, True])
+    @pytest.mark.parametrize("branch", ["branch", "fork:branch"])
+    @pytest.mark.parametrize(
+        "existing_commit,commit_branch",
+        [(False, None), (True, "branch"), (True, "fork:branch")],
+    )
+    @pytest.mark.parametrize("token_required", [False, True])
+    def test_token_not_required_fork_branch_public_private(
+        self,
+        db,
+        mocker,
+        private,
+        branch,
+        existing_commit,
+        commit_branch,
+        token_required,
+    ):
+        repo = RepositoryFactory(
+            private=private,
+            author__upload_token_required_for_public_repos=token_required,
+        )
+
+        if existing_commit:
+            commit = CommitFactory()
+            commit.branch = commit_branch
+            commit.repository = repo
+            commit.save()
+
+            request = APIRequestFactory().post(
+                f"/upload/github/{repo.author.username}::::{repo.name}/commits/{commit.commitid}/reports/report_code/uploads",
+                data={
+                    "slug": f"{repo.author.username}::::{repo.name}",
+                    "commit": commit.commitid,
+                },
+                format="json",
+            )
+
+        else:
+            request = APIRequestFactory().post(
+                f"/upload/github/{repo.author.username}::::{repo.name}/commits",
+                data={
+                    "slug": f"{repo.author.username}::::{repo.name}",
+                    "commit": "this is a commitid",
+                },
+                format="json",
+            )
+
+        authentication = BundleAnalysisUploadTokenRequiredAuthenticationCheck()
 
         if not private and not token_required:
             res = authentication.authenticate(request)

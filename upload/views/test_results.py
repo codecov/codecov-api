@@ -13,8 +13,8 @@ from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    TestResultsUploadTokenRequiredAuthenticationCheck,
     TokenlessAuthentication,
-    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -55,7 +55,7 @@ class TestResultsView(
 ):
     permission_classes = [UploadTestResultsPermission]
     authentication_classes = [
-        UploadTokenRequiredAuthenticationCheck,
+        TestResultsUploadTokenRequiredAuthenticationCheck,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
