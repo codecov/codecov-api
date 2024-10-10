@@ -172,6 +172,8 @@ def generate_test_results(
         total_flaky_fail_count=Cast(
             Sum(F("flaky_fail_count")), output_field=FloatField()
         ),
+        total_skip_count=Cast(Sum(F("skip_count")), output_field=FloatField()),
+        total_pass_count=Cast(Sum(F("pass_count")), output_field=FloatField()),
         failure_rate=Case(
             When(
                 total_test_count=0,

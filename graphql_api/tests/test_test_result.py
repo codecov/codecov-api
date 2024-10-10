@@ -227,3 +227,96 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         assert result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][
             0
         ]["node"]["avgDuration"] == (5.6 / 3)
+
+    def test_fetch_test_result_total_fail_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalFailCount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalFailCount"]
+            == 9
+        )
+
+    def test_fetch_test_result_total_skip_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalSkipCount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalSkipCount"]
+            == 6
+        )
+
+    def test_fetch_test_result_total_pass_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalPassCount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalPassCount"]
+            == 3
+        )

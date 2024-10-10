@@ -13,6 +13,9 @@ class TestDict(TypedDict):
     avg_duration: float
     last_duration: float
     flake_rate: float
+    total_fail_count: int
+    total_skip_count: int
+    total_pass_count: int
 
 
 test_result_bindable = ObjectType("TestResult")
@@ -51,3 +54,18 @@ def resolve_avg_duration(test: TestDict, _: GraphQLResolveInfo) -> float:
 @test_result_bindable.field("lastDuration")
 def resolve_last_duration(test: TestDict, _: GraphQLResolveInfo) -> float:
     return test["last_duration"]
+
+
+@test_result_bindable.field("totalFailCount")
+def resolve_total_fail_count(test: TestDict, _: GraphQLResolveInfo) -> int:
+    return test["total_fail_count"]
+
+
+@test_result_bindable.field("totalSkipCount")
+def resolve_total_skip_count(test: TestDict, _: GraphQLResolveInfo) -> int:
+    return test["total_skip_count"]
+
+
+@test_result_bindable.field("totalPassCount")
+def resolve_total_pass_count(test: TestDict, _: GraphQLResolveInfo) -> int:
+    return test["total_pass_count"]
