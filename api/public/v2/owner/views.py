@@ -63,6 +63,8 @@ class UserSessionViewSet(UserSessionViewSetMixin, mixins.ListModelMixin):
     def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Returns a paginated list of users' login session for the specified owner (org)
+
+        Note: Requires the caller to be an admin of the requested organization
         """
         return super().list(request, *args, **kwargs)
 
