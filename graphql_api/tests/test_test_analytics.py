@@ -167,6 +167,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
     def test_skipped_filter_on_test_results(self) -> None:
+        # note - this test guards against division by zero errors for the failure/flake rate
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
         test2 = TestFactory(repository=repo)
@@ -367,8 +368,8 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test.name, "lastDuration": 0.0}},
-                {"node": {"name": test_2.name, "lastDuration": 0.0}},
+                {"node": {"name": test.name, "lastDuration": 2.0}},
+                {"node": {"name": test_2.name, "lastDuration": 3.0}},
             ]
         }
 
@@ -402,8 +403,8 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test_2.name, "lastDuration": 0.0}},
-                {"node": {"name": test.name, "lastDuration": 0.0}},
+                {"node": {"name": test_2.name, "lastDuration": 3.0}},
+                {"node": {"name": test.name, "lastDuration": 2.0}},
             ]
         }
 
@@ -924,7 +925,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_test_analytics(
             repo.name,
-            """flakeAggregates(history: INTERVAL_7_DAY) { flakeCount, flakeRate, flakeCountPercentChange, flakeRatePercentChange }""",
+            """flakeAggregates(interval: INTERVAL_7_DAY) { flakeCount, flakeRate, flakeCountPercentChange, flakeRatePercentChange }""",
         )
 
         assert res["flakeAggregates"] == {
