@@ -66,6 +66,7 @@ def generate_test_results(
     parameter: GENERATE_TEST_RESULT_PARAM | None = None,
     testsuites: list[str] | None = None,
     flags: list[str] | None = None,
+    term: str | None = None,
 ) -> QuerySet:
     """
     Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
@@ -102,6 +103,9 @@ def generate_test_results(
         test_ids = [bridge.test_id for bridge in bridges]
 
         totals = totals.filter(test_id__in=test_ids)
+
+    if term is not None:
+        totals = totals.filter(test__name__icontains=term)
 
     match parameter:
         case GENERATE_TEST_RESULT_PARAM.FLAKY:
@@ -172,6 +176,8 @@ def generate_test_results(
         total_flaky_fail_count=Cast(
             Sum(F("flaky_fail_count")), output_field=FloatField()
         ),
+        total_skip_count=Cast(Sum(F("skip_count")), output_field=FloatField()),
+        total_pass_count=Cast(Sum(F("pass_count")), output_field=FloatField()),
         failure_rate=Case(
             When(
                 total_test_count=0,
@@ -262,6 +268,7 @@ def get_test_results_aggregate_numbers(
         slowest_tests_duration=slowest_tests_duration,
         skips=Sum("skip_count"),
         fails=Sum("fail_count"),
+        total_slow_tests=Value(slow_test_threshold(num_tests)),
     )
 
     return test_headers[0] if len(test_headers) > 0 else {}
@@ -280,7 +287,13 @@ def generate_test_results_aggregates(
     past_numbers = get_test_results_aggregate_numbers(repo, double_time_ago, since)
 
     return curr_numbers | get_percent_change(
-        ["total_duration", "slowest_tests_duration", "skips", "fails"],
+        [
+            "total_duration",
+            "slowest_tests_duration",
+            "skips",
+            "fails",
+            "total_slow_tests",
+        ],
         curr_numbers,
         past_numbers,
     )

@@ -48,6 +48,7 @@ async def resolve_test_results(
         parameter=parameter,
         testsuites=filters.get("test_suites") if filters else None,
         flags=filters.get("flags") if filters else None,
+        term=filters.get("term") if filters else None,
     )
 
     return await queryset_to_connection(

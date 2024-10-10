@@ -7,4 +7,6 @@ type TestResultsAggregates {
   totalFailsPercentChange: Float
   totalSkips: Int!
   totalSkipsPercentChange: Float
+  totalSlowTests: Int!
+  totalSlowTestsPercentChange: Float
 }

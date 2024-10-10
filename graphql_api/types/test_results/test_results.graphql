@@ -6,4 +6,7 @@ type TestResult {
   flakeRate: Float!
   avgDuration: Float!
   lastDuration: Float!
+  totalFailCount: Int!
+  totalSkipCount: Int!
+  totalPassCount: Int!
 }

@@ -588,6 +588,45 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             ]
         }
 
+    def test_flake_rate_filtering_by_term(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo, name="hello")
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            repoid=repo.repoid,
+            pass_count=1,
+            fail_count=1,
+            flaky_fail_count=1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=3,
+            fail_count=0,
+            flaky_fail_count=0,
+        )
+        test_2 = TestFactory(repository=repo, name="world")
+        _ = DailyTestRollupFactory(
+            test=test_2,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=2,
+            fail_count=3,
+            flaky_fail_count=1,
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testResults(filters: { term: "hello" }) { edges { node { name failureRate } } }""",
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test.name, "failureRate": 0.2}},
+            ]
+        }
+
     def test_desc_flake_rate_ordering_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -662,17 +701,19 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             )
         res = self.fetch_test_analytics(
             repo.name,
-            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalSlowTests, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange, totalSlowTestsPercentChange }""",
         )
         assert res["testResultsAggregates"] == {
             "totalDuration": 570.0,
-            "slowestTestsDuration": 29.0,
-            "totalFails": 10,
-            "totalSkips": 5,
             "totalDurationPercentChange": -63.1068,
+            "slowestTestsDuration": 29.0,
             "slowestTestsDurationPercentChange": -50.84746,
+            "totalFails": 10,
             "totalFailsPercentChange": 100.0,
+            "totalSkips": 5,
             "totalSkipsPercentChange": -50.0,
+            "totalSlowTests": 1,
+            "totalSlowTestsPercentChange": 0.0,
         }
 
     def test_test_results_aggregates_no_history(self) -> None:
@@ -696,18 +737,20 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_test_analytics(
             repo.name,
-            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange }""",
+            """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalSlowTests, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange, totalSlowTestsPercentChange }""",
         )
 
         assert res["testResultsAggregates"] == {
             "totalDuration": 570.0,
-            "slowestTestsDuration": 29.0,
-            "totalFails": 10,
-            "totalSkips": 5,
             "totalDurationPercentChange": None,
+            "slowestTestsDuration": 29.0,
             "slowestTestsDurationPercentChange": None,
+            "totalFails": 10,
             "totalFailsPercentChange": None,
+            "totalSkips": 5,
             "totalSkipsPercentChange": None,
+            "totalSlowTests": 1,
+            "totalSlowTestsPercentChange": None,
         }
 
     def test_flake_aggregates(self) -> None:
