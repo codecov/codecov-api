@@ -91,13 +91,17 @@ async def resolve_flake_aggregates(
 
 
 @test_analytics_bindable.field("testSuites")
-async def resolve_test_suites(repository: Repository, info: GraphQLResolveInfo, **_):
-    return await sync_to_async(get_test_suites)(repository.repoid)
+async def resolve_test_suites(
+    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_
+):
+    return await sync_to_async(get_test_suites)(repository.repoid, term)
 
 
 @test_analytics_bindable.field("flags")
-async def resolve_flags(repository: Repository, info: GraphQLResolveInfo, **_):
-    return await sync_to_async(get_flags)(repository.repoid)
+async def resolve_flags(
+    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_
+):
+    return await sync_to_async(get_flags)(repository.repoid, term)
 
 
 def convert_interval_to_timedelta(interval: MeasurementInterval | None) -> timedelta:

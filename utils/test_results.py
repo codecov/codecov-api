@@ -626,18 +626,35 @@ def generate_flake_aggregates(
     )
 
 
-def get_test_suites(repoid: int) -> list[str]:
-    return list(
-        Test.objects.filter(repository_id=repoid)
-        .values_list("testsuite", flat=True)
-        .distinct()
-    )
+def get_test_suites(repoid: int, term: str | None = None) -> list[str]:
+    if term:
+        return list(
+            Test.objects.filter(repository_id=repoid, testsuite__icontains=term)
+            .values_list("testsuite", flat=True)
+            .distinct()
+        )
+    else:
+        return list(
+            Test.objects.filter(repository_id=repoid)
+            .values_list("testsuite", flat=True)
+            .distinct()
+        )
 
 
-def get_flags(repoid: int) -> list[str]:
-    return list(
-        TestFlagBridge.objects.filter(test__repository_id=repoid)
-        .select_related("flag")
-        .values_list("flag__flag_name", flat=True)
-        .distinct()
-    )
+def get_flags(repoid: int, term: str | None = None) -> list[str]:
+    if term:
+        return list(
+            TestFlagBridge.objects.filter(
+                test__repository_id=repoid, flag__flag_name__icontains=term
+            )
+            .select_related("flag")
+            .values_list("flag__flag_name", flat=True)
+            .distinct()
+        )
+    else:
+        return list(
+            TestFlagBridge.objects.filter(test__repository_id=repoid)
+            .select_related("flag")
+            .values_list("flag__flag_name", flat=True)
+            .distinct()
+        )

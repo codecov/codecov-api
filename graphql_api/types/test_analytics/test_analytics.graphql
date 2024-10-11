@@ -18,10 +18,10 @@ type TestAnalytics {
   "Flake aggregates are flake totals across all tests"
   flakeAggregates(interval: MeasurementInterval): FlakeAggregates
 
-  testSuites: [String!]!
+  testSuites(term: String): [String!]!
 
   "Only flag names relevant to Test Analytics"
-  flags: [String!]!
+  flags(term: String): [String!]!
 }
 
 type TestResultConnection {
