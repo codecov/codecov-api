@@ -1134,3 +1134,59 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             "flakeCountPercentChange": -50.0,
             "flakeRatePercentChange": -43.75,
         }
+
+    def test_test_suites(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo, testsuite="test_suite_1")
+        test2 = TestFactory(repository=repo, testsuite="test_suite_2")
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testSuites""",
+        )
+        assert res["testSuites"] == ["test_suite_1", "test_suite_2"]
+
+    def test_flags(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """flags""",
+        )
+        assert res["flags"] == ["hello_world"]

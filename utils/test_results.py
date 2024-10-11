@@ -16,6 +16,7 @@ from shared.django_apps.core.models import Repository
 from shared.django_apps.reports.models import (
     DailyTestRollup,
     Flake,
+    Test,
     TestFlagBridge,
 )
 
@@ -622,4 +623,21 @@ def generate_flake_aggregates(
         ["flake_count", "flake_rate"],
         curr_numbers,
         past_numbers,
+    )
+
+
+def get_test_suites(repoid: int) -> list[str]:
+    return list(
+        Test.objects.filter(repository_id=repoid)
+        .values_list("testsuite", flat=True)
+        .distinct()
+    )
+
+
+def get_flags(repoid: int) -> list[str]:
+    return list(
+        TestFlagBridge.objects.filter(test__repository_id=repoid)
+        .select_related("flag")
+        .values_list("flag__flag_name", flat=True)
+        .distinct()
     )
