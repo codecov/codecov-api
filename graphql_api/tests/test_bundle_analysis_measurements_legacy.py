@@ -579,6 +579,62 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                             },
                         },
                     },
+                    {
+                        "assetType": "UNKNOWN_SIZE",
+                        "change": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 0,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 0,
+                            },
+                        },
+                        "measurements": [
+                            {
+                                "avg": 0.0,
+                                "max": 0.0,
+                                "min": 0.0,
+                                "timestamp": "2024-06-06T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 0.0,
+                                "max": 0.0,
+                                "min": 0.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                        "size": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 0,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 0,
+                            },
+                        },
+                    },
                 ],
                 "name": "super",
             },
@@ -1294,6 +1350,56 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                             },
                         },
                     },
+                    {
+                        "assetType": "UNKNOWN_SIZE",
+                        "change": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 0,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 0,
+                            },
+                        },
+                        "measurements": [
+                            {
+                                "avg": 0.0,
+                                "max": 0.0,
+                                "min": 0.0,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 0.0,
+                                "max": 0.0,
+                                "min": 0.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                        "size": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 0,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 0,
+                            },
+                        },
+                    },
                 ],
                 "name": "super",
             },
@@ -1909,6 +2015,68 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                             },
                         },
                     },
+                    {
+                        "assetType": "UNKNOWN_SIZE",
+                        "change": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 0,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 0,
+                            },
+                        },
+                        "measurements": [
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-05T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 0.0,
+                                "max": 0.0,
+                                "min": 0.0,
+                                "timestamp": "2024-06-06T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 0.0,
+                                "max": 0.0,
+                                "min": 0.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                        "size": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 0,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 0,
+                            },
+                        },
+                    },
                 ],
                 "name": "super",
             },
@@ -2204,6 +2372,56 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                         "change": None,
                         "measurements": [],
                     },
+                    {
+                        "assetType": "UNKNOWN_SIZE",
+                        "change": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": -3,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": -333,
+                            },
+                        },
+                        "measurements": [
+                            {
+                                "avg": 456.0,
+                                "max": 456.0,
+                                "min": 456.0,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 123.0,
+                                "max": 123.0,
+                                "min": 123.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                        "size": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 1,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 123,
+                            },
+                        },
+                    },
                 ],
             },
         }
@@ -2418,6 +2636,62 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TransactionTestCase):
                         "size": None,
                         "change": None,
                         "measurements": [],
+                    },
+                    {
+                        "assetType": "UNKNOWN_SIZE",
+                        "change": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": -3,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": -333,
+                            },
+                        },
+                        "measurements": [
+                            {
+                                "avg": 456.0,
+                                "max": 456.0,
+                                "min": 456.0,
+                                "timestamp": "2024-06-06T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 123.0,
+                                "max": 123.0,
+                                "min": 123.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                        "size": {
+                            "loadTime": {
+                                "highSpeed": 0,
+                                "threeG": 1,
+                            },
+                            "size": {
+                                "gzip": 0,
+                                "uncompress": 123,
+                            },
+                        },
                     },
                 ],
             },
