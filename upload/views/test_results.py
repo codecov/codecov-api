@@ -13,8 +13,8 @@ from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
-    TestResultsUploadTokenRequiredAuthenticationCheck,
     TokenlessAuthentication,
+    UploadTokenRequiredGetFromBodyAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -39,13 +39,13 @@ class UploadTestResultsPermission(BasePermission):
 class UploadSerializer(serializers.Serializer):
     commit = serializers.CharField(required=True)
     slug = serializers.CharField(required=True)
+    service = serializers.CharField(required=False)  # git_service
     build = serializers.CharField(required=False)
     buildURL = serializers.CharField(required=False)
     job = serializers.CharField(required=False)
     flags = FlagListField(required=False)
     pr = serializers.CharField(required=False)
     branch = serializers.CharField(required=False, allow_null=True)
-    ci_service = serializers.CharField(required=False)
     storage_path = serializers.CharField(required=False)
 
 
@@ -55,7 +55,7 @@ class TestResultsView(
 ):
     permission_classes = [UploadTestResultsPermission]
     authentication_classes = [
-        TestResultsUploadTokenRequiredAuthenticationCheck,
+        UploadTokenRequiredGetFromBodyAuthenticationCheck,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
@@ -154,7 +154,7 @@ class TestResultsView(
             "build_url": data.get("buildURL"),  # build_url
             "job": data.get("job"),  # job_code
             "flags": data.get("flags"),
-            "service": data.get("ci_service"),  # provider
+            "service": data.get("service"),  # git provider
             "url": storage_path,  # storage_path
             # these are used for dispatching the task below
             "commit": commit.commitid,

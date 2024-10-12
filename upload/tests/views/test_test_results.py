@@ -35,8 +35,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
             "build": "test-build",
             "buildURL": "test-build-url",
             "job": "test-job",
-            "service": "test-service",
-            "ci_service": "github-actions",
+            "service": "github-actions",
             "branch": "aaaaaa",
         },
         format="json",
@@ -191,6 +190,7 @@ def test_test_results_upload_token_not_required(db, client, mocker, mock_redis):
             "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
             "slug": f"{repository.author.username}::::{repository.name}",
             "branch": "aaaaaa",
+            "service": owner.service,
         },
         format="json",
     )
