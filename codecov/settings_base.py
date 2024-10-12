@@ -92,12 +92,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "codecov.wsgi.application"
 
-# Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
+
+# GraphQL
 
 GRAPHQL_QUERY_COST_THRESHOLD = get_config(
     "setup", "graphql", "query_cost_threshold", default=10000
 )
+
+GRAPHQL_RATE_LIMIT_VALUE = get_config(
+    "setup", "graphql", "rate_limit_value", default=300
+)
+
+# Database
+# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
