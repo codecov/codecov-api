@@ -14,10 +14,10 @@ from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
 
 from codecov_auth.authentication.repo_auth import (
     BundleAnalysisTokenlessAuthentication,
-    BundleAnalysisUploadTokenRequiredAuthenticationCheck,
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    UploadTokenRequiredGetFromBodyAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -55,7 +55,7 @@ class UploadSerializer(serializers.Serializer):
 class BundleAnalysisView(APIView, ShelterMixin):
     permission_classes = [UploadBundleAnalysisPermission]
     authentication_classes = [
-        BundleAnalysisUploadTokenRequiredAuthenticationCheck,
+        UploadTokenRequiredGetFromBodyAuthenticationCheck,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
