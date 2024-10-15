@@ -104,7 +104,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testAnalytics"]["results"]["edges"][0][
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
                 "node"
             ]["name"]
             == self.test.computed_name
