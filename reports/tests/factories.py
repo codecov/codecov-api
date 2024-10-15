@@ -106,7 +106,6 @@ class TestFactory(factory.django.DjangoModelFactory):
     id = factory.Sequence(lambda n: f"{n}")
     name = factory.Sequence(lambda n: f"{n}")
     repository = factory.SubFactory(RepositoryFactory)
-    commits_where_fail = []
     computed_name = None
 
 
