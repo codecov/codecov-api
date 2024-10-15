@@ -16,6 +16,7 @@ class TestDict(TypedDict):
     total_fail_count: int
     total_skip_count: int
     total_pass_count: int
+    total_flaky_fail_count: int
     computed_name: str | None
 
 
@@ -70,3 +71,8 @@ def resolve_total_skip_count(test: TestDict, _: GraphQLResolveInfo) -> int:
 @test_result_bindable.field("totalPassCount")
 def resolve_total_pass_count(test: TestDict, _: GraphQLResolveInfo) -> int:
     return test["total_pass_count"]
+
+
+@test_result_bindable.field("totalFlakyFailCount")
+def resolve_total_flaky_fail_count(test: TestDict, _: GraphQLResolveInfo) -> int:
+    return test["total_flaky_fail_count"]

@@ -9,4 +9,5 @@ type TestResult {
   totalFailCount: Int!
   totalSkipCount: Int!
   totalPassCount: Int!
+  totalFlakyFailCount: Int!
 }
