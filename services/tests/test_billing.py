@@ -1,5 +1,6 @@
 import json
 from unittest.mock import MagicMock, patch
+from freezegun import freeze_time
 
 import requests
 from django.conf import settings
@@ -128,18 +129,23 @@ expected_invoices = [
     }
 ]
 
+class MockSubscriptionPlan(object):
+    def __init__(self, params):
+        self.id = params["new_plan"]
+        self.interval = 'year'
 
 class MockSubscription(object):
     def __init__(self, subscription_params):
         self.schedule = subscription_params["schedule_id"]
         self.current_period_start = subscription_params["start_date"]
         self.current_period_end = subscription_params["end_date"]
+        self.plan = MockSubscriptionPlan(subscription_params["plan"]) if subscription_params.get("plan") is not None else None
         self.items = {
             "data": [
                 {
                     "quantity": subscription_params["quantity"],
                     "id": subscription_params["id"],
-                    "plan": {"id": subscription_params["name"]},
+                    "plan": {"id": subscription_params["name"], "interval": subscription_params.get("plan", {}).get("interval", "month")},
                 }
             ]
         }
@@ -156,7 +162,6 @@ class MockFailedSubscriptionUpgrade(object):
 
     def __getitem__(self, key):
         return getattr(self, key)
-
 
 class StripeServiceTests(TestCase):
     def setUp(self):
@@ -306,11 +311,13 @@ class StripeServiceTests(TestCase):
         assert owner.plan_activated_users == [4, 6, 3]
         assert owner.plan_user_count == 9
 
+    @freeze_time("2021-12-22T00:00:00")
+    @patch("services.billing.stripe.Refund.create")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.SubscriptionSchedule.release")
     def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_at_end_of_billing_cycle_if_valid_plan(
-        self, schedule_release_mock, retrieve_subscription_mock, modify_mock
+        self, schedule_release_mock, retrieve_subscription_mock, modify_mock, create_refund_mock
     ):
         plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
@@ -338,6 +345,117 @@ class StripeServiceTests(TestCase):
             cancel_at_period_end=True,
             proration_behavior="none",
         )
+        create_refund_mock.assert_not_called()
+        owner.refresh_from_db()
+        assert owner.stripe_subscription_id == stripe_subscription_id
+        assert owner.plan == plan
+        assert owner.plan_activated_users == [4, 6, 3]
+        assert owner.plan_user_count == 9
+
+    @freeze_time("2021-12-17T00:00:00")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Refund.create")
+    @patch("services.billing.stripe.Invoice.list")
+    @patch("services.billing.stripe.Subscription.cancel")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.SubscriptionSchedule.release")
+    def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_with_grace_month_refund_if_valid_plan(
+        self, schedule_release_mock, retrieve_subscription_mock, cancel_sub_mock, list_invoice_mock, create_refund_mock, modify_customer_mock, modify_sub_mock
+    ):
+        with open("./services/tests/samples/stripe_invoice.json") as f:
+            stripe_invoice_response = json.load(f)
+        stripe_invoice_response["data"] = stripe_invoice_response["data"] * 2
+        list_invoice_mock.return_value = stripe_invoice_response
+        plan = PlanName.CODECOV_PRO_YEARLY.value
+        stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
+        stripe_schedule_id = "sub_sched_sch1K77Y5GlVGuVgOrkJrLjRnne"
+        charge = "ch_19yUQN2eZvKYlo2CQf7aWpSX"
+        owner = OwnerFactory(
+            stripe_subscription_id=stripe_subscription_id,
+            plan=plan,
+            plan_activated_users=[4, 6, 3],
+            plan_user_count=9,
+        )
+        subscription_params = {
+            "schedule_id": stripe_schedule_id,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": plan,
+            "id": 215,
+            "plan": {
+                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_quantity": 7,
+                "subscription_id": "sub_123",
+                "interval": "month",
+            }
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        self.stripe.delete_subscription(owner)
+        schedule_release_mock.assert_called_once_with(stripe_schedule_id)
+        cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
+        list_invoice_mock.assert_called_once_with(subscription=stripe_subscription_id, status="paid")
+        create_refund_mock.assert_called_once_with(charge=charge)
+        modify_customer_mock.assert_called_once_with(owner.stripe_customer_id, balance=0)
+        modify_sub_mock.assert_not_called()
+
+        owner.refresh_from_db()
+        assert owner.stripe_subscription_id == stripe_subscription_id
+        assert owner.plan == plan
+        assert owner.plan_activated_users == [4, 6, 3]
+        assert owner.plan_user_count == 9
+
+    @freeze_time("2021-12-19T00:00:00")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Refund.create")
+    @patch("services.billing.stripe.Invoice.list")
+    @patch("services.billing.stripe.Subscription.cancel")
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.SubscriptionSchedule.release")
+    def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_with_grace_year_refund_if_valid_plan(
+        self, schedule_release_mock, retrieve_subscription_mock, cancel_sub_mock, list_invoice_mock, create_refund_mock, modify_customer_mock, modify_sub_mock
+    ):
+        with open("./services/tests/samples/stripe_invoice.json") as f:
+            stripe_invoice_response = json.load(f)
+        stripe_invoice_response["data"] = stripe_invoice_response["data"] * 2
+        list_invoice_mock.return_value = stripe_invoice_response
+        plan = PlanName.CODECOV_PRO_YEARLY.value
+        stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
+        stripe_schedule_id = "sub_sched_sch1K77Y5GlVGuVgOrkJrLjRnne"
+        charge = "ch_19yUQN2eZvKYlo2CQf7aWpSX"
+        owner = OwnerFactory(
+            stripe_subscription_id=stripe_subscription_id,
+            plan=plan,
+            plan_activated_users=[4, 6, 3],
+            plan_user_count=9,
+        )
+        subscription_params = {
+            "schedule_id": stripe_schedule_id,
+            "start_date": 1639628096,
+            "end_date": 1644107871,
+            "quantity": 10,
+            "name": plan,
+            "id": 215,
+            "plan": {
+                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_quantity": 7,
+                "subscription_id": "sub_123",
+                "interval": "year",
+            }
+        }
+
+        retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
+        self.stripe.delete_subscription(owner)
+        schedule_release_mock.assert_called_once_with(stripe_schedule_id)
+        cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
+        list_invoice_mock.assert_called_once_with(subscription=stripe_subscription_id, status="paid")
+        create_refund_mock.assert_called_once_with(charge=charge)
+        modify_customer_mock.assert_called_once_with(owner.stripe_customer_id, balance=0)
+        modify_sub_mock.assert_not_called()
+
         owner.refresh_from_db()
         assert owner.stripe_subscription_id == stripe_subscription_id
         assert owner.plan == plan

@@ -1,6 +1,7 @@
 import logging
 import re
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import stripe
 from django.conf import settings
@@ -155,6 +156,7 @@ class StripeService(AbstractPaymentService):
             f"Downgrade to basic plan from user plan for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
             extra=dict(ownerid=owner.ownerid),
         )
+
         if subscription_schedule_id:
             log.info(
                 f"Releasing subscription from schedule for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
@@ -162,11 +164,29 @@ class StripeService(AbstractPaymentService):
             )
             stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
-        stripe.Subscription.modify(
-            owner.stripe_subscription_id,
-            cancel_at_period_end=True,
-            proration_behavior="none",
-        )
+        # we give a auto-refund grace period of 24 hours for a monthly subscription or 72 hours for a yearly subscription
+        current_subscription_timestamp = subscription["current_period_start"]
+        difference = datetime.now() - datetime.fromtimestamp(current_subscription_timestamp)
+        subscription_plan_interval = subscription.plan.interval if subscription.plan is not None else None
+        should_refund_grace_period = (subscription_plan_interval == "month" and difference.days < 1) or (subscription_plan_interval == "year" and difference.days < 3)
+        if should_refund_grace_period:
+            stripe.Subscription.cancel(owner.stripe_subscription_id)
+
+            invoices_list = stripe.Invoice.list(subscription=owner.stripe_subscription_id, status="paid")
+            charge = invoices_list["data"][0]["charge"] if len(invoices_list["data"]) >= 1 and invoices_list["data"][0]["charge"] else None
+            if charge:
+                stripe.Refund.create(charge=charge)
+                stripe.Customer.modify(
+                    owner.stripe_customer_id,
+                    balance=0,
+                )
+        else:
+            # outside of the grace period, we schedule a cancellation at the end of the period with no refund
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id,
+                cancel_at_period_end=True,
+                proration_behavior="none",
+            )
 
     @_log_stripe_error
     def get_subscription(self, owner: Owner):
