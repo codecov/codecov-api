@@ -76,6 +76,40 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             0
         ]["node"]["name"] == self.test.name.replace("\x1f", " ")
 
+    def test_fetch_test_result_name_with_computed_name(self) -> None:
+        self.test.computed_name = "Computed Name"
+        self.test.save()
+
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["name"]
+            == self.test.computed_name
+        )
+
     def test_fetch_test_result_updated_at(self) -> None:
         query = """
             query {

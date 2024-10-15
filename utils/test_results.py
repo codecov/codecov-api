@@ -197,6 +197,7 @@ def generate_test_results(
         last_duration=Value(0.0),
         avg_duration=Avg("avg_duration_seconds"),
         name=F("test__name"),
+        computed_name=F("test__computed_name"),
     )
 
     return aggregation_of_test_results
