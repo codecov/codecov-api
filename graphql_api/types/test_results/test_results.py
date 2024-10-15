@@ -16,6 +16,7 @@ class TestDict(TypedDict):
     total_fail_count: int
     total_skip_count: int
     total_pass_count: int
+    computed_name: str | None
 
 
 test_result_bindable = ObjectType("TestResult")

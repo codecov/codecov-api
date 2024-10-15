@@ -86,7 +86,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                     repository(name: "%s") {
                         ... on Repository {
                             testAnalytics {
-                                results {
+                                testResults {
                                     edges {
                                         node {
                                             name
