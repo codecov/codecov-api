@@ -61,7 +61,7 @@ class GENERATE_TEST_RESULT_PARAM:
 @dataclass
 class TestResultsQuery:
     query: str
-    params: list[int | str | tuple[str, ...]]
+    params: dict[str, int | str | tuple[str, ...]]
 
 
 def convert_tuple_or_none(value: set[str] | list[str] | None) -> tuple[str, ...] | None:
@@ -120,20 +120,20 @@ def generate_base_query(
         [f"with_cursor.{order} {ordering_direction.name}" for order in ordering]
     )
 
-    params: list[int | str | tuple[str, ...] | None] = [
-        repoid,
-        f"{interval_num_days} days",
-        branch,
-        convert_tuple_or_none(test_ids),
-        convert_tuple_or_none(testsuites),
-        term_filter,
-        encode_after_or_before(after),
-        encode_after_or_before(before),
-        page_size,
-    ]
-    filtered_params: list[int | str | tuple[str, ...]] = [
-        p for p in params if p is not None
-    ]
+    params: dict[str, int | str | tuple[str, ...] | None] = {
+        "repoid": repoid,
+        "interval": f"{interval_num_days} days",
+        "branch": branch,
+        "test_ids": convert_tuple_or_none(test_ids),
+        "testsuites": convert_tuple_or_none(testsuites),
+        "term": term_filter,
+        "after": encode_after_or_before(after),
+        "before": encode_after_or_before(before),
+        "limit": page_size,
+    }
+    filtered_params: dict[str, int | str | tuple[str, ...]] = {
+        k: v for k, v in params.items() if v is not None
+    }
 
     base_query = f"""
 with
@@ -142,12 +142,12 @@ base_cte as (
 	from reports_dailytestrollups rd
     { "join reports_test rt on rt.id = rd.test_id" if testsuites or term else ""}
 	where
-        rd.repoid = %s
-		and rd.date > current_date - interval %s
-        { "and rd.branch = %s" if branch else ""}
-        { "and rd.test_id in %s" if test_ids else ""}
-        { "and rt.testsuite in %s" if testsuites else ""}
-        { "and rt.name like %s" if term else ""}
+        rd.repoid = %(repoid)s
+		and rd.date > current_date - interval %(interval)s
+        { "and rd.branch = %(branch)s" if branch else ""}
+        { "and rd.test_id in %(test_ids)s" if test_ids else ""}
+        { "and rt.testsuite in %(testsuites)s" if testsuites else ""}
+        { "and rt.name like %(term)s" if term else ""}
 ),
 failure_rate_cte as (
 	select
@@ -201,10 +201,10 @@ select * from (
         full outer join last_duration_cte using (test_id)
     ) as results join reports_test rt on results.test_id = rt.id
 ) as with_cursor
-{"where with_cursor._cursor > %s" if after else ""}
-{"where with_cursor._cursor < %s" if before else ""}
+{"where with_cursor._cursor > %(before)s" if after else ""}
+{"where with_cursor._cursor < %(after)s" if before else ""}
 order by {order_by}
-limit %s
+limit %(limit)s
 """
     return TestResultsQuery(query=base_query, params=filtered_params)
 
