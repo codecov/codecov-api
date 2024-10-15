@@ -23,7 +23,7 @@ jobs:
 
   build:
     name: Build API
-    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.2.23
+    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.2.24
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
@@ -64,7 +64,7 @@ jobs:
     name: Push Staging Image
     needs: [build, test]
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.23
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.24
     secrets: inherit
     with:
       environment: staging
