@@ -21,14 +21,11 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
 
     def validate(self, input: TermsAgreementInput):
-        if input.terms_agreement is None:
-            raise ValidationError("Terms of agreement cannot be null")
-        if input.customer_intent and input.customer_intent not in [
-            "Business",
-            "BUSINESS",
-            "Personal",
-            "PERSONAL",
-        ]:
+        valid_customer_intents = ["Business", "BUSINESS", "Personal", "PERSONAL"]
+        if (
+            input.customer_intent
+            and input.customer_intent not in valid_customer_intents
+        ):
             raise ValidationError("Invalid customer intent provided")
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
@@ -37,13 +34,15 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         self.current_user.terms_agreement = input.terms_agreement
         self.current_user.terms_agreement_at = timezone.now()
         self.current_user.customer_intent = input.customer_intent
+        self.current_user.email_opt_in = input.marketing_consent
         self.current_user.save()
 
-        if input.business_email is not None and input.business_email != "":
+        if input.business_email and input.business_email != "":
             self.current_user.email = input.business_email
             self.current_user.save()
 
-        self.send_data_to_marketo()
+        if input.marketing_consent:
+            self.send_data_to_marketo()
 
     def send_data_to_marketo(self):
         event_data = {
