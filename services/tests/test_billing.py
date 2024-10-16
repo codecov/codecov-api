@@ -129,23 +129,34 @@ expected_invoices = [
     }
 ]
 
+
 class MockSubscriptionPlan(object):
     def __init__(self, params):
         self.id = params["new_plan"]
-        self.interval = 'year'
+        self.interval = "year"
+
 
 class MockSubscription(object):
     def __init__(self, subscription_params):
         self.schedule = subscription_params["schedule_id"]
         self.current_period_start = subscription_params["start_date"]
         self.current_period_end = subscription_params["end_date"]
-        self.plan = MockSubscriptionPlan(subscription_params["plan"]) if subscription_params.get("plan") is not None else None
+        self.plan = (
+            MockSubscriptionPlan(subscription_params["plan"])
+            if subscription_params.get("plan") is not None
+            else None
+        )
         self.items = {
             "data": [
                 {
                     "quantity": subscription_params["quantity"],
                     "id": subscription_params["id"],
-                    "plan": {"id": subscription_params["name"], "interval": subscription_params.get("plan", {}).get("interval", "month")},
+                    "plan": {
+                        "id": subscription_params["name"],
+                        "interval": subscription_params.get("plan", {}).get(
+                            "interval", "month"
+                        ),
+                    },
                 }
             ]
         }
@@ -162,6 +173,7 @@ class MockFailedSubscriptionUpgrade(object):
 
     def __getitem__(self, key):
         return getattr(self, key)
+
 
 class StripeServiceTests(TestCase):
     def setUp(self):
@@ -317,7 +329,11 @@ class StripeServiceTests(TestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.SubscriptionSchedule.release")
     def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_at_end_of_billing_cycle_if_valid_plan(
-        self, schedule_release_mock, retrieve_subscription_mock, modify_mock, create_refund_mock
+        self,
+        schedule_release_mock,
+        retrieve_subscription_mock,
+        modify_mock,
+        create_refund_mock,
     ):
         plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
@@ -361,7 +377,14 @@ class StripeServiceTests(TestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.SubscriptionSchedule.release")
     def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_with_grace_month_refund_if_valid_plan(
-        self, schedule_release_mock, retrieve_subscription_mock, cancel_sub_mock, list_invoice_mock, create_refund_mock, modify_customer_mock, modify_sub_mock
+        self,
+        schedule_release_mock,
+        retrieve_subscription_mock,
+        cancel_sub_mock,
+        list_invoice_mock,
+        create_refund_mock,
+        modify_customer_mock,
+        modify_sub_mock,
     ):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
@@ -387,16 +410,20 @@ class StripeServiceTests(TestCase):
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "month",
-            }
+            },
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
         self.stripe.delete_subscription(owner)
         schedule_release_mock.assert_called_once_with(stripe_schedule_id)
         cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
-        list_invoice_mock.assert_called_once_with(subscription=stripe_subscription_id, status="paid")
+        list_invoice_mock.assert_called_once_with(
+            subscription=stripe_subscription_id, status="paid"
+        )
         self.assertEqual(create_refund_mock.call_count, 2)
-        modify_customer_mock.assert_called_once_with(owner.stripe_customer_id, balance=0)
+        modify_customer_mock.assert_called_once_with(
+            owner.stripe_customer_id, balance=0
+        )
         modify_sub_mock.assert_not_called()
 
         owner.refresh_from_db()
@@ -414,7 +441,14 @@ class StripeServiceTests(TestCase):
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.SubscriptionSchedule.release")
     def test_delete_subscription_with_schedule_releases_schedule_and_cancels_subscription_with_grace_year_refund_if_valid_plan(
-        self, schedule_release_mock, retrieve_subscription_mock, cancel_sub_mock, list_invoice_mock, create_refund_mock, modify_customer_mock, modify_sub_mock
+        self,
+        schedule_release_mock,
+        retrieve_subscription_mock,
+        cancel_sub_mock,
+        list_invoice_mock,
+        create_refund_mock,
+        modify_customer_mock,
+        modify_sub_mock,
     ):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
@@ -440,16 +474,20 @@ class StripeServiceTests(TestCase):
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "year",
-            }
+            },
         }
 
         retrieve_subscription_mock.return_value = MockSubscription(subscription_params)
         self.stripe.delete_subscription(owner)
         schedule_release_mock.assert_called_once_with(stripe_schedule_id)
         cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
-        list_invoice_mock.assert_called_once_with(subscription=stripe_subscription_id, status="paid")
+        list_invoice_mock.assert_called_once_with(
+            subscription=stripe_subscription_id, status="paid"
+        )
         self.assertEqual(create_refund_mock.call_count, 2)
-        modify_customer_mock.assert_called_once_with(owner.stripe_customer_id, balance=0)
+        modify_customer_mock.assert_called_once_with(
+            owner.stripe_customer_id, balance=0
+        )
         modify_sub_mock.assert_not_called()
 
         owner.refresh_from_db()
