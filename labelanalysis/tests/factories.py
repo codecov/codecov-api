@@ -1,6 +1,6 @@
 import factory
+from shared.django_apps.core.tests.factories import CommitFactory
 
-from core.tests.factories import CommitFactory
 from labelanalysis.models import LabelAnalysisRequest
 
 

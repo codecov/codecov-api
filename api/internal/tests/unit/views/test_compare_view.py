@@ -3,16 +3,16 @@ from unittest.mock import PropertyMock, patch
 
 from rest_framework import status
 from rest_framework.reverse import reverse
-
-from api.internal.commit.serializers import CommitTotalsSerializer
-from codecov.tests.base_test import InternalAPITest
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
     BranchFactory,
     CommitWithReportFactory,
+    OwnerFactory,
     PullFactory,
     RepositoryFactory,
 )
+
+from api.internal.commit.serializers import CommitTotalsSerializer
+from codecov.tests.base_test import InternalAPITest
 
 
 def build_commits(client):
@@ -46,7 +46,7 @@ def build_commits(client):
     return repo, commit_base, commit_head
 
 
-@patch("services.archive.ArchiveService.read_chunks", lambda obj, sha: "")
+@patch("shared.api_archive.archive.ArchiveService.read_chunks", lambda obj, sha: "")
 @patch(
     "api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions",
     lambda self, repo, user: (True, True),

@@ -2,10 +2,9 @@ from datetime import date, datetime, timedelta
 
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.django_apps.reports.tests.factories import FlakeFactory
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from reports.tests.factories import DailyTestRollupFactory, TestFactory
 
 from .helper import GraphQLTestHelper

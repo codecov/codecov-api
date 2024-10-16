@@ -2,10 +2,14 @@ from datetime import datetime, timedelta
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase, override_settings
+from shared.django_apps.core.tests.factories import (
+    BranchFactory,
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.types import ReportTotals
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 from services.components import Component
 from services.profiling import CriticalFile
 
@@ -215,7 +219,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         assert branches == [
             {"node": {"name": "test2"}},
             {"node": {"name": "test1"}},
-            {"node": {"name": "master"}},
+            {"node": {"name": "main"}},
         ]
 
     def test_fetch_branches_with_filters(self):
@@ -246,7 +250,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         ]
 
     @override_settings(DEBUG=True)
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_no_report(self, report_mock):
         report_mock.return_value = None
         commit_without_report = CommitFactory(repository=self.repo)
@@ -282,7 +286,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files(self, report_mock, critical_files):
         variables = {
             "org": self.org.username,
@@ -351,7 +355,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_path_prefix(
         self, report_mock, critical_files
     ):
@@ -412,7 +416,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch(
         "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
     )
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_search_value_case_insensitive(
         self, report_mock, critical_files
     ):
@@ -468,7 +472,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_list_display_type(self, report_mock):
         variables = {
             "org": self.org.username,
@@ -559,7 +563,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_missing_coverage(
         self, report_mock, paths_mock, provider_path_exists_mock
     ):
@@ -594,7 +598,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_unknown_path(
         self, report_mock, paths_mock, provider_path_exists_mock
     ):
@@ -627,7 +631,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_unknown_flags_no_flags(self, report_mock):
         report_mock.return_value = MockNoFlagsReport()
 
@@ -657,7 +661,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         }
 
     @patch("services.components.commit_components")
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_component_filter_missing_coverage(
         self, report_mock, commit_components_mock
     ):
@@ -714,7 +718,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.report.files_in_sessions")
     def test_fetch_path_contents_component_filter_has_coverage(
         self, session_files_mock, report_mock, commit_components_mock, filtered_mock
@@ -785,7 +789,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.report.files_belonging_to_flags")
     @patch("services.report.files_in_sessions")
     def test_fetch_path_contents_component_and_flag_filters(
@@ -889,7 +893,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.report.files_belonging_to_flags")
     def test_fetch_path_contents_component_and_flag_filters_unknown_flags(
         self, flag_files_mock, report_mock, commit_components_mock, filtered_mock
@@ -979,7 +983,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.report.files_belonging_to_flags")
     @patch("services.report.files_in_sessions")
     def test_fetch_path_contents_component_flags_filters(

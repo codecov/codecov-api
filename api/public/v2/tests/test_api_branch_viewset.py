@@ -1,9 +1,12 @@
 from django.urls import reverse
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import (
+    BranchFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
 from codecov.tests.base_test import InternalAPITest
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, RepositoryFactory
 from utils.test_utils import APIClient
 
 get_permissions_method = (

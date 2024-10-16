@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
+    OwnerFactory,
     RepositoryFactory,
 )
+
 from timeseries.models import Interval
 
 from .helper import GraphQLTestHelper

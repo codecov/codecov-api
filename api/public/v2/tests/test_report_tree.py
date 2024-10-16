@@ -3,11 +3,14 @@ from urllib.parse import urlencode
 
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from utils.test_utils import APIClient
 
 

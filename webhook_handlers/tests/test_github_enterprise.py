@@ -9,15 +9,15 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-
-from codecov_auth.models import GithubAppInstallation, Owner, Service
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
     BranchFactory,
     CommitFactory,
+    OwnerFactory,
     PullFactory,
     RepositoryFactory,
 )
+
+from codecov_auth.models import GithubAppInstallation, Owner, Service
 from plan.constants import PlanName
 from utils.config import get_config
 from webhook_handlers.constants import (

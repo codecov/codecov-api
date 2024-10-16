@@ -8,10 +8,10 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
 from freezegun import freeze_time
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, UserFactory
 from shared.license import LicenseInformation
 
 from codecov_auth.models import Owner, OwnerProfile
-from codecov_auth.tests.factories import OwnerFactory, UserFactory
 from codecov_auth.views.base import LoginMixin, StateMixin
 
 

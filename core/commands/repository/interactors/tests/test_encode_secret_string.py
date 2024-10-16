@@ -1,10 +1,10 @@
 import pytest
 from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.encryption.yaml_secret import yaml_secret_encryptor
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
-from core.tests.factories import OwnerFactory, RepositoryFactory
 
 from ..encode_secret_string import EncodeSecretStringInteractor
 

@@ -10,6 +10,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import (
+    BranchFactory,
+    CommitFactory,
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 from shared.utils.test_utils import mock_config_helper, mock_metrics
 
 from codecov_auth.models import (
@@ -17,13 +24,6 @@ from codecov_auth.models import (
     GithubAppInstallation,
     Owner,
     Service,
-)
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
-    BranchFactory,
-    CommitFactory,
-    PullFactory,
-    RepositoryFactory,
 )
 from plan.constants import PlanName
 from webhook_handlers.constants import (

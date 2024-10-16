@@ -2,8 +2,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.test import TestCase
+from shared.django_apps.core.tests.factories import RepositoryFactory
 
-from core.tests.factories import RepositoryFactory
 from services.archive import ArchiveService
 
 current_file = Path(__file__)

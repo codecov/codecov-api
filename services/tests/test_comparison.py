@@ -9,15 +9,20 @@ import minio
 import pytest
 import pytz
 from django.test import TestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
+from shared.reports.api_report_service import SerializableReport
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.models import Commit
-from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from reports.models import ReportDetails
 from reports.tests.factories import CommitReportFactory
 from services.comparison import (
@@ -33,9 +38,8 @@ from services.comparison import (
     MissingComparisonReport,
     PullRequestComparison,
 )
-from services.report import SerializableReport
 
-# Pulled from core.tests.factories.CommitFactory files.
+# Pulled from shared.django_apps.core.tests.factories.CommitFactory files.
 # Contents don't actually matter, it's just for providing a format
 # compatible with what SerializableReport expects. Used in
 # ComparisonTests.
@@ -1227,14 +1231,14 @@ class PullRequestComparisonTests(TestCase):
 
 
 @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
-@patch("services.report.build_report_from_commit")
+@patch("shared.reports.api_report_service.build_report_from_commit")
 class ComparisonHeadReportTests(TestCase):
     def setUp(self):
         owner = OwnerFactory()
         base, head = CommitFactory(author=owner), CommitFactory(author=owner)
         self.comparison = Comparison(base, head, owner)
 
-    @patch("services.report.SerializableReport.apply_diff")
+    @patch("shared.reports.api_report_service.SerializableReport.apply_diff")
     def test_head_report_calls_apply_diff(
         self, apply_diff_mock, build_report_from_commit_mock, git_comparison_mock
     ):
@@ -1634,7 +1638,7 @@ class ComparisonReportTest(TestCase):
         impacted_files = self.comparison_report_without_storage.impacted_files
         assert impacted_files == []
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_error_when_failing_to_get_file_from_storage(
         self, mock_read_file
     ):
@@ -1642,19 +1646,19 @@ class ComparisonReportTest(TestCase):
         impacted_files = self.comparison_report.impacted_files
         assert impacted_files == []
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_file(self, read_file):
         read_file.return_value = mock_data_from_archive
         impacted_file = self.comparison_report.impacted_file("fileB")
         assert impacted_file.head_name == "fileB"
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_indirect_changes(self, read_file):
         read_file.return_value = mock_data_from_archive
         impacted_files = self.comparison_report.impacted_files_with_unintended_changes
         assert [file.head_name for file in impacted_files] == ["fileA"]
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_direct_changes(self, read_file):
         read_file.return_value = mocked_files_with_direct_and_indirect_changes
         impacted_files = self.comparison_report.impacted_files_with_direct_changes

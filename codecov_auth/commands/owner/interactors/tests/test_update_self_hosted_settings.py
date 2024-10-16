@@ -2,12 +2,12 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase, override_settings
+from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.commands.owner.interactors.update_self_hosted_settings import (
     UpdateSelfHostedSettingsInteractor,
 )
-from codecov_auth.tests.factories import OwnerFactory
 
 
 class UpdateSelfHostedSettingsInteractorTest(TransactionTestCase):

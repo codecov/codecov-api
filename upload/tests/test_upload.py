@@ -16,6 +16,7 @@ from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
+from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.torngit.exceptions import (
     TorngitClientGeneralError,
     TorngitObjectNotFoundError,
@@ -25,7 +26,6 @@ from shared.utils.test_utils import mock_metrics as utils_mock_metrics
 from simplejson import JSONDecodeError
 
 from codecov_auth.models import Owner
-from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (

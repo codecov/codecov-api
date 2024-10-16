@@ -3,10 +3,10 @@ from unittest.mock import patch
 import pytest
 from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
 from codecov_auth.models import OwnerProfile
-from codecov_auth.tests.factories import OwnerFactory
 
 from ..update_default_organization import UpdateDefaultOrganizationInteractor
 
