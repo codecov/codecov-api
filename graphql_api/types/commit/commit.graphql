@@ -4,23 +4,13 @@ type Commit {
   createdAt: DateTime!
   commitid: String!
   author: Owner
-  # totals to be removed with #2286
-  totals: CoverageTotals
   parent: Commit
   pullId: Int
   branchName: String
   yaml: String
   yamlState: YamlStates
   ciPassed: Boolean
-  # flagNames to be removed with #2286
-  flagNames: [String]
-  # coverageFile to be removed with #2286
-  coverageFile(path: String!, flags: [String], components: [String]): File
   compareWithParent: ComparisonResult
-  # bundleAnalysisCompareWithParent to be removed with #2286
-  bundleAnalysisCompareWithParent: BundleAnalysisComparisonResult
-  # bundleAnalysisReport to be removed with #2286
-  bundleAnalysisReport: BundleAnalysisReportResult
   uploads(
     first: Int
     after: String
@@ -31,8 +21,6 @@ type Commit {
   pathContents(path: String, filters: PathContentsFilters): PathContentsResult
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
   totalUploads: Int!
-  # components to be removed with #2286
-  components(filters: ComponentsFilters): [Component!]!
   bundleStatus: CommitStatus
   coverageStatus: CommitStatus
   coverageAnalytics: CommitCoverageAnalytics
