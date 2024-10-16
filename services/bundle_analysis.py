@@ -25,7 +25,6 @@ from graphql_api.actions.measurements import (
 )
 from reports.models import CommitReport
 from services.archive import ArchiveService
-from services.bundle_analysis import BundleAnalysisMeasurementData
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementName
 
@@ -81,7 +80,7 @@ class BundleAnalysisMeasurementsAssetType(enum.Enum):
 class BundleAnalysisMeasurementData(object):
     def __init__(
         self,
-        raw_measurements: List[BundleAnalysisMeasurementData],
+        raw_measurements: List[dict],
         asset_type: Union[BundleAnalysisMeasurementsAssetType, str],
         asset_name: Optional[str],
         interval: Interval,

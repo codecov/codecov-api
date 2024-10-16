@@ -39,11 +39,7 @@ def _find_index_by_cursor(assets: List, cursor: str) -> int:
     return -1
 
 
-def _compute_unknown_asset_size_raw_measurements(
-    fetched_data: Dict[
-        BundleAnalysisMeasurementsAssetType, List[BundleAnalysisMeasurementData]
-    ],
-) -> List[BundleAnalysisMeasurementData]:
+def _compute_unknown_asset_size_raw_measurements(fetched_data: dict) -> List[dict]:
     """
     Computes measurements for the unknown asset types, some asset types are not in
     the predetermined list of types so we must compute those measurements manually.
