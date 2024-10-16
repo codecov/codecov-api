@@ -1,11 +1,11 @@
 import json
 from unittest.mock import MagicMock, patch
-from freezegun import freeze_time
 
 import requests
 from django.conf import settings
 from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
+from freezegun import freeze_time
 from stripe import InvalidRequestError
 
 from codecov_auth.models import Service
@@ -291,8 +291,8 @@ class StripeServiceTests(TestCase):
         )
         subscription_params = {
             "schedule_id": stripe_schedule_id,
-            "start_date": 1639628096,
-            "end_date": 1644107871,
+            "start_date": 1489799420,
+            "end_date": 1492477820,
             "quantity": 10,
             "name": plan,
             "id": 215,
@@ -311,7 +311,7 @@ class StripeServiceTests(TestCase):
         assert owner.plan_activated_users == [4, 6, 3]
         assert owner.plan_user_count == 9
 
-    @freeze_time("2021-12-22T00:00:00")
+    @freeze_time("2017-03-22T00:00:00")
     @patch("services.billing.stripe.Refund.create")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -330,8 +330,8 @@ class StripeServiceTests(TestCase):
         )
         subscription_params = {
             "schedule_id": stripe_schedule_id,
-            "start_date": 1639628096,
-            "end_date": 1644107871,
+            "start_date": 1489799420,
+            "end_date": 1492477820,
             "quantity": 10,
             "name": plan,
             "id": 215,
@@ -352,7 +352,7 @@ class StripeServiceTests(TestCase):
         assert owner.plan_activated_users == [4, 6, 3]
         assert owner.plan_user_count == 9
 
-    @freeze_time("2021-12-17T00:00:00")
+    @freeze_time("2017-03-18T00:00:00")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Customer.modify")
     @patch("services.billing.stripe.Refund.create")
@@ -377,8 +377,8 @@ class StripeServiceTests(TestCase):
         )
         subscription_params = {
             "schedule_id": stripe_schedule_id,
-            "start_date": 1639628096,
-            "end_date": 1644107871,
+            "start_date": 1489799420,
+            "end_date": 1492477820,
             "quantity": 10,
             "name": plan,
             "id": 215,
@@ -405,7 +405,7 @@ class StripeServiceTests(TestCase):
         assert owner.plan_activated_users == [4, 6, 3]
         assert owner.plan_user_count == 9
 
-    @freeze_time("2021-12-19T00:00:00")
+    @freeze_time("2017-03-19T00:00:00")
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Customer.modify")
     @patch("services.billing.stripe.Refund.create")
@@ -430,8 +430,8 @@ class StripeServiceTests(TestCase):
         )
         subscription_params = {
             "schedule_id": stripe_schedule_id,
-            "start_date": 1639628096,
-            "end_date": 1644107871,
+            "start_date": 1489799420,
+            "end_date": 1492477820,
             "quantity": 10,
             "name": plan,
             "id": 215,

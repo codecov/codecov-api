@@ -2,6 +2,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 import stripe
 from django.conf import settings
@@ -164,18 +165,25 @@ class StripeService(AbstractPaymentService):
             )
             stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
-        # we give a auto-refund grace period of 24 hours for a monthly subscription or 72 hours for a yearly subscription
-        current_subscription_timestamp = subscription["current_period_start"]
-        difference = datetime.now() - datetime.fromtimestamp(current_subscription_timestamp)
+        # we give an auto-refund grace period of 24 hours for a monthly subscription or 72 hours for a yearly subscription
+        # current_subscription_timestamp = subscription["current_period_start"]
+        current_subscription_datetime = datetime.fromtimestamp(subscription["current_period_start"])
+        differenceFromNow = datetime.now() - current_subscription_datetime
+
         subscription_plan_interval = subscription.plan.interval if subscription.plan is not None else None
-        should_refund_grace_period = (subscription_plan_interval == "month" and difference.days < 1) or (subscription_plan_interval == "year" and difference.days < 3)
-        if should_refund_grace_period:
+        within_refund_grace_period = (subscription_plan_interval == "month" and differenceFromNow.days < 1) or (subscription_plan_interval == "year" and differenceFromNow.days < 3)
+        if within_refund_grace_period:
             stripe.Subscription.cancel(owner.stripe_subscription_id)
 
             invoices_list = stripe.Invoice.list(subscription=owner.stripe_subscription_id, status="paid")
             created_refund = False
+            # there could be multiple invoices that need to be refunded such as if the user increased seats within the grace period
             for invoice in invoices_list["data"]:
-                if invoice["charge"] is not None and invoice["amount_remaining"] == 0 and invoice["created"] < current_subscription_timestamp:
+                start_of_last_period = current_subscription_datetime - relativedelta(months=1) if subscription_plan_interval == "month" else current_subscription_datetime - relativedelta(years=1)
+
+                # refund if the invoice has a charge, it has been fully paid, the creation time was before the start of the current subscription's start and the creation time was after the start of the last period
+                invoice_created_datetime = datetime.fromtimestamp(invoice["created"])
+                if invoice["charge"] is not None and invoice["amount_remaining"] == 0 and invoice_created_datetime < current_subscription_datetime and invoice_created_datetime >= start_of_last_period:
                     stripe.Refund.create(invoice["charge"])
                     created_refund = True
             if created_refund == True:
