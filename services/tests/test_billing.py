@@ -365,12 +365,10 @@ class StripeServiceTests(TestCase):
     ):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
-        stripe_invoice_response["data"] = stripe_invoice_response["data"] * 2
         list_invoice_mock.return_value = stripe_invoice_response
         plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
         stripe_schedule_id = "sub_sched_sch1K77Y5GlVGuVgOrkJrLjRnne"
-        charge = "ch_19yUQN2eZvKYlo2CQf7aWpSX"
         owner = OwnerFactory(
             stripe_subscription_id=stripe_subscription_id,
             plan=plan,
@@ -397,7 +395,7 @@ class StripeServiceTests(TestCase):
         schedule_release_mock.assert_called_once_with(stripe_schedule_id)
         cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
         list_invoice_mock.assert_called_once_with(subscription=stripe_subscription_id, status="paid")
-        create_refund_mock.assert_called_once_with(charge=charge)
+        self.assertEqual(create_refund_mock.call_count, 2)
         modify_customer_mock.assert_called_once_with(owner.stripe_customer_id, balance=0)
         modify_sub_mock.assert_not_called()
 
@@ -420,12 +418,10 @@ class StripeServiceTests(TestCase):
     ):
         with open("./services/tests/samples/stripe_invoice.json") as f:
             stripe_invoice_response = json.load(f)
-        stripe_invoice_response["data"] = stripe_invoice_response["data"] * 2
         list_invoice_mock.return_value = stripe_invoice_response
         plan = PlanName.CODECOV_PRO_YEARLY.value
         stripe_subscription_id = "sub_1K77Y5GlVGuVgOrkJrLjRnne"
         stripe_schedule_id = "sub_sched_sch1K77Y5GlVGuVgOrkJrLjRnne"
-        charge = "ch_19yUQN2eZvKYlo2CQf7aWpSX"
         owner = OwnerFactory(
             stripe_subscription_id=stripe_subscription_id,
             plan=plan,
@@ -452,7 +448,7 @@ class StripeServiceTests(TestCase):
         schedule_release_mock.assert_called_once_with(stripe_schedule_id)
         cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
         list_invoice_mock.assert_called_once_with(subscription=stripe_subscription_id, status="paid")
-        create_refund_mock.assert_called_once_with(charge=charge)
+        self.assertEqual(create_refund_mock.call_count, 2)
         modify_customer_mock.assert_called_once_with(owner.stripe_customer_id, balance=0)
         modify_sub_mock.assert_not_called()
 

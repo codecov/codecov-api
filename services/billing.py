@@ -173,9 +173,12 @@ class StripeService(AbstractPaymentService):
             stripe.Subscription.cancel(owner.stripe_subscription_id)
 
             invoices_list = stripe.Invoice.list(subscription=owner.stripe_subscription_id, status="paid")
-            charge = invoices_list["data"][0]["charge"] if len(invoices_list["data"]) >= 1 and invoices_list["data"][0]["charge"] else None
-            if charge:
-                stripe.Refund.create(charge=charge)
+            created_refund = False
+            for invoice in invoices_list["data"]:
+                if invoice["charge"] is not None and invoice["amount_remaining"] == 0 and invoice["created"] < current_subscription_timestamp:
+                    stripe.Refund.create(invoice["charge"])
+                    created_refund = True
+            if created_refund == True:
                 stripe.Customer.modify(
                     owner.stripe_customer_id,
                     balance=0,
