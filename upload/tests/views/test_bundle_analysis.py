@@ -104,6 +104,7 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
 
 
 @pytest.mark.django_db(databases={"default", "timeseries"})
+@override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
 def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     mock_sentry_metrics = mocker.patch(
@@ -131,6 +132,7 @@ def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
             "service": "test-service",
             "compareSha": "6fd5b89357fc8cdf34d6197549ac7c6d7e5aaaaa",
             "storage_path": "shelter/test/path.txt",
+            "upload_external_id": "test-47078f85-2cee-4511-b38d-183c334ef43b",
         },
         format="json",
         headers={"User-Agent": "codecov-cli/0.4.7"},

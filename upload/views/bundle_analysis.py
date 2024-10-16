@@ -50,6 +50,7 @@ class UploadSerializer(serializers.Serializer):
     compareSha = serializers.CharField(required=False, allow_null=True)
     git_service = serializers.CharField(required=False, allow_null=True)
     storage_path = serializers.CharField(required=False, allow_null=True)
+    upload_external_id = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView, ShelterMixin):
@@ -118,8 +119,9 @@ class BundleAnalysisView(APIView, ShelterMixin):
         )
 
         storage_path = data.get("storage_path", None)
+        upload_external_id = data.get("upload_external_id", None)
         url = None
-        if storage_path is None or not self.is_shelter_request():
+        if not self.is_shelter_request():
             upload_external_id = str(uuid.uuid4())
             storage_path = StoragePaths.upload.path(upload_key=upload_external_id)
             archive_service = ArchiveService(repo)
