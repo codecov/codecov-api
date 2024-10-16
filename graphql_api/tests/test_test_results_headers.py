@@ -137,3 +137,30 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             ]
             == 29
         )
+
+    def test_fetch_test_result_slow_tests(self) -> None:
+        query = """
+            query {
+            owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResultsAggregates {
+                                    totalSlowTests
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
+                "totalSlowTests"
+            ]
+            == 1
+        )
