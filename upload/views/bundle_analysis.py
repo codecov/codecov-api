@@ -116,12 +116,15 @@ class BundleAnalysisView(APIView, ShelterMixin):
             },
         )
 
-        upload_external_id = str(uuid.uuid4())
-        storage_path = StoragePaths.upload.path(upload_key=upload_external_id)
-        archive_service = ArchiveService(repo)
-        url = archive_service.storage.create_presigned_put(
-            get_bucket_name(), storage_path, 30
-        )
+        storage_path = data.get("storage_path", None)
+        url = None
+        if storage_path is None or not self.is_shelter_request():
+            upload_external_id = str(uuid.uuid4())
+            storage_path = StoragePaths.upload.path(upload_key=upload_external_id)
+            archive_service = ArchiveService(repo)
+            url = archive_service.storage.create_presigned_put(
+                get_bucket_name(), storage_path, 30
+            )
 
         task_arguments = {
             # these are used in the upload task when saving an upload record
