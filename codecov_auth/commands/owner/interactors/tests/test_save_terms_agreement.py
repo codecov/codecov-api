@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
@@ -24,6 +26,7 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         input={
             "business_email": None,
             "terms_agreement": False,
+            "marketing_consent": False,
         },
     ):
         return SaveTermsAgreementInteractor(None, "github", current_user).execute(
@@ -75,13 +78,6 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         self.current_user.refresh_from_db()
         assert self.current_user.email == "something@email.com"
 
-    def test_validation_error_when_terms_is_none(self):
-        with pytest.raises(ValidationError):
-            self.execute(
-                current_user=self.current_user,
-                input={"terms_agreement": None, "customer_intent": "Business"},
-            )
-
     def test_validation_error_when_customer_intent_invalid(self):
         with pytest.raises(ValidationError):
             self.execute(
@@ -99,3 +95,45 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
                     "customer_intent": "Business",
                 },
             )
+
+    def test_email_opt_in_saved_in_db(self):
+        self.execute(
+            current_user=self.current_user,
+            input={
+                "terms_agreement": True,
+                "marketing_consent": True,
+                "customer_intent": "Business",
+            },
+        )
+        self.current_user.refresh_from_db()
+        assert self.current_user.email_opt_in == True
+
+    @patch(
+        "codecov_auth.commands.owner.interactors.save_terms_agreement.SaveTermsAgreementInteractor.send_data_to_marketo"
+    )
+    def test_marketo_called_only_with_consent(self, mock_send_data_to_marketo):
+        self.execute(
+            current_user=self.current_user,
+            input={
+                "terms_agreement": True,
+                "marketing_consent": True,
+                "customer_intent": "Business",
+            },
+        )
+
+        mock_send_data_to_marketo.assert_called_once()
+
+    @patch(
+        "codecov_auth.commands.owner.interactors.save_terms_agreement.SaveTermsAgreementInteractor.send_data_to_marketo"
+    )
+    def test_marketo_not_called_without_consent(self, mock_send_data_to_marketo):
+        self.execute(
+            current_user=self.current_user,
+            input={
+                "terms_agreement": True,
+                "marketing_consent": False,
+                "customer_intent": "Business",
+            },
+        )
+
+        mock_send_data_to_marketo.assert_not_called()
