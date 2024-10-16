@@ -62,42 +62,6 @@ commit_bindable.set_alias("branchName", "branch")
 log = logging.getLogger(__name__)
 
 
-# to be removed with #2286
-@commit_bindable.field("coverageFile")
-@sync_to_async
-def resolve_file(commit, info, path, flags=None, components=None):
-    _else, paths = None, []
-    if components:
-        all_components = components_service.commit_components(
-            commit, info.context["request"].current_owner
-        )
-        filtered_components = components_service.filter_components_by_name(
-            all_components, components
-        )
-        for fc in filtered_components:
-            paths.extend(fc.paths)
-        _else = FilteredReportFile(ReportFile(path), [])
-
-    commit_report = commit.full_report.filter(flags=flags, paths=paths)
-    file_report = commit_report.get(path, _else=_else)
-
-    return {
-        "commit_report": commit_report,
-        "file_report": file_report,
-        "commit": commit,
-        "path": path,
-        "flags": flags,
-        "components": components,
-    }
-
-
-# to be removed with #2286
-@commit_bindable.field("totals")
-def resolve_totals(commit, info):
-    command = info.context["executor"].get_command("commit")
-    return command.fetch_totals(commit)
-
-
 @commit_bindable.field("author")
 def resolve_author(commit, info):
     if commit.author_id:
@@ -167,58 +131,6 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
 
     if commit_comparison:
         return ComparisonReport(commit_comparison)
-
-
-# to be removed with #2286
-@commit_bindable.field("bundleAnalysisCompareWithParent")
-@sync_to_async
-def resolve_bundle_analysis_compare_with_parent(commit: Commit, info):
-    base_commit = Commit.objects.filter(commitid=commit.parent_commit_id).first()
-    if not base_commit:
-        return MissingBaseCommit()
-
-    bundle_analysis_comparison = load_bundle_analysis_comparison(base_commit, commit)
-
-    # Store the created SQLite DB path in info.context
-    # when the request is fully handled, have the file deleted
-    if isinstance(bundle_analysis_comparison, BundleAnalysisComparison):
-        info.context[
-            "request"
-        ].bundle_analysis_base_report_db_path = (
-            bundle_analysis_comparison.comparison.base_report.db_path
-        )
-        info.context[
-            "request"
-        ].bundle_analysis_head_report_db_path = (
-            bundle_analysis_comparison.comparison.head_report.db_path
-        )
-
-    return bundle_analysis_comparison
-
-
-# to be removed with #2286
-@commit_bindable.field("bundleAnalysisReport")
-@sync_to_async
-def resolve_bundle_analysis_report(commit: Commit, info) -> BundleAnalysisReport:
-    bundle_analysis_report = load_bundle_analysis_report(commit)
-
-    # Store the created SQLite DB path in info.context
-    # when the request is fully handled, have the file deleted
-    if isinstance(bundle_analysis_report, BundleAnalysisReport):
-        info.context[
-            "request"
-        ].bundle_analysis_head_report_db_path = bundle_analysis_report.report.db_path
-
-    info.context["commit"] = commit
-
-    return bundle_analysis_report
-
-
-# to be removed with #2286
-@commit_bindable.field("flagNames")
-@sync_to_async
-def resolve_flags(commit, info):
-    return commit.full_report.flags.keys()
 
 
 @commit_bindable.field("criticalFiles")
@@ -332,22 +244,6 @@ async def resolve_errors(commit, info, error_type):
 async def resolve_total_uploads(commit, info):
     command = info.context["executor"].get_command("commit")
     return await command.get_uploads_number(commit)
-
-
-# to be removed with #2286
-@commit_bindable.field("components")
-@sync_to_async
-def resolve_components(commit: Commit, info, filters=None) -> List[Component]:
-    info.context["component_commit"] = commit
-    current_owner = info.context["request"].current_owner
-    all_components = components_service.commit_components(commit, current_owner)
-
-    if filters and filters.get("components"):
-        return components_service.filter_components_by_name(
-            all_components, filters["components"]
-        )
-
-    return all_components
 
 
 @sentry_sdk.trace
