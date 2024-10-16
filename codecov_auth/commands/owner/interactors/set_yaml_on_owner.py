@@ -1,4 +1,5 @@
 import html
+from typing import Optional
 
 import yaml
 from shared.validation.exceptions import InvalidYamlException
@@ -17,21 +18,21 @@ from codecov_auth.models import Owner
 
 
 class SetYamlOnOwnerInteractor(BaseInteractor):
-    def validate(self):
+    def validate(self) -> None:
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
-    def authorize(self):
+    def authorize(self) -> None:
         if not current_user_part_of_org(self.current_owner, self.owner):
             raise Unauthorized()
 
-    def get_owner(self, username):
+    def get_owner(self, username: str) -> Owner:
         try:
             return Owner.objects.get(username=username, service=self.service)
         except Owner.DoesNotExist:
             raise NotFound()
 
-    def convert_yaml_to_dict(self, yaml_input):
+    def convert_yaml_to_dict(self, yaml_input: str) -> Optional[dict]:
         yaml_safe = html.escape(yaml_input, quote=False)
         try:
             yaml_dict = yaml.safe_load(yaml_safe)
@@ -49,7 +50,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
             raise ValidationError(message)
 
     @sync_to_async
-    def execute(self, username, yaml_input):
+    def execute(self, username: str, yaml_input: str) -> Owner:
         self.validate()
         self.owner = self.get_owner(username)
         self.authorize()
