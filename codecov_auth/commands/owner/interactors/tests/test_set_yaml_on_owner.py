@@ -69,7 +69,12 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
         )
         # check the interactor returns the right owner
         assert owner_updated.ownerid == self.org.ownerid
-        assert owner_updated.yaml == {"codecov": {"require_ci_to_pass": True}}
+        assert owner_updated.yaml == {
+            "codecov": {
+                "require_ci_to_pass": True,
+            },
+            "to_string": "\n" "codecov:\n" "  require_ci_to_pass: yes\n",
+        }
 
     async def test_user_is_part_of_org_and_yaml_has_quotes(self):
         owner_updated = await self.execute(
@@ -77,7 +82,12 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
         )
         # check the interactor returns the right owner
         assert owner_updated.ownerid == self.org.ownerid
-        assert owner_updated.yaml == {"codecov": {"bot": "codecov"}}
+        assert owner_updated.yaml == {
+            "codecov": {
+                "bot": "codecov",
+            },
+            "to_string": "\n" "codecov:\n" "  bot: 'codecov'\n",
+        }
 
     async def test_user_is_part_of_org_and_yaml_is_empty(self):
         owner_updated = await self.execute(self.current_owner, self.org.username, "")

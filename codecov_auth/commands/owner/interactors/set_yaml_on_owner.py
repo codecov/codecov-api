@@ -54,5 +54,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         self.owner = self.get_owner(username)
         self.authorize()
         self.owner.yaml = self.convert_yaml_to_dict(yaml_input)
+        if self.owner.yaml:
+            self.owner.yaml["to_string"] = yaml_input
         self.owner.save()
         return self.owner

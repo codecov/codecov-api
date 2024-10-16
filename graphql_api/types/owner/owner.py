@@ -93,7 +93,7 @@ def resolve_yaml(owner: Owner, info: GraphQLResolveInfo):
     current_owner = info.context["request"].current_owner
     if not current_user_part_of_org(current_owner, owner):
         return
-    return yaml.dump(owner.yaml)
+    return owner.yaml.get("to_string", yaml.dump(owner.yaml))
 
 
 @owner_bindable.field("plan")
