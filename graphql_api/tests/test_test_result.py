@@ -31,6 +31,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             date=date.today() - timedelta(days=2),
             avg_duration_seconds=0.6,
             latest_run=datetime.now() - timedelta(days=2),
+            flaky_fail_count=0,
         )
         _ = DailyTestRollupFactory(
             test=self.test,
@@ -38,6 +39,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             date=datetime.now() - timedelta(days=1),
             avg_duration_seconds=2,
             latest_run=datetime.now() - timedelta(days=1),
+            flaky_fail_count=1,
         )
         _ = DailyTestRollupFactory(
             test=self.test,
@@ -46,6 +48,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             last_duration_seconds=5.0,
             avg_duration_seconds=3,
             latest_run=datetime.now(),
+            flaky_fail_count=1,
         )
 
     def test_fetch_test_result_name(self) -> None:
@@ -353,4 +356,35 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                 "node"
             ]["totalPassCount"]
             == 3
+        )
+
+    def test_fetch_test_result_total_flaky_fail_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalFlakyFailCount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalFlakyFailCount"]
+            == 2
         )
