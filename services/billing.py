@@ -2,9 +2,9 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 
 import stripe
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 
 from billing.constants import REMOVED_INVOICE_STATUSES
