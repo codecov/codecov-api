@@ -48,8 +48,10 @@ default_pull_request_detail_query = """
         username
     }
     head {
-        totals {
-            coverage
+        coverageAnalytics {
+            totals {
+                coverage
+            }
         }
     }
     comparedTo {
@@ -76,8 +78,10 @@ pull_request_detail_query_with_bundle_analysis = """
         username
     }
     head {
-        totals {
-            coverage
+        coverageAnalytics {
+            totals {
+                coverage
+            }
         }
     }
     comparedTo {
@@ -184,7 +188,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "pullId": my_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
-            "head": {"totals": None},
+            "head": {"coverageAnalytics": {"totals": None}},
             "comparedTo": None,
             "compareWithBase": {
                 "__typename": "MissingBaseCommit",
@@ -441,7 +445,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "pullId": my_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
-            "head": {"totals": {"coverage": 78.38}},
+            "head": {"coverageAnalytics": {"totals": {"coverage": 78.38}}},
             "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
             "compareWithBase": {
                 "__typename": "Comparison",
@@ -600,7 +604,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "pullId": my_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
-            "head": {"totals": {"coverage": 78.38}},
+            "head": {"coverageAnalytics": {"totals": {"coverage": 78.38}}},
             "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
             "compareWithBase": {
                 "__typename": "Comparison",
