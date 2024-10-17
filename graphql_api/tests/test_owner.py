@@ -1036,7 +1036,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         AccountsUsersFactory(user=owner.user, account=self.account)
         user2 = OwnerFactory(username="sample-user-2")
         user3 = OwnerFactory(username="sample-user-3")
-        owner = OwnerFactory(
+        other_owner = OwnerFactory(
             username="sample-org",
             plan_activated_users=[user2.ownerid, user3.ownerid],
             account=self.account,
@@ -1047,6 +1047,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 activatedUserCount
             }
         }
-        """ % (owner.username)
+        """ % (other_owner.username)
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["activatedUserCount"] == 2
