@@ -44,13 +44,9 @@ async def resolve_test_results(
     )
 
     queryset = await sync_to_async(generate_test_results)(
-        ordering=(
-            (ordering.get("parameter").value, "name")
-            if ordering
-            else ("avg_duration", "name")
-        ),
+        ordering=ordering.get("parameter").value if ordering else "avg_duration",
         ordering_direction=(
-            ordering.get("direction") if ordering else OrderingDirection.DESC
+            ordering.get("direction").name if ordering else OrderingDirection.DESC.name
         ),
         repoid=repository.repoid,
         interval=interval,

@@ -6,10 +6,8 @@ from math import floor
 
 from django.db import connection
 from django.db.models import (
-    Aggregate,
     Avg,
     F,
-    Func,
     Q,
     Sum,
     Value,
@@ -22,33 +20,18 @@ from shared.django_apps.reports.models import (
 )
 
 from codecov.commands.exceptions import ValidationError
-from graphql_api.types.enums.enums import OrderingDirection
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
 
 SLOW_TEST_PERCENTILE = 95
+
+DELIMITER = "|"
 
 
 def slow_test_threshold(total_tests: int) -> int:
     percentile = (100 - SLOW_TEST_PERCENTILE) / 100
     slow_tests_to_return = floor(percentile * total_tests)
     return max(slow_tests_to_return, 1)
-
-
-class ArrayLength(Func):
-    function = "CARDINALITY"
-
-
-class Unnest(Func):
-    function = "unnest"
-
-
-class Distinct(Func):
-    function = "distinct"
-
-
-class Array(Aggregate):
-    function = "array"
 
 
 class GENERATE_TEST_RESULT_PARAM:
@@ -64,73 +47,121 @@ class TestResultsQuery:
     params: dict[str, int | str | tuple[str, ...]]
 
 
-def convert_tuple_or_none(value: set[str] | list[str] | None) -> tuple[str, ...] | None:
+@dataclass
+class TestResultsRow:
+    # the order here must match the order of the fields in the query
+    name: str
+    test_id: str
+    failure_rate: float
+    flake_rate: float
+    updated_at: dt.datetime
+    avg_duration: float
+    total_fail_count: int
+    total_flaky_fail_count: int
+    total_pass_count: int
+    total_skip_count: int
+    commits_where_fail: int
+    last_duration: float
+
+
+@dataclass
+class Connection:
+    edges: list[dict[str, str | TestResultsRow]]
+    page_info: dict
+    total_count: int
+
+
+def convert_tuple_else_none(
+    value: set[str] | list[str] | None,
+) -> tuple[str, ...] | None:
     return tuple(value) if value else None
 
 
-def encode_after_or_before(value: str | None) -> str | None:
-    return str(b64decode(value.encode("ascii"))) if value else None
+@dataclass
+class CursorValue:
+    ordered_value: str
+    name: str
+
+
+def decode_cursor(value: str | None) -> CursorValue | None:
+    if value is None:
+        return None
+
+    split_cursor = b64decode(value.encode("ascii")).decode("utf-8").split(DELIMITER)
+    return CursorValue(
+        ordered_value=split_cursor[0],
+        name=split_cursor[1],
+    )
+
+
+def encode_cursor(row: TestResultsRow, ordering: str) -> str:
+    return b64encode(
+        DELIMITER.join([str(getattr(row, ordering)), str(row.name)]).encode("utf-8")
+    ).decode("ascii")
+
+
+def validate(
+    interval_num_days: int,
+    ordering: str,
+    ordering_direction: str,
+    after: str | None,
+    before: str | None,
+    first: int | None,
+    last: int | None,
+) -> ValidationError | None:
+    if interval_num_days not in {1, 7, 30}:
+        return ValidationError(f"Invalid interval: {interval_num_days}")
+
+    if ordering_direction not in {"ASC", "DESC"}:
+        return ValidationError(f"Invalid ordering direction: {ordering_direction}")
+
+    if ordering not in {
+        "name",
+        "computed_name",
+        "avg_duration",
+        "failure_rate",
+        "flake_rate",
+        "commits_where_fail",
+        "last_duration",
+    }:
+        return ValidationError(f"Invalid ordering field: {ordering}")
+
+    if first is not None and last is not None:
+        return ValidationError("First and last can not be used at the same time")
+
+    if after is not None and before is not None:
+        return ValidationError("After and before can not be used at the same time")
+
+    return None
 
 
 def generate_base_query(
     repoid: int,
-    ordering: tuple[str, ...],
-    ordering_direction: OrderingDirection,
-    first: int | None,
-    after: str | None,
-    last: int | None,
-    before: str | None,
+    ordering: str,
+    ordering_direction: str,
+    should_reverse: bool,
     branch: str | None,
     interval_num_days: int,
     testsuites: list[str] | None = None,
     term: str | None = None,
     test_ids: set[str] | None = None,
 ) -> TestResultsQuery:
-    page_size = first or last
-
     term_filter = f"%{term}%" if term else None
 
-    if interval_num_days not in {1, 7, 30}:
-        raise ValueError(f"Invalid interval: {interval_num_days}")
+    if should_reverse:
+        ordering_direction = "DESC" if ordering_direction == "ASC" else "ASC"
 
-    if ordering_direction not in {OrderingDirection.ASC, OrderingDirection.DESC}:
-        raise ValueError(f"Invalid ordering direction: {ordering_direction}")
-
-    for order_field in ordering:
-        if order_field not in {
-            "name",
-            "computed_name",
-            "avg_duration",
-            "failure_rate",
-            "flake_rate",
-            "commits_where_fail",
-            "last_duration",
-        }:
-            raise ValueError(f"Invalid ordering field: {order_field}")
-
-    order = ",".join(
-        [
-            f"rt.{order_field}"
-            if order_field in {"name", "computed_name"}
-            else f"results.{order_field}"
-            for order_field in ordering
-        ]
-    )
-    order_by = ",".join(
-        [f"with_cursor.{order} {ordering_direction.name}" for order in ordering]
-    )
+    order_by = f"with_cursor.{ordering} {ordering_direction}, with_cursor.name"
 
     params: dict[str, int | str | tuple[str, ...] | None] = {
         "repoid": repoid,
         "interval": f"{interval_num_days} days",
         "branch": branch,
-        "test_ids": convert_tuple_or_none(test_ids),
-        "testsuites": convert_tuple_or_none(testsuites),
+        "test_ids": convert_tuple_else_none(test_ids),
+        "testsuites": convert_tuple_else_none(testsuites),
         "term": term_filter,
-        "after": encode_after_or_before(after),
-        "before": encode_after_or_before(before),
-        "limit": page_size,
     }
+
     filtered_params: dict[str, int | str | tuple[str, ...]] = {
         k: v for k, v in params.items() if v is not None
     }
@@ -163,6 +194,7 @@ failure_rate_cte as (
 		MAX(latest_run) as updated_at,
 		AVG(avg_duration_seconds) AS avg_duration,
         SUM(fail_count) as total_fail_count,
+        SUM(flaky_fail_count) as total_flaky_fail_count,
         SUM(pass_count) as total_pass_count,
         SUM(skip_count) as total_skip_count
 	from base_cte
@@ -173,7 +205,7 @@ commits_where_fail_cte as (
 		select test_id, commits_where_fail as cwf
 		from base_cte
 		where array_length(commits_where_fail,1) > 0
-	) as foo, unnest(cwf) as unnested_cwf group by test_id
+	) as tests_with_commits_that_failed, unnest(cwf) as unnested_cwf group by test_id
 ),
 last_duration_cte as (
 	select base_cte.test_id, last_duration_seconds from base_cte
@@ -189,10 +221,8 @@ last_duration_cte as (
 
 select * from (
     select
-    rt.name,
-    rt.computed_name,
-    results.*,
-    row({order}) as _cursor
+    COALESCE(rt.name, rt.computed_name) as name,
+    results.*
     from
     (
         select failure_rate_cte.*, coalesce(commits_where_fail_cte.failed_commits_count, 0) as commits_where_fail, last_duration_cte.last_duration_seconds as last_duration
@@ -201,46 +231,53 @@ select * from (
         full outer join last_duration_cte using (test_id)
     ) as results join reports_test rt on results.test_id = rt.id
 ) as with_cursor
-{"where with_cursor._cursor > %(before)s" if after else ""}
-{"where with_cursor._cursor < %(after)s" if before else ""}
 order by {order_by}
-limit %(limit)s
 """
+
     return TestResultsQuery(query=base_query, params=filtered_params)
 
 
-@dataclass
-class TestResultsRow:
-    name: str
-    computed_name: str
-    test_id: str
-    failure_rate: float
-    flake_rate: float
-    updated_at: dt.datetime
-    avg_duration: float
-    total_fail_count: int
-    total_pass_count: int
-    total_skip_count: int
-    commits_where_fail: int
-    last_duration: float
+def search_base_query(
+    rows: list[TestResultsRow],
+    ordering: str,
+    cursor: CursorValue | None,
+) -> list[TestResultsRow]:
+    if not cursor:
+        return rows
 
+    def compare(row: TestResultsRow) -> int:
+        # -1 means row value is to the left of the cursor value (search to the right)
+        # 0 means row value is equal to cursor value
+        # 1 means row value is to the right of the cursor value (search to the left)
+        row_value = getattr(row, ordering)
+        row_value_str = str(row_value)
+        cursor_value_str = cursor.ordered_value
+        return (row_value_str > cursor_value_str) - (row_value_str < cursor_value_str)
 
-@dataclass
-class Connection:
-    edges: list[dict[str, str | TestResultsRow]]
-    page_info: dict
-    total_count: int
+    left, right = 0, len(rows) - 1
+    while left <= right:
+        print(left, right)
+        mid = (left + right) // 2
+        comparison = compare(rows[mid])
 
+        if comparison == 0:
+            if rows[mid].name == cursor.name:
+                return rows[mid + 1 :]
+            elif rows[mid].name < cursor.name:
+                left = mid + 1
+            else:
+                right = mid - 1
+        elif comparison < 0:
+            left = mid + 1
+        else:
+            right = mid - 1
 
-def get_cursor(row: TestResultsRow, ordering: tuple[str, ...]) -> str:
-    return b64encode(
-        "|".join([str(getattr(row, order)) for order in ordering]).encode("utf8")
-    ).decode("ascii")
+    return rows[left:]
 
 
 def generate_test_results(
-    ordering: tuple[str, ...],
-    ordering_direction: OrderingDirection,
+    ordering: str,
+    ordering_direction: str,
     repoid: int,
     interval: dt.timedelta,
     first: int | None = None,
@@ -270,29 +307,33 @@ def generate_test_results(
 
     """
     interval_num_days = interval.days
+
+    if validation_error := validate(
+        interval_num_days, ordering, ordering_direction, after, before, first, last
+    ):
+        return validation_error
+
     since = dt.datetime.now(dt.UTC) - interval
 
     test_ids: set[str] | None = None
-
-    if flags is not None:
-        bridges = TestFlagBridge.objects.select_related("flag").filter(
-            flag__flag_name__in=flags
-        )
-
-        test_ids = set([bridge.test_id for bridge in bridges])
 
     if term is not None:
         totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
 
         totals = totals.filter(test__name__icontains=term).values("test_id")
 
-        filtered_test_ids = set([test["test_id"] for test in totals])
+        test_ids = set([test["test_id"] for test in totals])
+
+    if flags is not None:
+        bridges = TestFlagBridge.objects.select_related("flag").filter(
+            flag__flag_name__in=flags
+        )
+
+        filtered_test_ids = set([bridge.test_id for bridge in bridges])
 
         test_ids = test_ids & filtered_test_ids if test_ids else filtered_test_ids
 
     if parameter is not None:
-        totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
-
         match parameter:
             case GENERATE_TEST_RESULT_PARAM.FLAKY:
                 flakes = Flake.objects.filter(
@@ -356,26 +397,20 @@ def generate_test_results(
                 )
 
     if not first and not last:
-        first = 25
+        first = 20
 
-    if first is not None and last is not None:
-        return ValidationError("First and last can not be used at the same time")
-    if after is not None and before is not None:
-        return ValidationError("After and before can not be used at the same time")
+    should_reverse = False if first else True
 
     query = generate_base_query(
-        repoid,
-        ordering,
-        ordering_direction,
-        first,
-        after,
-        last,
-        before,
-        branch,
-        interval_num_days,
-        testsuites,
-        term,
-        test_ids,
+        repoid=repoid,
+        ordering=ordering,
+        ordering_direction=ordering_direction,
+        should_reverse=should_reverse,
+        branch=branch,
+        interval_num_days=interval_num_days,
+        testsuites=testsuites,
+        term=term,
+        test_ids=test_ids,
     )
 
     with connection.cursor() as cursor:
@@ -385,16 +420,28 @@ def generate_test_results(
         )
         aggregation_of_test_results = cursor.fetchall()
 
-        rows = [TestResultsRow(*row[:-1]) for row in aggregation_of_test_results]
+        rows = [TestResultsRow(*row) for row in aggregation_of_test_results]
+
+    page_size: int = first or last or 20
+
+    cursor_value = decode_cursor(after) if after else decode_cursor(before)
+
+    search_rows = search_base_query(rows, ordering, cursor_value)
+
+    page: list[dict[str, str | TestResultsRow]] = [
+        {"cursor": encode_cursor(row, ordering), "node": row}
+        for i, row in enumerate(search_rows)
+        if i < page_size
+    ]
 
     return Connection(
-        edges=[{"cursor": get_cursor(row, ordering), "node": row} for row in rows],
+        edges=page,
         total_count=len(rows),
         page_info={
-            "has_next_page": False,
-            "has_previous_page": False,
-            "start_cursor": get_cursor(rows[0], ordering) if rows else None,
-            "end_cursor": get_cursor(rows[-1], ordering) if rows else None,
+            "has_next_page": True if first and len(search_rows) > first else False,
+            "has_previous_page": True if last and len(search_rows) > last else False,
+            "start_cursor": page[0]["cursor"] if page else None,
+            "end_cursor": page[-1]["cursor"] if page else None,
         },
     )
 
