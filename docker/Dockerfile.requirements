@@ -25,6 +25,7 @@ RUN apt-get install -y \
     libpq-dev \
     make \
     curl \
+    libexpat1 \
     && pip install --upgrade pip
 
 WORKDIR /pip-packages/

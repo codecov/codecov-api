@@ -49,6 +49,8 @@ class UploadSerializer(serializers.Serializer):
     branch = serializers.CharField(required=False, allow_null=True)
     compareSha = serializers.CharField(required=False, allow_null=True)
     git_service = serializers.CharField(required=False, allow_null=True)
+    storage_path = serializers.CharField(required=False, allow_null=True)
+    upload_external_id = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView, ShelterMixin):
@@ -116,12 +118,16 @@ class BundleAnalysisView(APIView, ShelterMixin):
             },
         )
 
-        upload_external_id = str(uuid.uuid4())
-        storage_path = StoragePaths.upload.path(upload_key=upload_external_id)
-        archive_service = ArchiveService(repo)
-        url = archive_service.storage.create_presigned_put(
-            get_bucket_name(), storage_path, 30
-        )
+        storage_path = data.get("storage_path", None)
+        upload_external_id = data.get("upload_external_id", None)
+        url = None
+        if not self.is_shelter_request():
+            upload_external_id = str(uuid.uuid4())
+            storage_path = StoragePaths.upload.path(upload_key=upload_external_id)
+            archive_service = ArchiveService(repo)
+            url = archive_service.storage.create_presigned_put(
+                get_bucket_name(), storage_path, 30
+            )
 
         task_arguments = {
             # these are used in the upload task when saving an upload record

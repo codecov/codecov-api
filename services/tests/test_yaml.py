@@ -56,3 +56,15 @@ class YamlServiceTest(TransactionTestCase):
         """
         config = yaml.final_commit_yaml(self.commit, self.org)
         assert config["codecov"]["require_ci_to_pass"] is False
+
+    @patch("services.yaml.fetch_current_yaml_from_provider_via_reference")
+    def test_when_commit_has_reserved_to_string_key(self, mock_fetch_yaml):
+        mock_fetch_yaml.return_value = """
+        codecov:
+          notify:
+            require_ci_to_pass: no
+        to_string: hello
+        """
+        config = yaml.final_commit_yaml(self.commit, self.org)
+        assert config.get("to_string") is None
+        assert "to_string" not in config.to_dict()
