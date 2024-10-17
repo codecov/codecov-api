@@ -8,7 +8,7 @@ from graphql_api.helpers.connection import (
     build_connection_graphql,
     queryset_to_connection,
 )
-from graphql_api.types.enums.enums import AccountOrganizationOrdering, OrderingDirection
+from graphql_api.types.enums.enums import OrderingDirection
 
 account = ariadne_load_local_graphql(__file__, "account.graphql")
 account = account + build_connection_graphql("AccountOrganizationConnection", "Owner")
@@ -43,13 +43,12 @@ def resolve_activated_user_count(account: Account, info: GraphQLResolveInfo) -> 
 def resolve_organizations(
     account: Account,
     info: GraphQLResolveInfo,
-    ordering=AccountOrganizationOrdering.ACTIVATED_USERS,
-    ordering_direction=OrderingDirection.DESC,
+    ordering_direction=OrderingDirection.ASC,
     **kwargs,
 ):
     return queryset_to_connection(
         account.organizations,
-        ordering=(ordering,),
+        ordering=("username",),
         ordering_direction=ordering_direction,
         **kwargs,
     )

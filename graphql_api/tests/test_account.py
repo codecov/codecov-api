@@ -126,55 +126,9 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             for node in result["owner"]["account"]["organizations"]["edges"]
         ]
 
-        assert orgs == ["owner-2", "owner-1", "owner-0"]
-
-    def test_fetch_organizations_order_by_activated_users_asc(self) -> None:
-        account = AccountFactory(name="account")
-        owner = OwnerFactory(
-            username="owner-0",
-            plan_activated_users=[],
-            account=account,
-        )
-        OwnerFactory(
-            username="owner-1",
-            plan_activated_users=[0],
-            account=account,
-        )
-        OwnerFactory(
-            username="owner-2",
-            plan_activated_users=[0, 1],
-            account=account,
-        )
-
-        query = """
-            query {
-                owner(username: "%s") {
-                    account {
-                        organizations(first: 20, ordering: ACTIVATED_USERS, orderingDirection: ASC) {
-                            edges {
-                                node {
-                                    username
-                                    activatedUserCount
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        """ % (owner.username)
-
-        result = self.gql_request(query, owner=owner)
-
-        assert "errors" not in result
-
-        orgs = [
-            node["node"]["username"]
-            for node in result["owner"]["account"]["organizations"]["edges"]
-        ]
-
         assert orgs == ["owner-0", "owner-1", "owner-2"]
 
-    def test_fetch_organizations_order_by_name(self) -> None:
+    def test_fetch_organizations_desc(self) -> None:
         account = AccountFactory(name="account")
         owner = OwnerFactory(
             username="owner-0",
@@ -196,7 +150,7 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             query {
                 owner(username: "%s") {
                     account {
-                        organizations(first: 20, ordering: NAME) {
+                        organizations(first: 20, orderingDirection: DESC) {
                             edges {
                                 node {
                                     username
@@ -219,52 +173,6 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
         ]
 
         assert orgs == ["owner-2", "owner-1", "owner-0"]
-
-    def test_fetch_organizations_order_by_name_asc(self) -> None:
-        account = AccountFactory(name="account")
-        owner = OwnerFactory(
-            username="owner-0",
-            plan_activated_users=[],
-            account=account,
-        )
-        OwnerFactory(
-            username="owner-1",
-            plan_activated_users=[0],
-            account=account,
-        )
-        OwnerFactory(
-            username="owner-2",
-            plan_activated_users=[0, 1],
-            account=account,
-        )
-
-        query = """
-            query {
-                owner(username: "%s") {
-                    account {
-                        organizations(first: 20, ordering: NAME, orderingDirection: ASC) {
-                            edges {
-                                node {
-                                    username
-                                    activatedUserCount
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        """ % (owner.username)
-
-        result = self.gql_request(query, owner=owner)
-
-        assert "errors" not in result
-
-        orgs = [
-            node["node"]["username"]
-            for node in result["owner"]["account"]["organizations"]["edges"]
-        ]
-
-        assert orgs == ["owner-0", "owner-1", "owner-2"]
 
     def test_fetch_organizations_pagination(self) -> None:
         account = AccountFactory(name="account")
@@ -318,7 +226,7 @@ class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
             for node in result["owner"]["account"]["organizations"]["edges"]
         ]
 
-        assert orgs == ["owner-2", "owner-1"]
+        assert orgs == ["owner-0", "owner-1"]
 
         hasNextPage = result["owner"]["account"]["organizations"]["pageInfo"][
             "hasNextPage"
