@@ -78,8 +78,6 @@ def require_part_of_org(resolver):
 def require_shared_account_or_part_of_org(resolver):
     def authenticated_resolver(queried_owner, info, *args, **kwargs):
         current_user = info.context["request"].user
-        current_owner = info.context["request"].current_owner
-
         if (
             current_user
             and current_user.is_authenticated
@@ -89,15 +87,7 @@ def require_shared_account_or_part_of_org(resolver):
         ):
             return resolver(queried_owner, info, *args, **kwargs)
 
-        if (
-            not current_user
-            or not current_user.is_authenticated
-            or not current_owner
-            or not current_user_part_of_org(current_owner, queried_owner)
-        ):
-            return None
-
-        return resolver(queried_owner, info, *args, **kwargs)
+        return require_part_of_org(resolver)(queried_owner, info, *args, **kwargs)
 
     return authenticated_resolver
 
