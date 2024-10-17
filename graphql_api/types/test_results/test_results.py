@@ -10,7 +10,7 @@ test_result_bindable = ObjectType("TestResult")
 
 @test_result_bindable.field("name")
 def resolve_name(test: TestResultsRow, _: GraphQLResolveInfo) -> str:
-    return test.computed_name or test.name.replace("\x1f", " ")
+    return test.name.replace("\x1f", " ")
 
 
 @test_result_bindable.field("updatedAt")
