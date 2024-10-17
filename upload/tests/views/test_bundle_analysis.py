@@ -106,8 +106,8 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
 @override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
 def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
-    mock_sentry_metrics = mocker.patch(
-        "upload.views.bundle_analysis.sentry_metrics.incr"
+    mock_metrics = mocker.patch(
+        "upload.views.bundle_analysis.BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels"
     )
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
@@ -179,9 +179,8 @@ def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
         report_code=None,
         report_type="bundle_analysis",
     )
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "bundle_analysis",
