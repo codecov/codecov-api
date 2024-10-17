@@ -42,7 +42,6 @@ BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER = Counter(
         "action",
         "endpoint",
         "is_using_shelter",
-        "repo_visibility",
         "position",
     ],
 )
@@ -81,15 +80,22 @@ class BundleAnalysisView(APIView, ShelterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request: HttpRequest) -> Response:
-        BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(
-            **generate_upload_sentry_metrics_tags(
+        try:
+            labels = generate_upload_sentry_metrics_tags(
                 action="bundle_analysis",
                 endpoint="bundle_analysis",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             )
-        ).inc()
+            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(**labels).inc()
+        except Exception:
+            log.warn(
+                "Failed to BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER",
+                exc_info=True,
+                extra=labels,
+            )
+
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -168,16 +174,21 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 task_arguments=task_arguments,
             ),
         )
-        BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(
-            **generate_upload_sentry_metrics_tags(
+        try:
+            labels = generate_upload_sentry_metrics_tags(
                 action="bundle_analysis",
                 endpoint="bundle_analysis",
                 request=self.request,
-                repository=repo,
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             )
-        ).inc()
+            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(**labels).inc()
+        except Exception:
+            log.warn(
+                "Failed to BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER",
+                exc_info=True,
+                extra=labels,
+            )
 
         dispatch_upload_task(
             task_arguments,
