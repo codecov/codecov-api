@@ -9,8 +9,8 @@ from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from sentry_sdk import metrics as sentry_metrics
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
+from shared.metrics import Counter
 
 from codecov_auth.authentication.repo_auth import (
     BundleAnalysisTokenlessAuthentication,
@@ -31,6 +31,21 @@ from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
 
 log = logging.getLogger(__name__)
+
+
+BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER = Counter(
+    "bundle_analysis_upload_views_runs",
+    "Number of times a raw report processor was run and with what result",
+    [
+        "agent",
+        "version",
+        "action",
+        "endpoint",
+        "is_using_shelter",
+        "repo_visibility",
+        "position",
+    ],
+)
 
 
 class UploadBundleAnalysisPermission(BasePermission):
@@ -64,16 +79,15 @@ class BundleAnalysisView(APIView, ShelterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request: HttpRequest) -> Response:
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(
+            **generate_upload_sentry_metrics_tags(
                 action="bundle_analysis",
                 endpoint="bundle_analysis",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
-            ),
-        )
+            )
+        ).inc()
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -148,18 +162,16 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 task_arguments=task_arguments,
             ),
         )
-
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(
+            **generate_upload_sentry_metrics_tags(
                 action="bundle_analysis",
                 endpoint="bundle_analysis",
                 request=self.request,
                 repository=repo,
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
-            ),
-        )
+            )
+        ).inc()
 
         dispatch_upload_task(
             task_arguments,
