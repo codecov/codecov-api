@@ -27,6 +27,7 @@ type Commit {
   bundleAnalysis: CommitBundleAnalysis
 }
 
+"fields related to Codecov's Coverage product offering"
 type CommitCoverageAnalytics {
   components(filters: ComponentsFilters): [Component!]!
   coverageFile(path: String!, flags: [String], components: [String]): File
@@ -34,6 +35,7 @@ type CommitCoverageAnalytics {
   totals: CoverageTotals
 }
 
+"fields related to Codecov's Bundle Analysis product offering"
 type CommitBundleAnalysis {
   bundleAnalysisCompareWithParent: BundleAnalysisComparisonResult
   bundleAnalysisReport: BundleAnalysisReportResult
