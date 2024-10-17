@@ -221,7 +221,7 @@ last_duration_cte as (
 
 select * from (
     select
-    COALESCE(rt.name, rt.computed_name) as name,
+    COALESCE(rt.computed_name, rt.name) as name,
     results.*
     from
     (

@@ -7,7 +7,6 @@ def row_factory(name: str, failure_rate: float):
     return TestResultsRow(
         test_id=name,
         name=name,
-        computed_name=name,
         failure_rate=failure_rate,
         flake_rate=0.0,
         updated_at=datetime.now(),
