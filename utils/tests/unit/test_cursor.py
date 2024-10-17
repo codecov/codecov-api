@@ -7,7 +7,6 @@ def test_cursor():
     row = TestResultsRow(
         test_id="test",
         name="test",
-        computed_name="test",
         updated_at=datetime.fromisoformat("2024-01-01T00:00:00Z"),
         commits_where_fail=1,
         failure_rate=0.5,
