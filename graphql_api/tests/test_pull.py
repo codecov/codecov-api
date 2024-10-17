@@ -192,7 +192,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "pullId": my_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
-            "head": {"coverageAnalytics": { "totals": None }},
+            "head": {"coverageAnalytics": {"totals": None}},
             "comparedTo": None,
             "compareWithBase": {
                 "__typename": "MissingBaseCommit",
@@ -449,7 +449,7 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "pullId": my_pull.pullid,
             "updatestamp": "2021-02-02T00:00:00",
             "author": {"username": "test-pull-user"},
-            "head": {"coverageAnalytics": { "totals": {"coverage": 78.38}}},
+            "head": {"coverageAnalytics": {"totals": {"coverage": 78.38}}},
             "comparedTo": {"commitid": "9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s"},
             "compareWithBase": {
                 "__typename": "Comparison",
