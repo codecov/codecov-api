@@ -42,7 +42,6 @@ BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER = Counter(
         "action",
         "endpoint",
         "is_using_shelter",
-        "repo_visibility",
         "position",
     ],
 )
@@ -173,7 +172,6 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 action="bundle_analysis",
                 endpoint="bundle_analysis",
                 request=self.request,
-                repository=repo,
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             )
