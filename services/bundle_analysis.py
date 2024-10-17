@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 from django.utils.functional import cached_property
 from shared.bundle_analysis import AssetReport as SharedAssetReport
@@ -81,7 +81,7 @@ class BundleAnalysisMeasurementData(object):
     def __init__(
         self,
         raw_measurements: List[dict],
-        asset_type: BundleAnalysisMeasurementsAssetType,
+        asset_type: Union[BundleAnalysisMeasurementsAssetType, str],
         asset_name: Optional[str],
         interval: Interval,
         after: Optional[datetime],
@@ -96,6 +96,8 @@ class BundleAnalysisMeasurementData(object):
 
     @cached_property
     def asset_type(self) -> str:
+        if isinstance(self.measurement_type, str):
+            return self.measurement_type
         return self.measurement_type.name
 
     @cached_property

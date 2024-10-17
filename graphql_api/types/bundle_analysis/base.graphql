@@ -5,6 +5,7 @@ enum BundleAnalysisMeasurementsAssetType {
     FONT_SIZE
     IMAGE_SIZE
     ASSET_SIZE
+    UNKNOWN_SIZE
 }
 
 enum BundleReportGroups {
