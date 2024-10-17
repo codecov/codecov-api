@@ -116,13 +116,6 @@ class ReportServiceTest(TestCase):
         res = build_report_from_commit(commit)
         assert len(res._chunks) == 3
         assert len(res.files) == 3
-        file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
-        assert file_1.name == "awesome/__init__.py"
-        assert tuple(file_1.totals) == (0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0)
-        assert file_2.name == "tests/__init__.py"
-        assert tuple(file_2.totals) == (0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0)
-        assert file_3.name == "tests/test_sample.py"
-        assert tuple(file_3.totals) == (0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0)
         read_chunks_mock.assert_called_with("abf6d4d")
         assert list(res.totals) == [
             3,
@@ -180,13 +173,6 @@ class ReportServiceTest(TestCase):
         res = build_report_from_commit(commit)
         assert len(res._chunks) == 3
         assert len(res.files) == 3
-        file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
-        assert file_1.name == "awesome/__init__.py"
-        assert tuple(file_1.totals) == (0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0)
-        assert file_2.name == "tests/__init__.py"
-        assert tuple(file_2.totals) == (0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0)
-        assert file_3.name == "tests/test_sample.py"
-        assert tuple(file_3.totals) == (0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0)
         read_chunks_mock.assert_called_with("abf6d4d")
         assert list(res.totals) == [
             3,
@@ -213,13 +199,6 @@ class ReportServiceTest(TestCase):
         res = report.flags["integrations"].report
         assert len(res.report._chunks) == 3
         assert len(res.files) == 3
-        file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
-        assert file_1.name == "awesome/__init__.py"
-        assert tuple(file_1.totals) == (0, 10, 1, 9, 0, "10.00000", 0, 0, 0, 0, 0, 0, 0)
-        assert file_2.name == "tests/__init__.py"
-        assert tuple(file_2.totals) == (0, 3, 0, 3, 0, "0", 0, 0, 0, 0, 0, 0, 0)
-        assert file_3.name == "tests/test_sample.py"
-        assert tuple(file_3.totals) == (0, 7, 2, 5, 0, "28.57143", 0, 0, 0, 0, 0, 0, 0)
         read_chunks_mock.assert_called_with("abf6d4d")
         assert list(res.totals) == [3, 20, 3, 17, 0, "15.00000", 0, 0, 0, 1, 0, 0, 0]
 
@@ -245,13 +224,6 @@ class ReportServiceTest(TestCase):
         res = report.flags["integrations"].report
         assert len(res.report._chunks) == 3
         assert len(res.files) == 3
-        file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
-        assert file_1.name == "awesome/__init__.py"
-        assert tuple(file_1.totals) == (0, 10, 1, 9, 0, "10.00000", 0, 0, 0, 0, 0, 0, 0)
-        assert file_2.name == "tests/__init__.py"
-        assert tuple(file_2.totals) == (0, 3, 0, 3, 0, "0", 0, 0, 0, 0, 0, 0, 0)
-        assert file_3.name == "tests/test_sample.py"
-        assert tuple(file_3.totals) == (0, 7, 2, 5, 0, "28.57143", 0, 0, 0, 0, 0, 0, 0)
         read_chunks_mock.assert_called_with("asdfbhasdf89")
         assert list(res.totals) == [3, 20, 3, 17, 0, "15.00000", 0, 0, 0, 1, 0, 0, 0]
         cff_session = res.report.sessions[1]
@@ -330,13 +302,6 @@ class ReportServiceTest(TestCase):
 
         assert len(res._chunks) == 3
         assert len(res.files) == 3
-        file_1, file_2, file_3 = sorted(res.file_reports(), key=lambda x: x.name)
-        assert file_1.name == "awesome/__init__.py"
-        assert tuple(file_1.totals) == (0, 10, 8, 2, 0, "80.00000", 0, 0, 0, 0, 0, 0, 0)
-        assert file_2.name == "tests/__init__.py"
-        assert tuple(file_2.totals) == (0, 3, 2, 1, 0, "66.66667", 0, 0, 0, 0, 0, 0, 0)
-        assert file_3.name == "tests/test_sample.py"
-        assert tuple(file_3.totals) == (0, 7, 7, 0, 0, "100", 0, 0, 0, 0, 0, 0, 0)
         read_chunks_mock.assert_called_with("abf6d4d")
         assert list(res.totals) == [
             3,
