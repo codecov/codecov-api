@@ -238,7 +238,16 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 @commit_bindable.field("pathContents")
 @convert_kwargs_to_snake_case
 @sync_to_async
-def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
+def resolve_path_contents(
+    commit: Commit,
+    info,
+    path: str = None,
+    filters=None,
+    first: int = None,
+    after: str = None,
+    last: int = None,
+    before: str = None,
+):
     """
     The file directory tree is a list of all the files and directories
     extracted from the commit report of the latest, head commit.
@@ -314,7 +323,50 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
         items = report_paths.full_filelist()
     else:
         items = report_paths.single_directory()
-    return {"results": sort_path_contents(items, filters)}
+
+    # Fake pagination logic
+    sorted_items = sort_path_contents(items, filters)
+    total_items = len(sorted_items)
+
+    # Pagination calculation (first, after, last, before)
+    start = 0
+    end = total_items
+
+    # If `after` is provided, adjust start index
+    if after:
+        start = (
+            next((i for i, item in enumerate(sorted_items) if item["path"] == after), 0)
+            + 1
+        )
+
+    # If `before` is provided, adjust end index
+    if before:
+        end = next(
+            (i for i, item in enumerate(sorted_items) if item["path"] == before),
+            total_items,
+        )
+
+    # Apply `first` or `last` limits
+    if first:
+        end = min(start + first, end)
+    elif last:
+        start = max(end - last, start)
+
+    paginated_items = sorted_items[start:end]
+
+    # Prepare pagination info
+    has_next_page = end < total_items
+    has_previous_page = start > 0
+
+    return {
+        "results": paginated_items,
+        "pageInfo": {
+            "hasNextPage": has_next_page,
+            "hasPreviousPage": has_previous_page,
+            "startCursor": paginated_items[0]["path"] if paginated_items else None,
+            "endCursor": paginated_items[-1]["path"] if paginated_items else None,
+        },
+    }
 
 
 @commit_bindable.field("errors")

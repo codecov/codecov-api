@@ -29,8 +29,16 @@ type PathContentDir implements PathContent {
   percentCovered: Float!
 }
 
+type PathContentsPageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
 type PathContents {
   results: [PathContent!]!
+  pageInfo: PathContentsPageInfo!
 }
 
 union PathContentsResult =
