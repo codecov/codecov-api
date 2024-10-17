@@ -11,6 +11,7 @@ from graphql import GraphQLResolveInfo
 import services.activation as activation
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
+from codecov_auth.constants import OWNER_YAML_TO_STRING_KEY
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import (
     SERVICE_GITHUB,
@@ -94,7 +95,7 @@ def resolve_yaml(owner: Owner, info: GraphQLResolveInfo) -> Optional[str]:
     current_owner = info.context["request"].current_owner
     if not current_user_part_of_org(current_owner, owner):
         return None
-    return owner.yaml.get("to_string", yaml.dump(owner.yaml))
+    return owner.yaml.get(OWNER_YAML_TO_STRING_KEY, yaml.dump(owner.yaml))
 
 
 @owner_bindable.field("plan")

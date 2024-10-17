@@ -13,6 +13,7 @@ from codecov.commands.exceptions import (
     ValidationError,
 )
 from codecov.db import sync_to_async
+from codecov_auth.constants import OWNER_YAML_TO_STRING_KEY
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
 
@@ -56,6 +57,6 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         self.authorize()
         self.owner.yaml = self.convert_yaml_to_dict(yaml_input)
         if self.owner.yaml:
-            self.owner.yaml["to_string"] = yaml_input
+            self.owner.yaml[OWNER_YAML_TO_STRING_KEY] = yaml_input
         self.owner.save()
         return self.owner

@@ -35,6 +35,16 @@ codecov:
     bot: foo: bar
 """
 
+good_yaml_with_comments = """
+# comment 1
+codecov:  # comment 2
+
+
+  bot: 'codecov'
+# comment 3
+    #comment 4
+"""
+
 
 class SetYamlOnOwnerInteractorTest(TransactionTestCase):
     def setUp(self):
@@ -113,3 +123,23 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             str(e.value)
             == "Syntax error at line 3, column 13: mapping values are not allowed here"
         )
+
+    async def test_yaml_has_comments(self):
+        owner_updated = await self.execute(
+            self.current_owner, self.org.username, good_yaml_with_comments
+        )
+        # check the interactor returns the right owner
+        assert owner_updated.ownerid == self.org.ownerid
+        assert owner_updated.yaml == {
+            "codecov": {
+                "bot": "codecov",
+            },
+            "to_string": "\n"
+            "# comment 1\n"
+            "codecov:  # comment 2\n"
+            "\n"
+            "\n"
+            "  bot: 'codecov'\n"
+            "# comment 3\n"
+            "    #comment 4\n",
+        }
