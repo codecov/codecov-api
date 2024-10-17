@@ -203,6 +203,7 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
 
     @patch("sentry_sdk.metrics.incr")
     @patch("graphql_api.views.AsyncGraphqlView._check_ratelimit")
+    @override_settings(DEBUG=False, GRAPHQL_RATE_LIMIT_VALUE=1000)
     async def test_when_rate_limit_reached(
         self, mocked_check_ratelimit, mocked_sentry_incr
     ):
@@ -213,7 +214,7 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
         assert response["status"] == 429
         assert (
             response["detail"]
-            == "It looks like you've hit the rate limit of 300 req/min. Try again later."
+            == "It looks like you've hit the rate limit of 1000 req/min. Try again later."
         )
 
         expected_calls = [
