@@ -11,6 +11,8 @@ class TestResultsAggregates(TypedDict):
     total_duration_percent_change: float | None
     slowest_tests_duration: float
     slowest_tests_duration_percent_change: float | None
+    total_slow_tests: int
+    total_slow_tests_percent_change: float | None
     fails: int
     fails_percent_change: float | None
     skips: int
@@ -41,6 +43,18 @@ def resolve_slowest_tests_duration_percent_change(
     obj: TestResultsAggregates, _: GraphQLResolveInfo
 ) -> float | None:
     return obj.get("slowest_tests_duration_percent_change")
+
+
+@test_results_aggregates_bindable.field("totalSlowTests")
+def resolve_total_slow_tests(obj: TestResultsAggregates, _: GraphQLResolveInfo) -> int:
+    return obj["total_slow_tests"]
+
+
+@test_results_aggregates_bindable.field("totalSlowTestsPercentChange")
+def resolve_total_slow_tests_percent_change(
+    obj: TestResultsAggregates, _: GraphQLResolveInfo
+) -> float | None:
+    return obj.get("total_slow_tests_percent_change")
 
 
 @test_results_aggregates_bindable.field("totalFails")

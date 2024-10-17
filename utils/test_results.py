@@ -31,7 +31,7 @@ DELIMITER = "|"
 def slow_test_threshold(total_tests: int) -> int:
     percentile = (100 - SLOW_TEST_PERCENTILE) / 100
     slow_tests_to_return = floor(percentile * total_tests)
-    return max(slow_tests_to_return, 1)
+    return min(max(slow_tests_to_return, 1), 100)
 
 
 class GENERATE_TEST_RESULT_PARAM:
