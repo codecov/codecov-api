@@ -242,6 +242,23 @@ def search_base_query(
     ordering: str,
     cursor: CursorValue | None,
 ) -> list[TestResultsRow]:
+    """
+    The reason we have to do this filtering in the application logic is because we need to get the total count of rows that
+    match from the base query, but we only want to return the rows from after the cursor, so to avoid doing multiple SQL queries
+    to get the total count of rows that match and then filtering in the database we do the filtering here.
+
+    This is a binary search to find the cursor based on the ordering field.
+
+    The base query we get back is not filtered, we need to filter the rows in the application logic here
+    so we decode the cursor, which is a value for the ordering field (based on the OrderingParameter) and
+    a value for the name field.
+
+    The list of rows we get back from the base query is ordered by the ordering field, then by name, so we
+    can do a binary search to find the value corresponding to the cursor.
+
+    When we find the value corresponding to the cursor we return the rows starting from there, and then we filter
+    by the page size after we call this function.
+    """
     if not cursor:
         return rows
 
@@ -256,7 +273,6 @@ def search_base_query(
 
     left, right = 0, len(rows) - 1
     while left <= right:
-        print(left, right)
         mid = (left + right) // 2
         comparison = compare(rows[mid])
 
@@ -298,9 +314,9 @@ def generate_test_results(
     :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account
         test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into
         account.
-    :param interval: timedelta for filtering test instances used to calculated the aggregates by time, the test instances used will be
+    :param interval: timedelta for filtering test instances used to calculate the aggregates by time, the test instances used will be
         those with a created at larger than now - interval.
-    :param testsuites: optional list of testsuite names to filter by
+    :param testsuites: optional list of testsuite names to filter by, this is done via a union
     :param flags: optional list of flag names to filter by, this is done via a union so if a user specifies multiple flags, we get all tests with any
         of the flags, not tests that have all of the flags
     :returns: queryset object containing list of dictionaries of results
