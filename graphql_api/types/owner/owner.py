@@ -31,7 +31,10 @@ from graphql_api.helpers.connection import (
     build_connection_graphql,
     queryset_to_connection,
 )
-from graphql_api.helpers.mutation import require_part_of_org
+from graphql_api.helpers.mutation import (
+    require_part_of_org,
+    require_shared_account_or_part_of_org,
+)
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
@@ -389,6 +392,6 @@ def resolve_upload_token_required(
 
 @owner_bindable.field("activatedUserCount")
 @sync_to_async
-@require_part_of_org
+@require_shared_account_or_part_of_org
 def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count

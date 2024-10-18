@@ -7,7 +7,10 @@ from django.utils import timezone
 from freezegun import freeze_time
 from graphql import GraphQLError
 from prometheus_client import REGISTRY
-from shared.django_apps.codecov_auth.tests.factories import OktaSettingsFactory
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountsUsersFactory,
+    OktaSettingsFactory,
+)
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
@@ -1027,3 +1030,23 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (owner.username)
         data = self.gql_request(query, owner=user)
         assert data["owner"]["activatedUserCount"] is None
+
+    def test_fetch_activated_user_count_when_not_in_org_but_has_shared_account(self):
+        owner = OwnerFactory(username="sample-user")
+        AccountsUsersFactory(user=owner.user, account=self.account)
+        user2 = OwnerFactory(username="sample-user-2")
+        user3 = OwnerFactory(username="sample-user-3")
+        other_owner = OwnerFactory(
+            username="sample-org",
+            plan_activated_users=[user2.ownerid, user3.ownerid],
+            account=self.account,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                activatedUserCount
+            }
+        }
+        """ % (other_owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["activatedUserCount"] == 2
