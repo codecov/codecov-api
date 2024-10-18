@@ -203,7 +203,7 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
 
     @patch("sentry_sdk.metrics.incr")
     @patch("graphql_api.views.AsyncGraphqlView._check_ratelimit")
-    @override_settings(DEBUG=False, GRAPHQL_RATE_LIMIT_VALUE=1000)
+    @override_settings(DEBUG=False, GRAPHQL_RATE_LIMIT_RPM=1000)
     async def test_when_rate_limit_reached(
         self, mocked_check_ratelimit, mocked_sentry_incr
     ):
@@ -222,6 +222,17 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
             call("graphql.error.rate_limit", tags={"path": "/graphql/gh"}),
         ]
         mocked_sentry_incr.assert_has_calls(expected_calls)
+
+    @override_settings(
+        DEBUG=False, GRAPHQL_RATE_LIMIT_RPM=0, GRAPHQL_RATE_LIMIT_ENABLED=False
+    )
+    def test_rate_limit_disabled(self):
+        # rate limit is 0, so any request would cause a rate limit if the GQL rate limit was enabled
+        view = AsyncGraphqlView()
+        request = Mock()
+
+        result = view._check_ratelimit(request)
+        assert result == False
 
     def test_client_ip_from_x_forwarded_for(self):
         view = AsyncGraphqlView()

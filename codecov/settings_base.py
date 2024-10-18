@@ -99,9 +99,11 @@ GRAPHQL_QUERY_COST_THRESHOLD = get_config(
     "setup", "graphql", "query_cost_threshold", default=10000
 )
 
-GRAPHQL_RATE_LIMIT_VALUE = get_config(
-    "setup", "graphql", "rate_limit_value", default=300
+GRAPHQL_RATE_LIMIT_ENABLED = get_config(
+    "setup", "graphql", "rate_limit_enabled", default=True
 )
+
+GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", default=300)
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
