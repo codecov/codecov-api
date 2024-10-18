@@ -13,6 +13,8 @@ from utils.test_results import (
     generate_flake_aggregates,
     generate_test_results,
     generate_test_results_aggregates,
+    get_flags,
+    get_test_suites,
 )
 
 log = logging.getLogger(__name__)
@@ -86,6 +88,20 @@ async def resolve_flake_aggregates(
     return await sync_to_async(generate_flake_aggregates)(
         repoid=repository.repoid, interval=convert_interval_to_timedelta(interval)
     )
+
+
+@test_analytics_bindable.field("testSuites")
+async def resolve_test_suites(
+    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_
+):
+    return await sync_to_async(get_test_suites)(repository.repoid, term)
+
+
+@test_analytics_bindable.field("flags")
+async def resolve_flags(
+    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_
+):
+    return await sync_to_async(get_flags)(repository.repoid, term)
 
 
 def convert_interval_to_timedelta(interval: MeasurementInterval | None) -> timedelta:
