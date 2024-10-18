@@ -1163,6 +1163,34 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testSuites"] == ["hello_world"]
 
+    def test_test_suites_no_term(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo, testsuite="hello_world")
+        test2 = TestFactory(repository=repo, testsuite="goodbye_world")
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testSuites""",
+        )
+        assert sorted(res["testSuites"]) == ["goodbye_world", "hello_world"]
+
     def test_flags(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -1179,3 +1207,20 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             """flags(term: "hello")""",
         )
         assert res["flags"] == ["hello_world"]
+
+    def test_flags_no_term(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+        repo_flag2 = RepositoryFlagFactory(repository=repo, flag_name="goodbye_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = TestFlagBridgeFactory(flag=repo_flag2, test=test2)
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """flags""",
+        )
+        assert sorted(res["flags"]) == ["goodbye_world", "hello_world"]
