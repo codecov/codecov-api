@@ -6,6 +6,7 @@ from api.internal.constants import INTERNAL_API_PREFIX
 from codecov import views
 
 urlpatterns = [
+    path("__debug__/", include("debug_toolbar.urls")),
     path("billing/", include("billing.urls")),
     path("api/v2/", include("api.public.v2.urls")),
     path("api/v1/", include("api.public.v1.urls")),
