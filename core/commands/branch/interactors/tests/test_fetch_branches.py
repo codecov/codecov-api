@@ -50,3 +50,30 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
             )
         ]
         assert "merged" in branches
+
+    def test_fetch_branches_filtered_by_name(self):
+        repository = self.repo
+        filters = {"search_value": "test", "merged_branches": True}
+        branches = async_to_sync(self.execute)(None, repository, filters)
+        assert not any(branch.name == "main" for branch in branches)
+        assert any(branch.name == "test1" for branch in branches)
+        assert any(branch.name == "test2" for branch in branches)
+        assert len(branches) == 2
+
+    def test_fetch_branches_filtered_by_name_no_sql_injection(self):
+        repository = self.repo
+        malicious_filters = {
+            "search_value": "'; DROP TABLE branches; --",
+            "merged_branches": True,
+        }
+        find_branches_sql_injection_attempt = async_to_sync(self.execute)(
+            None, repository, malicious_filters
+        )
+        assert (
+            # assert no branches found with that branch name
+            len(find_branches_sql_injection_attempt) == 0
+        )
+
+        # confirm data is unaltered after sql injection attempt
+        find_branches = async_to_sync(self.execute)(None, repository, {})
+        assert len(find_branches) == 3

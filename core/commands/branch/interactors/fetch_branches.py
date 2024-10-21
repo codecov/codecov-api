@@ -13,7 +13,11 @@ class FetchRepoBranchesInteractor(BaseInteractor):
         filters = filters or {}
         search_value = filters.get("search_value")
         if search_value:
-            queryset = queryset.filter(name__icontains=search_value)
+            # force use of ILIKE to optimize search; django icontains doesn't work
+            # see https://github.com/codecov/engineering-team/issues/2537
+            queryset = queryset.extra(
+                where=['"branches"."branch" ILIKE %s'], params=[f"%{search_value}%"]
+            )
 
         merged = filters.get("merged_branches", False)
         if not merged:
