@@ -1,4 +1,7 @@
-from django.db.models import OuterRef, Q, Subquery
+from typing import Any
+
+from django.db.models import OuterRef, Q, QuerySet, Subquery
+from shared.django_apps.core.models import Repository
 
 from codecov.commands.base import BaseInteractor
 from codecov.db import sync_to_async
@@ -7,7 +10,7 @@ from core.models import Commit
 
 class FetchRepoBranchesInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, repository, filters):
+    def execute(self, repository: Repository, filters: dict[str, Any]) -> QuerySet:
         queryset = repository.branches.all()
 
         filters = filters or {}
