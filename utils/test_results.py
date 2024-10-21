@@ -242,6 +242,7 @@ def search_base_query(
     rows: list[TestResultsRow],
     ordering: str,
     cursor: CursorValue | None,
+    descending: bool = False,
 ) -> list[TestResultsRow]:
     """
     The reason we have to do this filtering in the application logic is because we need to get the total count of rows that
@@ -270,7 +271,14 @@ def search_base_query(
         row_value = getattr(row, ordering)
         row_value_str = str(row_value)
         cursor_value_str = cursor.ordered_value
-        return (row_value_str > cursor_value_str) - (row_value_str < cursor_value_str)
+        if descending:
+            return (row_value_str < cursor_value_str) - (
+                row_value_str > cursor_value_str
+            )
+        else:
+            return (row_value_str > cursor_value_str) - (
+                row_value_str < cursor_value_str
+            )
 
     left, right = 0, len(rows) - 1
     while left <= right:
@@ -442,8 +450,13 @@ def generate_test_results(
     page_size: int = first or last or 20
 
     cursor_value = decode_cursor(after) if after else decode_cursor(before)
-
-    search_rows = search_base_query(rows, ordering, cursor_value)
+    descending = ordering_direction == "DESC"
+    search_rows = search_base_query(
+        rows,
+        ordering,
+        cursor_value,
+        descending=descending,
+    )
 
     page: list[dict[str, str | TestResultsRow]] = [
         {"cursor": encode_cursor(row, ordering), "node": row}

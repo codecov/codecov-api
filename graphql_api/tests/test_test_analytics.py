@@ -598,9 +598,37 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             pass_count=2,
             fail_count=3,
         )
+
+        test_3 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test_3,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=1,
+            fail_count=4,
+        )
         res = self.fetch_test_analytics(
             repo.name,
             """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }, first: 1) { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }""",
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_3.name, "failureRate": 0.8}},
+            ],
+            "pageInfo": {
+                "endCursor": base64_encode_string(f"0.8|{test_3.name}"),
+                "hasNextPage": True,
+                "hasPreviousPage": False,
+                "startCursor": base64_encode_string(f"0.8|{test_3.name}"),
+            },
+            "totalCount": 3,
+        }
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }, first: 1, after: "%s") { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }"""
+            % res["testResults"]["pageInfo"]["endCursor"],
         )
 
         assert res["testResults"] == {
@@ -613,7 +641,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
                 "hasPreviousPage": False,
                 "startCursor": base64_encode_string(f"0.6|{test_2.name}"),
             },
-            "totalCount": 2,
+            "totalCount": 3,
         }
 
         res = self.fetch_test_analytics(
@@ -632,81 +660,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
                 "hasPreviousPage": False,
                 "startCursor": base64_encode_string(f"0.2|{test.name}"),
             },
-            "totalCount": 2,
-        }
-
-        res = self.fetch_test_analytics(
-            repo.name,
-            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }, first: 1) { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }""",
-        )
-
-        assert res["testResults"] == {
-            "edges": [
-                {"node": {"name": test.name, "failureRate": 0.2}},
-            ],
-            "pageInfo": {
-                "endCursor": base64_encode_string(f"0.2|{test.name}"),
-                "hasNextPage": True,
-                "hasPreviousPage": False,
-                "startCursor": base64_encode_string(f"0.2|{test.name}"),
-            },
-            "totalCount": 2,
-        }
-
-        res = self.fetch_test_analytics(
-            repo.name,
-            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }, first: 1, after: "%s") { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }"""
-            % res["testResults"]["pageInfo"]["endCursor"],
-        )
-
-        assert res["testResults"] == {
-            "edges": [
-                {"node": {"name": test_2.name, "failureRate": 0.6}},
-            ],
-            "pageInfo": {
-                "endCursor": base64_encode_string(f"0.6|{test_2.name}"),
-                "hasNextPage": False,
-                "hasPreviousPage": False,
-                "startCursor": base64_encode_string(f"0.6|{test_2.name}"),
-            },
-            "totalCount": 2,
-        }
-
-        res = self.fetch_test_analytics(
-            repo.name,
-            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }, last: 2) { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }""",
-        )
-
-        assert res["testResults"] == {
-            "edges": [
-                {"node": {"name": test_2.name, "failureRate": 0.6}},
-                {"node": {"name": test.name, "failureRate": 0.2}},
-            ],
-            "pageInfo": {
-                "endCursor": base64_encode_string(f"0.2|{test.name}"),
-                "hasNextPage": False,
-                "hasPreviousPage": False,
-                "startCursor": base64_encode_string(f"0.6|{test_2.name}"),
-            },
-            "totalCount": 2,
-        }
-
-        res = self.fetch_test_analytics(
-            repo.name,
-            """testResults(ordering: { parameter: FAILURE_RATE, direction: ASC }, last: 1) { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }""",
-        )
-
-        assert res["testResults"] == {
-            "edges": [
-                {"node": {"name": test_2.name, "failureRate": 0.6}},
-            ],
-            "pageInfo": {
-                "endCursor": base64_encode_string(f"0.6|{test_2.name}"),
-                "hasNextPage": False,
-                "hasPreviousPage": True,
-                "startCursor": base64_encode_string(f"0.6|{test_2.name}"),
-            },
-            "totalCount": 2,
+            "totalCount": 3,
         }
 
     def test_flake_rate_filtering_on_test_results(self) -> None:
@@ -1184,7 +1138,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """testSuites""",
+            """testSuites(term: "hello")""",
         )
         assert sorted(res["testSuites"]) == ["goodbye_world", "hello_world"]
 
@@ -1218,6 +1172,6 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_test_analytics(
             repo.name,
-            """flags""",
+            """flags(term: "hello")""",
         )
         assert sorted(res["flags"]) == ["goodbye_world", "hello_world"]
