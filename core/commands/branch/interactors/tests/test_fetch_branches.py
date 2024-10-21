@@ -53,7 +53,7 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
 
     def test_fetch_branches_filtered_by_name(self):
         repository = self.repo
-        filters = {"search_value": "test", "merged_branches": True}
+        filters = {"search_value": "tESt", "merged_branches": True}
         branches = async_to_sync(self.execute)(None, repository, filters)
         assert not any(branch.name == "main" for branch in branches)
         assert any(branch.name == "test1" for branch in branches)
