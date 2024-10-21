@@ -51,3 +51,13 @@ def test_search_base_query_with_missing_cursor_low_name_high_failure_rate():
     cursor = CursorValue(name="0", ordered_value="0.15")
     res = search_base_query(rows, "failure_rate", cursor)
     assert res == rows[-1:]
+
+
+def test_search_base_query_descending():
+    # [(2, "0.2"), (1, "0.1"), (0, "0.0")]
+    #             ^
+    #             here's where the cursor is pointing at
+    rows = [row_factory(str(i), float(i) * 0.1) for i in range(2, -1, -1)]
+    cursor = CursorValue(name="0", ordered_value="0.15")
+    res = search_base_query(rows, "failure_rate", cursor, descending=True)
+    assert res == rows[1:]
