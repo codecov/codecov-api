@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 
 BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER = Counter(
     "bundle_analysis_upload_views_runs",
-    "Number of times a raw report processor was run and with what result",
+    "Number of times a BA upload was run and with what result",
     [
         "agent",
         "version",
