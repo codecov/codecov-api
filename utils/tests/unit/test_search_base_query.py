@@ -53,7 +53,7 @@ def test_search_base_query_with_missing_cursor_low_name_high_failure_rate():
     assert res == rows[-1:]
 
 
-def test_search_base_query_with_missing_cursor_low_name_high_failure_rate_desc():
+def test_search_base_query_descending():
     # [(2, "0.2"), (1, "0.1"), (0, "0.0")]
     #             ^
     #             here's where the cursor is pointing at

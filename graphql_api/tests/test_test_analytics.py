@@ -1138,7 +1138,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         res = self.fetch_test_analytics(
             repo.name,
-            """testSuites(term: "hello")""",
+            """testSuites""",
         )
         assert sorted(res["testSuites"]) == ["goodbye_world", "hello_world"]
 
@@ -1172,6 +1172,6 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_test_analytics(
             repo.name,
-            """flags(term: "hello")""",
+            """flags""",
         )
         assert sorted(res["flags"]) == ["goodbye_world", "hello_world"]

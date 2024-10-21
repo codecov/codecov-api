@@ -271,14 +271,12 @@ def search_base_query(
         row_value = getattr(row, ordering)
         row_value_str = str(row_value)
         cursor_value_str = cursor.ordered_value
+        row_is_greater = row_value_str > cursor_value_str
+        row_is_less = row_value_str < cursor_value_str
         if descending:
-            return (row_value_str < cursor_value_str) - (
-                row_value_str > cursor_value_str
-            )
+            return row_is_less - row_is_greater
         else:
-            return (row_value_str > cursor_value_str) - (
-                row_value_str < cursor_value_str
-            )
+            return row_is_greater - row_is_less
 
     left, right = 0, len(rows) - 1
     while left <= right:
