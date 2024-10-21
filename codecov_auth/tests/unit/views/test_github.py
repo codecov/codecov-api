@@ -9,11 +9,11 @@ from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.config import ConfigHelper
+from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.torngit import Github
 from shared.torngit.exceptions import TorngitClientGeneralError
 
 from codecov_auth.models import Owner
-from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.views.github import GithubLoginView
 
 

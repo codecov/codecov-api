@@ -6,9 +6,9 @@ from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
 from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
+from shared.django_apps.codecov_auth.tests.factories import UserFactory
+from shared.django_apps.core.tests.factories import RepositoryFactory
 
-from codecov_auth.tests.factories import UserFactory
-from core.tests.factories import RepositoryFactory
 from timeseries.tests.factories import DatasetFactory
 
 

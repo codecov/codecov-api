@@ -383,10 +383,6 @@ DISABLE_GIT_BASED_LOGIN = IS_ENTERPRISE and get_config(
 
 SHELTER_SHARED_SECRET = get_config("setup", "shelter_shared_secret", default=None)
 
-# list of repo IDs that will use the new-style report builder
-# TODO: we can eventually get rid of this once it's confirmed working well for many repos
-REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])
-
 SENTRY_ENV = os.environ.get("CODECOV_ENV", False)
 SENTRY_DSN = os.environ.get("SERVICES__SENTRY__SERVER_DSN", None)
 SENTRY_DENY_LIST = DEFAULT_DENYLIST + ["_headers", "token_to_use"]

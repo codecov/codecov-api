@@ -8,8 +8,16 @@ from freezegun import freeze_time
 from graphql import GraphQLError
 from prometheus_client import REGISTRY
 from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
     AccountsUsersFactory,
+    GetAdminProviderAdapter,
     OktaSettingsFactory,
+    UserFactory,
+)
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
@@ -19,13 +27,6 @@ from codecov.commands.exceptions import (
     UnauthorizedGuestAccess,
 )
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
-from codecov_auth.tests.factories import (
-    AccountFactory,
-    GetAdminProviderAdapter,
-    OwnerFactory,
-    UserFactory,
-)
-from core.tests.factories import CommitFactory, RepositoryFactory
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 

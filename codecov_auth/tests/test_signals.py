@@ -2,8 +2,9 @@ import os
 
 import pytest
 from django.test import override_settings
-
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory
+from shared.django_apps.codecov_auth.tests.factories import (
+    OrganizationLevelTokenFactory,
+)
 
 
 @override_settings(

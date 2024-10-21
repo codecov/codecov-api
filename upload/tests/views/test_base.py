@@ -1,7 +1,7 @@
 import pytest
 from rest_framework.exceptions import ValidationError
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.models import CommitReport
 from upload.views.base import GetterMixin
 

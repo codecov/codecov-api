@@ -1,7 +1,7 @@
 import pytest
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import CommitFactory
 
-from core.tests.factories import CommitFactory
 from graphql_api.dataloader.loader import BaseLoader
 
 

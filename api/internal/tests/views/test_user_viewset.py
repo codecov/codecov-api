@@ -4,10 +4,13 @@ from unittest.mock import patch
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 
-from codecov_auth.tests.factories import OwnerFactory
 from core.models import Pull
-from core.tests.factories import PullFactory, RepositoryFactory
 from utils.test_utils import APIClient
 
 

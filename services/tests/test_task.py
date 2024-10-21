@@ -5,8 +5,8 @@ import pytest
 from django.conf import settings
 from freezegun import freeze_time
 from shared import celery_config
+from shared.django_apps.core.tests.factories import RepositoryFactory
 
-from core.tests.factories import RepositoryFactory
 from services.task import TaskService, celery_app
 from timeseries.tests.factories import DatasetFactory
 

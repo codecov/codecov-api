@@ -3,12 +3,12 @@ from uuid import uuid4
 from django.urls import reverse
 from rest_framework.test import APIClient
 from shared.celery_config import label_analysis_task_name
-
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
     CommitFactory,
     RepositoryFactory,
     RepositoryTokenFactory,
 )
+
 from labelanalysis.models import (
     LabelAnalysisProcessingError,
     LabelAnalysisRequest,

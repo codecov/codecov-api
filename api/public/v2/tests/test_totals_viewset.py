@@ -4,11 +4,15 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.test import TestCase
 from rest_framework.reverse import reverse
+from shared.django_apps.core.tests.factories import (
+    BranchFactory,
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 from services.components import Component
 from utils.test_utils import APIClient
 

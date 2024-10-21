@@ -3,9 +3,7 @@ from unittest.mock import call
 
 import pytest
 from django.test import override_settings
-from shared.django_apps.core.tests.factories import CommitFactory
-
-from core.tests.factories import RepositoryFactory
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
 
 @override_settings(

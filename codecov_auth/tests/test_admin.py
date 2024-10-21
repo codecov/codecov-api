@@ -16,8 +16,14 @@ from shared.django_apps.codecov_auth.models import (
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     InvoiceBillingFactory,
+    OrganizationLevelTokenFactory,
+    OwnerFactory,
+    SentryUserFactory,
+    SessionFactory,
     StripeBillingFactory,
+    UserFactory,
 )
+from shared.django_apps.core.tests.factories import PullFactory, RepositoryFactory
 
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.admin import (
@@ -30,15 +36,7 @@ from codecov_auth.admin import (
     find_and_remove_stale_users,
 )
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
-from codecov_auth.tests.factories import (
-    OrganizationLevelTokenFactory,
-    OwnerFactory,
-    SentryUserFactory,
-    SessionFactory,
-    UserFactory,
-)
 from core.models import Pull
-from core.tests.factories import PullFactory, RepositoryFactory
 from plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,

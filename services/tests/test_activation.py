@@ -1,6 +1,6 @@
 import pytest
+from shared.django_apps.core.tests.factories import OwnerFactory
 
-from codecov_auth.tests.factories import OwnerFactory
 from services.activation import _get_activator
 
 

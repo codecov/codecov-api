@@ -7,10 +7,13 @@ from django.conf import settings
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from timeseries.models import Dataset, MeasurementName
 
 from ..activate_measurements import ActivateMeasurementsInteractor

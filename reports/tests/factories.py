@@ -2,8 +2,8 @@ from datetime import date, datetime
 
 import factory
 from factory.django import DjangoModelFactory
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum
 from reports import models
 from reports.models import ReportResults, TestInstance
