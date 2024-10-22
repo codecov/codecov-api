@@ -41,7 +41,7 @@ def test_reports_get_not_allowed(client, mocker, db):
 
 def test_reports_post(client, db, mocker):
     mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
-    mock_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -65,7 +65,7 @@ def test_reports_post(client, db, mocker):
         commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
-    mock_metrics.assert_called_with(
+    mock_prometheus_metrics.assert_called_with(
         **{
             "agent": "cli",
             "version": "0.4.7",

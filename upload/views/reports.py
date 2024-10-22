@@ -137,7 +137,7 @@ class ReportResultsView(
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        ).incr()
+        ).inc()
         return instance
 
     def get_object(self):
