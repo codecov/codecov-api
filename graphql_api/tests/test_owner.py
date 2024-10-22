@@ -762,6 +762,30 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             assert e.message == UnauthorizedGuestAccess.message
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
 
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_owner_on_unauthenticated_enteprise_guest_access_not_activated(self):
+        user = OwnerFactory(username="sample-user")
+        owner = OwnerFactory(username="sample-owner", plan_activated_users=[123, 456])
+        user.organizations = [owner.ownerid]
+        user.save()
+        owner.save()
+        query = (
+            """{
+                                    owner(username: "%s") {
+                                        isCurrentUserActivated
+                                    }
+                                }
+                                """
+            % owner.username
+        )
+
+        try:
+            self.gql_request(query, owner=user)
+
+        except GraphQLError as e:
+            assert e.message == UnauthorizedGuestAccess.message
+            assert e.extensions["code"] == UnauthorizedGuestAccess.code
+
     def test_fetch_current_user_is_okta_authenticated(self):
         account = AccountFactory()
         owner = OwnerFactory(username="sample-owner", service="github", account=account)
@@ -820,7 +844,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
-    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=True)
     def test_fetch_is_github_rate_limited(
         self, mock_determine_rate_limit, mock_determine_redis_key
     ):

@@ -40,7 +40,7 @@ def resolve_me(_, info) -> Optional[Owner]:
 
 
 @query_bindable.field("owner")
-def resolve_owner(_, info, username):
+async def resolve_owner(_, info, username):
     configure_sentry_scope(query_name(info))
 
     service = info.context["service"]
@@ -50,7 +50,13 @@ def resolve_owner(_, info, username):
         if not user or not user.is_authenticated:
             raise UnauthorizedGuestAccess()
 
-    return get_owner(service, username)
+        # per product spec, if guestAccess is off for the environment, the current enterpriseUser
+        # must be "activated" in the given target owner (e.g., "codecov" org) in order to see things
+        target = await get_owner(service, username)
+        if user.ownerid not in target.plan_activated_users:
+            raise UnauthorizedGuestAccess()
+
+    return await get_owner(service, username)
 
 
 @query_bindable.field("config")
