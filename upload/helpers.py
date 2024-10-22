@@ -790,7 +790,7 @@ def get_version_from_headers(headers):
         return "unknown-user-agent"
 
 
-def generate_upload_sentry_metrics_tags(
+def generate_upload_prometheus_metrics_tags(
     action,
     request,
     is_shelter_request,
@@ -798,6 +798,7 @@ def generate_upload_sentry_metrics_tags(
     repository: Optional[Repository] = None,
     position: Optional[str] = None,
     upload_version: Optional[str] = None,
+    fill_labels: bool = True,
 ):
     metrics_tags = dict(
         agent=get_agent_from_headers(request.headers),
@@ -806,13 +807,19 @@ def generate_upload_sentry_metrics_tags(
         endpoint=endpoint,
         is_using_shelter="yes" if is_shelter_request else "no",
     )
+    
+    repo_visibility = None
     if repository:
-        metrics_tags["repo_visibility"] = (
-            "private" if repository.private is True else "public"
-        )
-    if position:
-        metrics_tags["position"] = position
-    if upload_version:
-        metrics_tags["upload_version"] = upload_version
+        repo_visibility = "private" if repository.private else "public"
+
+    optional_fields = {
+        "repo_visibility": repo_visibility,
+        "position": position,
+        "upload_version": upload_version
+    }
+
+    for field, value in optional_fields.items():
+        if value or fill_labels:
+            metrics_tags[field] = value
 
     return metrics_tags
