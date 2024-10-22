@@ -2,7 +2,7 @@ import logging
 
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import ListCreateAPIView
-from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import Counter
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -14,13 +14,13 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
-from upload.helpers import generate_upload_sentry_metrics_tags
+from upload.helpers import generate_upload_prometheus_metrics_tags
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
-
 
 class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
@@ -53,16 +53,15 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        )
+        ).inc()
         repository = self.get_repo()
 
         commit = serializer.save(repository=repository)
@@ -72,9 +71,8 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
 
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,
@@ -82,6 +80,6 @@ class CommitViews(ListCreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        )
+        ).inc()
 
         return commit
