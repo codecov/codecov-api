@@ -218,7 +218,9 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
             == "It looks like you've hit the rate limit of 1000 req/min. Try again later."
         )
 
-        mocked_error_counter.assert_called_with(error_type="rate_limit", path="/graphql/gh")
+        mocked_error_counter.assert_called_with(
+            error_type="rate_limit", path="/graphql/gh"
+        )
         mocked_request_counter.assert_called_with(path="/graphql/gh")
 
     @override_settings(

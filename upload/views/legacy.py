@@ -51,6 +51,7 @@ API_UPLOAD_COUNTER = Counter(
     ["version"],
 )
 
+
 class PlainTextRenderer(renderers.BaseRenderer):
     media_type = "text/plain"
     format = "txt"

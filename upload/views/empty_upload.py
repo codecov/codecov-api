@@ -150,7 +150,6 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         ]
         API_UPLOAD_COUNTER.labels(
             **generate_upload_prometheus_metrics_tags(
-            tags=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,

@@ -807,7 +807,7 @@ def generate_upload_prometheus_metrics_tags(
         endpoint=endpoint,
         is_using_shelter="yes" if is_shelter_request else "no",
     )
-    
+
     repo_visibility = None
     if repository:
         repo_visibility = "private" if repository.private else "public"
@@ -815,7 +815,7 @@ def generate_upload_prometheus_metrics_tags(
     optional_fields = {
         "repo_visibility": repo_visibility,
         "position": position,
-        "upload_version": upload_version
+        "upload_version": upload_version,
     }
 
     for field, value in optional_fields.items():

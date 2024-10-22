@@ -266,7 +266,9 @@ class AsyncGraphqlView(GraphQLAsyncView):
                                 request_body=req_body,
                             ),
                         )
-                        GQL_ERROR_TYPE_COUNTER.labels(error_type="query_cost_exceeded", path=req_path).inc()
+                        GQL_ERROR_TYPE_COUNTER.labels(
+                            error_type="query_cost_exceeded", path=req_path
+                        ).inc()
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
                         )

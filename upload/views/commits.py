@@ -22,6 +22,7 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
 
+
 class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
