@@ -80,13 +80,12 @@ def commit_status(
 def repo_commits(
     repository: Repository, filters: Optional[dict] = None
 ) -> QuerySet[Commit]:
-    # prefetch the CommitReport with the ReportLevelTotals and ReportDetails
+    # prefetch the CommitReport with the ReportLevelTotals
     prefetch = Prefetch(
         "reports",
         queryset=CommitReport.objects.coverage_reports()
         .filter(code=None)
-        .select_related("reportleveltotals", "reportdetails")
-        .defer("reportdetails___files_array"),
+        .select_related("reportleveltotals"),
     )
 
     # We don't select the `report` column here b/c it can be many MBs of JSON
