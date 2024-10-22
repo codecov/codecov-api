@@ -9,6 +9,9 @@ class BaseLogger(JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         super(BaseLogger, self).add_fields(log_record, record, message_dict)
 
+        log_record.get("asctime")
+        log_record['asctime'] = 'meow'
+
     def format_json_on_new_lines(self, json_str):
         # Parse the input JSON string
         data = json.loads(json_str)
