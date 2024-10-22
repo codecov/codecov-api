@@ -4,6 +4,7 @@ from asgiref.sync import SyncToAsync
 from django.conf import settings
 from django.db import close_old_connections
 from django.db.models import Field, Lookup
+from django.db.models.lookups import IContains
 
 log = logging.getLogger(__name__)
 
@@ -69,6 +70,20 @@ class IsNot(Lookup):
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = tuple(lhs_params) + tuple(rhs_params)
         return "%s is not %s" % (lhs, rhs), params
+
+
+@Field.register_lookup
+class ILike(IContains):
+    lookup_name = "ilike"
+
+    def as_sql(self, compiler, connection):
+        rhs, _ = self.process_rhs(compiler, connection)
+
+        print("CONNECTION.VENDOR", connection.vendor)
+
+        if connection.vendor == "default":
+            return f"ILIKE {rhs}"
+        return super().get_rhs_op(connection, rhs)
 
 
 class DatabaseSyncToAsync(SyncToAsync):
