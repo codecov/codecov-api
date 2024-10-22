@@ -3,7 +3,6 @@ import logging
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from sentry_sdk import metrics as sentry_metrics
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -14,7 +13,8 @@ from codecov_auth.authentication.repo_auth import (
 )
 from reports.models import ReportSession
 from services.task import TaskService
-from upload.helpers import generate_upload_sentry_metrics_tags
+from upload.helpers import generate_upload_prometheus_metrics_tags
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -34,16 +34,15 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="upload_complete",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        )
+        ).inc()
         repo = self.get_repo()
         commit = self.get_commit(repo)
         uploads_queryset = ReportSession.objects.filter(
@@ -78,9 +77,8 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
                 errored_uploads += 1
 
         TaskService().manual_upload_completion_trigger(repo.repoid, commit.commitid)
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="upload_complete",
                 request=self.request,
@@ -88,7 +86,7 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        )
+        ).inc()
         return Response(
             data={
                 "uploads_total": uploads_count,
