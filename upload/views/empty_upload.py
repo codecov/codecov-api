@@ -8,7 +8,6 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from sentry_sdk import metrics as sentry_metrics
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
 from codecov_auth.authentication.repo_auth import (
@@ -23,9 +22,10 @@ from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
 from upload.helpers import (
-    generate_upload_sentry_metrics_tags,
+    generate_upload_prometheus_metrics_tags,
     try_to_get_best_possible_bot_token,
 )
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -82,16 +82,15 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        )
+        ).inc()
         serializer = EmptyUploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -149,9 +148,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 )
             )
         ]
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
+            tags=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,
@@ -159,7 +158,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        )
+        ).inc()
         if set(changed_files) == set(ignored_changed_files):
             TaskService().notify(
                 repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"
