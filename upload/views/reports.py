@@ -3,7 +3,6 @@ import logging
 from django.http import HttpRequest, HttpResponseNotAllowed
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView
-from sentry_sdk import metrics as sentry_metrics
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -16,7 +15,8 @@ from codecov_auth.authentication.repo_auth import (
 )
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
-from upload.helpers import generate_upload_sentry_metrics_tags
+from upload.helpers import generate_upload_prometheus_metrics_tags
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -40,16 +40,15 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_report",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        )
+        ).inc()
         repository = self.get_repo()
         commit = self.get_commit(repository)
         log.info(
@@ -68,9 +67,8 @@ class ReportViews(ListCreateAPIView, GetterMixin):
                 repository.repoid, commit.commitid, instance.code
             )
 
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_report",
                 request=self.request,
@@ -78,7 +76,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        )
+        ).inc()
         return instance
 
     def list(self, request: HttpRequest, service: str, repo: str, commit_sha: str):
@@ -105,16 +103,15 @@ class ReportResultsView(
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_report_results",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        )
+        ).inc()
         repository = self.get_repo()
         commit = self.get_commit(repository)
         report = self.get_report(commit)
@@ -131,9 +128,8 @@ class ReportResultsView(
             repoid=repository.repoid,
             report_code=report.code,
         )
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_report_results",
                 request=self.request,
@@ -141,7 +137,7 @@ class ReportResultsView(
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        )
+        ).incr()
         return instance
 
     def get_object(self):

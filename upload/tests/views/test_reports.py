@@ -41,7 +41,7 @@ def test_reports_get_not_allowed(client, mocker, db):
 
 def test_reports_post(client, db, mocker):
     mocked_call = mocker.patch.object(TaskService, "preprocess_upload")
-    mock_sentry_metrics = mocker.patch("upload.views.reports.sentry_metrics.incr")
+    mock_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -65,9 +65,8 @@ def test_reports_post(client, db, mocker):
         commit_id=commit.id, code="code1", report_type=CommitReport.ReportType.COVERAGE
     ).exists()
     mocked_call.assert_called_with(repository.repoid, commit.commitid, "code1")
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
@@ -75,6 +74,7 @@ def test_reports_post(client, db, mocker):
             "repo_visibility": "private",
             "is_using_shelter": "no",
             "position": "end",
+            "upload_version": None,
         },
     )
 
@@ -343,7 +343,7 @@ def test_reports_results_post_successful_github_oidc_auth(
     mock_jwks_client, mock_jwt_decode, client, db, mocker
 ):
     mocked_task = mocker.patch("services.task.TaskService.create_report_results")
-    mock_sentry_metrics = mocker.patch("upload.views.reports.sentry_metrics.incr")
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -383,9 +383,8 @@ def test_reports_results_post_successful_github_oidc_auth(
         report_id=commit_report.id,
     ).exists()
     mocked_task.assert_called_once()
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_prometheus_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
@@ -393,6 +392,7 @@ def test_reports_results_post_successful_github_oidc_auth(
             "repo_visibility": "private",
             "is_using_shelter": "no",
             "position": "end",
+            "upload_version": None,
         },
     )
 
