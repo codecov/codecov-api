@@ -12,8 +12,8 @@ from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
 )
+from shared.django_apps.core.tests.factories import OwnerFactory
 
-from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.views.okta_cloud import (
     OKTA_CURRENT_SESSION,
     OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY,

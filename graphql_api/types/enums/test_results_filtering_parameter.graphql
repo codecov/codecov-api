@@ -1,0 +1,6 @@
+enum TestResultsFilterParameter {
+  FLAKY_TESTS,
+  FAILED_TESTS,
+  SLOWEST_TESTS,
+  SKIPPED_TESTS
+}

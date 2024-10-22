@@ -4,10 +4,13 @@ from unittest.mock import patch
 from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
 from codecov.tests.base_test import InternalAPITest
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from utils.test_utils import APIClient
 
 
@@ -57,7 +60,7 @@ class RepoViewsetTests(InternalAPITest):
                         "name": self.org.name,
                     },
                     "language": self.repo.language,
-                    "branch": "master",
+                    "branch": "main",
                     "active": False,
                     "activated": False,
                     "totals": {
@@ -110,7 +113,7 @@ class RepoViewsetTests(InternalAPITest):
                 "name": self.org.name,
             },
             "language": self.repo.language,
-            "branch": "master",
+            "branch": "main",
             "active": False,
             "activated": False,
             "totals": {

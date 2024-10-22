@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from codecov.commands.exceptions import (
     NotFound,
@@ -8,8 +9,6 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 
 from ..flag import FlagCommands

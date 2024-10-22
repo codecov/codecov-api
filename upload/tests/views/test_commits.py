@@ -4,9 +4,9 @@ import pytest
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
 from core.models import Commit
-from core.tests.factories import CommitFactory, RepositoryFactory
 from services.task import TaskService
 from upload.views.commits import CommitViews
 
@@ -225,6 +225,73 @@ def test_commit_tokenless(db, client, mocker, branch, private):
     )
 
     if ":" in branch and private == False:
+        assert response.status_code == 201
+        response_json = response.json()
+        commit = Commit.objects.get(commitid="commit_sha")
+        expected_response = {
+            "author": None,
+            "branch": f"{branch}",
+            "ci_passed": None,
+            "commitid": "commit_sha",
+            "message": None,
+            "parent_commit_id": None,
+            "repository": {
+                "name": repository.name,
+                "is_private": repository.private,
+                "active": repository.active,
+                "language": repository.language,
+                "yaml": repository.yaml,
+            },
+            "pullid": 4,
+            "state": None,
+            "timestamp": commit.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        }
+        assert expected_response == response_json
+        mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
+    else:
+        assert response.status_code == 401
+        commit = Commit.objects.filter(commitid="commit_sha").first()
+        assert commit is None
+
+
+@pytest.mark.parametrize("branch", ["main", "someone:main", "someone/fork:main"])
+@pytest.mark.parametrize("private", [True, False])
+@pytest.mark.parametrize("upload_token_required_for_public_repos", [True, False])
+def test_commit_upload_token_required_auth_check(
+    db, client, mocker, branch, private, upload_token_required_for_public_repos
+):
+    repository = RepositoryFactory(
+        private=private,
+        author__username="codecov",
+        name="the_repo",
+        author__upload_token_required_for_public_repos=upload_token_required_for_public_repos,
+    )
+    mocked_call = mocker.patch.object(TaskService, "update_commit")
+
+    client = APIClient()
+    repo_slug = f"{repository.author.username}::::{repository.name}"
+    url = reverse(
+        "new_upload.commits",
+        args=[repository.author.service, repo_slug],
+    )
+    response = client.post(
+        url,
+        {
+            "commitid": "commit_sha",
+            "pullid": "4",
+            "branch": branch,
+        },
+        format="json",
+    )
+
+    # when TokenlessAuthentication is removed, this test should use `if private == False and upload_token_required_for_public_repos == False:`
+    # but TokenlessAuthentication lets some additional uploads through.
+    authorized_by_tokenless_auth_class = ":" in branch
+
+    if private == False and (
+        upload_token_required_for_public_repos == False
+        or authorized_by_tokenless_auth_class
+    ):
         assert response.status_code == 201
         response_json = response.json()
         commit = Commit.objects.get(commitid="commit_sha")

@@ -3,6 +3,12 @@ from dataclasses import dataclass
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.torngit.exceptions import (
     TorngitClientGeneralError,
@@ -10,10 +16,8 @@ from shared.torngit.exceptions import (
 )
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
 from services.comparison import ComparisonReport, ImpactedFile, MissingComparisonReport
 
 from .helper import GraphQLTestHelper
@@ -303,8 +307,8 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
             }
         """
 
-    @patch("services.report.build_report_from_commit")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     @patch("services.comparison.Comparison.git_comparison")
     def test_filtering_with_successful_flags(
         self, git_comparison_mock, read_file, build_report_from_commit
@@ -328,8 +332,8 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
             ]
         )
 
-    @patch("services.report.build_report_from_commit")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     @patch("services.comparison.Comparison.git_comparison")
     def test_filtering_with_unknown_flags(
         self, git_comparison_mock, read_file, build_report_from_commit
@@ -391,7 +395,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
         self.base_report.return_value = None
         self.addCleanup(self.base_report_patcher.stop)
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_files(self, read_file):
         read_file.return_value = mock_data_from_archive
         variables = {
@@ -459,7 +463,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
     @patch("services.comparison.ComparisonReport.impacted_file")
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_segments_without_comparison_in_context(
         self,
         read_file,
@@ -538,7 +542,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_with_segments(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
@@ -582,7 +586,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_segments_with_indirect_and_direct_changes(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
@@ -626,7 +630,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_with_segments_unknown_path(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
@@ -664,7 +668,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_with_segments_provider_error(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
@@ -706,7 +710,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_with_invalid_comparison(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
@@ -745,7 +749,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_segments_with_direct_and_indirect_changes(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
@@ -789,7 +793,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_impacted_file_without_segments_filter(
         self, read_file, mock_get_file_comparison, mock_compare_validate
     ):
@@ -831,7 +835,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_fetch_direct_changed_files_count(self, read_file):
         read_file.return_value = mock_data_from_archive
         variables = {

@@ -2,11 +2,14 @@ from unittest.mock import patch
 
 import pytest
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.torngit.exceptions import TorngitObjectNotFoundError
 
 import services.yaml as yaml
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 
 
 class YamlServiceTest(TransactionTestCase):
@@ -56,3 +59,15 @@ class YamlServiceTest(TransactionTestCase):
         """
         config = yaml.final_commit_yaml(self.commit, self.org)
         assert config["codecov"]["require_ci_to_pass"] is False
+
+    @patch("services.yaml.fetch_current_yaml_from_provider_via_reference")
+    def test_when_commit_has_reserved_to_string_key(self, mock_fetch_yaml):
+        mock_fetch_yaml.return_value = """
+        codecov:
+          notify:
+            require_ci_to_pass: no
+        to_string: hello
+        """
+        config = yaml.final_commit_yaml(self.commit, self.org)
+        assert config.get("to_string") is None
+        assert "to_string" not in config.to_dict()

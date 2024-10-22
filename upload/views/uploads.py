@@ -18,6 +18,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
     TokenlessAuth,
     TokenlessAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.models import OrganizationLevelToken
@@ -54,6 +55,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         CanDoCoverageUploadsPermission,
     ]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,

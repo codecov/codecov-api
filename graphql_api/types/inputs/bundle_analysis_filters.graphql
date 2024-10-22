@@ -6,3 +6,7 @@ input BundleAnalysisReportFilters {
 input BundleAnalysisMeasurementsSetFilters {
     assetTypes: [BundleAnalysisMeasurementsAssetType!]
 }
+
+input BundleReportFilters {
+  reportGroup: BundleReportGroups
+}

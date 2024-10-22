@@ -2,13 +2,17 @@ from collections import namedtuple
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    CommitWithReportFactory,
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory, FlagComparisonFactory
-from core.tests.factories import CommitWithReportFactory, PullFactory, RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from services.profiling import CriticalFile
 

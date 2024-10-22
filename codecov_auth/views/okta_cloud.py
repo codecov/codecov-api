@@ -50,7 +50,7 @@ class OktaCloudLoginView(OktaLoginMixin, View):
         self, request: HttpRequest, service: str, org_username: str
     ) -> HttpResponse:
         log_context: dict = {"service": service, "username": org_username}
-        if not request.session.get("current_owner_id"):
+        if not request.user or request.user.is_anonymous:
             log.warning(
                 "User needs to be signed in before authenticating organization with Okta.",
                 extra=log_context,
@@ -114,7 +114,7 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
             "username": org_owner.username,
         }
 
-        if not request.session.get("current_owner_id"):
+        if not request.user or request.user.is_anonymous:
             log.warning(
                 "User not logged in for Okta callback.",
                 extra=log_context,

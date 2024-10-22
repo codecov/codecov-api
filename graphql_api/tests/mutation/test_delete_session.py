@@ -1,9 +1,9 @@
 from django.contrib import auth
 from django.test import TransactionTestCase
 from django.utils import timezone
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, UserFactory
 
 from codecov_auth.models import DjangoSession, Session
-from codecov_auth.tests.factories import OwnerFactory, UserFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """

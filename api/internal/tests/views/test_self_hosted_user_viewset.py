@@ -2,9 +2,9 @@ from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
 from rest_framework.reverse import reverse
+from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov_auth.models import Owner
-from codecov_auth.tests.factories import OwnerFactory
 from services.self_hosted import activate_owner, is_activated_owner
 from utils.test_utils import APIClient
 

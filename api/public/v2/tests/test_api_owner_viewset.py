@@ -1,9 +1,13 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import ErrorDetail
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
-from codecov_auth.tests.factories import OwnerFactory
+from codecov_auth.tests.factories import DjangoSessionFactory
 from utils.test_utils import APIClient
 
 
@@ -173,4 +177,161 @@ class UserViewSetTests(APITestCase):
             "activated": False,
             "is_admin": False,
             "email": another_user.email,
+        }
+
+
+class UserSessionViewSetTests(APITestCase):
+    def _list(self, kwargs):
+        return self.client.get(reverse("api-v2-user-sessions-list", kwargs=kwargs))
+
+    def setUp(self):
+        self.org = OwnerFactory(service="github")
+        self.admin_owner = OwnerFactory(service="github", organizations=[self.org.pk])
+        self.org.admins = [self.admin_owner.pk]
+        self.org.save()
+        self.client = APIClient()
+
+    def test_not_part_of_org(self):
+        self.current_owner = OwnerFactory(service="github", organizations=[])
+        self.client.force_login_owner(self.current_owner)
+
+        response = self._list(
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_not_admin_of_org(self):
+        self.not_in_org_owner = OwnerFactory(
+            service="github", organizations=[self.org.pk]
+        )
+        self.client.force_login_owner(self.not_in_org_owner)
+
+        response = self._list(
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_no_sessions(self):
+        self.client.force_login_owner(self.admin_owner)
+
+        response = self._list(
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "username": self.admin_owner.username,
+                    "name": self.admin_owner.name,
+                    "has_active_session": False,
+                    "expiry_date": None,
+                }
+            ],
+            "total_pages": 1,
+        }
+
+    def test_has_active_session(self):
+        expiry_date = timezone.now() + timedelta(days=1)
+        expiry_date_response = str(expiry_date).replace(" ", "T").replace("+00:00", "Z")
+
+        self.session = SessionFactory(
+            owner=self.admin_owner,
+            login_session=DjangoSessionFactory(expire_date=expiry_date),
+        )
+        self.client.force_login_owner(self.admin_owner)
+
+        response = self._list(
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "username": self.admin_owner.username,
+                    "name": self.admin_owner.name,
+                    "has_active_session": True,
+                    "expiry_date": expiry_date_response,
+                }
+            ],
+            "total_pages": 1,
+        }
+
+    def test_multiple_sessions_one(self):
+        expiry_date = timezone.now() + timedelta(days=1)
+        expiry_date_response = str(expiry_date).replace(" ", "T").replace("+00:00", "Z")
+
+        self.session_1 = SessionFactory(
+            owner=self.admin_owner,
+            login_session=DjangoSessionFactory(expire_date=expiry_date),
+        )
+        self.session_2 = SessionFactory(
+            owner=self.admin_owner,
+            login_session=DjangoSessionFactory(
+                expire_date=timezone.now() - timedelta(days=1)
+            ),
+        )
+        self.client.force_login_owner(self.admin_owner)
+
+        response = self._list(
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "username": self.admin_owner.username,
+                    "name": self.admin_owner.name,
+                    "has_active_session": True,
+                    "expiry_date": expiry_date_response,
+                }
+            ],
+            "total_pages": 1,
+        }
+
+    def test_multiple_sessions_two(self):
+        expiry_date = timezone.now()
+        expiry_date_response = str(expiry_date).replace(" ", "T").replace("+00:00", "Z")
+
+        self.session_1 = SessionFactory(
+            owner=self.admin_owner,
+            login_session=DjangoSessionFactory(expire_date=expiry_date),
+        )
+        self.session_2 = SessionFactory(
+            owner=self.admin_owner,
+            login_session=DjangoSessionFactory(
+                expire_date=timezone.now() - timedelta(days=1)
+            ),
+        )
+        self.client.force_login_owner(self.admin_owner)
+
+        response = self._list(
+            kwargs={"service": self.org.service, "owner_username": self.org.username}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "count": 1,
+            "next": None,
+            "previous": None,
+            "results": [
+                {
+                    "username": self.admin_owner.username,
+                    "name": self.admin_owner.name,
+                    "has_active_session": False,
+                    "expiry_date": expiry_date_response,
+                }
+            ],
+            "total_pages": 1,
         }

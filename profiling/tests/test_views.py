@@ -2,8 +2,11 @@ import re
 
 from django.urls import reverse
 from rest_framework.test import APIClient
+from shared.django_apps.core.tests.factories import (
+    RepositoryFactory,
+    RepositoryTokenFactory,
+)
 
-from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 from profiling.models import ProfilingCommit, ProfilingUpload
 from services.archive import ArchiveService
 from services.task import TaskService

@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from django.conf import settings
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.torngit import Bitbucket, Github, Gitlab
 
 from codecov.db import sync_to_async
@@ -13,8 +14,6 @@ from codecov_auth.models import (
     Owner,
     Service,
 )
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from services.repo_providers import RepoProviderService, get_token_refresh_callback
 from utils.encryption import encryptor
 

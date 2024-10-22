@@ -2,9 +2,8 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from timeseries.models import Interval
 
 from .helper import GraphQLTestHelper

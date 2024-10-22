@@ -1,11 +1,11 @@
 from unittest.mock import Mock, PropertyMock, patch
 
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import CommitFactory
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.reports.types import ReportTotals
 from shared.utils.sessions import Session
 
-from core.tests.factories import CommitFactory
 from services.path import Dir, File
 
 from ..types.commit.commit import resolve_path_contents
@@ -88,7 +88,7 @@ class TestPathContents(TransactionTestCase):
         self.info = MockContext({"request": request})
         self.commit = CommitFactory()
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
     async def test_missing_coverage(
@@ -100,7 +100,7 @@ class TestPathContents(TransactionTestCase):
         res = await resolve_path_contents(self.commit, self.info, "test/path")
         assert isinstance(res, MissingCoverage)
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     @patch("services.path.provider_path_exists")
     @patch("services.path.ReportPaths.paths", new_callable=PropertyMock)
     async def test_unknown_path(

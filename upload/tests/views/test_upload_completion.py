@@ -4,8 +4,8 @@ from django.http import HttpResponse
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission
 

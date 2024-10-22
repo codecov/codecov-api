@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.conf import settings
 from django.test import TestCase
+from shared.django_apps.core.tests.factories import CommitFactory, OwnerFactory
+from shared.reports.api_report_service import SerializableReport
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientGeneralError
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory
 from services.path import (
     Dir,
     File,
@@ -18,7 +18,6 @@ from services.path import (
     dashboard_commit_file_url,
     provider_path_exists,
 )
-from services.report import SerializableReport
 
 # mock data
 

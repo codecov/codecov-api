@@ -1,0 +1,6 @@
+type FlakeAggregates {
+  flakeCount: Int!
+  flakeCountPercentChange: Float
+  flakeRate: Float!
+  flakeRatePercentChange: Float
+}

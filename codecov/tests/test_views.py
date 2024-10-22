@@ -1,9 +1,9 @@
 from json import loads
 
 from django.test import TestCase
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from codecov_auth.models import Service, User
-from core.tests.factories import OwnerFactory, RepositoryFactory
 
 
 class OwnerAutocompleteSearchTest(TestCase):

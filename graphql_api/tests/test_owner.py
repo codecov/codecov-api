@@ -7,19 +7,26 @@ from django.utils import timezone
 from freezegun import freeze_time
 from graphql import GraphQLError
 from prometheus_client import REGISTRY
-from shared.django_apps.codecov_auth.tests.factories import OktaSettingsFactory
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    AccountsUsersFactory,
+    GetAdminProviderAdapter,
+    OktaSettingsFactory,
+    UserFactory,
+)
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
-from codecov.commands.exceptions import MissingService, UnauthorizedGuestAccess
-from codecov_auth.models import GithubAppInstallation, OwnerProfile
-from codecov_auth.tests.factories import (
-    AccountFactory,
-    GetAdminProviderAdapter,
-    OwnerFactory,
-    UserFactory,
+from codecov.commands.exceptions import (
+    MissingService,
+    UnauthorizedGuestAccess,
 )
-from core.tests.factories import CommitFactory, RepositoryFactory
+from codecov_auth.models import GithubAppInstallation, OwnerProfile
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -950,3 +957,97 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (self.owner.username)
         data = self.gql_request(query, owner=self.owner)
         assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
+
+    def test_fetch_upload_token_required(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["uploadTokenRequired"] == True
+
+    def test_fetch_upload_token_not_required(self):
+        owner = OwnerFactory(username="sample-owner", service="github")
+        owner.upload_token_required_for_public_repos = False
+        owner.save()
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["uploadTokenRequired"] == False
+
+    def test_fetch_upload_token_user_not_part_of_org(self):
+        owner = OwnerFactory(username="sample", service="github")
+        user = OwnerFactory(username="sample-user", service="github")
+        query = """{
+            owner(username: "%s") {
+                uploadTokenRequired
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["uploadTokenRequired"] is None
+
+    def test_fetch_activated_user_count(self):
+        user = OwnerFactory(username="sample-user")
+        user2 = OwnerFactory(username="sample-user-2")
+        user3 = OwnerFactory(username="sample-user-3")
+        owner = OwnerFactory(
+            username="sample-org",
+            plan_activated_users=[user.ownerid, user2.ownerid, user3.ownerid],
+        )
+        user.organizations = [owner.ownerid]
+        user.save()
+
+        query = """{
+            owner(username: "%s") {
+                activatedUserCount
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["activatedUserCount"] == 3
+
+    def test_fetch_activated_user_count_returns_null_if_not_in_org(self):
+        user = OwnerFactory(username="sample-user")
+        user2 = OwnerFactory(username="sample-user-2")
+        user3 = OwnerFactory(username="sample-user-3")
+        owner = OwnerFactory(
+            username="sample-org", plan_activated_users=[user2.ownerid, user3.ownerid]
+        )
+
+        query = """{
+            owner(username: "%s") {
+                activatedUserCount
+            }
+        }
+        """ % (owner.username)
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["activatedUserCount"] is None
+
+    def test_fetch_activated_user_count_when_not_in_org_but_has_shared_account(self):
+        owner = OwnerFactory(username="sample-user")
+        AccountsUsersFactory(user=owner.user, account=self.account)
+        user2 = OwnerFactory(username="sample-user-2")
+        user3 = OwnerFactory(username="sample-user-3")
+        other_owner = OwnerFactory(
+            username="sample-org",
+            plan_activated_users=[user2.ownerid, user3.ownerid],
+            account=self.account,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                activatedUserCount
+            }
+        }
+        """ % (other_owner.username)
+        data = self.gql_request(query, owner=owner)
+        assert data["owner"]["activatedUserCount"] == 2

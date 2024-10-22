@@ -139,7 +139,7 @@ class RepoProviderService(object):
         self, owner: Optional[Owner], repo: Repository, use_ssl=False, token=None
     ):
         ghapp = get_ghapp_default_installation(owner)
-        return self._get_adapter(owner, repo, ghapp=ghapp)
+        return self._get_adapter(owner, repo, ghapp=ghapp, token=token)
 
     def _get_adapter(
         self,

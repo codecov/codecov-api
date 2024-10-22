@@ -606,6 +606,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "organizations",
         "max_upload_limit",
         "account",
+        "upload_token_required_for_public_repos",
     )
 
     def get_form(self, request, obj=None, change=False, **kwargs):

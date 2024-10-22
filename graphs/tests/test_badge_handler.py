@@ -2,11 +2,14 @@ from unittest.mock import PropertyMock, patch
 
 from rest_framework import status
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import (
+    BranchFactory,
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, Session, SessionType
 from shared.reports.types import ReportLine, ReportTotals
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 
 
 def sample_report():

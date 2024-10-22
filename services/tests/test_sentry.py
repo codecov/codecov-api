@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import jwt
 from django.test import TestCase, TransactionTestCase, override_settings
+from shared.django_apps.core.tests.factories import OwnerFactory
 
-from codecov_auth.tests.factories import OwnerFactory
 from services.sentry import (
     SentryInvalidStateError,
     SentryState,

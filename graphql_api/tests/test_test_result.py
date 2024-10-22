@@ -1,12 +1,13 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
-from reports.models import TestInstance
-from reports.tests.factories import TestFactory, TestInstanceFactory
+from reports.tests.factories import (
+    DailyTestRollupFactory,
+    TestFactory,
+)
 
 from .helper import GraphQLTestHelper
 
@@ -22,27 +23,31 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             name="Test\x1fName",
             repository=self.repository,
         )
-        _ = TestInstanceFactory(
+
+        _ = DailyTestRollupFactory(
             test=self.test,
-            outcome=TestInstance.Outcome.FAILURE.value,
-            duration_seconds=1.1,
-            repoid=self.repository.repoid,
-            created_at=datetime.now(),
+            commits_where_fail=["123"],
+            date=date.today() - timedelta(days=2),
+            avg_duration_seconds=0.6,
+            latest_run=datetime.now() - timedelta(days=2),
+            flaky_fail_count=0,
         )
-        _ = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=self.test,
-            outcome=TestInstance.Outcome.FAILURE.value,
-            duration_seconds=1.3,
-            repoid=self.repository.repoid,
-            created_at=datetime.now(),
+            commits_where_fail=["123", "456"],
+            date=datetime.now() - timedelta(days=1),
+            avg_duration_seconds=2,
+            latest_run=datetime.now() - timedelta(days=1),
+            flaky_fail_count=1,
         )
-        _ = TestInstanceFactory(
+        _ = DailyTestRollupFactory(
             test=self.test,
-            outcome=TestInstance.Outcome.PASS.value,
-            duration_seconds=1.5,
-            repoid=self.repository.repoid,
-            created_at=datetime.now(),
-            commitid="456123",
+            commits_where_fail=["123", "789"],
+            date=date.today(),
+            last_duration_seconds=5.0,
+            avg_duration_seconds=3,
+            latest_run=datetime.now(),
+            flaky_fail_count=1,
         )
 
     def test_fetch_test_result_name(self) -> None:
@@ -51,10 +56,12 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResults {
-                                edges {
-                                    node {
-                                        name
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            name
+                                        }
                                     }
                                 }
                             }
@@ -67,20 +74,25 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
         result = self.gql_request(query, owner=self.owner)
 
         assert "errors" not in result
-        assert result["owner"]["repository"]["testResults"]["edges"][0]["node"][
-            "name"
-        ] == self.test.name.replace("\x1f", " ")
+        assert result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][
+            0
+        ]["node"]["name"] == self.test.name.replace("\x1f", " ")
 
-    def test_fetch_test_result_updated_at(self) -> None:
+    def test_fetch_test_result_name_with_computed_name(self) -> None:
+        self.test.computed_name = "Computed Name"
+        self.test.save()
+
         query = """
             query {
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResults {
-                                edges {
-                                    node {
-                                        updatedAt
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            name
+                                        }
                                     }
                                 }
                             }
@@ -94,9 +106,40 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
-                "updatedAt"
-            ]
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["name"]
+            == self.test.computed_name
+        )
+
+    def test_fetch_test_result_updated_at(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            updatedAt
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["updatedAt"]
             == datetime.now(UTC).isoformat()
         )
 
@@ -106,10 +149,12 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResults {
-                                edges {
-                                    node {
-                                        commitsFailed
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            commitsFailed
+                                        }
                                     }
                                 }
                             }
@@ -123,10 +168,10 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
-                "commitsFailed"
-            ]
-            == 1
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["commitsFailed"]
+            == 3
         )
 
     def test_fetch_test_result_failure_rate(self) -> None:
@@ -135,10 +180,12 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResults {
-                                edges {
-                                    node {
-                                        failureRate
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            failureRate
+                                        }
                                     }
                                 }
                             }
@@ -152,10 +199,41 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
-                "failureRate"
-            ]
-            == 2 / 3
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["failureRate"]
+            == 0.75
+        )
+
+    def test_fetch_test_result_last_duration(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            lastDuration
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["lastDuration"]
+            == 1.0
         )
 
     def test_fetch_test_result_avg_duration(self) -> None:
@@ -164,10 +242,40 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                owner(username: "%s") {
                     repository(name: "%s") {
                         ... on Repository {
-                            testResults {
-                                edges {
-                                    node {
-                                        avgDuration
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            avgDuration
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][
+            0
+        ]["node"]["avgDuration"] == (5.6 / 3)
+
+    def test_fetch_test_result_total_fail_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalFailCount
+                                        }
                                     }
                                 }
                             }
@@ -181,8 +289,101 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testResults"]["edges"][0]["node"][
-                "avgDuration"
-            ]
-            == 1.3
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalFailCount"]
+            == 9
+        )
+
+    def test_fetch_test_result_total_skip_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalSkipCount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalSkipCount"]
+            == 6
+        )
+
+    def test_fetch_test_result_total_pass_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalPassCount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalPassCount"]
+            == 3
+        )
+
+    def test_fetch_test_result_total_flaky_fail_count(self) -> None:
+        query = """
+            query {
+               owner(username: "%s") {
+                    repository(name: "%s") {
+                        ... on Repository {
+                            testAnalytics {
+                                testResults {
+                                    edges {
+                                        node {
+                                            totalFlakyFailCount
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                 }
+            }
+        """ % (self.owner.username, self.repository.name)
+
+        result = self.gql_request(query, owner=self.owner)
+
+        assert "errors" not in result
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["edges"][0][
+                "node"
+            ]["totalFlakyFailCount"]
+            == 2
         )

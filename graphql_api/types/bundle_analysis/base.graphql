@@ -5,6 +5,7 @@ enum BundleAnalysisMeasurementsAssetType {
     FONT_SIZE
     IMAGE_SIZE
     ASSET_SIZE
+    UNKNOWN_SIZE
 }
 
 enum BundleReportGroups {
@@ -62,6 +63,7 @@ type BundleReport {
   assets: [BundleAsset]!
   asset(name: String!): BundleAsset
   bundleData: BundleData!
+  bundleDataFiltered(filters: BundleReportFilters): BundleData!
   measurements(
     interval: MeasurementInterval!
     before: DateTime!

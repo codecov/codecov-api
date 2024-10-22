@@ -1,0 +1,36 @@
+"""
+TestAnalytics are fields related to Codecov's Test Analytics product offering
+"""
+type TestAnalytics {
+  "Test results are analytics data per test"
+  testResults(
+    filters: TestResultsFilters
+    ordering: TestResultsOrdering
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
+
+  "Test results aggregates are analytics data totals across all tests"
+  testResultsAggregates(interval: MeasurementInterval): TestResultsAggregates
+
+  "Flake aggregates are flake totals across all tests"
+  flakeAggregates(interval: MeasurementInterval): FlakeAggregates
+
+  testSuites(term: String): [String!]!
+
+  "Only flag names relevant to Test Analytics"
+  flags(term: String): [String!]!
+}
+
+type TestResultConnection {
+  edges: [TestResultEdge]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type TestResultEdge {
+  cursor: String!
+  node: TestResult!
+}

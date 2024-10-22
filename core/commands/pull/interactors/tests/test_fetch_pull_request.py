@@ -3,8 +3,11 @@ from datetime import datetime
 import pytest
 from django.test import TransactionTestCase
 from freezegun import freeze_time
-
-from core.tests.factories import OwnerFactory, PullFactory, RepositoryFactory
+from shared.django_apps.core.tests.factories import (
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 
 from ..fetch_pull_request import FetchPullRequestInteractor
 

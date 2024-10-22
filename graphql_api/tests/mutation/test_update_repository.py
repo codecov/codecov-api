@@ -1,7 +1,10 @@
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    BranchFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import BranchFactory, RepositoryFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """

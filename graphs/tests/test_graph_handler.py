@@ -2,18 +2,17 @@ from unittest.mock import patch
 
 from rest_framework import status
 from rest_framework.test import APITestCase
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
+from shared.django_apps.core.tests.factories import (
     BranchFactory,
     CommitFactory,
     CommitWithReportFactory,
+    OwnerFactory,
     PullFactory,
     RepositoryFactory,
 )
 
 
-@patch("services.archive.ArchiveService.read_chunks", lambda obj, _: "")
+@patch("shared.api_archive.archive.ArchiveService.read_chunks", lambda obj, _: "")
 class TestGraphHandler(APITestCase):
     def _get(self, graph_type, kwargs={}, data={}):
         path = f"/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/graphs/{graph_type}.{kwargs.get('ext')}"
@@ -592,7 +591,7 @@ class TestGraphHandler(APITestCase):
             private=True,
             name="repo1",
             image_token="12345678",
-            branch="master",
+            branch="main",
         )
         CommitWithReportFactory(repository=repo, author=gh_owner)
         PullFactory(pullid=10, repository_id=repo.repoid, _flare=None)
@@ -654,7 +653,7 @@ class TestGraphHandler(APITestCase):
             == "Not found. Note: private repositories require ?token arguments"
         )
 
-    @patch("services.report.build_report_from_commit")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_pull_file_not_found_in_storage(self, mocked_build_report):
         mocked_build_report.return_value = None
         gh_owner = OwnerFactory(service="github")
@@ -664,7 +663,7 @@ class TestGraphHandler(APITestCase):
             private=True,
             name="repo1",
             image_token="12345678",
-            branch="master",
+            branch="main",
         )
         CommitWithReportFactory(repository=repo, author=gh_owner)
         PullFactory(pullid=10, repository_id=repo.repoid, _flare=None)
