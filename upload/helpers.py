@@ -818,6 +818,12 @@ def generate_upload_prometheus_metrics_tags(
         "upload_version": upload_version,
     }
 
-    metrics_tags.update({field: value for field, value in optional_fields.items() if value or fill_labels})
+    metrics_tags.update(
+        {
+            field: value
+            for field, value in optional_fields.items()
+            if value or fill_labels
+        }
+    )
 
     return metrics_tags
