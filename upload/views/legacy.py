@@ -16,7 +16,7 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from shared.metrics import metrics, Counter
+from shared.metrics import metrics
 
 from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
@@ -44,12 +44,6 @@ from utils.config import get_config
 from utils.services import get_long_service_name
 
 log = logging.getLogger(__name__)
-
-API_UPLOAD_COUNTER = Counter(
-    "api_upload",
-    "Number of times API upload endpoint request starts",
-    ["version"],
-)
 
 
 class PlainTextRenderer(renderers.BaseRenderer):

@@ -2,7 +2,6 @@ import logging
 
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import ListCreateAPIView
-from shared.metrics import Counter
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,

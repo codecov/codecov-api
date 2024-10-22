@@ -1,5 +1,5 @@
 import json
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 from ariadne import ObjectType, make_executable_schema
 from ariadne.validation import cost_directive
