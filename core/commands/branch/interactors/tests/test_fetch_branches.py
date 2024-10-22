@@ -29,25 +29,24 @@ class FetchRepoBranchesInteractorTest(TransactionTestCase):
 
     def test_fetch_branches(self):
         repository = self.repo
-        filters = {"search_value": "test", "merged_branches": True}
+        filters = {}
         branches = async_to_sync(self.execute)(None, repository, filters)
         assert any(branch.name == "main" for branch in branches)
         assert any(branch.name == "test1" for branch in branches)
         assert any(branch.name == "test2" for branch in branches)
         assert len(branches) == 3
 
-    #
-    # def test_fetch_branches_unmerged(self):
-    #     merged = CommitFactory(repository=self.repo, merged=True)
-    #     BranchFactory(repository=self.repo, head=merged.commitid, name="merged")
-    #     branches = [
-    #         branch.name for branch in async_to_sync(self.execute)(None, self.repo, {})
-    #     ]
-    #     assert "merged" not in branches
-    #     branches = [
-    #         branch.name
-    #         for branch in async_to_sync(self.execute)(
-    #             None, self.repo, {"merged_branches": True}
-    #         )
-    #     ]
-    #     assert "merged" in branches
+    def test_fetch_branches_unmerged(self):
+        merged = CommitFactory(repository=self.repo, merged=True)
+        BranchFactory(repository=self.repo, head=merged.commitid, name="merged")
+        branches = [
+            branch.name for branch in async_to_sync(self.execute)(None, self.repo, {})
+        ]
+        assert "merged" not in branches
+        branches = [
+            branch.name
+            for branch in async_to_sync(self.execute)(
+                None, self.repo, {"merged_branches": True}
+            )
+        ]
+        assert "merged" in branches

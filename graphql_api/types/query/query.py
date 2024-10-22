@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 
 from ariadne import ObjectType
 from django.conf import settings
@@ -20,7 +20,7 @@ def query_name(info: GraphQLResolveInfo) -> Optional[str]:
         return info.operation.name.value
 
 
-def configure_sentry_scope(query_name: Optional[str]) -> None:
+def configure_sentry_scope(query_name: str):
     # this sets the Sentry transaction name to the GraphQL query name which
     # should make it easier to search/filter transactions
     # we're configuring this here since it's the main entrypoint into GraphQL resolvers
@@ -33,16 +33,14 @@ def configure_sentry_scope(query_name: Optional[str]) -> None:
 
 @query_bindable.field("me")
 @sync_to_async
-def resolve_me(_: Any, info: GraphQLResolveInfo) -> Optional[Owner]:
+def resolve_me(_, info) -> Optional[Owner]:
     configure_sentry_scope(query_name(info))
     # will be `None` for anonymous users or users w/ no linked owners
     return info.context["request"].current_owner
 
 
 @query_bindable.field("owner")
-async def resolve_owner(
-    _: Any, info: GraphQLResolveInfo, username: str
-) -> Optional[Owner]:
+def resolve_owner(_, info, username):
     configure_sentry_scope(query_name(info))
 
     service = info.context["service"]
@@ -52,17 +50,11 @@ async def resolve_owner(
         if not user or not user.is_authenticated:
             raise UnauthorizedGuestAccess()
 
-        # per product spec, if guestAccess is off for the environment, the current enterpriseUser
-        # must be "activated" in the given target owner (e.g., "codecov" org) in order to see things
-        target = await get_owner(service, username)
-        if user.ownerid not in target.plan_activated_users:
-            raise UnauthorizedGuestAccess()
-
-    return await get_owner(service, username)
+    return get_owner(service, username)
 
 
 @query_bindable.field("config")
-def resolve_config(_: Any, info: GraphQLResolveInfo) -> object:
+def resolve_config(_, info):
     configure_sentry_scope(query_name(info))
 
     # we have to return something here just to allow access to the child resolvers
