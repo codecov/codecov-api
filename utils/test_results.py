@@ -9,6 +9,7 @@ from django.db.models import (
     Avg,
     F,
     Q,
+    QuerySet,
     Sum,
     Value,
 )
@@ -298,6 +299,17 @@ def search_base_query(
     return rows[left:]
 
 
+def get_relevant_totals(
+    repoid: int, branch: str | None, since: dt.datetime
+) -> QuerySet:
+    if branch:
+        return DailyTestRollup.objects.filter(
+            repoid=repoid, date__gt=since, branch=branch
+        )
+    else:
+        return DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
+
+
 def generate_test_results(
     ordering: str,
     ordering_direction: str,
@@ -341,7 +353,7 @@ def generate_test_results(
     test_ids: set[str] | None = None
 
     if term is not None:
-        totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
+        totals = get_relevant_totals(repoid, branch, since)
 
         totals = totals.filter(test__name__icontains=term).values("test_id")
 
@@ -359,16 +371,21 @@ def generate_test_results(
     if parameter is not None:
         match parameter:
             case GENERATE_TEST_RESULT_PARAM.FLAKY:
-                flakes = Flake.objects.filter(
-                    Q(repository_id=repoid)
-                    & (Q(end_date__date__isnull=True) | Q(end_date__date__gt=since))
+                totals = get_relevant_totals(repoid, branch, since)
+
+                flaky_test_ids = (
+                    totals.values("test")
+                    .annotate(flaky_fail_count_sum=Sum("flaky_fail_count"))
+                    .filter(flaky_fail_count_sum__gt=0)
+                    .values("test_id")
                 )
+                flaky_test_id_set = {test["test_id"] for test in flaky_test_ids}
 
-                flaky_test_ids = set([flake.test_id for flake in flakes])
-
-                test_ids = test_ids & flaky_test_ids if test_ids else flaky_test_ids
+                test_ids = (
+                    test_ids & flaky_test_id_set if test_ids else flaky_test_id_set
+                )
             case GENERATE_TEST_RESULT_PARAM.FAILED:
-                totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
+                totals = get_relevant_totals(repoid, branch, since)
 
                 failed_test_ids = (
                     totals.values("test")
@@ -382,7 +399,7 @@ def generate_test_results(
                     test_ids & failed_test_id_set if test_ids else failed_test_id_set
                 )
             case GENERATE_TEST_RESULT_PARAM.SKIPPED:
-                totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
+                totals = get_relevant_totals(repoid, branch, since)
 
                 skipped_test_ids = (
                     totals.values("test")
@@ -400,7 +417,7 @@ def generate_test_results(
                     test_ids & skipped_test_id_set if test_ids else skipped_test_id_set
                 )
             case GENERATE_TEST_RESULT_PARAM.SLOWEST:
-                totals = DailyTestRollup.objects.filter(repoid=repoid, date__gt=since)
+                totals = get_relevant_totals(repoid, branch, since)
 
                 num_tests = totals.distinct("test_id").count()
 

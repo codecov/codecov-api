@@ -153,12 +153,14 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             created_at=datetime.datetime.now(),
             repoid=repo.repoid,
             branch="main",
+            flaky_fail_count=0,
         )
         _ = DailyTestRollupFactory(
             test=test2,
             created_at=datetime.datetime.now(),
             repoid=repo.repoid,
             branch="feature",
+            flaky_fail_count=1000,
         )
         res = self.fetch_test_analytics(
             repo.name,
