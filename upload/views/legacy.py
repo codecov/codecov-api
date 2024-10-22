@@ -16,8 +16,7 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from sentry_sdk import metrics as sentry_metrics
-from shared.metrics import metrics
+from shared.metrics import metrics, Counter
 
 from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
@@ -32,19 +31,25 @@ from upload.helpers import (
     determine_upload_commit_to_use,
     determine_upload_pr_to_use,
     dispatch_upload_task,
-    generate_upload_sentry_metrics_tags,
+    generate_upload_prometheus_metrics_tags,
     insert_commit,
     parse_headers,
     parse_params,
     store_report_in_redis,
     validate_upload,
 )
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.views.base import ShelterMixin
 from utils.config import get_config
 from utils.services import get_long_service_name
 
 log = logging.getLogger(__name__)
 
+API_UPLOAD_COUNTER = Counter(
+    "api_upload",
+    "Number of times API upload endpoint request starts",
+    ["version"],
+)
 
 class PlainTextRenderer(renderers.BaseRenderer):
     media_type = "text/plain"
@@ -75,9 +80,8 @@ class UploadHandler(APIView, ShelterMixin):
     def post(self, request, *args, **kwargs):
         # Extract the version
         version = self.kwargs["version"]
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,
@@ -85,7 +89,7 @@ class UploadHandler(APIView, ShelterMixin):
                 position="start",
                 upload_version=version,
             ),
-        )
+        ).inc()
 
         log.info(
             f"Received upload request {version}",
@@ -165,9 +169,8 @@ class UploadHandler(APIView, ShelterMixin):
             ),
         )
 
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        API_UPLOAD_COUNTER.labels(
+            **generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,
@@ -176,19 +179,7 @@ class UploadHandler(APIView, ShelterMixin):
                 position="end",
                 upload_version=version,
             ),
-        )
-
-        sentry_metrics.set(
-            "upload_set",
-            repository.author.ownerid,
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                endpoint="legacy_upload",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-            ),
-        )
+        ).inc()
 
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
         redis = get_redis_connection()
