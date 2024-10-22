@@ -76,7 +76,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        ).incr()
+        ).inc()
         repository: Repository = self.get_repo()
         validate_activated_repo(repository)
         commit: Commit = self.get_commit(repository)
@@ -137,7 +137,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        ).incr()
+        ).inc()
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
         self.send_analytics_data(commit, instance, version)
