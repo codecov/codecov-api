@@ -15,6 +15,7 @@ from utils.test_results import (
     generate_test_results_aggregates,
     get_flags,
     get_test_suites,
+    OrderingParameter,
 )
 
 log = logging.getLogger(__name__)
@@ -46,10 +47,12 @@ async def resolve_test_results(
     )
 
     queryset = await sync_to_async(generate_test_results)(
-        ordering=ordering.get("parameter").value if ordering else "avg_duration",
-        ordering_direction=(
-            ordering.get("direction").name if ordering else OrderingDirection.DESC.name
-        ),
+        ordering_param=OrderingParameter(
+            ordering=ordering.get("parameter").value,
+            ordering_direction=ordering.get("direction").name,
+        )
+        if ordering
+        else None,
         repoid=repository.repoid,
         interval=interval,
         first=first,

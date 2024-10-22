@@ -72,6 +72,12 @@ class Connection:
     total_count: int
 
 
+@dataclass
+class OrderingParameter:
+    ordering: str
+    ordering_direction: str
+
+
 def convert_tuple_else_none(
     value: set[str] | list[str] | None,
 ) -> tuple[str, ...] | None:
@@ -80,7 +86,7 @@ def convert_tuple_else_none(
 
 @dataclass
 class CursorValue:
-    ordered_value: str
+    ordered_value: str | None
     name: str
 
 
@@ -88,23 +94,35 @@ def decode_cursor(value: str | None) -> CursorValue | None:
     if value is None:
         return None
 
-    split_cursor = b64decode(value.encode("ascii")).decode("utf-8").split(DELIMITER)
-    return CursorValue(
-        ordered_value=split_cursor[0],
-        name=split_cursor[1],
-    )
+    decoded = b64decode(value.encode("ascii")).decode("utf-8")
+    split_cursor = decoded.split(DELIMITER)
+
+    if len(split_cursor) == 2:
+        return CursorValue(
+            ordered_value=split_cursor[0],
+            name=split_cursor[1],
+        )
+    else:
+        return CursorValue(
+            ordered_value=None,
+            name=decoded,
+        )
 
 
-def encode_cursor(row: TestResultsRow, ordering: str) -> str:
-    return b64encode(
-        DELIMITER.join([str(getattr(row, ordering)), str(row.name)]).encode("utf-8")
-    ).decode("ascii")
+def encode_cursor(row: TestResultsRow, ordering_param: OrderingParameter | None) -> str:
+    if ordering_param:
+        cursor_value = DELIMITER.join(
+            [str(getattr(row, ordering_param.ordering)), str(row.name)]
+        )
+    else:
+        cursor_value = str(row.name)
+
+    return b64encode(cursor_value.encode("utf-8")).decode("ascii")
 
 
 def validate(
     interval_num_days: int,
-    ordering: str,
-    ordering_direction: str,
+    ordering_param: OrderingParameter | None,
     after: str | None,
     before: str | None,
     first: int | None,
@@ -113,10 +131,12 @@ def validate(
     if interval_num_days not in {1, 7, 30}:
         return ValidationError(f"Invalid interval: {interval_num_days}")
 
-    if ordering_direction not in {"ASC", "DESC"}:
-        return ValidationError(f"Invalid ordering direction: {ordering_direction}")
+    if ordering_param and ordering_param.ordering_direction not in {"ASC", "DESC"}:
+        return ValidationError(
+            f"Invalid ordering direction: {ordering_param.ordering_direction}"
+        )
 
-    if ordering not in {
+    if ordering_param and ordering_param.ordering not in {
         "name",
         "computed_name",
         "avg_duration",
@@ -125,7 +145,7 @@ def validate(
         "commits_where_fail",
         "last_duration",
     }:
-        return ValidationError(f"Invalid ordering field: {ordering}")
+        return ValidationError(f"Invalid ordering field: {ordering_param.ordering}")
 
     if first is not None and last is not None:
         return ValidationError("First and last can not be used at the same time")
@@ -138,8 +158,7 @@ def validate(
 
 def generate_base_query(
     repoid: int,
-    ordering: str,
-    ordering_direction: str,
+    ordering_param: OrderingParameter | None,
     should_reverse: bool,
     branch: str | None,
     interval_num_days: int,
@@ -149,10 +168,17 @@ def generate_base_query(
 ) -> TestResultsQuery:
     term_filter = f"%{term}%" if term else None
 
-    if should_reverse:
-        ordering_direction = "DESC" if ordering_direction == "ASC" else "ASC"
+    if ordering_param:
+        if should_reverse:
+            ordering_direction = (
+                "DESC" if ordering_param.ordering_direction == "ASC" else "ASC"
+            )
+        else:
+            ordering_direction = ordering_param.ordering_direction
 
-    order_by = f"with_cursor.{ordering} {ordering_direction}, with_cursor.name"
+        order_by = f"with_cursor.{ordering_param.ordering} {ordering_direction}, with_cursor.name"
+    else:
+        order_by = "with_cursor.name"
 
     params: dict[str, int | str | tuple[str, ...] | None] = {
         "repoid": repoid,
@@ -240,9 +266,8 @@ order by {order_by}
 
 def search_base_query(
     rows: list[TestResultsRow],
-    ordering: str,
+    ordering_param: OrderingParameter | None,
     cursor: CursorValue | None,
-    descending: bool = False,
 ) -> list[TestResultsRow]:
     """
     The reason we have to do this filtering in the application logic is because we need to get the total count of rows that
@@ -265,20 +290,22 @@ def search_base_query(
         return rows
 
     def compare(row: TestResultsRow) -> int:
-        # -1 means row value is to the left of the cursor value (search to the right)
-        # 0 means row value is equal to cursor value
-        # 1 means row value is to the right of the cursor value (search to the left)
-        row_value = getattr(row, ordering)
-        row_value_str = str(row_value)
-        cursor_value_str = cursor.ordered_value
-        row_is_greater = row_value_str > cursor_value_str
-        row_is_less = row_value_str < cursor_value_str
-        if descending:
-            res = row_is_less - row_is_greater
-        else:
-            res = row_is_greater - row_is_less
+        if ordering_param and cursor.ordered_value:
+            row_value = getattr(row, ordering_param.ordering)
+            row_value_str = str(row_value)
+            cursor_value_str = cursor.ordered_value
+            row_is_greater = row_value_str > cursor_value_str
+            row_is_less = row_value_str < cursor_value_str
+            if ordering_param.ordering_direction == "DESC":
+                res = row_is_less - row_is_greater
+            else:
+                res = row_is_greater - row_is_less
 
-        if res == 0:
+            if res == 0:
+                row_is_greater = row.name > cursor.name
+                row_is_less = row.name < cursor.name
+                res = row_is_greater - row_is_less
+        else:
             row_is_greater = row.name > cursor.name
             row_is_less = row.name < cursor.name
             res = row_is_greater - row_is_less
@@ -301,8 +328,7 @@ def search_base_query(
 
 
 def generate_test_results(
-    ordering: str,
-    ordering_direction: str,
+    ordering_param: OrderingParameter | None,
     repoid: int,
     interval: dt.timedelta,
     first: int | None = None,
@@ -334,7 +360,7 @@ def generate_test_results(
     interval_num_days = interval.days
 
     if validation_error := validate(
-        interval_num_days, ordering, ordering_direction, after, before, first, last
+        interval_num_days, ordering_param, after, before, first, last
     ):
         return validation_error
 
@@ -428,8 +454,7 @@ def generate_test_results(
 
     query = generate_base_query(
         repoid=repoid,
-        ordering=ordering,
-        ordering_direction=ordering_direction,
+        ordering_param=ordering_param,
         should_reverse=should_reverse,
         branch=branch,
         interval_num_days=interval_num_days,
@@ -450,16 +475,14 @@ def generate_test_results(
     page_size: int = first or last or 20
 
     cursor_value = decode_cursor(after) if after else decode_cursor(before)
-    descending = ordering_direction == "DESC"
     search_rows = search_base_query(
         rows,
-        ordering,
+        ordering_param,
         cursor_value,
-        descending=descending,
     )
 
     page: list[dict[str, str | TestResultsRow]] = [
-        {"cursor": encode_cursor(row, ordering), "node": row}
+        {"cursor": encode_cursor(row, ordering_param), "node": row}
         for i, row in enumerate(search_rows)
         if i < page_size
     ]
