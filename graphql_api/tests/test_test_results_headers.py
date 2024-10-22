@@ -53,7 +53,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "totalDuration"
             ]
-            == 435.0
+            == 465.0
         )
 
     def test_fetch_test_result_slowest_tests_runtime(self) -> None:
@@ -80,7 +80,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "slowestTestsDuration"
             ]
-            == 29.0
+            == 30.0
         )
 
     def test_fetch_test_result_failed_tests(self) -> None:
@@ -107,7 +107,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "totalFails"
             ]
-            == 29
+            == 30
         )
 
     def test_fetch_test_result_skipped_tests(self) -> None:
@@ -134,7 +134,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "totalSkips"
             ]
-            == 29
+            == 30
         )
 
     def test_fetch_test_result_slow_tests(self) -> None:

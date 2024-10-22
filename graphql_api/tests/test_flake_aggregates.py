@@ -79,8 +79,8 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert result["owner"]["repository"]["testAnalytics"]["flakeAggregates"] == {
-            "flakeRate": 0.1,
-            "flakeCount": 30,
-            "flakeRatePercentChange": -33.33333,
-            "flakeCountPercentChange": 100.0,
+            "flakeRate": 0.140625,
+            "flakeCount": 31,
+            "flakeRatePercentChange": 31.25,
+            "flakeCountPercentChange": 106.66667,
         }

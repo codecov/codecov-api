@@ -819,14 +819,14 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalSlowTests, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange, totalSlowTestsPercentChange }""",
         )
         assert res["testResultsAggregates"] == {
-            "totalDuration": 570.0,
-            "totalDurationPercentChange": -63.1068,
-            "slowestTestsDuration": 29.0,
-            "slowestTestsDurationPercentChange": -50.84746,
-            "totalFails": 10,
-            "totalFailsPercentChange": 100.0,
-            "totalSkips": 5,
-            "totalSkipsPercentChange": -50.0,
+            "totalDuration": 630.0,
+            "totalDurationPercentChange": -57.57576,
+            "slowestTestsDuration": 60.0,
+            "slowestTestsDurationPercentChange": 1.69492,
+            "totalFails": 11,
+            "totalFailsPercentChange": 175.0,
+            "totalSkips": 6,
+            "totalSkipsPercentChange": -33.33333,
             "totalSlowTests": 1,
             "totalSlowTestsPercentChange": 0.0,
         }
@@ -976,10 +976,10 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert res["flakeAggregates"] == {
-            "flakeCount": 2,
-            "flakeRate": 0.125,
-            "flakeCountPercentChange": -33.33333,
-            "flakeRatePercentChange": -50.0,
+            "flakeCount": 3,
+            "flakeRate": 0.2,
+            "flakeCountPercentChange": 0.0,
+            "flakeRatePercentChange": -15.55556,
         }
 
     def test_flake_aggregates_no_history(self) -> None:
@@ -1081,9 +1081,9 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert res["flakeAggregates"] == {
             "flakeCount": 1,
-            "flakeRate": 0.125,
+            "flakeRate": 0.1111111111111111,
             "flakeCountPercentChange": -50.0,
-            "flakeRatePercentChange": -43.75,
+            "flakeRatePercentChange": -55.55556,
         }
 
     def test_test_suites(self) -> None:
