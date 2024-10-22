@@ -997,7 +997,6 @@ class UploadHandlerRouteTest(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert metrics.data["uploads.rejected"] == 1
 
-    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1009,7 +1008,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1036,7 +1034,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 200
-        mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
         headers = response.headers
 
@@ -1074,7 +1071,6 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
-    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1086,7 +1082,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1113,7 +1108,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 200
-        mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
         headers = response.headers
 
@@ -1151,7 +1145,6 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
-    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.determine_repo_for_upload")
@@ -1163,7 +1156,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_determine_repo_for_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1193,7 +1185,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 400
-        mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
         headers = response.headers
 
@@ -1206,7 +1197,6 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.content == b"Could not determine repo and owner"
 
-    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.determine_repo_for_upload")
@@ -1218,7 +1208,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_determine_repo_for_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1248,7 +1237,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 400
-        mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
         headers = response.headers
 

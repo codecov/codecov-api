@@ -205,6 +205,8 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 graphql-core==3.2.3
     # via ariadne
+greenlet==3.1.1
+    # via sqlalchemy
 grpc-google-iam-v1==0.12.6
     # via google-cloud-pubsub
 grpcio==1.62.1
@@ -299,6 +301,8 @@ opentelemetry-util-http==0.45b0
     #   opentelemetry-instrumentation-wsgi
 opentracing==2.4.0
     # via -r requirements.in
+orjson==3.10.9
+    # via shared
 packaging==24.1
     # via
     #   gunicorn
@@ -417,7 +421,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/f0e213c4399563990d43fb424f4be36faa5ce5eb.tar.gz
+shared @ https://github.com/codecov/shared/archive/4e2792779e3efc65f876ab8ac38ffd244189e34d.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
@@ -447,8 +451,6 @@ sqlparse==0.5.0
     #   django
 starlette==0.36.2
     # via ariadne
-statsd==3.3.0
-    # via shared
 stripe==9.6.0
     # via -r requirements.in
 text-unidecode==1.3
