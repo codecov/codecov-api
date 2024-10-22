@@ -727,8 +727,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
     mocker.patch(
         "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
     )
-    mock_sentry_metrics = mocker.patch("upload.views.uploads.sentry_metrics.incr")
-    mock_sentry_metrics_set = mocker.patch("upload.views.uploads.sentry_metrics.set")
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
 
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
@@ -764,9 +763,8 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
         },
     )
 
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_prometheus_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
@@ -774,19 +772,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
             "repo_visibility": "private",
             "is_using_shelter": "yes",
             "position": "end",
-        },
-    )
-
-    mock_sentry_metrics_set.assert_called_with(
-        "upload_set",
-        owner.ownerid,
-        tags={
-            "agent": "cli",
-            "version": "0.4.7",
-            "action": "coverage",
-            "endpoint": "create_upload",
-            "repo_visibility": "private",
-            "is_using_shelter": "yes",
+            "upload_version": None,
         },
     )
 
