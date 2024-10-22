@@ -769,15 +769,12 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         user.organizations = [owner.ownerid]
         user.save()
         owner.save()
-        query = (
-            """{
-                                    owner(username: "%s") {
-                                        isCurrentUserActivated
-                                    }
-                                }
-                                """
-            % owner.username
-        )
+        query = """{
+            owner(username: "%s") {
+                isCurrentUserActivated
+            }
+        }
+        """ % (owner.username)
 
         try:
             self.gql_request(query, owner=user)
