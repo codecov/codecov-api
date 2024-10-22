@@ -19,7 +19,6 @@ from django.http import (
 )
 from graphql import DocumentNode
 from sentry_sdk import capture_exception
-from sentry_sdk import metrics as sentry_metrics
 from shared.metrics import Counter, Histogram
 
 from codecov.commands.exceptions import BaseException
@@ -51,6 +50,17 @@ GQL_REQUEST_LATENCIES = Histogram(
     buckets=[0.05, 0.1, 0.25, 0.5, 0.75, 1, 2, 5, 10, 30],
 )
 
+GQL_REQUEST_MADE_COUNTER = Counter(
+    "api_gql_requests_made",
+    "Total API GQL requests made",
+    ["path"],
+)
+
+GQL_ERROR_TYPE_COUNTER = Counter(
+    "api_gql_errors",
+    "Number of times API GQL endpoint failed with an exception by type",
+    ["error_type", "path"],
+)
 
 # covers named and 3 unnamed operations (see graphql_api/types/query/query.py)
 GQL_TYPE_AND_NAME_PATTERN = r"^(query|mutation|subscription)(?:\(\$input:|) (\w+)(?:\(| \(|{| {|!)|^(?:{) (me|owner|config)(?:\(| |{)"
@@ -226,10 +236,9 @@ class AsyncGraphqlView(GraphQLAsyncView):
             "user": request.user,
         }
         log.info("GraphQL Request", extra=log_data)
-        sentry_metrics.incr("graphql.info.request_made", tags={"path": req_path})
-
+        GQL_REQUEST_MADE_COUNTER.labels(path=req_path).inc()
         if self._check_ratelimit(request=request):
-            sentry_metrics.incr("graphql.error.rate_limit", tags={"path": req_path})
+            GQL_ERROR_TYPE_COUNTER.labels(error_type="rate_limit", path=req_path).inc()
             return JsonResponse(
                 data={
                     "status": 429,
@@ -245,7 +254,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             data = json.loads(content)
 
             if "errors" in data:
-                sentry_metrics.incr("graphql.error.all", tags={"path": req_path})
+                GQL_ERROR_TYPE_COUNTER.labels(error_type="all", path=req_path).inc()
                 try:
                     if data["errors"][0]["extensions"]["cost"]:
                         costs = data["errors"][0]["extensions"]["cost"]
@@ -257,10 +266,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
                                 request_body=req_body,
                             ),
                         )
-                        sentry_metrics.incr(
-                            "graphql.error.query_cost_exceeded",
-                            tags={"path": req_path},
-                        )
+                        GQL_ERROR_TYPE_COUNTER.labels(error_type="query_cost_exceeded", path=req_path).inc()
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
                         )
