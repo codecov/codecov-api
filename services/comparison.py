@@ -21,7 +21,7 @@ from shared.utils.merge import LineType, line_type
 
 from compare.models import CommitComparison
 from core.models import Commit
-from reports.models import CommitReport, ReportDetails
+from reports.models import CommitReport
 from services import ServiceException
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
@@ -1208,18 +1208,6 @@ class CommitComparisonService:
         if self._last_updated_before(self.base_commit.updatestamp):
             return True
 
-        compare_commit_details = self._commit_report_details(self.compare_commit)
-        if compare_commit_details is not None and self._last_updated_before(
-            compare_commit_details.updated_at
-        ):
-            return True
-
-        base_commit_details = self._commit_report_details(self.base_commit)
-        if base_commit_details is not None and self._last_updated_before(
-            base_commit_details.updated_at
-        ):
-            return True
-
         return False
 
     def _last_updated_before(self, timestamp: datetime) -> bool:
@@ -1237,22 +1225,10 @@ class CommitComparisonService:
 
         return timezone.normalize(self.commit_comparison.updated_at) < timestamp
 
-    def _commit_report_details(self, commit: Commit) -> Optional[ReportDetails]:
-        # CommitDetails records are updated by the worker every time a new upload is processed.
-        # We can use the `updated_at` timestamp as a proxy for when a report was last updated.
-        # These are expected to have been preloaded.
-        if hasattr(commit, "commitreport") and hasattr(
-            commit.commitreport, "reportdetails"
-        ):
-            return commit.commitreport.reportdetails
-
     def _load_commit(self, commit_id: int) -> Optional[Commit]:
         prefetch = Prefetch(
             "reports",
-            queryset=CommitReport.objects.coverage_reports()
-            .filter(code=None)
-            .select_related("reportdetails")
-            .defer("reportdetails___files_array"),
+            queryset=CommitReport.objects.coverage_reports().filter(code=None),
         )
         return (
             Commit.objects.filter(pk=commit_id)
