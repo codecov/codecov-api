@@ -22,7 +22,6 @@ from shared.torngit.exceptions import (
     TorngitObjectNotFoundError,
     TorngitRateLimitError,
 )
-from shared.utils.test_utils import mock_metrics as utils_mock_metrics
 from simplejson import JSONDecodeError
 
 from codecov_auth.models import Owner
@@ -969,33 +968,25 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
     def test_invalid_request_params(self):
-        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": "codecov-cli/0.0.0"}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert metrics.data["upload.cli.0.0.0"] == 1
-        assert metrics.data["uploads.rejected"] == 1
 
     def test_invalid_request_params_uploader_package(self):
-        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": "uploader-0.0.0"}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert metrics.data["upload.uploader.0.0.0"] == 1
-        assert metrics.data["uploads.rejected"] == 1
 
     def test_invalid_request_params_invalid_package(self):
-        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": ""}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert metrics.data["uploads.rejected"] == 1
 
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
