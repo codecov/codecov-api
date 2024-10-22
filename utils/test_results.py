@@ -274,9 +274,16 @@ def search_base_query(
         row_is_greater = row_value_str > cursor_value_str
         row_is_less = row_value_str < cursor_value_str
         if descending:
-            return row_is_less - row_is_greater
+            res = row_is_less - row_is_greater
         else:
-            return row_is_greater - row_is_less
+            res = row_is_greater - row_is_less
+
+        if res == 0:
+            row_is_greater = row.name > cursor.name
+            row_is_less = row.name < cursor.name
+            res = row_is_greater - row_is_less
+
+        return res
 
     left, right = 0, len(rows) - 1
     while left <= right:
@@ -284,12 +291,7 @@ def search_base_query(
         comparison = compare(rows[mid])
 
         if comparison == 0:
-            if rows[mid].name == cursor.name:
-                return rows[mid + 1 :]
-            elif rows[mid].name < cursor.name:
-                left = mid + 1
-            else:
-                right = mid - 1
+            return rows[mid + 1 :]
         elif comparison < 0:
             left = mid + 1
         else:
