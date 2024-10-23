@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterable, List, Mapping, Optional, Union
 
+import sentry_sdk
 from ariadne import ObjectType, UnionType
 from django.conf import settings
 from django.forms.utils import from_current_timezone
@@ -52,6 +53,7 @@ def resolve_coverage_analytics_result_type(
     return None
 
 
+@sentry_sdk.trace
 @coverage_analytics_bindable.field("percentCovered")
 def resolve_percent_covered(
     parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
@@ -116,6 +118,7 @@ async def resolve_measurements(
     return measurements
 
 
+@sentry_sdk.trace
 @coverage_analytics_bindable.field("components")
 @sync_to_async
 def resolve_components_measurements(
@@ -250,6 +253,7 @@ def resolve_components_count(
     return len(repo_yaml_components)
 
 
+@sentry_sdk.trace
 @coverage_analytics_bindable.field("flags")
 @sync_to_async
 def resolve_flags(
