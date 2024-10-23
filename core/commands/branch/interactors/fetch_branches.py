@@ -29,4 +29,6 @@ class FetchRepoBranchesInteractor(BaseInteractor):
                 | Q(name=repository.branch)  # but always include the default branch
             )
 
+        print("FetchRepoBranchesInteractor with ilike", queryset.query)
+
         return queryset
