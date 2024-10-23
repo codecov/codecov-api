@@ -17,6 +17,7 @@ SECRET_KEY = get_config("django", "secret_key", default="*")
 # Application definition
 
 INSTALLED_APPS = [
+    "debug_toolbar",
     "legacy_migrations",
     "dal",
     "dal_select2",  # needs to be ahead of django.contrib.admin
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "core.middleware.AppMetricsBeforeMiddlewareWithUA",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -184,7 +186,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
@@ -308,7 +309,6 @@ GITLAB_TOKENLESS_BOT_KEY = get_config(
     "gitlab", "bots", "tokenless", "key", default=GITLAB_BOT_KEY
 )
 
-
 GITLAB_ENTERPRISE_CLIENT_ID = get_config("gitlab_enterprise", "client_id")
 GITLAB_ENTERPRISE_CLIENT_SECRET = get_config("gitlab_enterprise", "client_secret")
 GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
@@ -322,7 +322,6 @@ GITLAB_ENTERPRISE_TOKENLESS_BOT_KEY = get_config(
 )
 GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")
 GITLAB_ENTERPRISE_API_URL = get_config("gitlab_enterprise", "api_url")
-
 
 CORS_ALLOW_HEADERS = (
     list(default_headers)
@@ -343,7 +342,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = get_config(
 FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
     "setup", "http", "file_upload_max_memory_size", default=2621440
 )
-
 
 CORS_ALLOWED_ORIGIN_REGEXES = get_config(
     "setup", "api_cors_allowed_origin_regexes", default=[]

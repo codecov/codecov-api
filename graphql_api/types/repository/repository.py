@@ -126,6 +126,7 @@ async def resolve_branches(
 ):
     command = info.context["executor"].get_command("branch")
     queryset = await command.fetch_branches(repository, filters)
+    print(queryset.query)
     return await queryset_to_connection(
         queryset,
         ordering=("updatestamp",),

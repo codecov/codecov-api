@@ -511,3 +511,4 @@ zipp==3.19.2
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
+django-debug-toolbar==4.4.6
