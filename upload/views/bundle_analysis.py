@@ -26,7 +26,7 @@ from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, MeasurementName
-from upload.helpers import dispatch_upload_task, generate_upload_prometheus_metrics_tags
+from upload.helpers import dispatch_upload_task, generate_upload_prometheus_metrics_labels
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
 
@@ -80,7 +80,7 @@ class BundleAnalysisView(APIView, ShelterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request: HttpRequest) -> Response:
-        labels = generate_upload_prometheus_metrics_tags(
+        labels = generate_upload_prometheus_metrics_labels(
             action="bundle_analysis",
             endpoint="bundle_analysis",
             request=self.request,
@@ -171,7 +171,7 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 task_arguments=task_arguments,
             ),
         )
-        labels = generate_upload_prometheus_metrics_tags(
+        labels = generate_upload_prometheus_metrics_labels(
             action="bundle_analysis",
             endpoint="bundle_analysis",
             request=self.request,

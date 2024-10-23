@@ -28,7 +28,7 @@ from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     dispatch_upload_task,
-    generate_upload_prometheus_metrics_tags,
+    generate_upload_prometheus_metrics_labels,
     validate_activated_repo,
 )
 from upload.metrics import API_UPLOAD_COUNTER
@@ -70,7 +70,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
     def perform_create(self, serializer: UploadSerializer):
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,
@@ -131,7 +131,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         self.trigger_upload_task(repository, commit.commitid, instance, report)
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,

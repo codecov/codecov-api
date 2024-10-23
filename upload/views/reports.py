@@ -16,7 +16,7 @@ from codecov_auth.authentication.repo_auth import (
 )
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
-from upload.helpers import generate_upload_prometheus_metrics_tags
+from upload.helpers import generate_upload_prometheus_metrics_labels
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin
@@ -43,7 +43,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
     def perform_create(self, serializer):
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_report",
                 request=self.request,
@@ -71,7 +71,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
 
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_report",
                 request=self.request,
@@ -108,7 +108,7 @@ class ReportResultsView(
     def perform_create(self, serializer):
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_report_results",
                 request=self.request,
@@ -134,7 +134,7 @@ class ReportResultsView(
         )
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_report_results",
                 request=self.request,

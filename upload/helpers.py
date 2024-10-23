@@ -790,7 +790,7 @@ def get_version_from_headers(headers):
         return "unknown-user-agent"
 
 
-def generate_upload_prometheus_metrics_tags(
+def generate_upload_prometheus_metrics_labels(
     action,
     request,
     is_shelter_request,

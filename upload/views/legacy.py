@@ -31,7 +31,7 @@ from upload.helpers import (
     determine_upload_commit_to_use,
     determine_upload_pr_to_use,
     dispatch_upload_task,
-    generate_upload_prometheus_metrics_tags,
+    generate_upload_prometheus_metrics_labels,
     insert_commit,
     parse_headers,
     parse_params,
@@ -77,7 +77,7 @@ class UploadHandler(APIView, ShelterMixin):
         version = self.kwargs["version"]
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,
@@ -167,7 +167,7 @@ class UploadHandler(APIView, ShelterMixin):
 
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,

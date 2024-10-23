@@ -14,7 +14,7 @@ from codecov_auth.authentication.repo_auth import (
 )
 from reports.models import ReportSession
 from services.task import TaskService
-from upload.helpers import generate_upload_prometheus_metrics_tags
+from upload.helpers import generate_upload_prometheus_metrics_labels
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -37,7 +37,7 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
     def post(self, request, *args, **kwargs):
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="upload_complete",
                 request=self.request,
@@ -81,7 +81,7 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
         TaskService().manual_upload_completion_trigger(repo.repoid, commit.commitid)
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="upload_complete",
                 request=self.request,

@@ -23,7 +23,7 @@ from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
 from upload.helpers import (
-    generate_upload_prometheus_metrics_tags,
+    generate_upload_prometheus_metrics_labels,
     try_to_get_best_possible_bot_token,
 )
 from upload.metrics import API_UPLOAD_COUNTER
@@ -85,7 +85,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
     def post(self, request, *args, **kwargs):
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,
@@ -152,7 +152,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         ]
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,

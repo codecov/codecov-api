@@ -14,7 +14,7 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
-from upload.helpers import generate_upload_prometheus_metrics_tags
+from upload.helpers import generate_upload_prometheus_metrics_labels
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin
@@ -56,7 +56,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     def perform_create(self, serializer):
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,
@@ -75,7 +75,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
 
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,

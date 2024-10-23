@@ -23,7 +23,7 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
-from upload.helpers import dispatch_upload_task, generate_upload_prometheus_metrics_tags
+from upload.helpers import dispatch_upload_task, generate_upload_prometheus_metrics_labels
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin
@@ -69,7 +69,7 @@ class TestResultsView(
     def post(self, request):
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="test_results",
                 endpoint="test_results",
                 request=request,
@@ -110,7 +110,7 @@ class TestResultsView(
 
         inc_counter(
             API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_tags(
+            labels=generate_upload_prometheus_metrics_labels(
                 action="test_results",
                 endpoint="test_results",
                 request=request,
