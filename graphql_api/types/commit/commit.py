@@ -104,6 +104,7 @@ def resolve_list_uploads(commit: Commit, info, **kwargs):
     )
 
 
+@sentry_sdk.trace
 @commit_bindable.field("compareWithParent")
 async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
     if not commit.parent_commit_id:
@@ -273,6 +274,7 @@ def resolve_commit_bundle_analysis(commit, info):
 ### Commit Coverage Bindable ###
 
 
+@sentry_sdk.trace
 @commit_coverage_analytics_bindable.field("totals")
 def resolve_coverage_totals(
     commit: Commit, info: GraphQLResolveInfo
@@ -281,12 +283,14 @@ def resolve_coverage_totals(
     return command.fetch_totals(commit)
 
 
+@sentry_sdk.trace
 @commit_coverage_analytics_bindable.field("flagNames")
 @sync_to_async
 def resolve_coverage_flags(commit: Commit, info: GraphQLResolveInfo) -> List[str]:
     return commit.full_report.flags.keys()
 
 
+@sentry_sdk.trace
 @commit_coverage_analytics_bindable.field("coverageFile")
 @sync_to_async
 def resolve_coverage_file(commit, info, path, flags=None, components=None):
@@ -315,6 +319,7 @@ def resolve_coverage_file(commit, info, path, flags=None, components=None):
     }
 
 
+@sentry_sdk.trace
 @commit_coverage_analytics_bindable.field("components")
 @sync_to_async
 def resolve_coverage_components(commit: Commit, info, filters=None) -> List[Component]:
@@ -333,6 +338,7 @@ def resolve_coverage_components(commit: Commit, info, filters=None) -> List[Comp
 ### Commit Bundle Analysis Bindable ###
 
 
+@sentry_sdk.trace
 @commit_bundle_analysis_bindable.field("bundleAnalysisCompareWithParent")
 @sync_to_async
 def resolve_commit_bundle_analysis_compare_with_parent(
@@ -361,6 +367,7 @@ def resolve_commit_bundle_analysis_compare_with_parent(
     return bundle_analysis_comparison
 
 
+@sentry_sdk.trace
 @commit_bundle_analysis_bindable.field("bundleAnalysisReport")
 @sync_to_async
 def resolve_commit_bundle_analysis_report(commit: Commit, info) -> BundleAnalysisReport:

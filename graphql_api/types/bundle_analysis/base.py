@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Mapping, Optional, Union
 
+import sentry_sdk
 from ariadne import ObjectType, convert_kwargs_to_snake_case
 from graphql import GraphQLResolveInfo
 
@@ -136,6 +137,7 @@ def resolve_modules(
     return bundle_asset.modules
 
 
+@sentry_sdk.trace
 @bundle_asset_bindable.field("measurements")
 @convert_kwargs_to_snake_case
 @sync_to_async
@@ -178,6 +180,7 @@ def resolve_assets(
     return list(bundle_report.assets())
 
 
+@sentry_sdk.trace
 @bundle_report_bindable.field("assetsPaginated")
 def resolve_assets_paginated(
     bundle_report: BundleReport,
@@ -272,6 +275,7 @@ def resolve_bundle_report_filtered(
     )
 
 
+@sentry_sdk.trace
 @bundle_report_bindable.field("measurements")
 @convert_kwargs_to_snake_case
 @sync_to_async
