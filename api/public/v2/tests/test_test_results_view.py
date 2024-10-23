@@ -53,7 +53,6 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[0].outcome,
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
-                    "failure_rate": self.test_instances[0].test.failure_rate,
                     "commits_where_fail": self.test_instances[
                         0
                     ].test.commits_where_fail,
@@ -103,7 +102,6 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[0].outcome,
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
-                    "failure_rate": self.test_instances[0].test.failure_rate,
                     "commits_where_fail": self.test_instances[
                         0
                     ].test.commits_where_fail,
@@ -137,7 +135,6 @@ class TestResultsViewsetTests(InternalAPITest):
             "outcome": self.test_instances[0].outcome,
             "branch": self.test_instances[0].branch,
             "repoid": self.test_instances[0].repoid,
-            "failure_rate": self.test_instances[0].test.failure_rate,
             "commits_where_fail": self.test_instances[0].test.commits_where_fail,
         }
 
@@ -240,6 +237,5 @@ class TestResultsViewsetTests(InternalAPITest):
             "outcome": self.test_instances[0].outcome,
             "branch": self.test_instances[0].branch,
             "repoid": self.test_instances[0].repoid,
-            "failure_rate": self.test_instances[0].test.failure_rate,
             "commits_where_fail": self.test_instances[0].test.commits_where_fail,
         }
