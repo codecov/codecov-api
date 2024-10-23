@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.conf import settings
@@ -106,24 +106,20 @@ def test_get_repo(db):
     assert recovered_repo == repository
 
 
-@patch("shared.metrics.metrics.incr")
-def test_get_repo_with_invalid_service(mock_metrics, db):
+def test_get_repo_with_invalid_service(db):
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo="repo", service="wrong service")
     with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
     assert exp.match("Service not found: wrong service")
-    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
-@patch("shared.metrics.metrics.incr")
-def test_get_repo_not_found(mock_metrics, db):
+def test_get_repo_not_found(db):
     upload_views = UploadViews()
     upload_views.kwargs = dict(repo="repo", service="github")
     with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
     assert exp.match("Repository not found")
-    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
 def test_get_commit(db):
@@ -137,8 +133,7 @@ def test_get_commit(db):
     assert recovered_commit == commit
 
 
-@patch("shared.metrics.metrics.incr")
-def test_get_commit_error(mock_metrics, db):
+def test_get_commit_error(db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     repository.save()
     upload_views = UploadViews()
@@ -146,7 +141,6 @@ def test_get_commit_error(mock_metrics, db):
     with pytest.raises(ValidationError) as exp:
         upload_views.get_commit(repository)
     assert exp.match("Commit SHA not found")
-    mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
 
 def test_get_report(db):
@@ -179,8 +173,7 @@ def test_get_default_report(db):
     assert recovered_report == report
 
 
-@patch("shared.metrics.metrics.incr")
-def test_get_report_error(mock_metrics, db):
+def test_get_report_error(db):
     repository = RepositoryFactory(name="the_repo", author__username="codecov")
     commit = CommitFactory(repository=repository)
     repository.save()
@@ -191,12 +184,10 @@ def test_get_report_error(mock_metrics, db):
     )
     with pytest.raises(ValidationError) as exp:
         upload_views.get_report(commit)
-        mock_metrics.assert_called_once_with("uploads.rejected", 1)
     assert exp.match("Report not found")
 
 
-@patch("shared.metrics.metrics.incr")
-def test_uploads_post(mock_metrics, db, mocker, mock_redis):
+def test_uploads_post(db, mocker, mock_redis):
     # TODO remove the mock object and test the flow with the permissions
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
@@ -277,9 +268,6 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
         report_session_id=upload.id, flag_id=flag2.id
     ).exists()
     assert [flag for flag in upload.flags.all()] == [flag1, flag2]
-    mock_metrics.assert_has_calls(
-        [call("upload.cli.version"), call("uploads.accepted", 1)]
-    )
 
     archive_service = ArchiveService(repository)
     assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -294,15 +282,12 @@ def test_uploads_post(mock_metrics, db, mocker, mock_redis):
     upload_task_mock.assert_called()
 
 
-@patch("shared.metrics.metrics.incr")
 @pytest.mark.parametrize("private", [False, True])
 @pytest.mark.parametrize("branch", ["branch", "fork:branch", "someone/fork:branch"])
 @pytest.mark.parametrize(
     "branch_sent", [None, "branch", "fork:branch", "someone/fork:branch"]
 )
-def test_uploads_post_tokenless(
-    mock_metrics, db, mocker, mock_redis, private, branch, branch_sent
-):
+def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_sent):
     presigned_put_mock = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
@@ -392,9 +377,6 @@ def test_uploads_post_tokenless(
             report_session_id=upload.id, flag_id=flag2.id
         ).exists()
         assert [flag for flag in upload.flags.all()] == [flag1, flag2]
-        mock_metrics.assert_has_calls(
-            [call("upload.cli.version"), call("uploads.accepted", 1)]
-        )
 
         archive_service = ArchiveService(repository)
         assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -431,7 +413,6 @@ def test_uploads_post_tokenless(
         assert response.json().get("detail") == "Not valid tokenless upload"
 
 
-@patch("shared.metrics.metrics.incr")
 @pytest.mark.parametrize("private", [False, True])
 @pytest.mark.parametrize("branch", ["branch", "fork:branch", "someone/fork:branch"])
 @pytest.mark.parametrize(
@@ -439,7 +420,6 @@ def test_uploads_post_tokenless(
 )
 @pytest.mark.parametrize("upload_token_required_for_public_repos", [True, False])
 def test_uploads_post_token_required_auth_check(
-    mock_metrics,
     db,
     mocker,
     mock_redis,
@@ -545,9 +525,6 @@ def test_uploads_post_token_required_auth_check(
             report_session_id=upload.id, flag_id=flag2.id
         ).exists()
         assert [flag for flag in upload.flags.all()] == [flag1, flag2]
-        mock_metrics.assert_has_calls(
-            [call("upload.cli.version"), call("uploads.accepted", 1)]
-        )
 
         archive_service = ArchiveService(repository)
         assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -587,9 +564,7 @@ def test_uploads_post_token_required_auth_check(
 @patch("upload.views.uploads.AnalyticsService")
 @patch("upload.helpers.jwt.decode")
 @patch("upload.helpers.PyJWKClient")
-@patch("shared.metrics.metrics.incr")
 def test_uploads_post_github_oidc_auth(
-    mock_metrics,
     mock_jwks_client,
     mock_jwt_decode,
     analytics_service_mock,
@@ -679,9 +654,6 @@ def test_uploads_post_github_oidc_auth(
         report_session_id=upload.id, flag_id=flag2.id
     ).exists()
     assert [flag for flag in upload.flags.all()] == [flag1, flag2]
-    mock_metrics.assert_has_calls(
-        [call("upload.cli.version"), call("uploads.accepted", 1)]
-    )
 
     archive_service = ArchiveService(repository)
     assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -873,10 +845,8 @@ class TestGitlabEnterpriseOIDC(APITestCase):
     @patch("upload.views.uploads.AnalyticsService")
     @patch("upload.helpers.jwt.decode")
     @patch("upload.helpers.PyJWKClient")
-    @patch("shared.metrics.metrics.incr")
     def test_uploads_post_github_enterprise_oidc_auth_jwks_url(
         self,
-        mock_metrics,
         mock_jwks_client,
         mock_jwt_decode,
         analytics_service_mock,

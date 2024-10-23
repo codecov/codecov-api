@@ -16,7 +16,7 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from shared.metrics import inc_counter, metrics
+from shared.metrics import inc_counter
 
 from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
@@ -116,12 +116,7 @@ class UploadHandler(APIView, ShelterMixin):
         if package is not None:
             package_format = r"((codecov-cli/)|((.+-)?uploader-))(\d+.\d+.\d+)"
             match = re.fullmatch(package_format, package)
-            if match:
-                if match.group(2):  # Matches codecov-cli/
-                    metrics.incr(f"upload.cli.{match.group(5)}")
-                else:  # Matches (.+-)?uploader-
-                    metrics.incr(f"upload.uploader.{match.group(5)}")
-            else:
+            if not match:
                 log.warning(
                     "Package query parameter failed to match CLI or uploader format",
                     extra=dict(package=package),
@@ -136,7 +131,6 @@ class UploadHandler(APIView, ShelterMixin):
             )
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Invalid request parameters"
-            metrics.incr("uploads.rejected", 1)
             return response
 
         # Try to determine the repository associated with the upload based on the params provided
@@ -146,12 +140,10 @@ class UploadHandler(APIView, ShelterMixin):
         except ValidationError:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"
-            metrics.incr("uploads.rejected", 1)
             return response
         except MultipleObjectsReturned:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Found too many repos"
-            metrics.incr("uploads.rejected", 1)
             return response
 
         log.info(
@@ -297,7 +289,6 @@ class UploadHandler(APIView, ShelterMixin):
                         upload_params=upload_params,
                     ),
                 )
-                metrics.incr("uploads.rejected", 1)
                 return HttpResponseServerError("Unknown error, please try again later")
             log.info(
                 "Returning presign put",
@@ -366,7 +357,6 @@ class UploadHandler(APIView, ShelterMixin):
             response["Content-Type"] = "application/json"
 
         response.status_code = status.HTTP_200_OK
-        metrics.incr("uploads.accepted", 1)
         return response
 
 
