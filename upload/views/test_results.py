@@ -23,7 +23,10 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
-from upload.helpers import dispatch_upload_task, generate_upload_prometheus_metrics_labels
+from upload.helpers import (
+    dispatch_upload_task,
+    generate_upload_prometheus_metrics_labels,
+)
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin

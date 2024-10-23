@@ -26,7 +26,10 @@ from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, MeasurementName
-from upload.helpers import dispatch_upload_task, generate_upload_prometheus_metrics_labels
+from upload.helpers import (
+    dispatch_upload_task,
+    generate_upload_prometheus_metrics_labels,
+)
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
 
