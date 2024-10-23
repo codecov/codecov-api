@@ -16,7 +16,7 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from shared.metrics import metrics
+from shared.metrics import inc_counter, metrics
 
 from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
@@ -75,8 +75,9 @@ class UploadHandler(APIView, ShelterMixin):
     def post(self, request, *args, **kwargs):
         # Extract the version
         version = self.kwargs["version"]
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,
@@ -84,7 +85,7 @@ class UploadHandler(APIView, ShelterMixin):
                 position="start",
                 upload_version=version,
             ),
-        ).inc()
+        )
 
         log.info(
             f"Received upload request {version}",
@@ -164,8 +165,9 @@ class UploadHandler(APIView, ShelterMixin):
             ),
         )
 
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,
@@ -174,7 +176,7 @@ class UploadHandler(APIView, ShelterMixin):
                 position="end",
                 upload_version=version,
             ),
-        ).inc()
+        )
 
         # Validate the upload to make sure the org has enough repo credits and is allowed to upload for this commit
         redis = get_redis_connection()

@@ -8,6 +8,7 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
+from shared.metrics import inc_counter
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
 from codecov_auth.authentication.repo_auth import (
@@ -82,15 +83,16 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        ).inc()
+        )
         serializer = EmptyUploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -148,8 +150,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 )
             )
         ]
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,
@@ -157,7 +160,7 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        ).inc()
+        )
         if set(changed_files) == set(ignored_changed_files):
             TaskService().notify(
                 repoid=repo.repoid, commitid=commit.commitid, empty_upload="pass"

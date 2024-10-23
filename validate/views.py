@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.metrics import Counter
+from shared.metrics import Counter, inc_counter
 from shared.validation.exceptions import InvalidYamlException
 from shared.yaml.validation import validate_yaml
 from yaml import YAMLError, safe_load
@@ -84,7 +84,10 @@ class V2ValidateYamlHandler(V1ValidateYamlHandler):
 
     def post(self, request, *args, **kwargs):
         source = self.request.query_params.get("source", "unknown")
-        API_VALIDATE_V2_COUNTER.labels(source=source).inc()
+        inc_counter(
+            API_VALIDATE_V2_COUNTER,
+            labels=dict(source=source),
+        )
 
         if not self.request.body:
             return Response(

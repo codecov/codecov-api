@@ -19,7 +19,7 @@ from django.http import (
 )
 from graphql import DocumentNode
 from sentry_sdk import capture_exception
-from shared.metrics import Counter, Histogram
+from shared.metrics import Counter, Histogram, inc_counter
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
@@ -119,9 +119,13 @@ class QueryMetricsExtension(Extension):
         """
         self.set_type_and_name(query=context["clean_query"])
         self.start_timestamp = time.perf_counter()
-        GQL_HIT_COUNTER.labels(
-            operation_type=self.operation_type, operation_name=self.operation_name
-        ).inc()
+        inc_counter(
+            GQL_HIT_COUNTER,
+            labels=dict(
+                operation_type=self.operation_type,
+                operation_name=self.operation_name,
+            ),
+        )
 
     def request_finished(self, context):
         """
@@ -236,9 +240,12 @@ class AsyncGraphqlView(GraphQLAsyncView):
             "user": request.user,
         }
         log.info("GraphQL Request", extra=log_data)
-        GQL_REQUEST_MADE_COUNTER.labels(path=req_path).inc()
+        inc_counter(GQL_REQUEST_MADE_COUNTER, labels=dict(path=req_path))
         if self._check_ratelimit(request=request):
-            GQL_ERROR_TYPE_COUNTER.labels(error_type="rate_limit", path=req_path).inc()
+            inc_counter(
+                GQL_ERROR_TYPE_COUNTER,
+                labels=dict(error_type="rate_limit", path=req_path),
+            )
             return JsonResponse(
                 data={
                     "status": 429,
@@ -254,7 +261,10 @@ class AsyncGraphqlView(GraphQLAsyncView):
             data = json.loads(content)
 
             if "errors" in data:
-                GQL_ERROR_TYPE_COUNTER.labels(error_type="all", path=req_path).inc()
+                inc_counter(
+                    GQL_ERROR_TYPE_COUNTER,
+                    labels=dict(error_type="all", path=req_path),
+                )
                 try:
                     if data["errors"][0]["extensions"]["cost"]:
                         costs = data["errors"][0]["extensions"]["cost"]
@@ -266,9 +276,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
                                 request_body=req_body,
                             ),
                         )
-                        GQL_ERROR_TYPE_COUNTER.labels(
-                            error_type="query_cost_exceeded", path=req_path
-                        ).inc()
+                        inc_counter(
+                            GQL_ERROR_TYPE_COUNTER,
+                            labels=dict(
+                                error_type="query_cost_exceeded",
+                                path=req_path,
+                            ),
+                        )
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
                         )

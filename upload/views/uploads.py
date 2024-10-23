@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
-from shared.metrics import metrics
+from shared.metrics import inc_counter, metrics
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.authentication.repo_auth import (
@@ -68,15 +68,16 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer: UploadSerializer):
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        ).inc()
+        )
         repository: Repository = self.get_repo()
         validate_activated_repo(repository)
         commit: Commit = self.get_commit(repository)
@@ -128,8 +129,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             instance.storage_path = path
             instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,
@@ -137,7 +139,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        ).inc()
+        )
         metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
         self.send_analytics_data(commit, instance, version)

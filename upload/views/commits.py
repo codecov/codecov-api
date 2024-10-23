@@ -2,6 +2,7 @@ import logging
 
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import ListCreateAPIView
+from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -53,15 +54,16 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        ).inc()
+        )
         repository = self.get_repo()
 
         commit = serializer.save(repository=repository)
@@ -71,8 +73,9 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
 
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,
@@ -80,6 +83,6 @@ class CommitViews(ListCreateAPIView, GetterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        ).inc()
+        )
 
         return commit

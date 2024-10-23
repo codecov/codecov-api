@@ -10,7 +10,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
-from shared.metrics import Counter
+from shared.metrics import Counter, inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     BundleAnalysisTokenlessAuthentication,
@@ -89,7 +89,10 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 position="start",
                 fill_labels=False,
             )
-            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(**labels).inc()
+            inc_counter(
+                BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+                labels=labels,
+            )
         except Exception:
             log.warn(
                 "Failed to BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER",
@@ -184,7 +187,10 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 position="end",
                 fill_labels=False,
             )
-            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(**labels).inc()
+            inc_counter(
+                BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+                labels=labels,
+            )
         except Exception:
             log.warn(
                 "Failed to BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER",

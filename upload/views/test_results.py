@@ -7,6 +7,7 @@ from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -66,15 +67,16 @@ class TestResultsView(
         return repo_auth_custom_exception_handler
 
     def post(self, request):
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="test_results",
                 endpoint="test_results",
                 request=request,
                 is_shelter_request=self.is_shelter_request(),
                 position="start",
             ),
-        ).inc()
+        )
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -106,8 +108,9 @@ class TestResultsView(
         if update_fields:
             repo.save(update_fields=update_fields)
 
-        API_UPLOAD_COUNTER.labels(
-            **generate_upload_prometheus_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_tags(
                 action="test_results",
                 endpoint="test_results",
                 request=request,
@@ -115,7 +118,7 @@ class TestResultsView(
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
             ),
-        ).inc()
+        )
 
         commit, _ = Commit.objects.get_or_create(
             commitid=data["commit"],
