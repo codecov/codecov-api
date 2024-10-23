@@ -299,9 +299,17 @@ def resolve_bundle_report_measurements(
     )
 
     # All measureable names we need to fetch to compute the requested asset types
-    if not asset_types or ASSET_TYPE_UNKNOWN in asset_types:
+    if not asset_types:
         measurables_to_fetch = [
             item for item in list(BundleAnalysisMeasurementsAssetType)
+        ]
+    elif ASSET_TYPE_UNKNOWN in asset_types:
+        measurables_to_fetch = [
+            BundleAnalysisMeasurementsAssetType.REPORT_SIZE,
+            BundleAnalysisMeasurementsAssetType.JAVASCRIPT_SIZE,
+            BundleAnalysisMeasurementsAssetType.STYLESHEET_SIZE,
+            BundleAnalysisMeasurementsAssetType.FONT_SIZE,
+            BundleAnalysisMeasurementsAssetType.IMAGE_SIZE,
         ]
     else:
         measurables_to_fetch = [
