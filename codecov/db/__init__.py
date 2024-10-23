@@ -73,7 +73,7 @@ class IsNot(Lookup):
 
 
 @Field.register_lookup
-class ILike(IContains):
+class ILike(Lookup):
     lookup_name = "ilike"
 
     def as_sql(self, compiler, connection):
@@ -81,9 +81,9 @@ class ILike(IContains):
 
         print("CONNECTION.VENDOR", connection.vendor)
 
-        if connection.vendor == "default":
-            return f"ILIKE {rhs}"
-        return super().get_rhs_op(connection, rhs)
+        # if connection.vendor == "default":
+        return f"ILIKE {rhs}"
+        # return super().get_rhs_op(connection, rhs)
 
 
 class DatabaseSyncToAsync(SyncToAsync):
