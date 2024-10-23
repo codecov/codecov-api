@@ -124,6 +124,7 @@ def validate(
         "flake_rate",
         "commits_where_fail",
         "last_duration",
+        "updated_at",
     }:
         return ValidationError(f"Invalid ordering field: {ordering}")
 
@@ -175,7 +176,7 @@ base_cte as (
     { "join reports_test rt on rt.id = rd.test_id" if testsuites or term else ""}
 	where
         rd.repoid = %(repoid)s
-		and rd.date > current_date - interval %(interval)s
+		and rd.date >= current_date - interval %(interval)s
         { "and rd.branch = %(branch)s" if branch else ""}
         { "and rd.test_id in %(test_ids)s" if test_ids else ""}
         { "and rt.testsuite in %(testsuites)s" if testsuites else ""}
@@ -504,11 +505,11 @@ def get_test_results_aggregate_numbers(
     repo: Repository, since: dt.datetime, until: dt.datetime | None = None
 ) -> dict[str, float | int]:
     totals = DailyTestRollup.objects.filter(
-        repoid=repo.repoid, date__gt=since, branch=repo.branch
+        repoid=repo.repoid, date__gte=since, branch=repo.branch
     )
 
     if until:
-        totals = totals.filter(date__lte=until)
+        totals = totals.filter(date__lt=until)
 
     num_tests = totals.distinct("test_id").count()
 
@@ -577,14 +578,14 @@ def get_flake_aggregate_numbers(
     if until is None:
         flakes = Flake.objects.filter(
             Q(repository_id=repo.repoid)
-            & (Q(end_date__isnull=True) | Q(end_date__date__gt=since.date()))
+            & (Q(end_date__isnull=True) | Q(end_date__date__gte=since.date()))
         )
     else:
         flakes = Flake.objects.filter(
             Q(repository_id=repo.repoid)
             & (
-                Q(start_date__date__lte=until.date())
-                & (Q(end_date__date__gt=since.date()) | Q(end_date__isnull=True))
+                Q(start_date__date__lt=until.date())
+                & (Q(end_date__date__gte=since.date()) | Q(end_date__isnull=True))
             )
         )
 
@@ -594,12 +595,12 @@ def get_flake_aggregate_numbers(
 
     test_rollups = DailyTestRollup.objects.filter(
         repoid=repo.repoid,
-        date__gt=since.date(),
+        date__gte=since.date(),
         branch=repo.branch,
         test_id__in=test_ids,
     )
     if until:
-        test_rollups = test_rollups.filter(date__lte=until.date())
+        test_rollups = test_rollups.filter(date__lt=until.date())
 
     if len(test_rollups) == 0:
         return {"flake_count": 0, "flake_rate": 0}

@@ -1,5 +1,6 @@
 import logging
 
+import sentry_sdk
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
@@ -30,6 +31,7 @@ class RepoAccessors:
             RepoProviderService().get_adapter(owner=user, repo=repo).get_authenticated
         )()
 
+    @sentry_sdk.trace
     def get_repo_details(
         self, user, repo_name, repo_owner_username, repo_owner_service
     ):
