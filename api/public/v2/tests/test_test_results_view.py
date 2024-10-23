@@ -53,9 +53,6 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[0].outcome,
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
-                    "commits_where_fail": self.test_instances[
-                        0
-                    ].test.commits_where_fail,
                 },
                 {
                     "id": self.test_instances[1].id,
@@ -67,10 +64,6 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[1].outcome,
                     "branch": self.test_instances[1].branch,
                     "repoid": self.test_instances[1].repoid,
-                    "failure_rate": self.test_instances[1].test.failure_rate,
-                    "commits_where_fail": self.test_instances[
-                        1
-                    ].test.commits_where_fail,
                 },
             ],
             "total_pages": 1,
@@ -102,9 +95,6 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[0].outcome,
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
-                    "commits_where_fail": self.test_instances[
-                        0
-                    ].test.commits_where_fail,
                 },
             ],
             "total_pages": 1,
@@ -135,7 +125,6 @@ class TestResultsViewsetTests(InternalAPITest):
             "outcome": self.test_instances[0].outcome,
             "branch": self.test_instances[0].branch,
             "repoid": self.test_instances[0].repoid,
-            "commits_where_fail": self.test_instances[0].test.commits_where_fail,
         }
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
@@ -237,5 +226,4 @@ class TestResultsViewsetTests(InternalAPITest):
             "outcome": self.test_instances[0].outcome,
             "branch": self.test_instances[0].branch,
             "repoid": self.test_instances[0].repoid,
-            "commits_where_fail": self.test_instances[0].test.commits_where_fail,
         }
