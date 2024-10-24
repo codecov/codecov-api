@@ -166,19 +166,25 @@ class StripeService(AbstractPaymentService):
             stripe.SubscriptionSchedule.release(subscription_schedule_id)
 
         # we give an auto-refund grace period of 24 hours for a monthly subscription or 72 hours for a yearly subscription
-        # current_subscription_timestamp = subscription["current_period_start"]
         current_subscription_datetime = datetime.fromtimestamp(
             subscription["current_period_start"]
         )
-        differenceFromNow = datetime.now() - current_subscription_datetime
+        difference_from_now = datetime.now() - current_subscription_datetime
 
-        subscription_plan_interval = (
-            subscription.plan.interval if subscription.plan is not None else None
+        subscription_plan_interval = getattr(
+            getattr(subscription, "plan", None), "interval", None
         )
         within_refund_grace_period = (
-            subscription_plan_interval == "month" and differenceFromNow.days < 1
-        ) or (subscription_plan_interval == "year" and differenceFromNow.days < 3)
-        if within_refund_grace_period:
+            subscription_plan_interval == "month" and difference_from_now.days < 1
+        ) or (subscription_plan_interval == "year" and difference_from_now.days < 3)
+
+        customer = stripe.Customer.retrieve(owner.stripe_customer_id)
+        # we are giving customers 2 autorefund instances
+        autorefunds_remaining = int(
+            customer["metadata"].get("autorefunds_remaining", "2")
+        )
+
+        if within_refund_grace_period and autorefunds_remaining > 0:
             stripe.Subscription.cancel(owner.stripe_subscription_id)
 
             invoices_list = stripe.Invoice.list(
@@ -193,7 +199,8 @@ class StripeService(AbstractPaymentService):
                     else current_subscription_datetime - relativedelta(years=1)
                 )
 
-                # refund if the invoice has a charge, it has been fully paid, the creation time was before the start of the current subscription's start and the creation time was after the start of the last period
+                # refund if all of the following are true: the invoice has a charge, it has been fully paid,
+                # the creation time was before the start of the current subscription's start, and the creation time was after the start of the last period
                 invoice_created_datetime = datetime.fromtimestamp(invoice["created"])
                 if (
                     invoice["charge"] is not None
@@ -207,6 +214,10 @@ class StripeService(AbstractPaymentService):
                 stripe.Customer.modify(
                     owner.stripe_customer_id,
                     balance=0,
+                    metadata={"autorefunds_remaining": str(autorefunds_remaining - 1)},
+                )
+                log.info(
+                    f"Autorefunded owner id #{owner.ownerid} for stripe id #{owner.stripe_customer_id}. They have {str(autorefunds_remaining - 1)} remaining."
                 )
         else:
             # outside of the grace period, we schedule a cancellation at the end of the period with no refund
