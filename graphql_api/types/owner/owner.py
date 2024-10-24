@@ -217,7 +217,6 @@ def resolve_org_upload_token(
     if should_hide_tokens and not is_owner_admin:
         return TOKEN_UNAVAILABLE
 
-    command = info.context["executor"].get_command("owner")
     return command.get_org_upload_token(owner)
 
 
