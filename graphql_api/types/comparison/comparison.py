@@ -2,7 +2,7 @@ from asyncio import gather
 from typing import List, Optional
 
 import sentry_sdk
-from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType
 from graphql.type.definition import GraphQLResolveInfo
 
 import services.components as components_service
@@ -36,7 +36,6 @@ def resolve_state(comparison: ComparisonReport, info: GraphQLResolveInfo) -> str
 
 
 @comparison_bindable.field("impactedFiles")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_impacted_files(
     comparison_report: ComparisonReport, info: GraphQLResolveInfo, filters=None

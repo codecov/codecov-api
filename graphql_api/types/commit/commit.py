@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Union
 import sentry_sdk
 import shared.reports.api_report_service as report_service
 import yaml
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 from shared.reports.api_report_service import ReadOnlyReport
 from shared.reports.filtered import FilteredReportFile
@@ -84,7 +84,6 @@ async def resolve_yaml(commit: Commit, info) -> dict:
 
 
 @commit_bindable.field("yamlState")
-@convert_kwargs_to_snake_case
 async def resolve_yaml_state(commit: Commit, info) -> YamlStates:
     command = info.context["executor"].get_command("commit")
     final_yaml = await command.get_final_yaml(commit)
@@ -149,7 +148,6 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
 
 @sentry_sdk.trace
 @commit_bindable.field("pathContents")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     """

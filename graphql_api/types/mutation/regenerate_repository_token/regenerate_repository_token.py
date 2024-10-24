@@ -1,4 +1,4 @@
-from ariadne import UnionType, convert_kwargs_to_snake_case
+from ariadne import UnionType
 
 from graphql_api.helpers.mutation import (
     require_authenticated,
@@ -9,7 +9,6 @@ from graphql_api.helpers.mutation import (
 
 @wrap_error_handling_mutation
 @require_authenticated
-@convert_kwargs_to_snake_case
 async def resolve_regenerate_repository_token(_, info, input):
     command = info.context["executor"].get_command("repository")
 
