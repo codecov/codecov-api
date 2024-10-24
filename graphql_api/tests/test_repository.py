@@ -10,8 +10,8 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
     RepositoryTokenFactory,
 )
-from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 
+from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
