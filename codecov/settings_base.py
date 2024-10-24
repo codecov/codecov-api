@@ -347,6 +347,9 @@ UPLOAD_THROTTLING_ENABLED = get_config(
     "setup", "upload_throttling_enabled", default=True
 )
 
+HIDE_ALL_CODECOV_TOKENS = get_config("setup", "hide_all_codecov_tokens", default=False)
+
+
 SENTRY_JWT_SHARED_SECRET = get_config(
     "sentry", "jwt_shared_secret", default=None
 ) or get_config("setup", "sentry", "jwt_shared_secret", default=None)
