@@ -25,7 +25,7 @@ from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedErro
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 
-TOKEN_UNAVAILABLE = "Token Unavailable"
+TOKEN_UNAVAILABLE = "Token Unavailable. Please contact your admin."
 
 log = logging.getLogger(__name__)
 
