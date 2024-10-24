@@ -200,12 +200,9 @@ def resolve_hash_ownerid(owner: Owner, info: GraphQLResolveInfo):
 @require_part_of_org
 def resolve_org_upload_token(owner: Owner, info, **kwargs):
     should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
-    current_user = info.context["request"].user
-
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
-    is_owner_admin = command.get_is_current_user_an_admin(current_user, current_owner)
-
+    is_owner_admin = current_owner.is_admin(owner)
     if should_hide_tokens and not is_owner_admin:
         return TOKEN_UNAVAILABLE
 

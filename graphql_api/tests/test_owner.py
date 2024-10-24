@@ -23,6 +23,7 @@ from codecov_auth.tests.factories import (
     UserFactory,
 )
 from core.tests.factories import CommitFactory, RepositoryFactory
+from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
@@ -417,6 +418,28 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
     def test_get_org_upload_token(self, mocker):
+        mocker.return_value = "upload_token"
+        query = query_repositories % (self.owner.username, "", "")
+        data = self.gql_request(query, owner=self.owner)
+        assert data["owner"]["orgUploadToken"] == "upload_token"
+
+    @override_settings(HIDE_ALL_CODECOV_TOKENS=True)
+    def test_get_org_upload_token_hide_tokens_setting_owner_not_admin(self):
+        random_owner = OwnerFactory()
+        query = """{
+            owner(username: "%s") {
+               orgUploadToken
+            }
+        }
+        """ % (self.owner.username)
+        random_owner.organizations = [self.owner.ownerid]
+        random_owner.save()
+        data = self.gql_request(query, owner=random_owner)
+        assert data["owner"]["orgUploadToken"] == TOKEN_UNAVAILABLE
+
+    @patch("codecov_auth.commands.owner.owner.OwnerCommands.get_org_upload_token")
+    @override_settings(HIDE_ALL_CODECOV_TOKENS=True)
+    def test_get_org_upload_token_hide_tokens_setting_owner_is_admin(self, mocker):
         mocker.return_value = "upload_token"
         query = query_repositories % (self.owner.username, "", "")
         data = self.gql_request(query, owner=self.owner)
