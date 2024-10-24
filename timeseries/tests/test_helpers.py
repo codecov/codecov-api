@@ -6,11 +6,14 @@ from django.conf import settings
 from django.test import TransactionTestCase
 from freezegun import freeze_time
 from freezegun.api import FakeDatetime
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from timeseries.helpers import (
     coverage_measurements,
     fill_sparse_measurements,
@@ -84,7 +87,7 @@ class RepositoryCoverageMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit1",
         )
         MeasurementFactory(
@@ -94,7 +97,7 @@ class RepositoryCoverageMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 2, 0, 0),
             value=85.0,
-            branch="master",
+            branch="main",
             commit_sha="commit2",
         )
         MeasurementFactory(
@@ -114,7 +117,7 @@ class RepositoryCoverageMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 2, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit4",
         )
 
@@ -161,7 +164,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit1",
         )
         MeasurementFactory(
@@ -171,7 +174,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 2, 0, 0),
             value=85.0,
-            branch="master",
+            branch="main",
             commit_sha="commit2",
         )
         MeasurementFactory(
@@ -191,7 +194,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 2, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit4",
         )
 
@@ -204,7 +207,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             end_date=end_date,
             owner_id=self.repo.author_id,
             repo_id=self.repo.pk,
-            branch="master",
+            branch="main",
         )
         assert fill_sparse_measurements(
             measurements, Interval.INTERVAL_1_DAY, start_date, end_date
@@ -244,7 +247,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             end_date=end_date,
             owner_id=self.repo.author_id,
             repo_id=self.repo.pk,
-            branch="master",
+            branch="main",
         )
         assert fill_sparse_measurements(
             measurements, Interval.INTERVAL_1_DAY, start_date=None, end_date=end_date
@@ -279,7 +282,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             start_date=start_date,
             owner_id=self.repo.author_id,
             repo_id=self.repo.pk,
-            branch="master",
+            branch="main",
         )
         assert fill_sparse_measurements(
             measurements,
@@ -322,7 +325,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2021, 12, 1, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
         )
         MeasurementFactory(
             name=MeasurementName.COVERAGE.value,
@@ -331,7 +334,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2021, 12, 1, 1, 0, 0),
             value=90.0,
-            branch="master",
+            branch="main",
         )
 
         start_date = datetime(2021, 12, 31, 0, 0, 0, tzinfo=timezone.utc)
@@ -342,7 +345,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
             end_date=end_date,
             owner_id=self.repo.author_id,
             repo_id=self.repo.pk,
-            branch="master",
+            branch="main",
         )
         assert fill_sparse_measurements(
             measurements, Interval.INTERVAL_1_DAY, start_date, end_date
@@ -400,7 +403,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit1",
         )
         MeasurementFactory(
@@ -410,7 +413,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 2, 0, 0),
             value=85.0,
-            branch="master",
+            branch="main",
             commit_sha="commit2",
         )
         MeasurementFactory(
@@ -430,7 +433,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 2, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit4",
         )
 
@@ -473,7 +476,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit1",
         )
         MeasurementFactory(
@@ -483,7 +486,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 1, 2, 0, 0),
             value=85.0,
-            branch="master",
+            branch="main",
             commit_sha="commit2",
         )
         MeasurementFactory(
@@ -503,7 +506,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo.pk),
             timestamp=datetime(2022, 1, 2, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit4",
         )
 
@@ -540,7 +543,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -549,7 +552,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit2",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "85.00"},
         )
@@ -563,7 +566,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit4",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -605,7 +608,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -614,7 +617,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit2",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "85.00"},
         )
@@ -628,7 +631,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit4",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -666,7 +669,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -675,7 +678,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit2",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "85.00"},
         )
@@ -689,7 +692,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit4",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -738,7 +741,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "80.00"},
         )
@@ -774,7 +777,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "80.00"},
         )
@@ -816,7 +819,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo1.pk),
             timestamp=datetime(2022, 1, 1, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit1",
         )
         MeasurementFactory(
@@ -826,7 +829,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo1.pk),
             timestamp=datetime(2022, 1, 1, 2, 0, 0),
             value=85.0,
-            branch="master",
+            branch="main",
             commit_sha="commit2",
         )
         MeasurementFactory(
@@ -846,7 +849,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo1.pk),
             timestamp=datetime(2022, 1, 2, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit4",
         )
 
@@ -857,7 +860,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo2.pk),
             timestamp=datetime(2022, 1, 1, 1, 0, 0),
             value=80.0,
-            branch="master",
+            branch="main",
             commit_sha="commit1",
         )
         MeasurementFactory(
@@ -867,7 +870,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo2.pk),
             timestamp=datetime(2022, 1, 1, 2, 0, 0),
             value=85.0,
-            branch="master",
+            branch="main",
             commit_sha="commit2",
         )
         MeasurementFactory(
@@ -887,7 +890,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
             measurable_id=str(self.repo2.pk),
             timestamp=datetime(2022, 1, 2, 1, 0, 0),
             value=90.0,
-            branch="master",
+            branch="main",
             commit_sha="commit4",
         )
 
@@ -909,7 +912,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 2 measurements on master branch
+                # aggregates over 2 measurements on main branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
                 "avg": 82.5,
                 "min": 80.0,
@@ -932,7 +935,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 2 measurements on master branch
+                # aggregates over 2 measurements on main branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, tzinfo=timezone.utc),
                 "avg": 82.5,
                 "min": 80.0,
@@ -954,7 +957,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo1.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -963,7 +966,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit2",
             repository_id=self.repo1.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "85.00"},
         )
@@ -977,7 +980,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit4",
             repository_id=self.repo1.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -987,7 +990,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo2.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -996,7 +999,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit2",
             repository_id=self.repo2.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "85.00"},
         )
@@ -1010,7 +1013,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit4",
             repository_id=self.repo2.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "90.00",
@@ -1035,7 +1038,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 2 commits on master branch
+                # aggregates over 2 commits on main branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
                 "avg": 82.5,
                 "min": 80.0,
@@ -1058,7 +1061,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 2 commits on master branch
+                # aggregates over 2 commits on main branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
                 "avg": 82.5,
                 "min": 80.0,
@@ -1078,7 +1081,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo1.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -1087,7 +1090,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit2",
             repository_id=self.repo1.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "85.00"},
         )
@@ -1101,7 +1104,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit4",
             repository_id=self.repo1.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -1111,7 +1114,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit1",
             repository_id=self.repo2.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "80.00",
@@ -1120,7 +1123,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit2",
             repository_id=self.repo2.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
             totals={"c": "85.00"},
         )
@@ -1134,7 +1137,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         CommitFactory(
             commitid="commit4",
             repository_id=self.repo2.pk,
-            branch="master",
+            branch="main",
             timestamp=datetime(2022, 1, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
             totals={
                 "c": "90.00",
@@ -1150,7 +1153,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 2 commits on master branch
+                # aggregates over 2 commits on main branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
                 "avg": 82.5,
                 "min": 80.0,
@@ -1183,7 +1186,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
         )
         assert list(res) == [
             {
-                # aggregates over 2 commits on master branch
+                # aggregates over 2 commits on main branch
                 "timestamp_bin": datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
                 "avg": 82.5,
                 "min": 80.0,

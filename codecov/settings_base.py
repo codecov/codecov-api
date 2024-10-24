@@ -92,12 +92,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "codecov.wsgi.application"
 
-# Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
+
+# GraphQL
 
 GRAPHQL_QUERY_COST_THRESHOLD = get_config(
     "setup", "graphql", "query_cost_threshold", default=10000
 )
+
+GRAPHQL_RATE_LIMIT_ENABLED = get_config(
+    "setup", "graphql", "rate_limit_enabled", default=True
+)
+
+GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", default=300)
+
+# Database
+# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
@@ -376,10 +385,6 @@ DISABLE_GIT_BASED_LOGIN = IS_ENTERPRISE and get_config(
 )
 
 SHELTER_SHARED_SECRET = get_config("setup", "shelter_shared_secret", default=None)
-
-# list of repo IDs that will use the new-style report builder
-# TODO: we can eventually get rid of this once it's confirmed working well for many repos
-REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])
 
 SENTRY_ENV = os.environ.get("CODECOV_ENV", False)
 SENTRY_DSN = os.environ.get("SERVICES__SENTRY__SERVER_DSN", None)

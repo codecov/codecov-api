@@ -2,8 +2,8 @@ from datetime import date, datetime
 
 import factory
 from factory.django import DjangoModelFactory
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.types.enums import UploadErrorEnum
 from reports import models
 from reports.models import ReportResults, TestInstance
@@ -106,7 +106,6 @@ class TestFactory(factory.django.DjangoModelFactory):
     id = factory.Sequence(lambda n: f"{n}")
     name = factory.Sequence(lambda n: f"{n}")
     repository = factory.SubFactory(RepositoryFactory)
-    commits_where_fail = []
     computed_name = None
 
 

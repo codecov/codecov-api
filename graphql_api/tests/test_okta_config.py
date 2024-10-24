@@ -1,6 +1,5 @@
 from django.test import TransactionTestCase
-
-from codecov_auth.tests.factories import (
+from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
     OwnerFactory,
@@ -19,6 +18,8 @@ class OktaConfigTestCase(GraphQLTestHelper, TransactionTestCase):
             account=self.account,
             client_id="test-client-id",
             client_secret="test-client-secret",
+            enabled=True,
+            enforced=False,
         )
 
     def test_fetch_enabled_okta_config(self) -> None:

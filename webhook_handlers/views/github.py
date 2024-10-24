@@ -635,12 +635,15 @@ class GithubWebhookHandler(APIView):
                     data="Attempted to remove non Codecov user from Codecov org failed",
                 )
 
-            try:
-                if member.organizations:
-                    member.organizations.remove(org.ownerid)
-                    member.save(update_fields=["organizations"])
-            except ValueError:
-                pass
+            # Force a sync for the removed member to remove their access to the
+            # org and its private repositories.
+            TaskService().refresh(
+                ownerid=member.ownerid,
+                username=member.username,
+                sync_teams=True,
+                sync_repos=True,
+                using_integration=False,
+            )
 
             try:
                 if org.plan_activated_users:

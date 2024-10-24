@@ -13,6 +13,7 @@ from factory.faker import faker
 from pytz import UTC
 from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from api.internal.chart.filters import apply_default_filters, apply_simple_filters
 from api.internal.chart.helpers import (
@@ -23,7 +24,6 @@ from api.internal.chart.helpers import (
 )
 from codecov.tests.base_test import InternalAPITest
 from core.models import Commit
-from core.tests.factories import OwnerFactory, RepositoryFactory
 from utils.test_utils import Client
 
 fake = faker.Faker()
@@ -56,7 +56,7 @@ def generate_random_totals(
 def setup_commits(
     repo,
     num_commits,
-    branch="master",
+    branch="main",
     start_date=None,
     meets_default_filters=True,
     **kwargs,
@@ -251,7 +251,7 @@ class CoverageChartHelpersTest(TestCase):
         end_date = datetime.now()
         data = {
             "owner_username": self.org1.username,
-            "branch": "master",
+            "branch": "main",
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
             "repositories": [self.repo1_org1.name, self.repo2_org1.name],
@@ -318,7 +318,7 @@ class CoverageChartHelpersTest(TestCase):
         for commit in queryset:
             assert (
                 commit.repository.name == self.repo1_org1.name
-                and commit.branch == "master"
+                and commit.branch == "main"
             ) or (
                 commit.repository.name == branch_test.name and commit.branch == "main"
             )
@@ -860,7 +860,7 @@ class RepositoryCoverageChartTest(InternalAPITest):
 
     def test_no_permissions(self, mocked_get_permissions):
         data = {
-            "branch": "master",
+            "branch": "main",
             "start_date": timezone.now() - timedelta(7),
             "end_date": timezone.now(),
             "grouping_unit": "commit",
@@ -879,7 +879,7 @@ class RepositoryCoverageChartTest(InternalAPITest):
     @pytest.mark.skip(reason="flaky, skipping until re write")
     def test_get_commits_no_time_grouping(self, mocked_get_permissions):
         data = {
-            "branch": "master",
+            "branch": "main",
             "start_date": timezone.now() - timedelta(7),
             "end_date": timezone.now(),
             "grouping_unit": "commit",
@@ -897,7 +897,7 @@ class RepositoryCoverageChartTest(InternalAPITest):
 
     def test_get_commits_with_time_grouping(self, mocked_get_permissions):
         data = {
-            "branch": "master",
+            "branch": "main",
             "start_date": timezone.now() - timedelta(7),
             "end_date": timezone.now(),
             "grouping_unit": "day",
@@ -917,7 +917,7 @@ class RepositoryCoverageChartTest(InternalAPITest):
 
     def test_get_commits_with_coverage_change(self, mocked_get_permissions):
         data = {
-            "branch": "master",
+            "branch": "main",
             "start_date": timezone.now() - timedelta(7),
             "end_date": timezone.now(),
             "grouping_unit": "day",

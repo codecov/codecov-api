@@ -2,14 +2,14 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
-
-from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
-from codecov_auth.models import OktaSettings
-from codecov_auth.tests.factories import (
+from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
     OwnerFactory,
 )
+
+from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
+from codecov_auth.models import OktaSettings
 
 from ..save_okta_config import SaveOktaConfigInteractor
 

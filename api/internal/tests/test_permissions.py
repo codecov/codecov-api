@@ -2,14 +2,13 @@ from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from rest_framework.exceptions import APIException
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from api.internal.tests.test_utils import (
     GetAdminErrorProviderAdapter,
     GetAdminProviderAdapter,
 )
 from api.shared.permissions import RepositoryPermissionsService, UserIsAdminPermissions
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 
 
 class MockedPermissionsAdapter:

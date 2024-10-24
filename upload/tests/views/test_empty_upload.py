@@ -2,10 +2,12 @@ from unittest.mock import patch
 
 from django.urls import reverse
 from rest_framework.test import APIClient
+from shared.django_apps.codecov_auth.tests.factories import (
+    OrganizationLevelTokenFactory,
+)
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 from shared.yaml.user_yaml import UserYaml
 
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 

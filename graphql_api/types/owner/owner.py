@@ -1,6 +1,6 @@
 from datetime import datetime
 from hashlib import sha1
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 import shared.rate_limits as rate_limits
 import stripe
@@ -12,6 +12,7 @@ from graphql import GraphQLResolveInfo
 import services.activation as activation
 import timeseries.helpers as timeseries_helpers
 from codecov.db import sync_to_async
+from codecov_auth.constants import OWNER_YAML_TO_STRING_KEY
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import (
     SERVICE_GITHUB,
@@ -27,10 +28,14 @@ from graphql_api.actions.repository import (
 )
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
+    Connection,
     build_connection_graphql,
     queryset_to_connection,
 )
-from graphql_api.helpers.mutation import require_part_of_org
+from graphql_api.helpers.mutation import (
+    require_part_of_org,
+    require_shared_account_or_part_of_org,
+)
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
@@ -40,7 +45,7 @@ from services.billing import BillingService
 from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
-from timeseries.models import Interval, MeasurementSummary
+from timeseries.models import Interval
 from utils.config import get_config
 
 owner = ariadne_load_local_graphql(__file__, "owner.graphql")
@@ -53,12 +58,12 @@ AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 @convert_kwargs_to_snake_case
 def resolve_repositories(
     owner: Owner,
-    info,
-    filters=None,
-    ordering=RepositoryOrdering.ID,
-    ordering_direction=OrderingDirection.ASC,
-    **kwargs,
-):
+    info: GraphQLResolveInfo,
+    filters: Optional[dict] = None,
+    ordering: Optional[RepositoryOrdering] = RepositoryOrdering.ID,
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
+    **kwargs: Any,
+) -> Connection:
     current_owner = info.context["request"].current_owner
     okta_account_auths: list[int] = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
@@ -83,19 +88,19 @@ def resolve_repositories(
 
 @owner_bindable.field("isCurrentUserPartOfOrg")
 @sync_to_async
-def resolve_is_current_user_part_of_org(owner, info: GraphQLResolveInfo):
+def resolve_is_current_user_part_of_org(owner: Owner, info: GraphQLResolveInfo) -> bool:
     current_owner = info.context["request"].current_owner
     return current_user_part_of_org(current_owner, owner)
 
 
 @owner_bindable.field("yaml")
-def resolve_yaml(owner: Owner, info: GraphQLResolveInfo):
+def resolve_yaml(owner: Owner, info: GraphQLResolveInfo) -> Optional[str]:
     if owner.yaml is None:
-        return
+        return None
     current_owner = info.context["request"].current_owner
     if not current_user_part_of_org(current_owner, owner):
-        return
-    return yaml.dump(owner.yaml)
+        return None
+    return owner.yaml.get(OWNER_YAML_TO_STRING_KEY, yaml.dump(owner.yaml))
 
 
 @owner_bindable.field("plan")
@@ -136,7 +141,9 @@ def resolve_ownerid(owner: Owner, info: GraphQLResolveInfo) -> int:
 
 
 @owner_bindable.field("repository")
-async def resolve_repository(owner: Owner, info, name):
+async def resolve_repository(
+    owner: Owner, info: GraphQLResolveInfo, name: str
+) -> Repository | NotFoundError:
     command = info.context["executor"].get_command("repository")
     okta_authenticated_accounts: list[int] = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
@@ -176,14 +183,16 @@ async def resolve_repository(owner: Owner, info, name):
 
 @owner_bindable.field("numberOfUploads")
 @require_part_of_org
-async def resolve_number_of_uploads(owner: Owner, info, **kwargs):
+async def resolve_number_of_uploads(
+    owner: Owner, info: GraphQLResolveInfo, **kwargs: Any
+) -> int:
     command = info.context["executor"].get_command("owner")
     return await command.get_uploads_number_per_user(owner)
 
 
 @owner_bindable.field("isAdmin")
 @require_part_of_org
-def resolve_is_current_user_an_admin(owner: Owner, info: GraphQLResolveInfo):
+def resolve_is_current_user_an_admin(owner: Owner, info: GraphQLResolveInfo) -> bool:
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
     return command.get_is_current_user_an_admin(owner, current_owner)
@@ -191,14 +200,16 @@ def resolve_is_current_user_an_admin(owner: Owner, info: GraphQLResolveInfo):
 
 @owner_bindable.field("hashOwnerid")
 @require_part_of_org
-def resolve_hash_ownerid(owner: Owner, info: GraphQLResolveInfo):
+def resolve_hash_ownerid(owner: Owner, info: GraphQLResolveInfo) -> str:
     hash_ownerid = sha1(str(owner.ownerid).encode())
     return hash_ownerid.hexdigest()
 
 
 @owner_bindable.field("orgUploadToken")
 @require_part_of_org
-def resolve_org_upload_token(owner: Owner, info, **kwargs):
+def resolve_org_upload_token(
+    owner: Owner, info: GraphQLResolveInfo, **kwargs: Any
+) -> str:
     should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
@@ -213,7 +224,9 @@ def resolve_org_upload_token(owner: Owner, info, **kwargs):
 @owner_bindable.field("defaultOrgUsername")
 @sync_to_async
 @require_part_of_org
-def resolve_org_default_org_username(owner: Owner, info, **kwargs) -> int:
+def resolve_org_default_org_username(
+    owner: Owner, info: GraphQLResolveInfo, **kwargs: Any
+) -> Optional[str]:
     return None if owner.default_org is None else owner.default_org.username
 
 
@@ -222,13 +235,13 @@ def resolve_org_default_org_username(owner: Owner, info, **kwargs) -> int:
 @convert_kwargs_to_snake_case
 def resolve_measurements(
     owner: Owner,
-    info,
+    info: GraphQLResolveInfo,
     interval: Interval,
     after: Optional[datetime] = None,
     before: Optional[datetime] = None,
     repos: Optional[List[str]] = None,
     is_public: Optional[bool] = None,
-) -> Iterable[MeasurementSummary]:
+) -> Iterable[dict]:
     current_owner = info.context["request"].current_owner
 
     okta_authenticated_accounts: list[int] = info.context["request"].session.get(
@@ -265,7 +278,7 @@ def resolve_measurements(
 
 @owner_bindable.field("isCurrentUserActivated")
 @sync_to_async
-def resolve_is_current_user_activated(owner: Owner, info: GraphQLResolveInfo):
+def resolve_is_current_user_activated(owner: Owner, info: GraphQLResolveInfo) -> bool:
     current_user = info.context["request"].user
     if not current_user.is_authenticated:
         return False
@@ -312,7 +325,7 @@ def resolve_is_github_rate_limited(
 @convert_kwargs_to_snake_case
 def resolve_owner_invoice(
     owner: Owner,
-    info,
+    info: GraphQLResolveInfo,
     invoice_id: str,
 ) -> stripe.Invoice | None:
     return BillingService(requesting_user=owner).get_invoice(owner, invoice_id)
@@ -380,12 +393,14 @@ def resolve_ai_enabled_repos(
 
 @owner_bindable.field("uploadTokenRequired")
 @require_part_of_org
-def resolve_upload_token_required(owner: Owner, info) -> bool | None:
+def resolve_upload_token_required(
+    owner: Owner, info: GraphQLResolveInfo
+) -> bool | None:
     return owner.upload_token_required_for_public_repos
 
 
 @owner_bindable.field("activatedUserCount")
 @sync_to_async
-@require_part_of_org
+@require_shared_account_or_part_of_org
 def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count
