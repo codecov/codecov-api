@@ -369,10 +369,9 @@ def generate_test_results(
         test_ids = test_ids & filtered_test_ids if test_ids else filtered_test_ids
 
     if parameter is not None:
+        totals = get_relevant_totals(repoid, branch, since)
         match parameter:
             case GENERATE_TEST_RESULT_PARAM.FLAKY:
-                totals = get_relevant_totals(repoid, branch, since)
-
                 flaky_test_ids = (
                     totals.values("test")
                     .annotate(flaky_fail_count_sum=Sum("flaky_fail_count"))
@@ -385,8 +384,6 @@ def generate_test_results(
                     test_ids & flaky_test_id_set if test_ids else flaky_test_id_set
                 )
             case GENERATE_TEST_RESULT_PARAM.FAILED:
-                totals = get_relevant_totals(repoid, branch, since)
-
                 failed_test_ids = (
                     totals.values("test")
                     .annotate(fail_count_sum=Sum("fail_count"))
@@ -399,8 +396,6 @@ def generate_test_results(
                     test_ids & failed_test_id_set if test_ids else failed_test_id_set
                 )
             case GENERATE_TEST_RESULT_PARAM.SKIPPED:
-                totals = get_relevant_totals(repoid, branch, since)
-
                 skipped_test_ids = (
                     totals.values("test")
                     .annotate(
@@ -417,8 +412,6 @@ def generate_test_results(
                     test_ids & skipped_test_id_set if test_ids else skipped_test_id_set
                 )
             case GENERATE_TEST_RESULT_PARAM.SLOWEST:
-                totals = get_relevant_totals(repoid, branch, since)
-
                 num_tests = totals.distinct("test_id").count()
 
                 slowest_test_ids = (
