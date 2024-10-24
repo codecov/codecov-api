@@ -380,14 +380,6 @@ class TaskService(object):
             ),
         ).apply_async()
 
-    def backfill_commit_data(self, commit_id: int):
-        self._create_signature(
-            "app.tasks.archive.BackfillCommitDataToStorage",
-            kwargs=dict(
-                commitid=commit_id,
-            ),
-        ).apply_async()
-
     def preprocess_upload(self, repoid, commitid, report_code):
         self._create_signature(
             "app.tasks.upload.PreProcessUpload",
