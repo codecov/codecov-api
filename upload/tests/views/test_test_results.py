@@ -20,7 +20,7 @@ from services.task import TaskService
 
 def test_upload_test_results(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
-    mock_sentry_metrics = mocker.patch("upload.views.test_results.metrics.incr")
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     create_presigned_put = mocker.patch(
         "services.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
@@ -100,9 +100,8 @@ def test_upload_test_results(db, client, mocker, mock_redis):
         report_code=None,
         report_type="test_results",
     )
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_prometheus_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "test_results",
@@ -110,6 +109,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
             "repo_visibility": "private",
             "is_using_shelter": "no",
             "position": "end",
+            "upload_version": None,
         },
     )
 

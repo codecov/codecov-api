@@ -8,7 +8,7 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import inc_counter
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
 from codecov_auth.authentication.repo_auth import (
@@ -23,9 +23,10 @@ from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
 from upload.helpers import (
-    generate_upload_sentry_metrics_tags,
+    generate_upload_prometheus_metrics_labels,
     try_to_get_best_possible_bot_token,
 )
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -82,9 +83,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request, *args, **kwargs):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,
@@ -149,9 +150,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
                 )
             )
         ]
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="empty_upload",
                 request=self.request,
