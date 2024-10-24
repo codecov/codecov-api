@@ -22,7 +22,7 @@ from webhook_handlers.constants import (
 
 
 class TestGitlabEnterpriseWebhookHandler(APITestCase):
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(autouse=True)
     def inject_mocker(request, mocker):
         request.mocker = mocker
 
