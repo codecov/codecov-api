@@ -1,6 +1,6 @@
 from typing import Optional
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
@@ -41,7 +41,6 @@ def resolve_owner(user, _):
 
 
 @me_bindable.field("viewableRepositories")
-@convert_kwargs_to_snake_case
 def resolve_viewable_repositories(
     current_user,
     info: GraphQLResolveInfo,

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Mapping, Optional, Union
 
 import sentry_sdk
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
 from codecov.commands.exceptions import ValidationError
@@ -139,7 +139,6 @@ def resolve_modules(
 
 @sentry_sdk.trace
 @bundle_asset_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_asset_report_measurements(
     bundle_asset: AssetReport,
@@ -277,7 +276,6 @@ def resolve_bundle_report_filtered(
 
 @sentry_sdk.trace
 @bundle_report_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_bundle_report_measurements(
     bundle_report: BundleReport,

@@ -1,4 +1,4 @@
-from ariadne import UnionType, convert_kwargs_to_snake_case
+from ariadne import UnionType
 
 from codecov.db import sync_to_async
 from core.commands.flag import FlagCommands
@@ -9,7 +9,6 @@ from graphql_api.helpers.mutation import (
 
 
 @wrap_error_handling_mutation
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_delete_flag(_, info, input):
     command: FlagCommands = info.context["executor"].get_command("flag")

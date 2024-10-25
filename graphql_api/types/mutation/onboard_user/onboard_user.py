@@ -1,4 +1,4 @@
-from ariadne import UnionType, convert_kwargs_to_snake_case
+from ariadne import UnionType
 
 from graphql_api.helpers.mutation import (
     resolve_union_error_type,
@@ -7,7 +7,6 @@ from graphql_api.helpers.mutation import (
 
 
 @wrap_error_handling_mutation
-@convert_kwargs_to_snake_case
 async def resolve_onboard_user(_, info, input):
     command = info.context["executor"].get_command("owner")
     input["goals"] = [goal.value for goal in input.get("goals", [])]
