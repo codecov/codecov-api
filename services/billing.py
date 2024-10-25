@@ -167,9 +167,11 @@ class StripeService(AbstractPaymentService):
 
         # we give an auto-refund grace period of 24 hours for a monthly subscription or 72 hours for a yearly subscription
         current_subscription_datetime = datetime.fromtimestamp(
-            subscription["current_period_start"]
+            subscription["current_period_start"], tz=datetime.timezone.utc
         )
-        difference_from_now = datetime.now() - current_subscription_datetime
+        difference_from_now = (
+            datetime.now(datetime.timezone.utc) - current_subscription_datetime
+        )
 
         subscription_plan_interval = getattr(
             getattr(subscription, "plan", None), "interval", None
@@ -178,49 +180,60 @@ class StripeService(AbstractPaymentService):
             subscription_plan_interval == "month" and difference_from_now.days < 1
         ) or (subscription_plan_interval == "year" and difference_from_now.days < 3)
 
-        customer = stripe.Customer.retrieve(owner.stripe_customer_id)
-        # we are giving customers 2 autorefund instances
-        autorefunds_remaining = int(
-            customer["metadata"].get("autorefunds_remaining", "2")
-        )
-
-        if within_refund_grace_period and autorefunds_remaining > 0:
-            stripe.Subscription.cancel(owner.stripe_subscription_id)
-
-            invoices_list = stripe.Invoice.list(
-                subscription=owner.stripe_subscription_id, status="paid"
+        autorefunds_remaining = 0
+        if within_refund_grace_period:
+            customer = stripe.Customer.retrieve(owner.stripe_customer_id)
+            # we are currently giving customers 2 autorefund instances
+            autorefunds_remaining = int(
+                customer["metadata"].get("autorefunds_remaining", "2")
             )
-            created_refund = False
-            # there could be multiple invoices that need to be refunded such as if the user increased seats within the grace period
-            for invoice in invoices_list["data"]:
+
+            if autorefunds_remaining > 0:
+                stripe.Subscription.cancel(owner.stripe_subscription_id)
+
                 start_of_last_period = (
                     current_subscription_datetime - relativedelta(months=1)
                     if subscription_plan_interval == "month"
                     else current_subscription_datetime - relativedelta(years=1)
                 )
+                invoices_list = stripe.Invoice.list(
+                    subscription=owner.stripe_subscription_id,
+                    status="paid",
+                    created={
+                        "created.gte": start_of_last_period.timestamp(),
+                        "created.lt": current_subscription_datetime.timestamp(),
+                    },
+                )
+                created_refund = False
+                # there could be multiple invoices that need to be refunded such as if the user increased seats within the grace period
+                for invoice in invoices_list["data"]:
+                    # refund if the invoice has a charge and it has been fully paid
+                    if (
+                        invoice["charge"] is not None
+                        and invoice["amount_remaining"] == 0
+                    ):
+                        stripe.Refund.create(invoice["charge"])
+                        created_refund = True
+                if created_refund == True:
+                    stripe.Customer.modify(
+                        owner.stripe_customer_id,
+                        balance=0,
+                        metadata={
+                            "autorefunds_remaining": str(autorefunds_remaining - 1)
+                        },
+                    )
+                    log.info(
+                        f"Autorefunded owner id #{owner.ownerid} for stripe id #{owner.stripe_customer_id}. They have {str(autorefunds_remaining - 1)} remaining.",
+                        extra=dict(
+                            owner_id=owner.ownerid,
+                            user_id=self.requesting_user.ownerid,
+                            subscription_id=owner.stripe_subscription_id,
+                            customer_id=owner.stripe_customer_id,
+                        ),
+                    )
 
-                # refund if all of the following are true: the invoice has a charge, it has been fully paid,
-                # the creation time was before the start of the current subscription's start, and the creation time was after the start of the last period
-                invoice_created_datetime = datetime.fromtimestamp(invoice["created"])
-                if (
-                    invoice["charge"] is not None
-                    and invoice["amount_remaining"] == 0
-                    and invoice_created_datetime < current_subscription_datetime
-                    and invoice_created_datetime >= start_of_last_period
-                ):
-                    stripe.Refund.create(invoice["charge"])
-                    created_refund = True
-            if created_refund == True:
-                stripe.Customer.modify(
-                    owner.stripe_customer_id,
-                    balance=0,
-                    metadata={"autorefunds_remaining": str(autorefunds_remaining - 1)},
-                )
-                log.info(
-                    f"Autorefunded owner id #{owner.ownerid} for stripe id #{owner.stripe_customer_id}. They have {str(autorefunds_remaining - 1)} remaining."
-                )
-        else:
-            # outside of the grace period, we schedule a cancellation at the end of the period with no refund
+        # schedule a cancellation at the end of the paid period with no refund
+        if not within_refund_grace_period or autorefunds_remaining <= 0:
             stripe.Subscription.modify(
                 owner.stripe_subscription_id,
                 cancel_at_period_end=True,
