@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import shared.rate_limits as rate_limits
 import yaml
-from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType
 from graphql.type.definition import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
@@ -79,7 +79,6 @@ def resolve_pull(repository: Repository, info: GraphQLResolveInfo, id):
 
 
 @repository_bindable.field("pulls")
-@convert_kwargs_to_snake_case
 async def resolve_pulls(
     repository: Repository,
     info: GraphQLResolveInfo,
@@ -98,7 +97,6 @@ async def resolve_pulls(
 
 
 @repository_bindable.field("commits")
-@convert_kwargs_to_snake_case
 async def resolve_commits(
     repository: Repository, info: GraphQLResolveInfo, filters=None, **kwargs
 ):
@@ -120,7 +118,6 @@ async def resolve_commits(
 
 
 @repository_bindable.field("branches")
-@convert_kwargs_to_snake_case
 async def resolve_branches(
     repository: Repository, info: GraphQLResolveInfo, filters=None, **kwargs
 ):
