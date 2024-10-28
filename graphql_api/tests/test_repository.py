@@ -11,6 +11,7 @@ from shared.django_apps.core.tests.factories import (
     RepositoryTokenFactory,
 )
 
+from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
@@ -71,6 +72,11 @@ default_fields = """
     bot { username }
     testAnalyticsEnabled
 """
+
+
+def mock_get_config_global_upload_tokens(*args):
+    if args == ("setup", "hide_all_codecov_tokens"):
+        return True
 
 
 class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
@@ -682,6 +688,68 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data["me"]["owner"]["repository"]["isGithubRateLimited"] == False
+
+    @override_settings(HIDE_ALL_CODECOV_TOKENS=True)
+    def test_repo_upload_token_not_available_config_setting_owner_not_admin(self):
+        owner = OwnerFactory(service="gitlab")
+
+        repo = RepositoryFactory(
+            author=owner,
+            author__service="gitlab",
+            service_id=12345,
+            active=True,
+        )
+        new_owner = OwnerFactory(service="gitlab", organizations=[owner.ownerid])
+        new_owner.permission = [repo.repoid]
+        new_owner.save()
+        owner.admins = []
+
+        query = """
+            query {
+                owner(username: "%s") {
+                    repository(name: "%s") {
+                                    ... on Repository {
+                            uploadToken
+                            }
+                    }
+                }
+            }
+        """ % (
+            owner.username,
+            repo.name,
+        )
+
+        data = self.gql_request(
+            query,
+            owner=new_owner,
+            variables={"name": repo.name},
+            provider="gitlab",
+        )
+
+        assert data["owner"]["repository"]["uploadToken"] == TOKEN_UNAVAILABLE
+
+    @override_settings(HIDE_ALL_CODECOV_TOKENS=True)
+    def test_repo_upload_token_not_available_config_setting_owner_is_admin(self):
+        owner = OwnerFactory(service="gitlab")
+        repo = RepositoryFactory(
+            author=owner,
+            author__service="gitlab",
+            service_id=12345,
+            active=True,
+        )
+        owner.admins = [owner.ownerid]
+
+        data = self.gql_request(
+            query_repository
+            % """
+                uploadToken
+            """,
+            owner=owner,
+            variables={"name": repo.name},
+            provider="gitlab",
+        )
+
+        assert data["me"]["owner"]["repository"]["uploadToken"] != TOKEN_UNAVAILABLE
 
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")

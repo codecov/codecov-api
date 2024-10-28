@@ -6,6 +6,7 @@ import shared.rate_limits as rate_limits
 import stripe
 import yaml
 from ariadne import ObjectType
+from django.conf import settings
 from graphql import GraphQLResolveInfo
 
 import services.activation as activation
@@ -37,6 +38,7 @@ from graphql_api.helpers.mutation import (
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.billing import BillingService
@@ -205,7 +207,16 @@ def resolve_hash_ownerid(owner: Owner, info: GraphQLResolveInfo) -> str:
 def resolve_org_upload_token(
     owner: Owner, info: GraphQLResolveInfo, **kwargs: Any
 ) -> str:
+    should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
+    current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
+    if not current_owner:
+        is_owner_admin = False
+    else:
+        is_owner_admin = current_owner.is_admin(owner)
+    if should_hide_tokens and not is_owner_admin:
+        return TOKEN_UNAVAILABLE
+
     return command.get_org_upload_token(owner)
 
 
