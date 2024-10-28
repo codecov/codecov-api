@@ -171,10 +171,22 @@ class StripeService(AbstractPaymentService):
                 "created.lt": int(current_subscription_datetime.timestamp()),
             },
         )
+        invoice_grace_period_start = (
+            current_subscription_datetime - relativedelta(days=1)
+            if subscription_plan_interval == "month"
+            else current_subscription_datetime - relativedelta(days=3)
+        )
+        # we only want to refund the invoices for the latest, current period
+        recently_paid_invoices_list = [
+            invoice
+            for invoice in invoices_list["data"]
+            if invoice["status_transitions"]["paid_at"] is not None
+            and invoice["status_transitions"]["paid_at"] >= invoice_grace_period_start
+        ]
 
         created_refund = False
         # there could be multiple invoices that need to be refunded such as if the user increased seats within the grace period
-        for invoice in invoices_list["data"]:
+        for invoice in recently_paid_invoices_list:
             # refund if the invoice has a charge and it has been fully paid
             if invoice["charge"] is not None and invoice["amount_remaining"] == 0:
                 stripe.Refund.create(invoice["charge"])
