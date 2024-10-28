@@ -446,7 +446,9 @@ class StripeServiceTests(TestCase):
         retrieve_customer_mock.assert_called_once_with(owner.stripe_customer_id)
         cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
         list_invoice_mock.assert_called_once_with(
-            subscription=stripe_subscription_id, status="paid", created={'created.gte': 1458263420, 'created.lt': 1489799420}
+            subscription=stripe_subscription_id,
+            status="paid",
+            created={"created.gte": 1458263420, "created.lt": 1489799420},
         )
         self.assertEqual(create_refund_mock.call_count, 2)
         modify_customer_mock.assert_called_once_with(
@@ -519,7 +521,9 @@ class StripeServiceTests(TestCase):
         retrieve_customer_mock.assert_called_once_with(owner.stripe_customer_id)
         cancel_sub_mock.assert_called_once_with(stripe_subscription_id)
         list_invoice_mock.assert_called_once_with(
-            subscription=stripe_subscription_id, status="paid", created={'created.gte': 1458263420, 'created.lt': 1489799420}
+            subscription=stripe_subscription_id,
+            status="paid",
+            created={"created.gte": 1458263420, "created.lt": 1489799420},
         )
         self.assertEqual(create_refund_mock.call_count, 2)
         modify_customer_mock.assert_called_once_with(

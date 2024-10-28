@@ -148,9 +148,14 @@ class StripeService(AbstractPaymentService):
         )
         return list(invoices_filtered_by_status_and_total)
 
-    def cancel_and_refund(self, owner, current_subscription_datetime, subscription_plan_interval, autorefunds_remaining):
-        # maybe have a docstring about why the stripe operation for the customer is different
-
+    # cancels a Stripe customer subscription immediately and attempts to refund their payments for the current period
+    def cancel_and_refund(
+        self,
+        owner,
+        current_subscription_datetime,
+        subscription_plan_interval,
+        autorefunds_remaining,
+    ):
         stripe.Subscription.cancel(owner.stripe_subscription_id)
 
         start_of_last_period = (
@@ -171,32 +176,40 @@ class StripeService(AbstractPaymentService):
         # there could be multiple invoices that need to be refunded such as if the user increased seats within the grace period
         for invoice in invoices_list["data"]:
             # refund if the invoice has a charge and it has been fully paid
-            if (
-                    invoice["charge"] is not None
-                    and invoice["amount_remaining"] == 0
-            ):
+            if invoice["charge"] is not None and invoice["amount_remaining"] == 0:
                 stripe.Refund.create(invoice["charge"])
                 created_refund = True
 
         if created_refund:
+            # update the customer's balance back to 0 in accordance to
+            # https://support.stripe.com/questions/refunding-credit-balance-to-customer-after-subscription-downgrade-or-cancellation
             stripe.Customer.modify(
                 owner.stripe_customer_id,
                 balance=0,
-                metadata={
-                    "autorefunds_remaining": str(autorefunds_remaining - 1)
-                },
+                metadata={"autorefunds_remaining": str(autorefunds_remaining - 1)},
             )
             log.info(
-                f"Autorefunded owner id #{owner.ownerid} for stripe id #{owner.stripe_customer_id}. They have {str(autorefunds_remaining - 1)} remaining.",
+                "Grace period cancelled a subscription and autorefunded associated invoices",
                 extra=dict(
                     owner_id=owner.ownerid,
                     user_id=self.requesting_user.ownerid,
                     subscription_id=owner.stripe_subscription_id,
                     customer_id=owner.stripe_customer_id,
+                    autorefunds_remaining=autorefunds_remaining - 1,
                 ),
             )
         else:
             # log that we created no refunds but did cancel them
+            log.info(
+                "Grace period cancelled a subscription but did not find any appropriate invoices to autorefund",
+                extra=dict(
+                    owner_id=owner.ownerid,
+                    user_id=self.requesting_user.ownerid,
+                    subscription_id=owner.stripe_subscription_id,
+                    customer_id=owner.stripe_customer_id,
+                    autorefunds_remaining=autorefunds_remaining,
+                ),
+            )
 
     @_log_stripe_error
     def delete_subscription(self, owner: Owner):
@@ -219,9 +232,7 @@ class StripeService(AbstractPaymentService):
         current_subscription_datetime = datetime.fromtimestamp(
             subscription["current_period_start"], tz=timezone.utc
         )
-        difference_from_now = (
-            datetime.now(timezone.utc) - current_subscription_datetime
-        )
+        difference_from_now = datetime.now(timezone.utc) - current_subscription_datetime
 
         subscription_plan_interval = getattr(
             getattr(subscription, "plan", None), "interval", None
@@ -231,15 +242,28 @@ class StripeService(AbstractPaymentService):
         ) or (subscription_plan_interval == "year" and difference_from_now.days < 3)
 
         if within_refund_grace_period:
-            # log that they are attempting cancellation within grace period, include autorefunds_remaining
-            # have msg field with no variables, put variables in extra param, with consistent key naming
             customer = stripe.Customer.retrieve(owner.stripe_customer_id)
-            # we are currently giving customers 2 autorefund instances
+            # we are currently allowing customers 2 autorefund instances
             autorefunds_remaining = int(
                 customer["metadata"].get("autorefunds_remaining", "2")
             )
+            log.info(
+                "Deleting subscription with attempted immediate cancellation with autorefund within grace period",
+                extra=dict(
+                    owner_id=owner.ownerid,
+                    user_id=self.requesting_user.ownerid,
+                    subscription_id=owner.stripe_subscription_id,
+                    customer_id=owner.stripe_customer_id,
+                    autorefunds_remaining=autorefunds_remaining,
+                ),
+            )
             if autorefunds_remaining > 0:
-                return self.cancel_and_refund(owner, current_subscription_datetime, subscription_plan_interval, autorefunds_remaining)
+                return self.cancel_and_refund(
+                    owner,
+                    current_subscription_datetime,
+                    subscription_plan_interval,
+                    autorefunds_remaining,
+                )
 
         # schedule a cancellation at the end of the paid period with no refund
         stripe.Subscription.modify(
