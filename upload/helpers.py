@@ -798,7 +798,7 @@ def generate_upload_prometheus_metrics_labels(
     repository: Optional[Repository] = None,
     position: Optional[str] = None,
     upload_version: Optional[str] = None,
-    fill_labels: bool = True,
+    include_empty_labels: bool = True,
 ):
     metrics_tags = dict(
         agent=get_agent_from_headers(request.headers),
@@ -822,7 +822,7 @@ def generate_upload_prometheus_metrics_labels(
         {
             field: value
             for field, value in optional_fields.items()
-            if value or fill_labels
+            if value or include_empty_labels
         }
     )
 

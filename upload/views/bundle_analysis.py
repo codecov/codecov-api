@@ -89,7 +89,7 @@ class BundleAnalysisView(APIView, ShelterMixin):
             request=self.request,
             is_shelter_request=self.is_shelter_request(),
             position="start",
-            fill_labels=False,
+            include_empty_labels=False,
         )
         inc_counter(
             BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
@@ -180,7 +180,7 @@ class BundleAnalysisView(APIView, ShelterMixin):
             request=self.request,
             is_shelter_request=self.is_shelter_request(),
             position="end",
-            fill_labels=False,
+            include_empty_labels=False,
         )
         inc_counter(
             BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
