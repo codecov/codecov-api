@@ -5,6 +5,7 @@ from typing import List, Optional
 import shared.rate_limits as rate_limits
 import yaml
 from ariadne import ObjectType, UnionType
+from django.conf import settings
 from graphql.type.definition import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
@@ -23,6 +24,8 @@ from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
+
+TOKEN_UNAVAILABLE = "Token Unavailable. Please contact your admin."
 
 log = logging.getLogger(__name__)
 
@@ -68,6 +71,13 @@ def resolve_commit(repository: Repository, info: GraphQLResolveInfo, id):
 
 @repository_bindable.field("uploadToken")
 def resolve_upload_token(repository: Repository, info: GraphQLResolveInfo):
+    should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
+
+    current_owner = info.context["request"].current_owner
+    is_current_user_admin = current_owner.is_admin(repository.author)
+
+    if should_hide_tokens and not is_current_user_admin:
+        return TOKEN_UNAVAILABLE
     command = info.context["executor"].get_command("repository")
     return command.get_upload_token(repository)
 
