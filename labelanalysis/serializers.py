@@ -1,5 +1,4 @@
 from rest_framework import exceptions, serializers
-from shared.metrics import metrics
 
 from core.models import Commit
 from labelanalysis.models import (
@@ -23,25 +22,21 @@ class CommitFromShaSerializerField(serializers.Field):
             commitid=commit_sha,
         ).first()
         if commit is None:
-            metrics.incr("label_analysis_request.errors.commit_not_found")
             raise exceptions.NotFound(f"Commit {commit_sha[:7]} not found.")
         if commit.staticanalysissuite_set.exists():
             return commit
         if not self.accepts_fallback:
-            metrics.incr("label_analysis_request.errors.static_analysis_not_found")
             raise serializers.ValidationError("No static analysis found")
         attempted_commits = []
         for _ in range(10):
             attempted_commits.append(commit.commitid)
             commit = commit.parent_commit
             if commit is None:
-                metrics.incr("label_analysis_request.errors.static_analysis_not_found")
                 raise serializers.ValidationError(
                     f"No possible commits have static analysis sent. Attempted commits: {','.join(attempted_commits)}"
                 )
             if commit.staticanalysissuite_set.exists():
                 return commit
-        metrics.incr("label_analysis_request.errors.static_analysis_not_found")
         raise serializers.ValidationError(
             f"No possible commits have static analysis sent. Attempted too many commits: {','.join(attempted_commits)}"
         )
@@ -71,13 +66,10 @@ class LabelAnalysisRequestSerializer(serializers.ModelSerializer):
     errors = ProcessingErrorList(required=False)
 
     def validate(self, data):
-        metrics.incr("label_analysis_request.count")
         if data["base_commit"] == data["head_commit"]:
-            metrics.incr("label_analysis_request.errors.base_head_equal")
             raise serializers.ValidationError(
                 {"base_commit": "Base and head must be different commits"}
             )
-        metrics.incr("label_analysis_request.valid.count")
         return data
 
     class Meta:

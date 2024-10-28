@@ -12,7 +12,6 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.metrics import metrics
 
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
@@ -35,22 +34,6 @@ log = logging.getLogger(__name__)
 
 # This should probably go somewhere where it can be easily shared
 regexp_ci_skip = re.compile(r"\[(ci|skip| |-){3,}\]").search
-
-
-def _incr(name: str):
-    """
-    Increment a statsd counter. The passed-in counter will be prefixed with
-    "webhooks.github."
-    """
-    metrics.incr("webhooks.github." + name)
-
-
-def _incr_event(name: str):
-    """
-    Increment a statsd counter. The passed in counter will be prefixed with
-    "webhooks.github.received."
-    """
-    _incr("received." + name)
 
 
 class GithubWebhookHandler(APIView):
@@ -95,11 +78,9 @@ class GithubWebhookHandler(APIView):
             or len(computed_sig) != len(expected_sig)
             or not constant_time_compare(computed_sig, expected_sig)
         ):
-            _incr("invalid_signature")
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
-        _incr_event("unhandled")
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
     def _get_repo(self, request):
@@ -163,12 +144,10 @@ class GithubWebhookHandler(APIView):
                 raise NotFound("Repository does not exist")
 
     def ping(self, request, *args, **kwargs):
-        _incr_event(GitHubWebhookEvents.PING)
         return Response(data="pong")
 
     def repository(self, request, *args, **kwargs):
         action, repo = self.request.data.get("action"), self._get_repo(request)
-        _incr_event(GitHubWebhookEvents.REPOSITORY + "." + action)
         if action == "publicized":
             repo.private, repo.activated = False, False
             repo.save()
@@ -202,7 +181,6 @@ class GithubWebhookHandler(APIView):
 
     def delete(self, request, *args, **kwargs):
         ref_type = request.data.get("ref_type", "")
-        _incr_event(GitHubWebhookEvents.DELETE + "." + ref_type)
         repo = self._get_repo(request)
         if ref_type != "branch":
             log.info(
@@ -221,7 +199,6 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def public(self, request, *args, **kwargs):
-        _incr_event(GitHubWebhookEvents.PUBLIC)
         repo = self._get_repo(request)
         repo.private, repo.activated = False, False
         repo.save()
@@ -233,7 +210,6 @@ class GithubWebhookHandler(APIView):
 
     def push(self, request, *args, **kwargs):
         ref_type = "branch" if request.data.get("ref", "")[5:10] == "heads" else "tag"
-        _incr_event(GitHubWebhookEvents.PUSH + "." + ref_type)
         repo = self._get_repo(request)
         if ref_type != "branch":
             log.debug(
@@ -331,7 +307,6 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def status(self, request, *args, **kwargs):
-        _incr_event(GitHubWebhookEvents.STATUS)
         repo = self._get_repo(request)
         commitid = request.data.get("sha")
 
@@ -377,7 +352,6 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def pull_request(self, request, *args, **kwargs):
-        _incr_event(GitHubWebhookEvents.PULL_REQUEST)
         repo = self._get_repo(request)
 
         if not repo.active:
@@ -580,13 +554,11 @@ class GithubWebhookHandler(APIView):
         return Response(data="Integration webhook received")
 
     def installation(self, request, *args, **kwargs):
-        _incr_event(GitHubWebhookEvents.INSTALLATION)
         return self._handle_installation_events(
             request, *args, **kwargs, event=GitHubWebhookEvents.INSTALLATION
         )
 
     def installation_repositories(self, request, *args, **kwargs):
-        _incr_event(GitHubWebhookEvents.INSTALLATION_REPOSITORIES)
         self._handle_installation_repository_events(request, *args, **kwargs)
         # This is kept to preserve the logic for deprecated usage of owner.installation_id
         # It can be removed once the move to codecov_auth.GithubAppInstallation is complete
@@ -599,7 +571,6 @@ class GithubWebhookHandler(APIView):
 
     def organization(self, request, *args, **kwargs):
         action = request.data.get("action")
-        _incr_event(GitHubWebhookEvents.ORGANIZATION + "." + action)
         if action == "member_removed":
             log.info(
                 f"Removing user with service-id {request.data['membership']['user']['id']} "
@@ -689,12 +660,10 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def marketplace_purchase(self, request, *args, **kwargs):
-        _incr_event(GitHubWebhookEvents.MARKETPLACE_PURCHASE)
         return self._handle_marketplace_events(request, *args, **kwargs)
 
     def member(self, request, *args, **kwargs):
         action = request.data["action"]
-        _incr_event(GitHubWebhookEvents.MEMBER + "." + action)
         if action == "removed":
             repo = self._get_repo(request)
             log.info(
@@ -747,7 +716,6 @@ class GithubWebhookHandler(APIView):
 
         self.validate_signature(request)
 
-        _incr_event("total")
         handler = getattr(self, self.event, self.unhandled_webhook_event)
         return handler(request, *args, **kwargs)
 

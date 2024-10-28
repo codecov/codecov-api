@@ -5,7 +5,7 @@ from typing import Any, Iterable, List, Optional
 import shared.rate_limits as rate_limits
 import stripe
 import yaml
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from django.conf import settings
 from graphql import GraphQLResolveInfo
 
@@ -55,7 +55,6 @@ AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 @owner_bindable.field("repositories")
-@convert_kwargs_to_snake_case
 def resolve_repositories(
     owner: Owner,
     info: GraphQLResolveInfo,
@@ -110,7 +109,6 @@ def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
 
 
 @owner_bindable.field("pretrialPlan")
-@convert_kwargs_to_snake_case
 @require_part_of_org
 def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
@@ -118,7 +116,6 @@ def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanD
 
 
 @owner_bindable.field("availablePlans")
-@convert_kwargs_to_snake_case
 @require_part_of_org
 def resolve_available_plans(owner: Owner, info: GraphQLResolveInfo) -> List[PlanData]:
     plan_service = PlanService(current_org=owner)
@@ -231,7 +228,6 @@ def resolve_org_default_org_username(
 
 @owner_bindable.field("measurements")
 @sync_to_async
-@convert_kwargs_to_snake_case
 def resolve_measurements(
     owner: Owner,
     info: GraphQLResolveInfo,
@@ -321,7 +317,6 @@ def resolve_is_github_rate_limited(
 
 @owner_bindable.field("invoice")
 @require_part_of_org
-@convert_kwargs_to_snake_case
 def resolve_owner_invoice(
     owner: Owner,
     info: GraphQLResolveInfo,
