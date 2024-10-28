@@ -292,9 +292,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         formatted["type"] = "ServerError"
         # if this is one of our own command exception, we can tell a bit more
         original_error = error.original_error
-        if isinstance(original_error, BaseException) or isinstance(
-            original_error, ServiceException
-        ):
+        if isinstance(original_error, (BaseException, ServiceException, TimeoutError)):
             formatted["message"] = original_error.message
             formatted["type"] = type(original_error).__name__
         else:
