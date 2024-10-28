@@ -74,7 +74,10 @@ def resolve_upload_token(repository: Repository, info: GraphQLResolveInfo):
     should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
 
     current_owner = info.context["request"].current_owner
-    is_current_user_admin = current_owner.is_admin(repository.author)
+    if not current_owner:
+        is_current_user_admin = False
+    else:
+        is_current_user_admin = current_owner.is_admin(repository.author)
 
     if should_hide_tokens and not is_current_user_admin:
         return TOKEN_UNAVAILABLE
