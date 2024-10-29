@@ -148,7 +148,6 @@ class StripeService(AbstractPaymentService):
         )
         return list(invoices_filtered_by_status_and_total)
 
-    # cancels a Stripe customer subscription immediately and attempts to refund their payments for the current period
     def cancel_and_refund(
         self,
         owner,
@@ -156,6 +155,7 @@ class StripeService(AbstractPaymentService):
         subscription_plan_interval,
         autorefunds_remaining,
     ):
+        # cancels a Stripe customer subscription immediately and attempts to refund their payments for the current period
         stripe.Subscription.cancel(owner.stripe_subscription_id)
 
         start_of_last_period = current_subscription_datetime - relativedelta(months=1)
@@ -180,12 +180,15 @@ class StripeService(AbstractPaymentService):
             },
         )
 
-        # we only want to refund the invoices for the latest, current period
+        # we only want to refund the invoices PAID recently for the latest, current period. "invoices_list" gives us any invoice
+        # created over the last month/year based on what period length they are on but the customer could have possibly
+        # switched from monthly to yearly recently. 
         recently_paid_invoices_list = [
             invoice
             for invoice in invoices_list["data"]
             if invoice["status_transitions"]["paid_at"] is not None
-            and invoice["status_transitions"]["paid_at"] >= int(invoice_grace_period_start.timestamp())
+            and invoice["status_transitions"]["paid_at"]
+            >= int(invoice_grace_period_start.timestamp())
         ]
 
         created_refund = False
@@ -215,7 +218,6 @@ class StripeService(AbstractPaymentService):
                 ),
             )
         else:
-            # log that we created no refunds but did cancel them
             log.info(
                 "Grace period cancelled a subscription but did not find any appropriate invoices to autorefund",
                 extra=dict(
