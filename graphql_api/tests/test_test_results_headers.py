@@ -29,7 +29,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                 branch="main",
             )
 
-    def test_fetch_test_result_total_runtime(self) -> None:
+    def test_fetch_test_result_aggregates(self) -> None:
         query = """
             query {
                owner(username: "%s") {
@@ -38,119 +38,15 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
                             testAnalytics {
                                 testResultsAggregates {
                                     totalDuration
-                                }
-                            }
-                        }
-                    }
-                 }
-            }
-        """ % (self.owner.username, self.repository.name)
-
-        result = self.gql_request(query, owner=self.owner)
-
-        assert "errors" not in result
-        assert (
-            result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
-                "totalDuration"
-            ]
-            == 465.0
-        )
-
-    def test_fetch_test_result_slowest_tests_runtime(self) -> None:
-        query = """
-            query {
-               owner(username: "%s") {
-                    repository(name: "%s") {
-                        ... on Repository {
-                            testAnalytics {
-                                testResultsAggregates {
                                     slowestTestsDuration
-                                }
-                            }
-                        }
-                    }
-                 }
-            }
-        """ % (self.owner.username, self.repository.name)
-
-        result = self.gql_request(query, owner=self.owner)
-
-        assert "errors" not in result
-        assert (
-            result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
-                "slowestTestsDuration"
-            ]
-            == 30.0
-        )
-
-    def test_fetch_test_result_failed_tests(self) -> None:
-        query = """
-            query {
-               owner(username: "%s") {
-                    repository(name: "%s") {
-                        ... on Repository {
-                            testAnalytics {
-                                testResultsAggregates {
                                     totalFails
-                                }
-                            }
-                        }
-                    }
-                 }
-            }
-        """ % (self.owner.username, self.repository.name)
-
-        result = self.gql_request(query, owner=self.owner)
-
-        assert "errors" not in result
-        assert (
-            result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
-                "totalFails"
-            ]
-            == 30
-        )
-
-    def test_fetch_test_result_skipped_tests(self) -> None:
-        query = """
-            query {
-               owner(username: "%s") {
-                    repository(name: "%s") {
-                        ... on Repository {
-                            testAnalytics {
-                                testResultsAggregates {
                                     totalSkips
-                                }
-                            }
-                        }
-                    }
-                 }
-            }
-        """ % (self.owner.username, self.repository.name)
-
-        result = self.gql_request(query, owner=self.owner)
-
-        assert "errors" not in result
-        assert (
-            result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
-                "totalSkips"
-            ]
-            == 30
-        )
-
-    def test_fetch_test_result_slow_tests(self) -> None:
-        query = """
-            query {
-            owner(username: "%s") {
-                    repository(name: "%s") {
-                        ... on Repository {
-                            testAnalytics {
-                                testResultsAggregates {
                                     totalSlowTests
                                 }
                             }
                         }
                     }
-                }
+                 }
             }
         """ % (self.owner.username, self.repository.name)
 
@@ -158,8 +54,16 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert (
-            result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
-                "totalSlowTests"
-            ]
-            == 1
+            result["owner"]["repository"]["testAnalytics"] is not None
+            and result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"]
+            is not None
         )
+        assert result["owner"]["repository"]["testAnalytics"][
+            "testResultsAggregates"
+        ] == {
+            "totalDuration": 465.0,
+            "slowestTestsDuration": 30.0,
+            "totalFails": 30,
+            "totalSkips": 30,
+            "totalSlowTests": 1,
+        }

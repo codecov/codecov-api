@@ -22,6 +22,12 @@ from shared.django_apps.reports.models import (
 )
 
 from codecov.commands.exceptions import ValidationError
+from graphql_api.types.enums import (
+    OrderingDirection,
+    TestResultsFilterParameter,
+    TestResultsOrderingParameter,
+)
+from graphql_api.types.enums.enum_types import MeasurementInterval
 
 thirty_days_ago = dt.datetime.now(dt.UTC) - dt.timedelta(days=30)
 
@@ -34,13 +40,6 @@ def slow_test_threshold(total_tests: int) -> int:
     percentile = (100 - SLOW_TEST_PERCENTILE) / 100
     slow_tests_to_return = floor(percentile * total_tests)
     return min(max(slow_tests_to_return, 1), 100)
-
-
-class GENERATE_TEST_RESULT_PARAM:
-    FLAKY = "flaky"
-    FAILED = "failed"
-    SLOWEST = "slowest"
-    SKIPPED = "skipped"
 
 
 @dataclass
@@ -67,7 +66,29 @@ class TestResultsRow:
 
 
 @dataclass
-class Connection:
+class TestResultsAggregates:
+    total_duration: float
+    total_duration_percent_change: float | None
+    slowest_tests_duration: float
+    slowest_tests_duration_percent_change: float | None
+    total_slow_tests: int
+    total_slow_tests_percent_change: float | None
+    fails: int
+    fails_percent_change: float | None
+    skips: int
+    skips_percent_change: float | None
+
+
+@dataclass
+class FlakeAggregates:
+    flake_count: int
+    flake_count_percent_change: float | None
+    flake_rate: float
+    flake_rate_percent_change: float | None
+
+
+@dataclass
+class TestResultConnection:
     edges: list[dict[str, str | TestResultsRow]]
     page_info: dict
     total_count: int
@@ -96,55 +117,46 @@ def decode_cursor(value: str | None) -> CursorValue | None:
     )
 
 
-def encode_cursor(row: TestResultsRow, ordering: str) -> str:
+def encode_cursor(row: TestResultsRow, ordering: TestResultsOrderingParameter) -> str:
     return b64encode(
-        DELIMITER.join([str(getattr(row, ordering)), str(row.name)]).encode("utf-8")
+        DELIMITER.join([str(getattr(row, ordering.value)), str(row.name)]).encode(
+            "utf-8"
+        )
     ).decode("ascii")
 
 
 def validate(
-    interval_num_days: int,
-    ordering: str,
-    ordering_direction: str,
+    interval: int,
+    ordering: TestResultsOrderingParameter,
+    ordering_direction: OrderingDirection,
     after: str | None,
     before: str | None,
     first: int | None,
     last: int | None,
-) -> ValidationError | None:
-    if interval_num_days not in {1, 7, 30}:
-        return ValidationError(f"Invalid interval: {interval_num_days}")
+) -> None:
+    if interval not in {1, 7, 30}:
+        raise ValidationError(f"Invalid interval: {interval}")
 
-    if ordering_direction not in {"ASC", "DESC"}:
-        return ValidationError(f"Invalid ordering direction: {ordering_direction}")
+    if not isinstance(ordering_direction, OrderingDirection):
+        raise ValidationError(f"Invalid ordering direction: {ordering_direction}")
 
-    if ordering not in {
-        "name",
-        "computed_name",
-        "avg_duration",
-        "failure_rate",
-        "flake_rate",
-        "commits_where_fail",
-        "last_duration",
-        "updated_at",
-    }:
-        return ValidationError(f"Invalid ordering field: {ordering}")
+    if not isinstance(ordering, TestResultsOrderingParameter):
+        raise ValidationError(f"Invalid ordering field: {ordering}")
 
     if first is not None and last is not None:
-        return ValidationError("First and last can not be used at the same time")
+        raise ValidationError("First and last can not be used at the same time")
 
     if after is not None and before is not None:
-        return ValidationError("After and before can not be used at the same time")
-
-    return None
+        raise ValidationError("After and before can not be used at the same time")
 
 
 def generate_base_query(
     repoid: int,
-    ordering: str,
-    ordering_direction: str,
+    ordering: TestResultsOrderingParameter,
+    ordering_direction: OrderingDirection,
     should_reverse: bool,
     branch: str | None,
-    interval_num_days: int,
+    interval: int,
     testsuites: list[str] | None = None,
     term: str | None = None,
     test_ids: set[str] | None = None,
@@ -152,13 +164,19 @@ def generate_base_query(
     term_filter = f"%{term}%" if term else None
 
     if should_reverse:
-        ordering_direction = "DESC" if ordering_direction == "ASC" else "ASC"
+        ordering_direction = (
+            OrderingDirection.DESC
+            if ordering_direction == OrderingDirection.ASC
+            else OrderingDirection.ASC
+        )
 
-    order_by = f"with_cursor.{ordering} {ordering_direction}, with_cursor.name"
+    order_by = (
+        f"with_cursor.{ordering.value} {ordering_direction.name}, with_cursor.name"
+    )
 
     params: dict[str, int | str | tuple[str, ...] | None] = {
         "repoid": repoid,
-        "interval": f"{interval_num_days} days",
+        "interval": f"{interval} days",
         "branch": branch,
         "test_ids": convert_tuple_else_none(test_ids),
         "testsuites": convert_tuple_else_none(testsuites),
@@ -242,7 +260,7 @@ order by {order_by}
 
 def search_base_query(
     rows: list[TestResultsRow],
-    ordering: str,
+    ordering: TestResultsOrderingParameter,
     cursor: CursorValue | None,
     descending: bool = False,
 ) -> list[TestResultsRow]:
@@ -266,11 +284,13 @@ def search_base_query(
     if not cursor:
         return rows
 
+    print(f"descending: {descending}")
+
     def compare(row: TestResultsRow) -> int:
         # -1 means row value is to the left of the cursor value (search to the right)
         # 0 means row value is equal to cursor value
         # 1 means row value is to the right of the cursor value (search to the left)
-        row_value = getattr(row, ordering)
+        row_value = getattr(row, ordering.value)
         row_value_str = str(row_value)
         cursor_value_str = cursor.ordered_value
         row_is_greater = row_value_str > cursor_value_str
@@ -312,20 +332,20 @@ def get_relevant_totals(
 
 
 def generate_test_results(
-    ordering: str,
-    ordering_direction: str,
+    ordering: TestResultsOrderingParameter,
+    ordering_direction: OrderingDirection,
     repoid: int,
-    interval: dt.timedelta,
+    measurement_interval: MeasurementInterval,
     first: int | None = None,
     after: str | None = None,
     last: int | None = None,
     before: str | None = None,
     branch: str | None = None,
-    parameter: GENERATE_TEST_RESULT_PARAM | None = None,
+    parameter: TestResultsFilterParameter | None = None,
     testsuites: list[str] | None = None,
     flags: defaultdict[str, str] | None = None,
     term: str | None = None,
-) -> Connection | ValidationError:
+) -> TestResultConnection:
     """
     Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
     The fields it calculates are: the test failure rate, commits where this test failed, last duration and average duration of the test.
@@ -342,14 +362,10 @@ def generate_test_results(
     :returns: queryset object containing list of dictionaries of results
 
     """
-    interval_num_days = interval.days
+    interval = measurement_interval.value
+    validate(interval, ordering, ordering_direction, after, before, first, last)
 
-    if validation_error := validate(
-        interval_num_days, ordering, ordering_direction, after, before, first, last
-    ):
-        return validation_error
-
-    since = dt.datetime.now(dt.UTC) - interval
+    since = dt.datetime.now(dt.UTC) - dt.timedelta(days=interval)
 
     test_ids: set[str] | None = None
 
@@ -365,14 +381,14 @@ def generate_test_results(
             flag__flag_name__in=flags
         )
 
-        filtered_test_ids = set([bridge.test_id for bridge in bridges])
+        filtered_test_ids = set([bridge.test_id for bridge in bridges])  # type: ignore
 
         test_ids = test_ids & filtered_test_ids if test_ids else filtered_test_ids
 
     if parameter is not None:
         totals = get_relevant_totals(repoid, branch, since)
         match parameter:
-            case GENERATE_TEST_RESULT_PARAM.FLAKY:
+            case TestResultsFilterParameter.FLAKY_TESTS:
                 flaky_test_ids = (
                     totals.values("test")
                     .annotate(flaky_fail_count_sum=Sum("flaky_fail_count"))
@@ -384,7 +400,7 @@ def generate_test_results(
                 test_ids = (
                     test_ids & flaky_test_id_set if test_ids else flaky_test_id_set
                 )
-            case GENERATE_TEST_RESULT_PARAM.FAILED:
+            case TestResultsFilterParameter.FAILED_TESTS:
                 failed_test_ids = (
                     totals.values("test")
                     .annotate(fail_count_sum=Sum("fail_count"))
@@ -396,7 +412,7 @@ def generate_test_results(
                 test_ids = (
                     test_ids & failed_test_id_set if test_ids else failed_test_id_set
                 )
-            case GENERATE_TEST_RESULT_PARAM.SKIPPED:
+            case TestResultsFilterParameter.SKIPPED_TESTS:
                 skipped_test_ids = (
                     totals.values("test")
                     .annotate(
@@ -412,7 +428,7 @@ def generate_test_results(
                 test_ids = (
                     test_ids & skipped_test_id_set if test_ids else skipped_test_id_set
                 )
-            case GENERATE_TEST_RESULT_PARAM.SLOWEST:
+            case TestResultsFilterParameter.SLOWEST_TESTS:
                 num_tests = totals.distinct("test_id").count()
 
                 slowest_test_ids = (
@@ -441,7 +457,7 @@ def generate_test_results(
         ordering_direction=ordering_direction,
         should_reverse=should_reverse,
         branch=branch,
-        interval_num_days=interval_num_days,
+        interval=interval,
         testsuites=testsuites,
         term=term,
         test_ids=test_ids,
@@ -459,13 +475,15 @@ def generate_test_results(
     page_size: int = first or last or 20
 
     cursor_value = decode_cursor(after) if after else decode_cursor(before)
-    descending = ordering_direction == "DESC"
+    print(f"cursor_value: {cursor_value}")
+    descending = ordering_direction == OrderingDirection.DESC
     search_rows = search_base_query(
         rows,
         ordering,
         cursor_value,
         descending=descending,
     )
+    print(f"search_rows: {search_rows}")
 
     page: list[dict[str, str | TestResultsRow]] = [
         {"cursor": encode_cursor(row, ordering), "node": row}
@@ -473,7 +491,7 @@ def generate_test_results(
         if i < page_size
     ]
 
-    return Connection(
+    return TestResultConnection(
         edges=page,
         total_count=len(rows),
         page_info={
@@ -485,35 +503,103 @@ def generate_test_results(
     )
 
 
-def percent_diff(
-    current_value: int | float, past_value: int | float
-) -> int | float | None:
+def percent_diff(current_value: int | float, past_value: int | float) -> float | None:
     if past_value == 0:
         return None
     return round((current_value - past_value) / past_value * 100, 5)
 
 
-def get_percent_change(
-    fields: list[str],
-    curr_numbers: dict[str, int | float],
-    past_numbers: dict[str, int | float],
-) -> dict[str, int | float | None]:
-    percent_change_fields = {}
+@dataclass
+class TestResultsAggregateNumbers:
+    total_duration: float
+    slowest_tests_duration: float
+    skips: int
+    fails: int
+    total_slow_tests: int
 
-    percent_change_fields = {
-        f"{field}_percent_change": percent_diff(
-            curr_numbers[field], past_numbers[field]
+
+@dataclass
+class FlakeAggregateNumbers:
+    flake_count: int
+    flake_rate: float
+
+
+def test_results_aggregates_from_numbers(
+    curr_numbers: TestResultsAggregateNumbers | None,
+    past_numbers: TestResultsAggregateNumbers | None,
+) -> TestResultsAggregates | None:
+    if curr_numbers is None:
+        return None
+    if past_numbers is None:
+        return TestResultsAggregates(
+            total_duration=curr_numbers.total_duration,
+            total_duration_percent_change=None,
+            slowest_tests_duration=curr_numbers.slowest_tests_duration,
+            slowest_tests_duration_percent_change=None,
+            total_slow_tests=curr_numbers.total_slow_tests,
+            total_slow_tests_percent_change=None,
+            fails=curr_numbers.fails,
+            fails_percent_change=None,
+            skips=curr_numbers.skips,
+            skips_percent_change=None,
         )
-        for field in fields
-        if past_numbers.get(field)
-    }
+    else:
+        return TestResultsAggregates(
+            total_duration=curr_numbers.total_duration,
+            total_duration_percent_change=percent_diff(
+                curr_numbers.total_duration,
+                past_numbers.total_duration,
+            ),
+            slowest_tests_duration=curr_numbers.slowest_tests_duration,
+            slowest_tests_duration_percent_change=percent_diff(
+                curr_numbers.slowest_tests_duration,
+                past_numbers.slowest_tests_duration,
+            ),
+            skips=curr_numbers.skips,
+            skips_percent_change=percent_diff(
+                curr_numbers.skips,
+                past_numbers.skips,
+            ),
+            fails=curr_numbers.fails,
+            fails_percent_change=percent_diff(
+                curr_numbers.fails,
+                past_numbers.fails,
+            ),
+            total_slow_tests=curr_numbers.total_slow_tests,
+            total_slow_tests_percent_change=percent_diff(
+                curr_numbers.total_slow_tests,
+                past_numbers.total_slow_tests,
+            ),
+        )
 
-    return percent_change_fields
+
+def flake_aggregates_from_numbers(
+    curr_numbers: FlakeAggregateNumbers | None,
+    past_numbers: FlakeAggregateNumbers | None,
+) -> FlakeAggregates | None:
+    if curr_numbers is None:
+        return None
+
+    return FlakeAggregates(
+        flake_count=curr_numbers.flake_count,
+        flake_count_percent_change=percent_diff(
+            curr_numbers.flake_count, past_numbers.flake_count
+        )
+        if past_numbers
+        else None,
+        flake_rate=curr_numbers.flake_rate,
+        flake_rate_percent_change=percent_diff(
+            curr_numbers.flake_rate,
+            past_numbers.flake_rate,
+        )
+        if past_numbers
+        else None,
+    )
 
 
 def get_test_results_aggregate_numbers(
     repo: Repository, since: dt.datetime, until: dt.datetime | None = None
-) -> dict[str, float | int]:
+) -> TestResultsAggregateNumbers | None:
     totals = DailyTestRollup.objects.filter(
         repoid=repo.repoid, date__gte=since, branch=repo.branch
     )
@@ -554,37 +640,44 @@ def get_test_results_aggregate_numbers(
         total_slow_tests=Value(slow_test_threshold(num_tests)),
     )
 
-    return test_headers[0] if len(test_headers) > 0 else {}
+    if len(test_headers) == 0:
+        return None
+    else:
+        headers = test_headers[0]
+        return TestResultsAggregateNumbers(
+            total_duration=headers["total_duration"] or 0.0,
+            slowest_tests_duration=headers["slowest_tests_duration"] or 0.0,
+            skips=headers["skips"] or 0,
+            fails=headers["fails"] or 0,
+            total_slow_tests=headers["total_slow_tests"] or 0,
+        )
 
 
 def generate_test_results_aggregates(
-    repoid: int, interval: dt.timedelta = dt.timedelta(days=30)
-) -> dict[str, float | int | None] | None:
+    repoid: int, interval: int
+) -> TestResultsAggregates | None:
     repo = Repository.objects.get(repoid=repoid)
-    since = dt.datetime.now(dt.UTC) - interval
+    since = dt.datetime.now(dt.UTC) - dt.timedelta(days=interval)
 
     curr_numbers = get_test_results_aggregate_numbers(repo, since)
 
-    double_time_ago = since - interval
+    double_time_ago = since - dt.timedelta(days=interval)
 
     past_numbers = get_test_results_aggregate_numbers(repo, double_time_ago, since)
 
-    return curr_numbers | get_percent_change(
-        [
-            "total_duration",
-            "slowest_tests_duration",
-            "skips",
-            "fails",
-            "total_slow_tests",
-        ],
-        curr_numbers,
-        past_numbers,
+    aggregates_with_percentage: TestResultsAggregates | None = (
+        test_results_aggregates_from_numbers(
+            curr_numbers,
+            past_numbers,
+        )
     )
+
+    return aggregates_with_percentage
 
 
 def get_flake_aggregate_numbers(
     repo: Repository, since: dt.datetime, until: dt.datetime | None = None
-) -> dict[str, int | float]:
+) -> FlakeAggregateNumbers:
     if until is None:
         flakes = Flake.objects.filter(
             Q(repository_id=repo.repoid)
@@ -601,7 +694,7 @@ def get_flake_aggregate_numbers(
 
     flake_count = flakes.count()
 
-    test_ids = [flake.test_id for flake in flakes]
+    test_ids = [flake.test_id for flake in flakes]  # type: ignore
 
     test_rollups = DailyTestRollup.objects.filter(
         repoid=repo.repoid,
@@ -613,7 +706,7 @@ def get_flake_aggregate_numbers(
         test_rollups = test_rollups.filter(date__lt=until.date())
 
     if len(test_rollups) == 0:
-        return {"flake_count": 0, "flake_rate": 0}
+        return FlakeAggregateNumbers(flake_count=0, flake_rate=0.0)
 
     numerator = 0
     denominator = 0
@@ -626,26 +719,20 @@ def get_flake_aggregate_numbers(
     else:
         flake_rate = numerator / denominator
 
-    return {"flake_count": flake_count, "flake_rate": flake_rate}
+    return FlakeAggregateNumbers(flake_count=flake_count, flake_rate=flake_rate)
 
 
-def generate_flake_aggregates(
-    repoid: int, interval: dt.timedelta = dt.timedelta(days=30)
-) -> dict[str, int | float | None]:
+def generate_flake_aggregates(repoid: int, interval: int) -> FlakeAggregates | None:
     repo = Repository.objects.get(repoid=repoid)
-    since = dt.datetime.today() - interval
+    since = dt.datetime.today() - dt.timedelta(days=interval)
 
     curr_numbers = get_flake_aggregate_numbers(repo, since)
 
-    double_time_ago = since - interval
+    double_time_ago = since - dt.timedelta(days=interval)
 
     past_numbers = get_flake_aggregate_numbers(repo, double_time_ago, since)
 
-    return curr_numbers | get_percent_change(
-        ["flake_count", "flake_rate"],
-        curr_numbers,
-        past_numbers,
-    )
+    return flake_aggregates_from_numbers(curr_numbers, past_numbers)
 
 
 def get_test_suites(repoid: int, term: str | None = None) -> list[str]:
