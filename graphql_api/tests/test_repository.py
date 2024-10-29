@@ -737,14 +737,14 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             author__service="gitlab",
             service_id=12345,
             active=True,
-            private=False
+            private=False,
         )
 
         query = """
             query {
                 owner(username: "%s") {
                     repository(name: "%s") {
-                                ... on Repository {
+                        ... on Repository {
                             uploadToken
                         }
                     }
@@ -762,7 +762,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data["owner"]["repository"]["uploadToken"] == TOKEN_UNAVAILABLE
-
 
     @override_settings(HIDE_ALL_CODECOV_TOKENS=True)
     def test_repo_upload_token_not_available_config_setting_owner_is_admin(self):
