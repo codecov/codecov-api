@@ -109,7 +109,7 @@ deprecated==1.2.12
     # via opentelemetry-api
 distlib==0.3.1
     # via virtualenv
-django==4.2.15
+django==4.2.16
     # via
     #   -r requirements.in
     #   ariadne-django
@@ -450,7 +450,7 @@ sqlparse==0.5.0
     # via
     #   ddtrace
     #   django
-starlette==0.36.2
+starlette==0.40.0
     # via ariadne
 stripe==9.6.0
     # via -r requirements.in
