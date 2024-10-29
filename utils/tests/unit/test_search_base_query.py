@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from graphql_api.types.enums.enums import TestResultsOrderingParameter
 from utils.test_results import CursorValue, TestResultsRow, search_base_query
 
 
@@ -22,14 +23,14 @@ def row_factory(name: str, failure_rate: float):
 
 def test_search_base_query_cursor_val_none():
     rows = [row_factory(str(i), float(i) * 0.1) for i in range(10)]
-    res = search_base_query(rows, "failure_rate", None)
+    res = search_base_query(rows, TestResultsOrderingParameter.FAILURE_RATE, None)
     assert res == rows
 
 
 def test_search_base_query_with_existing_cursor():
     rows = [row_factory(str(i), float(i) * 0.1) for i in range(10)]
     cursor = CursorValue(name="5", ordered_value="0.5")
-    res = search_base_query(rows, "failure_rate", cursor)
+    res = search_base_query(rows, TestResultsOrderingParameter.FAILURE_RATE, cursor)
     assert res == rows[6:]
 
 
@@ -39,7 +40,7 @@ def test_search_base_query_with_missing_cursor_high_name_low_failure_rate():
     #          here's where the cursor is pointing at
     rows = [row_factory(str(i), float(i) * 0.1) for i in range(3)]
     cursor = CursorValue(name="111111", ordered_value="0.05")
-    res = search_base_query(rows, "failure_rate", cursor)
+    res = search_base_query(rows, TestResultsOrderingParameter.FAILURE_RATE, cursor)
     assert res == rows[1:]
 
 
@@ -49,7 +50,7 @@ def test_search_base_query_with_missing_cursor_low_name_high_failure_rate():
     #                        here's where the cursor is pointing at
     rows = [row_factory(str(i), float(i) * 0.1) for i in range(3)]
     cursor = CursorValue(name="0", ordered_value="0.15")
-    res = search_base_query(rows, "failure_rate", cursor)
+    res = search_base_query(rows, TestResultsOrderingParameter.FAILURE_RATE, cursor)
     assert res == rows[-1:]
 
 
@@ -59,5 +60,7 @@ def test_search_base_query_descending():
     #             here's where the cursor is pointing at
     rows = [row_factory(str(i), float(i) * 0.1) for i in range(2, -1, -1)]
     cursor = CursorValue(name="0", ordered_value="0.15")
-    res = search_base_query(rows, "failure_rate", cursor, descending=True)
+    res = search_base_query(
+        rows, TestResultsOrderingParameter.FAILURE_RATE, cursor, descending=True
+    )
     assert res == rows[1:]

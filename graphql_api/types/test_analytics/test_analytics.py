@@ -1,15 +1,21 @@
 import logging
-from datetime import timedelta
+from typing import Any, TypedDict
 
 from ariadne import ObjectType
 from graphql.type.definition import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
 from core.models import Repository
-from graphql_api.types.enums import OrderingDirection, TestResultsFilterParameter
+from graphql_api.types.enums import (
+    OrderingDirection,
+    TestResultsFilterParameter,
+    TestResultsOrderingParameter,
+)
 from graphql_api.types.enums.enum_types import MeasurementInterval
 from utils.test_results import (
-    GENERATE_TEST_RESULT_PARAM,
+    FlakeAggregates,
+    TestResultConnection,
+    TestResultsAggregates,
     generate_flake_aggregates,
     generate_test_results,
     generate_test_results_aggregates,
@@ -19,6 +25,21 @@ from utils.test_results import (
 
 log = logging.getLogger(__name__)
 
+
+class TestResultsOrdering(TypedDict):
+    parameter: TestResultsOrderingParameter
+    direction: OrderingDirection
+
+
+class TestResultsFilters(TypedDict):
+    parameter: TestResultsFilterParameter | None
+    interval: MeasurementInterval
+    branch: str | None
+    test_suites: list[str] | None
+    flags: list[str] | None
+    term: str | None
+
+
 # Bindings for GraphQL types
 test_analytics_bindable: ObjectType = ObjectType("TestAnalytics")
 
@@ -27,37 +48,32 @@ test_analytics_bindable: ObjectType = ObjectType("TestAnalytics")
 async def resolve_test_results(
     repository: Repository,
     info: GraphQLResolveInfo,
-    ordering=None,
-    filters=None,
+    ordering: TestResultsOrdering | None = None,
+    filters: TestResultsFilters | None = None,
     first: int | None = None,
     after: str | None = None,
     last: int | None = None,
     before: str | None = None,
-):
-    parameter = (
-        convert_test_results_filter_parameter(filters.get("parameter"))
-        if filters
-        else None
-    )
-    interval = (
-        convert_interval_to_timedelta(filters.get("interval"))
-        if filters
-        else timedelta(days=30)
-    )
-
+) -> TestResultConnection:
     queryset = await sync_to_async(generate_test_results)(
-        ordering=ordering.get("parameter").value if ordering else "avg_duration",
-        ordering_direction=(
-            ordering.get("direction").name if ordering else OrderingDirection.DESC.name
-        ),
+        ordering=ordering.get("parameter", TestResultsOrderingParameter.AVG_DURATION)
+        if ordering
+        else TestResultsOrderingParameter.AVG_DURATION,
+        ordering_direction=ordering.get("direction", OrderingDirection.DESC)
+        if ordering
+        else OrderingDirection.DESC,
         repoid=repository.repoid,
-        interval=interval,
+        measurement_interval=filters.get(
+            "interval", MeasurementInterval.INTERVAL_30_DAY
+        )
+        if filters
+        else MeasurementInterval.INTERVAL_30_DAY,
         first=first,
         after=after,
         last=last,
         before=before,
         branch=filters.get("branch") if filters else None,
-        parameter=parameter,
+        parameter=filters.get("parameter") if filters else None,
         testsuites=filters.get("test_suites") if filters else None,
         flags=filters.get("flags") if filters else None,
         term=filters.get("term") if filters else None,
@@ -71,10 +87,10 @@ async def resolve_test_results_aggregates(
     repository: Repository,
     info: GraphQLResolveInfo,
     interval: MeasurementInterval | None = None,
-    **_,
-):
+    **_: Any,
+) -> TestResultsAggregates | None:
     return await sync_to_async(generate_test_results_aggregates)(
-        repoid=repository.repoid, interval=convert_interval_to_timedelta(interval)
+        repoid=repository.repoid, interval=interval.value if interval else 30
     )
 
 
@@ -83,52 +99,22 @@ async def resolve_flake_aggregates(
     repository: Repository,
     info: GraphQLResolveInfo,
     interval: MeasurementInterval | None = None,
-    **_,
-):
+    **_: Any,
+) -> FlakeAggregates | None:
     return await sync_to_async(generate_flake_aggregates)(
-        repoid=repository.repoid, interval=convert_interval_to_timedelta(interval)
+        repoid=repository.repoid, interval=interval.value if interval else 30
     )
 
 
 @test_analytics_bindable.field("testSuites")
 async def resolve_test_suites(
-    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_
-):
+    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_: Any
+) -> list[str]:
     return await sync_to_async(get_test_suites)(repository.repoid, term)
 
 
 @test_analytics_bindable.field("flags")
 async def resolve_flags(
-    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_
-):
+    repository: Repository, info: GraphQLResolveInfo, term: str | None = None, **_: Any
+) -> list[str]:
     return await sync_to_async(get_flags)(repository.repoid, term)
-
-
-def convert_interval_to_timedelta(interval: MeasurementInterval | None) -> timedelta:
-    if interval is None:
-        return timedelta(days=30)
-
-    match interval:
-        case MeasurementInterval.INTERVAL_1_DAY:
-            return timedelta(days=1)
-        case MeasurementInterval.INTERVAL_7_DAY:
-            return timedelta(days=7)
-        case MeasurementInterval.INTERVAL_30_DAY:
-            return timedelta(days=30)
-
-
-def convert_test_results_filter_parameter(
-    parameter: TestResultsFilterParameter | None,
-) -> GENERATE_TEST_RESULT_PARAM | None:
-    if parameter is None:
-        return None
-
-    match parameter:
-        case TestResultsFilterParameter.FLAKY_TESTS:
-            return GENERATE_TEST_RESULT_PARAM.FLAKY
-        case TestResultsFilterParameter.FAILED_TESTS:
-            return GENERATE_TEST_RESULT_PARAM.FAILED
-        case TestResultsFilterParameter.SLOWEST_TESTS:
-            return GENERATE_TEST_RESULT_PARAM.SLOWEST
-        case TestResultsFilterParameter.SKIPPED_TESTS:
-            return GENERATE_TEST_RESULT_PARAM.SKIPPED

@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from graphql_api.types.enums.enums import TestResultsOrderingParameter
 from utils.test_results import CursorValue, TestResultsRow, decode_cursor, encode_cursor
 
 
@@ -18,7 +19,7 @@ def test_cursor():
         total_skip_count=1,
         total_pass_count=1,
     )
-    cursor = encode_cursor(row, "updated_at")
+    cursor = encode_cursor(row, TestResultsOrderingParameter.UPDATED_AT)
     assert cursor == "MjAyNC0wMS0wMSAwMDowMDowMCswMDowMHx0ZXN0"
     decoded_cursor = decode_cursor(cursor)
     assert decoded_cursor == CursorValue(str(row.updated_at), "test")
