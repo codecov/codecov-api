@@ -185,7 +185,7 @@ class StripeService(AbstractPaymentService):
             invoice
             for invoice in invoices_list["data"]
             if invoice["status_transitions"]["paid_at"] is not None
-            and invoice["status_transitions"]["paid_at"] >= invoice_grace_period_start
+            and invoice["status_transitions"]["paid_at"] >= int(invoice_grace_period_start.timestamp())
         ]
 
         created_refund = False
