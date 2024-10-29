@@ -159,11 +159,17 @@ class StripeService(AbstractPaymentService):
         stripe.Subscription.cancel(owner.stripe_subscription_id)
 
         start_of_last_period = current_subscription_datetime - relativedelta(months=1)
-        invoice_grace_period_start = current_subscription_datetime - relativedelta(days=1)
+        invoice_grace_period_start = current_subscription_datetime - relativedelta(
+            days=1
+        )
 
         if subscription_plan_interval == "year":
-            start_of_last_period = current_subscription_datetime - relativedelta(years=1)
-            invoice_grace_period_start = current_subscription_datetime - relativedelta(days=3)
+            start_of_last_period = current_subscription_datetime - relativedelta(
+                years=1
+            )
+            invoice_grace_period_start = current_subscription_datetime - relativedelta(
+                days=3
+            )
 
         invoices_list = stripe.Invoice.list(
             subscription=owner.stripe_subscription_id,
