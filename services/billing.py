@@ -182,7 +182,7 @@ class StripeService(AbstractPaymentService):
 
         # we only want to refund the invoices PAID recently for the latest, current period. "invoices_list" gives us any invoice
         # created over the last month/year based on what period length they are on but the customer could have possibly
-        # switched from monthly to yearly recently. 
+        # switched from monthly to yearly recently.
         recently_paid_invoices_list = [
             invoice
             for invoice in invoices_list["data"]
