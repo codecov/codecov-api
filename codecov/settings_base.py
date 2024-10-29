@@ -350,7 +350,11 @@ CORS_ALLOWED_ORIGIN_REGEXES = get_config(
 )
 CORS_ALLOWED_ORIGINS: list[str] = []
 
-GRAPHQL_PLAYGROUND = True
+GRAPHQL_PLAYGROUND = get_settings_module() in [
+    SettingsModule.DEV.value,
+    SettingsModule.STAGING.value,
+    SettingsModule.TESTING.value,
+]
 
 UPLOAD_THROTTLING_ENABLED = get_config(
     "setup", "upload_throttling_enabled", default=True
