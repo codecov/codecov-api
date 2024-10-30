@@ -49,7 +49,7 @@ DEFAULT_APP_ID = 1234
 
 
 class GithubWebhookHandlerTests(APITestCase):
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(autouse=True)
     def inject_mocker(request, mocker):
         request.mocker = mocker
 
