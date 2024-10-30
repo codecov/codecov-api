@@ -4,7 +4,7 @@ from django.test import Client, TestCase
 from rest_framework.reverse import reverse
 
 
-@patch("validate.views.sentry_metrics.incr")
+@patch("validate.views.API_VALIDATE_V2_COUNTER.labels")
 class TestValidateYamlV2Handler(TestCase):
     def _post(self, data, query_source=""):
         client = Client()
@@ -20,7 +20,7 @@ class TestValidateYamlV2Handler(TestCase):
         res = self._post("")
         assert res.status_code == 400
         assert res.json() == {"valid": False, "message": "YAML is empty"}
-        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
+        mock_metrics.assert_called_once_with(**{"source": "unknown"})
 
     def test_list_type(self, mock_metrics):
         res = self._post("- testing: 123")
@@ -29,7 +29,7 @@ class TestValidateYamlV2Handler(TestCase):
             "valid": False,
             "message": "YAML must be a dictionary type",
         }
-        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
+        mock_metrics.assert_called_once_with(**{"source": "unknown"})
 
     def test_parse_error(self, mock_metrics):
         res = self._post("foo: - 123")
@@ -43,7 +43,7 @@ class TestValidateYamlV2Handler(TestCase):
                 "problem": "sequence entries are not allowed here",
             },
         }
-        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
+        mock_metrics.assert_called_once_with(**{"source": "unknown"})
 
     def test_parse_invalid(self, mock_metrics):
         res = self._post("comment: 123")
@@ -53,7 +53,7 @@ class TestValidateYamlV2Handler(TestCase):
             "message": "YAML does not match the accepted schema",
             "validation_error": {"comment": ["must be of ['dict', 'boolean'] type"]},
         }
-        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
+        mock_metrics.assert_called_once_with(**{"source": "unknown"})
 
     def test_parse_valid(self, mock_metrics):
         res = self._post("comment: true")
@@ -65,9 +65,9 @@ class TestValidateYamlV2Handler(TestCase):
                 "comment": True,
             },
         }
-        mock_metrics.assert_called_once_with("validate_v2", tags={"source": "unknown"})
+        mock_metrics.assert_called_once_with(**{"source": "unknown"})
 
     def test_query_source_metric(self, mock_metrics):
         self._post("comment: true", query_source="vscode")
         mock_metrics.assert_called()
-        mock_metrics.assert_called_with("validate_v2", tags={"source": "vscode"})
+        mock_metrics.assert_called_with(**{"source": "vscode"})
