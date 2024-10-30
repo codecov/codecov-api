@@ -1,5 +1,6 @@
 import time
-from unittest.mock import patch
+from datetime import datetime
+from unittest.mock import call, patch
 
 import stripe
 from django.conf import settings
@@ -142,6 +143,11 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "customer": self.owner.stripe_customer_id,
                         "subscription": self.owner.stripe_subscription_id,
+                        "default_payment_method": {
+                            "card": {"brand": "visa", "last4": 1234}
+                        },
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
                     }
                 },
             }
@@ -165,6 +171,11 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "customer": self.owner.stripe_customer_id,
                         "subscription": self.owner.stripe_subscription_id,
+                        "default_payment_method": {
+                            "card": {"brand": "visa", "last4": 1234}
+                        },
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
                     }
                 },
             }
@@ -175,6 +186,118 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is True
         assert self.other_owner.delinquent is True
+
+    @patch("services.task.TaskService.send_email")
+    def test_invoice_payment_failed_sends_email_to_admins(self, mocked_send_email):
+        non_admin = OwnerFactory(email="non-admin@codecov.io")
+        admin_1 = OwnerFactory(email="admin1@codecov.io")
+        admin_2 = OwnerFactory(email="admin2@codecov.io")
+        self.owner.admins = [admin_1.ownerid, admin_2.ownerid]
+        self.owner.plan_activated_users = [non_admin.ownerid]
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "invoice.payment_failed",
+                "data": {
+                    "object": {
+                        "customer": self.owner.stripe_customer_id,
+                        "subscription": self.owner.stripe_subscription_id,
+                        "default_payment_method": {
+                            "card": {"brand": "visa", "last4": 1234}
+                        },
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert self.owner.delinquent is True
+
+        expected_calls = [
+            call(
+                to_addr=admin_1.email,
+                subject="Your Codecov payment failed",
+                template_name="failed-payment",
+                name=admin_1.username,
+                amount=240,
+                card_type="visa",
+                last_four=1234,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
+            call(
+                to_addr=admin_2.email,
+                subject="Your Codecov payment failed",
+                template_name="failed-payment",
+                name=admin_2.username,
+                amount=240,
+                card_type="visa",
+                last_four=1234,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
+        ]
+        mocked_send_email.assert_has_calls(expected_calls)
+
+    @patch("services.task.TaskService.send_email")
+    def test_invoice_payment_failed_sends_email_to_admins_no_card(
+        self, mocked_send_email
+    ):
+        non_admin = OwnerFactory(email="non-admin@codecov.io")
+        admin_1 = OwnerFactory(email="admin1@codecov.io")
+        admin_2 = OwnerFactory(email="admin2@codecov.io")
+        self.owner.admins = [admin_1.ownerid, admin_2.ownerid]
+        self.owner.plan_activated_users = [non_admin.ownerid]
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "invoice.payment_failed",
+                "data": {
+                    "object": {
+                        "customer": self.owner.stripe_customer_id,
+                        "subscription": self.owner.stripe_subscription_id,
+                        "default_payment_method": None,
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert self.owner.delinquent is True
+
+        expected_calls = [
+            call(
+                to_addr=admin_1.email,
+                subject="Your Codecov payment failed",
+                template_name="failed-payment",
+                name=admin_1.username,
+                amount=240,
+                card_type=None,
+                last_four=None,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
+            call(
+                to_addr=admin_2.email,
+                subject="Your Codecov payment failed",
+                template_name="failed-payment",
+                name=admin_2.username,
+                amount=240,
+                card_type=None,
+                last_four=None,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
+        ]
+        mocked_send_email.assert_has_calls(expected_calls)
 
     def test_customer_subscription_deleted_sets_plan_to_free(self):
         self.owner.plan = "users-inappy"

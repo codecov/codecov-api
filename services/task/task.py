@@ -391,15 +391,21 @@ class TaskService(object):
         ).apply_async()
 
     def send_email(
-        self, ownerid, template_name: str, from_addr: str, subject: str, **kwargs
+        self,
+        to_addr: str,
+        subject: str,
+        template_name: str,
+        from_addr: str | None = None,
+        **kwargs,
     ):
+        # Templates can be found in worker/templates
         self._create_signature(
             "app.tasks.send_email.SendEmail",
             kwargs=dict(
-                ownerid=ownerid,
+                to_addr=to_addr,
+                subject=subject,
                 template_name=template_name,
                 from_addr=from_addr,
-                subject=subject,
                 **kwargs,
             ),
         ).apply_async()
