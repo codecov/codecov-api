@@ -16,7 +16,7 @@ from codecov_auth.authentication.repo_auth import (
 )
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
-from upload.helpers import generate_upload_sentry_metrics_tags
+from upload.helpers import generate_upload_sentry_metrics_tags, validate_activated_repo
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -51,6 +51,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
             ),
         )
         repository = self.get_repo()
+        validate_activated_repo(repository)
         commit = self.get_commit(repository)
         log.info(
             "Request to create new report",

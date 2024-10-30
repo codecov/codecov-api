@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
@@ -40,6 +41,34 @@ def test_get_repo_not_found(db):
     with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
     assert exp.match("Repository not found")
+
+def test_deactivated_repo(db):
+    repo = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        active=True,
+        activated=False,
+    )
+    repo.save()
+    repo_slug = f"{repo.author.username}::::{repo.name}"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repo.upload_token)
+    url = reverse(
+        "new_upload.commits",
+        args=[repo.author.service, repo_slug],
+    )
+    response = client.post(
+        url,
+        {"commitid": "commit_sha"},
+        format="json",
+    )
+    response_json = response.json()
+    assert response.status_code == 400
+    assert response_json == [
+        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings.CODECOV_DASHBOARD_URL}/github/codecov/the_repo/settings"
+    ]
 
 
 def test_get_queryset(db):

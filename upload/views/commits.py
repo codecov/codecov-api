@@ -14,7 +14,7 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
-from upload.helpers import generate_upload_sentry_metrics_tags
+from upload.helpers import generate_upload_sentry_metrics_tags, validate_activated_repo
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -64,6 +64,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             ),
         )
         repository = self.get_repo()
+        validate_activated_repo(repository)
 
         commit = serializer.save(repository=repository)
 

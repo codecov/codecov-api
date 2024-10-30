@@ -62,7 +62,7 @@ class RepoViewsetTests(InternalAPITest):
                     "language": self.repo.language,
                     "branch": "main",
                     "active": False,
-                    "activated": False,
+                    "activated": True,
                     "totals": {
                         "branches": 0,
                         "complexity": 0.0,
@@ -115,7 +115,7 @@ class RepoViewsetTests(InternalAPITest):
             "language": self.repo.language,
             "branch": "main",
             "active": False,
-            "activated": False,
+            "activated": True,
             "totals": {
                 "branches": 0,
                 "complexity": 0.0,

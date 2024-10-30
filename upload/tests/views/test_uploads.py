@@ -807,7 +807,7 @@ def test_deactivated_repo(db, mocker, mock_redis):
     response_json = response.json()
     assert response.status_code == 400
     assert response_json == [
-        f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings.CODECOV_DASHBOARD_URL}/github/codecov/the_repo/settings"
+        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings.CODECOV_DASHBOARD_URL}/github/codecov/the_repo/settings"
     ]
 
 

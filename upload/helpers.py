@@ -756,10 +756,10 @@ def dispatch_upload_task(
 
 
 def validate_activated_repo(repository):
-    if repository.active and not repository.activated:
+    if not repository.activated:
         settings_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/settings"
         raise ValidationError(
-            f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
+            f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
         )
 
 
