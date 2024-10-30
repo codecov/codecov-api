@@ -19,8 +19,10 @@ class Command(BaseCommand):
 
         try:
             for key in redis.scan_iter(path):
-                print(f"Deleting key: {key.decode('utf-8')}")
-                redis.delete(key)
+                # -1 means the key has no expiry
+                if redis.ttl(key) == -1:
+                    print(f"Deleting key: {key.decode('utf-8')}")
+                    redis.delete(key)
         except Exception as e:
             print("Error occurred when deleting redis keys")
             print(e)

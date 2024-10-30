@@ -85,7 +85,7 @@ def test_update_gitlab_webhook_command(mocker):
 def test_delete_rate_limit_keys_user_id():
     redis = get_redis_connection()
     redis.set("rl-user:1", 1)
-    redis.set("rl-user:2", 1)
+    redis.set("rl-user:2", 1, ex=5000)
     redis.set("rl-ip:1", 1)
 
     call_command(
@@ -95,18 +95,19 @@ def test_delete_rate_limit_keys_user_id():
     )
 
     assert redis.get("rl-user:1") is None
-    assert redis.get("rl-user:2") is None
+    assert redis.get("rl-user:2") is not None
     assert redis.get("rl-ip:1") is not None
 
-    # Get rid of lingering key
+    # Get rid of lingering keys
     redis.delete("rl-ip:1")
+    redis.delete("rl-user:2")
 
 
 @pytest.mark.django_db
 def test_delete_rate_limit_keys_ip_option():
     redis = get_redis_connection()
     redis.set("rl-ip:1", 1)
-    redis.set("rl-ip:2", 1)
+    redis.set("rl-ip:2", 1, ex=5000)
     redis.set("rl-user:1", 1)
 
     call_command(
@@ -114,8 +115,9 @@ def test_delete_rate_limit_keys_ip_option():
     )
 
     assert redis.get("rl-ip:1") is None
-    assert redis.get("rl-ip:2") is None
+    assert redis.get("rl-ip:2") is not None
     assert redis.get("rl-user:1") is not None
 
-    # Get rid of lingering key
+    # Get rid of lingering keys
     redis.delete("rl-user:1")
+    redis.delete("rl-ip:2")
