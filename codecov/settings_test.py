@@ -1,22 +1,12 @@
-from .settings_base import *
+import os
 
-DEBUG = False
+from .settings_dev import *
+
 ALLOWED_HOSTS = ["localhost"]
-WEBHOOK_URL = ""  # NGROK TUNNEL HERE
-STRIPE_API_KEY = ""
 CORS_ALLOWED_ORIGINS = ["http://localhost:9000", "http://localhost"]
-CORS_ALLOW_CREDENTIALS = True
-CODECOV_URL = "localhost"
-CODECOV_API_URL = get_config("setup", "codecov_api_url", default=CODECOV_URL)
-DATABASE_HOST = "postgres"
+SHELTER_PUBSUB_PROJECT_ID = "test-project-id"
+SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = "test-topic-id"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": DATABASE_NAME,
-        "USER": DATABASE_USER,
-        "PASSWORD": DATABASE_PASSWORD,
-        "HOST": DATABASE_HOST,
-        "PORT": "5432",
-    }
-}
+# Mock the Pub/Sub host for testing
+# this prevents the pubsub SDK from trying to load credentials
+os.environ["PUBSUB_EMULATOR_HOST"] = "localhost"
