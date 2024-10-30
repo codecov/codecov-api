@@ -1,9 +1,8 @@
-import os
 from unittest import mock
 from unittest.mock import call
 
 import pytest
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from shared.django_apps.codecov_auth.models import Service
 from shared.django_apps.codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
@@ -11,15 +10,8 @@ from shared.django_apps.codecov_auth.tests.factories import (
 )
 
 
-@override_settings(
-    SHELTER_PUBSUB_PROJECT_ID="test-project-id",
-    SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID="test-topic-id",
-)
 @pytest.mark.django_db
 def test_shelter_org_token_sync(mocker):
-    # this prevents the pubsub SDK from trying to load credentials
-    os.environ["PUBSUB_EMULATOR_HOST"] = "localhost"
-
     publish = mocker.patch("google.cloud.pubsub_v1.PublisherClient.publish")
 
     # this triggers the publish via Django signals
@@ -39,15 +31,8 @@ def test_shelter_org_token_sync(mocker):
     )
 
 
-@override_settings(
-    SHELTER_PUBSUB_PROJECT_ID="test-project-id",
-    SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID="test-topic-id",
-)
 @mock.patch("google.cloud.pubsub_v1.PublisherClient.publish")
 class TestCodecovAuthSignals(TestCase):
-    def setUp(self):
-        os.environ["PUBSUB_EMULATOR_HOST"] = "localhost"
-
     def test_sync_on_create(self, mock_publish):
         OwnerFactory(ownerid=12345)
         mock_publish.assert_called_once_with(

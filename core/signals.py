@@ -5,8 +5,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from shared.django_apps.core.models import Commit
 
-from codecov_auth.signals import ShelterPubsub
 from core.models import Repository
+from utils.shelter import ShelterPubsub
 
 log = logging.getLogger(__name__)
 

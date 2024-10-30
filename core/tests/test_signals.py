@@ -1,21 +1,12 @@
-import os
 from unittest.mock import call
 
 import pytest
-from django.test import override_settings
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory
 from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
 
-@override_settings(
-    SHELTER_PUBSUB_PROJECT_ID="test-project-id",
-    SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID="test-topic-id",
-)
 @pytest.mark.django_db
 def test_shelter_repo_sync(mocker):
-    # this prevents the pubsub SDK from trying to load credentials
-    os.environ["PUBSUB_EMULATOR_HOST"] = "localhost"
-
     publish = mocker.patch("google.cloud.pubsub_v1.PublisherClient.publish")
 
     # this triggers the publish via Django signals
@@ -55,14 +46,8 @@ def test_shelter_repo_sync(mocker):
     assert len(publish_calls) == 3
 
 
-@override_settings(
-    SHELTER_PUBSUB_PROJECT_ID="test-project-id",
-    SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID="test-topic-id",
-)
 @pytest.mark.django_db
 def test_shelter_commit_sync(mocker):
-    # this prevents the pubsub SDK from trying to load credentials
-    os.environ["PUBSUB_EMULATOR_HOST"] = "localhost"
     publish = mocker.patch("google.cloud.pubsub_v1.PublisherClient.publish")
 
     # this triggers the publish via Django signals - has to have this format
