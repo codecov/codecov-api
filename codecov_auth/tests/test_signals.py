@@ -128,6 +128,9 @@ class TestCodecovAuthSignals(TestCase):
         )
 
         mock_log.assert_called_once_with(
-            "Failed to publish message for owner",
-            extra=dict(owner_id=12345, error=mock_publish.side_effect),
+            "Failed to publish a message",
+            extra=dict(
+                data_to_publish={"type": "owner", "sync": "one", "id": 12345},
+                error=mock_publish.side_effect,
+            ),
         )
