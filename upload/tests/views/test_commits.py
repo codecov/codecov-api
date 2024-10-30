@@ -42,6 +42,7 @@ def test_get_repo_not_found(db):
         upload_views.get_repo()
     assert exp.match("Repository not found")
 
+
 def test_deactivated_repo(db):
     repo = RepositoryFactory(
         name="the_repo",

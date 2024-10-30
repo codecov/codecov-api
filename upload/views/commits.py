@@ -14,7 +14,10 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
-from upload.helpers import generate_upload_prometheus_metrics_labels, validate_activated_repo
+from upload.helpers import (
+    generate_upload_prometheus_metrics_labels,
+    validate_activated_repo,
+)
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin

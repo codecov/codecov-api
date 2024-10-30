@@ -16,7 +16,10 @@ from codecov_auth.authentication.repo_auth import (
 )
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
-from upload.helpers import generate_upload_prometheus_metrics_labels, validate_activated_repo
+from upload.helpers import (
+    generate_upload_prometheus_metrics_labels,
+    validate_activated_repo,
+)
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
 from upload.views.base import GetterMixin

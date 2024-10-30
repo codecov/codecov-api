@@ -298,7 +298,7 @@ class UploadHandlerHelpersTest(TestCase):
     def test_determine_repo_upload(self):
         with self.subTest("token found"):
             org = G(Owner)
-            repo = G(Repository, author=org, activated=True)
+            repo = G(Repository, author=org)
 
             params = {
                 "version": "v4",
@@ -310,7 +310,7 @@ class UploadHandlerHelpersTest(TestCase):
 
         with self.subTest("token not found"):
             org = G(Owner)
-            repo = G(Repository, author=org, activated=True)
+            repo = G(Repository, author=org)
 
             params = {
                 "version": "v4",
@@ -330,7 +330,7 @@ class UploadHandlerHelpersTest(TestCase):
     @patch.object(requests, "get")
     def test_determine_repo_upload_tokenless(self, mock_get):
         org = G(Owner, username="codecov", service="github")
-        repo = G(Repository, author=org, activated=True)
+        repo = G(Repository, author=org)
         expected_response = {
             "id": 732059764,
             "finishTime": f"{datetime.now()}",
@@ -503,7 +503,7 @@ class UploadHandlerHelpersTest(TestCase):
                 service="bitbucket",
                 oauth_token=encryptor.encode("hahahahaha").decode(),
             )
-            repo = G(Repository, author=org, activated=True)
+            repo = G(Repository, author=org)
             upload_params = {
                 "service": "bitbucket",
                 "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
@@ -519,7 +519,7 @@ class UploadHandlerHelpersTest(TestCase):
                 service="github",
                 oauth_token=encryptor.encode("hahahahaha").decode(),
             )
-            repo = G(Repository, author=org, activated=True)
+            repo = G(Repository, author=org)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -532,7 +532,7 @@ class UploadHandlerHelpersTest(TestCase):
 
         with self.subTest("just no bot available"):
             org = G(Owner, service="github", oauth_token=None)
-            repo = G(Repository, author=org, private=True, activated=True)
+            repo = G(Repository, author=org, private=True)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -549,7 +549,7 @@ class UploadHandlerHelpersTest(TestCase):
                 service="github",
                 oauth_token=encryptor.encode("hahahahaha").decode(),
             )
-            repo = G(Repository, author=org, activated=True)
+            repo = G(Repository, author=org)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -564,7 +564,7 @@ class UploadHandlerHelpersTest(TestCase):
         with self.subTest("use repo bot token when available"):
             bot = OwnerFactory()
             org = G(Owner, service="github")
-            repo = G(Repository, author=org, bot=bot, activated=True)
+            repo = G(Repository, author=org, bot=bot)
 
             upload_params = {
                 "service": "github",
@@ -597,7 +597,7 @@ class UploadHandlerHelpersTest(TestCase):
 
         with self.subTest("HTTP error"):
             org = G(Owner, service="github")
-            repo = G(Repository, author=org, activated=True)
+            repo = G(Repository, author=org)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -610,7 +610,7 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_insert_commit(self):
         org = G(Owner)
-        repo = G(Repository, author=org, activated=True)
+        repo = G(Repository, author=org)
 
         with self.subTest("newly created"):
             insert_commit(
@@ -743,7 +743,7 @@ class UploadHandlerHelpersTest(TestCase):
     def test_validate_upload_repository_moved(self):
         redis = MockRedis()
         owner = G(Owner, plan="users-free")
-        repo = G(Repository, author=owner, name="", activated=True)
+        repo = G(Repository, author=owner, name="")
         commit = G(Commit)
 
         with self.assertRaises(ValidationError) as err:
@@ -757,7 +757,7 @@ class UploadHandlerHelpersTest(TestCase):
     def test_validate_upload_empty_totals(self):
         redis = MockRedis()
         owner = G(Owner, plan="5m")
-        repo = G(Repository, author=owner, activated=True)
+        repo = G(Repository, author=owner)
         commit = G(Commit, totals=None, repository=repo)
 
         validate_upload({"commit": commit.commitid}, repo, redis)
@@ -769,7 +769,7 @@ class UploadHandlerHelpersTest(TestCase):
     def test_validate_upload_too_many_uploads_for_commit(self):
         redis = MockRedis()
         owner = G(Owner, plan="users-free")
-        repo = G(Repository, author=owner, activated=True)
+        repo = G(Repository, author=owner)
         commit = G(Commit, totals={"s": 151}, repository=repo)
         report = CommitReportFactory.create(commit=commit)
         for i in range(151):
@@ -782,7 +782,7 @@ class UploadHandlerHelpersTest(TestCase):
     def test_validate_upload_repository_blacklisted(self):
         redis = MockRedis(blacklisted=True)
         owner = G(Owner, plan="users-free")
-        repo = G(Repository, author=owner, activated=True)
+        repo = G(Repository, author=owner)
         commit = G(Commit)
 
         with self.assertRaises(ValidationError) as err:
@@ -795,7 +795,7 @@ class UploadHandlerHelpersTest(TestCase):
     def test_validate_upload_per_repo_billing_invalid(self):
         redis = MockRedis()
         owner = G(Owner, plan="1m")
-        G(Repository, author=owner, private=True, activated=False, active=True)
+        G(Repository, author=owner, private=True, activated=True, active=True)
         repo = G(Repository, author=owner, private=True, activated=False, active=False)
         commit = G(Commit)
 
@@ -876,7 +876,7 @@ class UploadHandlerHelpersTest(TestCase):
     @freeze_time("2023-01-01T00:00:00")
     @patch("services.task.TaskService.upload")
     def test_dispatch_upload_task(self, upload):
-        repo = G(Repository, activated=True)
+        repo = G(Repository)
         task_arguments = {
             "commit": "commit123",
             "version": "v4",

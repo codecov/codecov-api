@@ -39,6 +39,7 @@ def test_reports_get_not_allowed(client, mocker, db):
     res = client.get(url, **headers)
     assert res.status_code == 405
 
+
 def test_deactivated_repo(db):
     repo = RepositoryFactory(
         name="the_repo",
@@ -59,9 +60,7 @@ def test_deactivated_repo(db):
         args=["github", repo_slug, commit.commitid],
     )
     response = client.post(
-        url,
-        data={"code": "code1"},
-        headers={"User-Agent": "codecov-cli/0.4.7"}
+        url, data={"code": "code1"}, headers={"User-Agent": "codecov-cli/0.4.7"}
     )
     response_json = response.json()
     assert response.status_code == 400
