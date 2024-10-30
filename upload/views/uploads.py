@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
-from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import inc_counter
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.authentication.repo_auth import (
@@ -28,9 +28,10 @@ from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     dispatch_upload_task,
-    generate_upload_sentry_metrics_tags,
+    generate_upload_prometheus_metrics_labels,
     validate_activated_repo,
 )
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 from upload.views.base import GetterMixin
@@ -67,9 +68,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer: UploadSerializer):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,
@@ -81,18 +82,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         validate_activated_repo(repository)
         commit: Commit = self.get_commit(repository)
         report: CommitReport = self.get_report(commit)
-
-        sentry_metrics.set(
-            "upload_set",
-            repository.author.ownerid,
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                endpoint="create_upload",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-            ),
-        )
 
         version = (
             serializer.validated_data["version"]
@@ -138,9 +127,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             instance.storage_path = path
             instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,

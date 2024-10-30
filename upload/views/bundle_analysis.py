@@ -10,7 +10,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
-from shared.metrics import Counter
+from shared.metrics import Counter, inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     BundleAnalysisTokenlessAuthentication,
@@ -26,7 +26,10 @@ from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, MeasurementName
-from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
+from upload.helpers import (
+    dispatch_upload_task,
+    generate_upload_prometheus_metrics_labels,
+)
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
 
@@ -80,14 +83,18 @@ class BundleAnalysisView(APIView, ShelterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request: HttpRequest) -> Response:
-        labels = generate_upload_sentry_metrics_tags(
+        labels = generate_upload_prometheus_metrics_labels(
             action="bundle_analysis",
             endpoint="bundle_analysis",
             request=self.request,
             is_shelter_request=self.is_shelter_request(),
             position="start",
+            include_empty_labels=False,
         )
-        BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(**labels).inc()
+        inc_counter(
+            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+            labels=labels,
+        )
 
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
@@ -167,14 +174,18 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 task_arguments=task_arguments,
             ),
         )
-        labels = generate_upload_sentry_metrics_tags(
+        labels = generate_upload_prometheus_metrics_labels(
             action="bundle_analysis",
             endpoint="bundle_analysis",
             request=self.request,
             is_shelter_request=self.is_shelter_request(),
             position="end",
+            include_empty_labels=False,
         )
-        BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels(**labels).inc()
+        inc_counter(
+            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+            labels=labels,
+        )
 
         dispatch_upload_task(
             task_arguments,

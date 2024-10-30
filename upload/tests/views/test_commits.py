@@ -357,7 +357,7 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
         private=False, author__username="codecov", name="the_repo"
     )
     mocked_call = mocker.patch.object(TaskService, "update_commit")
-    mock_sentry_metrics = mocker.patch("upload.views.commits.sentry_metrics.incr")
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     mock_jwt_decode.return_value = {
         "repository": f"url/{repository.name}",
         "repository_owner": repository.author.username,
@@ -403,9 +403,8 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
     }
     assert expected_response == response_json
     mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_prometheus_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
@@ -413,5 +412,6 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
             "repo_visibility": "public",
             "is_using_shelter": "no",
             "position": "end",
+            "upload_version": None,
         },
     )

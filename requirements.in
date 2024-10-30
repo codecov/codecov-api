@@ -1,10 +1,10 @@
 aiodataloader
-ariadne
-ariadne_django
+ariadne==0.23
+ariadne_django==0.3.0
 celery>=5.3.6
 cerberus
 ddtrace
-Django>=4.2.15
+Django>=4.2.16
 django-cors-headers
 django-csp
 django-dynamic-fixture
@@ -20,7 +20,7 @@ factory-boy
 fakeredis
 freezegun
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/4e2792779e3efc65f876ab8ac38ffd244189e34d.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/067b2e4ec72cdf1b3213306ea8aaaccbb374aecc.tar.gz#egg=shared
 google-cloud-pubsub
 gunicorn>=22.0.0
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
@@ -49,6 +49,7 @@ sentry-sdk>=2.13.0
 sentry-sdk[celery]
 setproctitle
 simplejson
+starlette==0.40.0
 stripe>=9.6.0
 urllib3>=1.26.19
 vcrpy

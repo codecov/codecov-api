@@ -350,11 +350,18 @@ CORS_ALLOWED_ORIGIN_REGEXES = get_config(
 )
 CORS_ALLOWED_ORIGINS: list[str] = []
 
-GRAPHQL_PLAYGROUND = True
+GRAPHQL_PLAYGROUND = get_settings_module() in [
+    SettingsModule.DEV.value,
+    SettingsModule.STAGING.value,
+    SettingsModule.TESTING.value,
+]
 
 UPLOAD_THROTTLING_ENABLED = get_config(
     "setup", "upload_throttling_enabled", default=True
 )
+
+HIDE_ALL_CODECOV_TOKENS = get_config("setup", "hide_all_codecov_tokens", default=False)
+
 
 SENTRY_JWT_SHARED_SECRET = get_config(
     "sentry", "jwt_shared_secret", default=None
