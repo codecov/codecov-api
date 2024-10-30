@@ -7,12 +7,17 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import Counter, inc_counter
 from shared.validation.exceptions import InvalidYamlException
 from shared.yaml.validation import validate_yaml
 from yaml import YAMLError, safe_load
 
 log = logging.getLogger(__name__)
+
+API_VALIDATE_V2_COUNTER = Counter(
+    "api_validate_v2",
+    "Number of times the validate v2 endpoint has been hit",
+)
 
 
 class V1ValidateYamlHandler(APIView):
@@ -79,7 +84,10 @@ class V2ValidateYamlHandler(V1ValidateYamlHandler):
 
     def post(self, request, *args, **kwargs):
         source = self.request.query_params.get("source", "unknown")
-        sentry_metrics.incr("validate_v2", tags={"source": source})
+        inc_counter(
+            API_VALIDATE_V2_COUNTER,
+            labels=dict(source=source),
+        )
 
         if not self.request.body:
             return Response(

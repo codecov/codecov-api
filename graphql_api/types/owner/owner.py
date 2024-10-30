@@ -210,10 +210,7 @@ def resolve_org_upload_token(
     should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
     current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
-    if not current_owner:
-        is_owner_admin = False
-    else:
-        is_owner_admin = current_owner.is_admin(owner)
+    is_owner_admin = current_owner.is_admin(owner)
     if should_hide_tokens and not is_owner_admin:
         return TOKEN_UNAVAILABLE
 
