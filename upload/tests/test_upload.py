@@ -627,6 +627,54 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.merged == False
             assert commit.parent_commit_id is None
 
+        with self.subTest("commit already in database"):
+            G(
+                Commit,
+                commitid="1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
+                branch="apples",
+                pullid="456",
+                repository=repo,
+                parent_commit_id=None,
+            )
+            # parent_commit_id and branch should be updated
+            insert_commit(
+                "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
+                "oranges",
+                "123",
+                repo,
+                org,
+                parent_commit_id="different_parent_commit",
+            )
+
+            commit = Commit.objects.get(
+                commitid="1c78206f1a46dc6db8412a491fc770eb7d0f8a47"
+            )
+            assert commit.repository == repo
+            assert commit.branch == "oranges"
+            assert commit.pullid == 456
+            assert commit.merged is None
+            assert commit.parent_commit_id == "different_parent_commit"
+
+        with self.subTest("parent provided"):
+            parent = G(Commit)
+            insert_commit(
+                "8458a8c72aafb5fb4c5cd58f467a2f71298f1b61",
+                "test",
+                None,
+                repo,
+                org,
+                parent_commit_id=parent.commitid,
+            )
+
+            commit = Commit.objects.get(
+                commitid="8458a8c72aafb5fb4c5cd58f467a2f71298f1b61"
+            )
+            assert commit.repository == repo
+            assert commit.branch == "test"
+            assert commit.pullid is None
+            assert commit.merged is None
+            assert commit.parent_commit_id == parent.commitid
+
     def test_parse_request_headers(self):
         with self.subTest("Invalid content disposition"):
             with self.assertRaises(ValidationError):
