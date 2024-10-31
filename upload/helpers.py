@@ -505,7 +505,7 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
         commit.branch = branch
         edited = True
     if edited:
-        commit.save(update_fields=["parent_commit_id", "state", "branch"])
+        commit.save(update_fields=["parent_commit_id", "branch"])
     return commit
 
 
