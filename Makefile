@@ -178,6 +178,9 @@ push.self-hosted-rolling:
 	docker push ${DOCKERHUB_REPO}:rolling_no_dependencies
 	docker push ${DOCKERHUB_REPO}:rolling
 
+shell:
+	docker-compose exec api bash
+	
 test_env.up:
 	env | grep GITHUB > .testenv; true
 	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose up -d

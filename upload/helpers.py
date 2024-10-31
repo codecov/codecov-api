@@ -497,9 +497,6 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
     )
 
     edited = False
-    if commit.state != "pending":
-        commit.state = "pending"
-        edited = True
     if parent_commit_id and commit.parent_commit_id is None:
         commit.parent_commit_id = parent_commit_id
         edited = True
@@ -508,7 +505,7 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
         commit.branch = branch
         edited = True
     if edited:
-        commit.save(update_fields=["parent_commit_id", "state", "branch"])
+        commit.save(update_fields=["parent_commit_id", "branch"])
     return commit
 
 

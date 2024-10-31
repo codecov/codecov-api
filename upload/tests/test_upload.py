@@ -636,7 +636,7 @@ class UploadHandlerHelpersTest(TestCase):
                 repository=repo,
                 parent_commit_id=None,
             )
-            # parent_commit_id, state, and branch should be updated
+            # parent_commit_id and branch should be updated
             insert_commit(
                 "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
                 "oranges",
@@ -650,7 +650,6 @@ class UploadHandlerHelpersTest(TestCase):
                 commitid="1c78206f1a46dc6db8412a491fc770eb7d0f8a47"
             )
             assert commit.repository == repo
-            assert commit.state == "pending"
             assert commit.branch == "oranges"
             assert commit.pullid == 456
             assert commit.merged is None
@@ -671,7 +670,6 @@ class UploadHandlerHelpersTest(TestCase):
                 commitid="8458a8c72aafb5fb4c5cd58f467a2f71298f1b61"
             )
             assert commit.repository == repo
-            assert commit.state == "pending"
             assert commit.branch == "test"
             assert commit.pullid is None
             assert commit.merged is None
