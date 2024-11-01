@@ -151,15 +151,17 @@ class TestAnalyticsTestCase(
         assert results.equals(test_results_table)
 
     def test_get_test_results_no_storage(self, transactional_db, repository):
-        with pytest.raises(FileNotFoundError):
-            get_results(repository.repoid, repository.branch, 30)
+        assert get_results(repository.repoid, repository.branch, 30) is None
 
     def test_get_test_results_no_redis(
-        self, transactional_db, repository, store_in_storage
+        self, mocker, transactional_db, repository, store_in_storage
     ):
+        m = mocker.patch("services.task.TaskService.cache_test_results_redis")
         results = get_results(repository.repoid, repository.branch, 30)
         assert results is not None
         assert results.equals(test_results_table)
+
+        m.assert_called_once_with(repository.repoid, repository.branch)
 
     def test_test_results(self, transactional_db, repository, store_in_redis):
         test_results = generate_test_results(

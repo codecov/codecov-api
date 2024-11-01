@@ -424,3 +424,9 @@ class TaskService(object):
                 measurement_id=component_id,
             ),
         ).apply_async()
+
+    def cache_test_results_redis(self, repoid: int, branch: str) -> None:
+        self._create_signature(
+            celery_config.cache_test_rollups_redis_task_name,
+            kwargs=dict(repoid=repoid, branch=branch),
+        ).apply_async()
