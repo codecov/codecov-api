@@ -7,7 +7,7 @@ from sentry_sdk import get_current_span
 
 
 class BaseLogger(JsonFormatter):
-    def add_fields(self, log_record, record, message_dict): -> None
+    def add_fields(self, log_record, record, message_dict):
         super(BaseLogger, self).add_fields(log_record, record, message_dict)
 
         asctime_format = "%Y-%m-%d %H:%M:%S,%f"
