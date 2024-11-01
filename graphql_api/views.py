@@ -28,6 +28,7 @@ from services import ServiceException
 from services.redis_configuration import get_redis_connection
 
 from .schema import schema
+from .validation import create_max_aliases_rule, create_max_depth_rule
 
 log = logging.getLogger(__name__)
 
@@ -200,7 +201,11 @@ class AsyncGraphqlView(GraphQLAsyncView):
                 maximum_cost=settings.GRAPHQL_QUERY_COST_THRESHOLD,
                 default_cost=1,
                 variables=data.get("variables"),
-            )
+            ),
+            create_max_depth_rule(max_depth=getattr(settings, "GRAPHQL_MAX_DEPTH", 15)),
+            create_max_aliases_rule(
+                max_aliases=getattr(settings, "GRAPHQL_MAX_ALIASES", 15)
+            ),
         ]
 
     validation_rules = get_validation_rules  # type: ignore
