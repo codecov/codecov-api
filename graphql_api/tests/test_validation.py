@@ -23,7 +23,6 @@ def validate_query(query, *rules):
     return validate(schema, ast, rules=rules)
 
 
-# Tests for MaxDepthRule
 def test_max_depth_rule_allows_within_depth():
     query = """
     query {
