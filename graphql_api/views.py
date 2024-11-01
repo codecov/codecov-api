@@ -27,7 +27,6 @@ from codecov.db import sync_to_async
 from services import ServiceException
 from services.redis_configuration import get_redis_connection
 
-from .config import graphql_config
 from .schema import schema
 
 log = logging.getLogger(__name__)
@@ -189,6 +188,7 @@ class RequestFinalizer:
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [QueryMetricsExtension]
+    introspection = getattr(settings, "GRAPHQL_INTROSPECTION_ENABLED", False)
 
     def get_validation_rules(
         self,
@@ -379,7 +379,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         return ip
 
 
-BaseAriadneView = AsyncGraphqlView.as_view(**graphql_config)
+BaseAriadneView = AsyncGraphqlView.as_view()
 
 
 async def ariadne_view(request, service):
