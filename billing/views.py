@@ -67,9 +67,11 @@ class StripeWebhookHandler(APIView):
 
         # Send failed payment email to all owner admins
 
-        admins: QuerySet[Owner] = Owner.objects.filter(
-            pk__in={admin for owner in owners for admin in owner.admins}
-        )
+        admin_ids = set()
+        for owner in owners:
+            admin_ids.update(owner.admins)
+
+        admins: QuerySet[Owner] = Owner.objects.filter(pk__in=admin_ids)
 
         task_service = TaskService()
         card = (
@@ -86,7 +88,7 @@ class StripeWebhookHandler(APIView):
         }
 
         for admin in admins:
-            if admin.email is not None:
+            if admin.email:
                 task_service.send_email(
                     to_addr=admin.email,
                     subject="Your Codecov payment failed",
