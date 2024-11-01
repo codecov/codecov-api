@@ -1,7 +1,92 @@
+from dataclasses import dataclass
+
+import polars as pl
 from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
+from shared.django_apps.core.models import Repository
 
-from utils.test_results import TestResultsAggregates
+from utils.test_results import get_results
+
+
+@dataclass
+class TestResultsAggregates:
+    total_duration: float
+    slowest_tests_duration: float
+    total_slow_tests: int
+    fails: int
+    skips: int
+    total_duration_percent_change: float | None = None
+    slowest_tests_duration_percent_change: float | None = None
+    total_slow_tests_percent_change: float | None = None
+    fails_percent_change: float | None = None
+    skips_percent_change: float | None = None
+
+
+def calculate_aggregates(table: pl.DataFrame) -> pl.DataFrame:
+    return table.select(
+        (
+            pl.col("avg_duration")
+            * (pl.col("total_pass_count") + pl.col("total_fail_count"))
+        )
+        .sum()
+        .alias("total_duration"),
+        (
+            pl.when(pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95))
+            .then(
+                pl.col("avg_duration")
+                * (pl.col("total_pass_count") + pl.col("total_fail_count"))
+            )
+            .otherwise(0)
+            .top_k(100)
+            .sum()
+            .alias("slowest_tests_duration")
+        ),
+        (pl.col("total_skip_count").sum()).alias("skips"),
+        (pl.col("total_fail_count").sum()).alias("fails"),
+        ((pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95)).sum()).alias(
+            "total_slow_tests"
+        ),
+    )
+
+
+def test_results_aggregates_from_table(
+    table: pl.DataFrame,
+) -> TestResultsAggregates:
+    aggregates = calculate_aggregates(table).row(0, named=True)
+    return TestResultsAggregates(**aggregates)
+
+
+def test_results_aggregates_with_percentage(
+    curr_results: pl.DataFrame,
+    past_results: pl.DataFrame,
+) -> TestResultsAggregates:
+    curr_aggregates = calculate_aggregates(curr_results)
+    past_aggregates = calculate_aggregates(past_results)
+
+    merged_results: pl.DataFrame = pl.concat([past_aggregates, curr_aggregates])
+
+    merged_results = merged_results.with_columns(
+        pl.all().pct_change().name.suffix("_percent_change")
+    )
+    aggregates = merged_results.row(0, named=True)
+
+    return TestResultsAggregates(**aggregates)
+
+
+def generate_test_results_aggregates(
+    repoid: int, interval: int
+) -> TestResultsAggregates | None:
+    repo = Repository.objects.get(repoid=repoid)
+
+    curr_results = get_results(repo.repoid, repo.branch, interval)
+    if curr_results is None:
+        return None
+    past_results = get_results(repo.repoid, repo.branch, interval * 2, interval)
+    if past_results is None:
+        return test_results_aggregates_from_table(curr_results)
+    else:
+        return test_results_aggregates_with_percentage(curr_results, past_results)
+
 
 test_results_aggregates_bindable = ObjectType("TestResultsAggregates")
 

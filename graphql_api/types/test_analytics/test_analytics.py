@@ -1,29 +1,303 @@
+import datetime as dt
 import logging
+from base64 import b64decode, b64encode
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any, TypedDict
 
+import polars as pl
 from ariadne import ObjectType
 from graphql.type.definition import GraphQLResolveInfo
+from shared.django_apps.core.models import Repository
 
+from codecov.commands.exceptions import ValidationError
 from codecov.db import sync_to_async
-from core.models import Repository
 from graphql_api.types.enums import (
     OrderingDirection,
     TestResultsFilterParameter,
     TestResultsOrderingParameter,
 )
 from graphql_api.types.enums.enum_types import MeasurementInterval
-from utils.test_results import (
+from graphql_api.types.flake_aggregates.flake_aggregates import (
     FlakeAggregates,
-    TestResultConnection,
-    TestResultsAggregates,
     generate_flake_aggregates,
-    generate_test_results,
-    generate_test_results_aggregates,
-    get_flags,
-    get_test_suites,
 )
+from graphql_api.types.test_results_aggregates.test_results_aggregates import (
+    TestResultsAggregates,
+    generate_test_results_aggregates,
+)
+from utils.test_results import get_results
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class TestResultsRow:
+    # the order here must match the order of the fields in the query
+    name: str
+    test_id: str
+    testsuite: str | None
+    flags: list[str]
+    failure_rate: float
+    flake_rate: float
+    updated_at: dt.datetime
+    avg_duration: float
+    total_fail_count: int
+    total_flaky_fail_count: int
+    total_pass_count: int
+    total_skip_count: int
+    commits_where_fail: int
+    last_duration: float
+
+
+@dataclass
+class TestResultConnection:
+    edges: list[dict[str, str | TestResultsRow]]
+    page_info: dict
+    total_count: int
+
+
+DELIMITER = "|"
+
+
+@dataclass
+class CursorValue:
+    ordered_value: float | int | dt.datetime | str
+    name: str
+
+
+def decode_cursor(
+    value: str | None, ordering: TestResultsOrderingParameter
+) -> CursorValue | None:
+    if value is None:
+        return None
+
+    split_cursor = b64decode(value.encode("ascii")).decode("utf-8").split(DELIMITER)
+    ordered_value: str = split_cursor[0]
+    name: str = split_cursor[1]
+    match ordering:
+        case (
+            TestResultsOrderingParameter.AVG_DURATION
+            | TestResultsOrderingParameter.FLAKE_RATE
+            | TestResultsOrderingParameter.FAILURE_RATE
+            | TestResultsOrderingParameter.LAST_DURATION
+        ):
+            return CursorValue(ordered_value=float(ordered_value), name=name)
+        case TestResultsOrderingParameter.COMMITS_WHERE_FAIL:
+            return CursorValue(ordered_value=int(ordered_value), name=name)
+        case TestResultsOrderingParameter.UPDATED_AT:
+            return CursorValue(
+                ordered_value=dt.datetime.fromisoformat(ordered_value), name=name
+            )
+
+    raise ValueError(f"Invalid ordering field: {ordering}")
+
+
+def encode_cursor(row: TestResultsRow, ordering: TestResultsOrderingParameter) -> str:
+    return b64encode(
+        DELIMITER.join([str(getattr(row, ordering.value)), str(row.name)]).encode(
+            "utf-8"
+        )
+    ).decode("ascii")
+
+
+def validate(
+    interval: int,
+    ordering: TestResultsOrderingParameter,
+    ordering_direction: OrderingDirection,
+    after: str | None,
+    before: str | None,
+    first: int | None,
+    last: int | None,
+) -> None:
+    if interval not in {1, 7, 30}:
+        raise ValidationError(f"Invalid interval: {interval}")
+
+    if not isinstance(ordering_direction, OrderingDirection):
+        raise ValidationError(f"Invalid ordering direction: {ordering_direction}")
+
+    if not isinstance(ordering, TestResultsOrderingParameter):
+        raise ValidationError(f"Invalid ordering field: {ordering}")
+
+    if first is not None and last is not None:
+        raise ValidationError("First and last can not be used at the same time")
+
+    if after is not None and before is not None:
+        raise ValidationError("After and before can not be used at the same time")
+
+
+def generate_test_results(
+    ordering: TestResultsOrderingParameter,
+    ordering_direction: OrderingDirection,
+    repoid: int,
+    measurement_interval: MeasurementInterval,
+    *,
+    first: int | None = None,
+    after: str | None = None,
+    last: int | None = None,
+    before: str | None = None,
+    branch: str | None = None,
+    parameter: TestResultsFilterParameter | None = None,
+    testsuites: list[str] | None = None,
+    flags: list[str] | None = None,
+    term: str | None = None,
+) -> TestResultConnection:
+    """
+    Function that retrieves aggregated information about all tests in a given repository, for a given time range, optionally filtered by branch name.
+    The fields it calculates are: the test failure rate, commits where this test failed, last duration and average duration of the test.
+
+    :param repoid: repoid of the repository we want to calculate aggregates for
+    :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account
+        test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into
+        account.
+    :param interval: timedelta for filtering test instances used to calculate the aggregates by time, the test instances used will be
+        those with a created at larger than now - interval.
+    :param testsuites: optional list of testsuite names to filter by, this is done via a union
+    :param flags: optional list of flag names to filter by, this is done via a union so if a user specifies multiple flags, we get all tests with any
+        of the flags, not tests that have all of the flags
+    :returns: queryset object containing list of dictionaries of results
+
+    """
+    repo = Repository.objects.get(repoid=repoid)
+    if branch is None:
+        branch = repo.branch
+    interval = measurement_interval.value
+    validate(interval, ordering, ordering_direction, after, before, first, last)
+
+    table = get_results(repoid, branch, interval)
+
+    if table is None:
+        return TestResultConnection(
+            edges=[],
+            total_count=0,
+            page_info={},
+        )
+
+    if term:
+        table = table.filter(pl.col("name").str.starts_with(term))
+
+    if testsuites:
+        table = table.filter(
+            pl.col("testsuite").is_not_null() & pl.col("testsuite").is_in(testsuites)
+        )
+
+    if flags:
+        table = table.filter(
+            pl.col("flags").list.eval(pl.element().is_in(flags)).list.any()
+        )
+
+    match parameter:
+        case TestResultsFilterParameter.FAILED_TESTS:
+            table = table.filter(pl.col("total_fail_count") > 0)
+        case TestResultsFilterParameter.FLAKY_TESTS:
+            table = table.filter(pl.col("total_flaky_fail_count") > 0)
+        case TestResultsFilterParameter.SKIPPED_TESTS:
+            table = table.filter(
+                pl.col("total_skip_count") > 0 & pl.col("total_pass_count") == 0
+            )
+        case TestResultsFilterParameter.SLOWEST_TESTS:
+            table = table.filter(
+                pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95)
+            ).top_k(100, by=pl.col("avg_duration"))
+
+    total_count = table.height
+
+    def ordering_expression(cursor_value: CursorValue, is_forward: bool) -> pl.Expr:
+        if is_forward:
+            ordering_expression = (
+                pl.col(ordering.value) > cursor_value.ordered_value
+            ) | (
+                (pl.col(ordering.value) == cursor_value.ordered_value)
+                & (pl.col("name") > cursor_value.name)
+            )
+        else:
+            ordering_expression = (
+                pl.col(ordering.value) < cursor_value.ordered_value
+            ) | (
+                (pl.col(ordering.value) == cursor_value.ordered_value)
+                & (pl.col("name") > cursor_value.name)
+            )
+        return ordering_expression
+
+    if after:
+        if ordering_direction == OrderingDirection.ASC:
+            is_forward = True
+        else:
+            is_forward = False
+
+        cursor_value = decode_cursor(after, ordering)
+        if cursor_value:
+            table = table.filter(ordering_expression(cursor_value, is_forward))
+    elif before:
+        if ordering_direction == OrderingDirection.DESC:
+            is_forward = True
+        else:
+            is_forward = False
+
+        cursor_value = decode_cursor(before, ordering)
+        if cursor_value:
+            table = table.filter(ordering_expression(cursor_value, is_forward))
+
+    table = table.sort(
+        [ordering.value, "name"],
+        descending=[ordering_direction == OrderingDirection.DESC, False],
+    )
+
+    if first:
+        page_elements = table.slice(0, first)
+    elif last:
+        page_elements = table.reverse().slice(0, last)
+    else:
+        page_elements = table
+
+    rows = [TestResultsRow(**row) for row in page_elements.rows(named=True)]
+
+    page: list[dict[str, str | TestResultsRow]] = [
+        {"cursor": encode_cursor(row, ordering), "node": row} for row in rows
+    ]
+
+    return TestResultConnection(
+        edges=page,
+        total_count=total_count,
+        page_info={
+            "has_next_page": True if first and len(table) > first else False,
+            "has_previous_page": True if last and len(table) > last else False,
+            "start_cursor": page[0]["cursor"] if page else None,
+            "end_cursor": page[-1]["cursor"] if page else None,
+        },
+    )
+
+
+def get_test_suites(
+    repoid: int, term: str | None = None, interval: int = 30
+) -> list[str]:
+    repo = Repository.objects.get(repoid=repoid)
+
+    table = get_results(repoid, repo.branch, interval)
+    if table is None:
+        return []
+
+    testsuites = table.select(pl.col("testsuite")).unique()
+
+    if term:
+        testsuites = testsuites.filter(pl.col("testsuite").str.starts_with(term))
+
+    return testsuites.to_series().to_list()
+
+
+def get_flags(repoid: int, term: str | None = None, interval: int = 30) -> list[str]:
+    repo = Repository.objects.get(repoid=repoid)
+
+    table = get_results(repoid, repo.branch, interval)
+    if table is None:
+        return []
+
+    flags = table.select(pl.col("flags")).unique()
+
+    if term:
+        flags = flags.filter(pl.col("flags").str.starts_with(term))
+
+    return flags.to_series().to_list()
 
 
 class TestResultsOrdering(TypedDict):
