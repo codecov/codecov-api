@@ -13,7 +13,6 @@ class BaseLogger(JsonFormatter):
         asctime = datetime.strptime(log_record.get('asctime'), asctime_format)
 
         log_record["utctime"] = asctime.isoformat()
-        log_record["utctime2"] = asctime.isoformat()
 
     def format_json_on_new_lines(self, json_str):
         # Parse the input JSON string
