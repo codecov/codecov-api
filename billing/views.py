@@ -69,7 +69,8 @@ class StripeWebhookHandler(APIView):
 
         admin_ids = set()
         for owner in owners:
-            admin_ids.update(owner.admins)
+            if owner.admins:
+                admin_ids.update(owner.admins)
 
             # Add the owner's email as well - for user owners, admins is empty.
             if owner.email:
