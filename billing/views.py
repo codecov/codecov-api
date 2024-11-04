@@ -376,6 +376,10 @@ class StripeWebhookHandler(APIView):
         new_default_payment_method = customer["invoice_settings"][
             "default_payment_method"
         ]
+
+        if new_default_payment_method is None:
+            return
+
         for subscription in customer.get("subscriptions", {}).get("data", []):
             if new_default_payment_method == subscription["default_payment_method"]:
                 continue
@@ -401,6 +405,7 @@ class StripeWebhookHandler(APIView):
         )
         owner = Owner.objects.get(ownerid=checkout_session.client_reference_id)
         owner.stripe_customer_id = checkout_session.customer
+        owner.stripe_subscription_id = checkout_session.subscription
         owner.save()
 
         self._log_updated([owner])
