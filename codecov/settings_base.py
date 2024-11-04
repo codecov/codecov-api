@@ -104,6 +104,8 @@ GRAPHQL_RATE_LIMIT_ENABLED = get_config(
 
 GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", default=300)
 
+GRAPHQL_INTROSPECTION_ENABLED = False
+
 GRAPHQL_MAX_DEPTH = 15
 
 GRAPHQL_MAX_ALIASES = 15
