@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from logging import Filter
 
 from pythonjsonlogger.jsonlogger import JsonFormatter
@@ -8,6 +9,11 @@ from sentry_sdk import get_current_span
 class BaseLogger(JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         super(BaseLogger, self).add_fields(log_record, record, message_dict)
+
+        asctime_format = "%Y-%m-%d %H:%M:%S,%f"
+        asctime = datetime.strptime(log_record.get("asctime"), asctime_format)
+
+        log_record["utctime"] = asctime.isoformat()
 
     def format_json_on_new_lines(self, json_str):
         # Parse the input JSON string
