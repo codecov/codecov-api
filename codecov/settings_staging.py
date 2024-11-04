@@ -75,3 +75,5 @@ SESSION_COOKIE_SAMESITE = "None"
 CSRF_TRUSTED_ORIGINS = [
     get_config("setup", "trusted_origin", default="https://*.codecov.dev")
 ]
+
+GRAPHQL_INTROSPECTION_ENABLED = True

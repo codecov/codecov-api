@@ -10,3 +10,5 @@ SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = "test-topic-id"
 # Mock the Pub/Sub host for testing
 # this prevents the pubsub SDK from trying to load credentials
 os.environ["PUBSUB_EMULATOR_HOST"] = "localhost"
+
+GRAPHQL_INTROSPECTION_ENABLED = True
