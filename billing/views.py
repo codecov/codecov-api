@@ -71,6 +71,10 @@ class StripeWebhookHandler(APIView):
         for owner in owners:
             admin_ids.update(owner.admins)
 
+            # Add the owner's email as well - for user owners, admins is empty.
+            if owner.email:
+                admin_ids.add(owner)
+
         admins: QuerySet[Owner] = Owner.objects.filter(pk__in=admin_ids)
 
         task_service = TaskService()
