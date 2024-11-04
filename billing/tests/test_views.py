@@ -194,6 +194,7 @@ class StripeWebhookHandlerTests(APITestCase):
         admin_2 = OwnerFactory(email="admin2@codecov.io")
         self.owner.admins = [admin_1.ownerid, admin_2.ownerid]
         self.owner.plan_activated_users = [non_admin.ownerid]
+        self.owner.email = "owner@codecov.io"
         self.owner.save()
 
         response = self._send_event(
@@ -218,6 +219,17 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.delinquent is True
 
         expected_calls = [
+            call(
+                to_addr=self.owner.email,
+                subject="Your Codecov payment failed",
+                template_name="failed-payment",
+                name=self.owner.username,
+                amount=240,
+                card_type="visa",
+                last_four=1234,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
             call(
                 to_addr=admin_1.email,
                 subject="Your Codecov payment failed",
@@ -252,6 +264,7 @@ class StripeWebhookHandlerTests(APITestCase):
         admin_2 = OwnerFactory(email="admin2@codecov.io")
         self.owner.admins = [admin_1.ownerid, admin_2.ownerid]
         self.owner.plan_activated_users = [non_admin.ownerid]
+        self.owner.email = "owner@codecov.io"
         self.owner.save()
 
         response = self._send_event(
@@ -274,6 +287,17 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.delinquent is True
 
         expected_calls = [
+            call(
+                to_addr=self.owner.email,
+                subject="Your Codecov payment failed",
+                template_name="failed-payment",
+                name=self.owner.username,
+                amount=240,
+                card_type=None,
+                last_four=None,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
             call(
                 to_addr=admin_1.email,
                 subject="Your Codecov payment failed",
