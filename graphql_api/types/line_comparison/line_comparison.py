@@ -1,7 +1,7 @@
 from functools import cached_property
 from typing import List, Optional
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
 from shared.utils.merge import LineType
 
 from graphql_api.types.enums import CoverageLine
@@ -72,7 +72,6 @@ def resolve_content(line_comparison: LineComparison, info) -> str:
 
 
 @line_comparison_bindable.field("coverageInfo")
-@convert_kwargs_to_snake_case
 def resolve_coverage_info(
     line_comparison: LineComparison,
     info,

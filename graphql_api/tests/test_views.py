@@ -1,5 +1,5 @@
 import json
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 from ariadne import ObjectType, make_executable_schema
 from ariadne.validation import cost_directive
@@ -113,7 +113,7 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
         assert data["errors"][0]["type"] == "Unauthorized"
         assert data["errors"][0].get("extensions") is None
 
-    @override_settings(DEBUG=False)
+    @override_settings(DEBUG=True)
     async def test_when_bad_query(self):
         schema = generate_schema_that_raise_with(Unauthorized())
         data = await self.do_query(schema, " { fieldThatDoesntExist }")
@@ -122,6 +122,13 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
             data["errors"][0]["message"]
             == "Cannot query field 'fieldThatDoesntExist' on type 'Query'."
         )
+
+    @override_settings(DEBUG=False)
+    async def test_when_bad_query_and_anonymous(self):
+        schema = generate_schema_that_raise_with(Unauthorized())
+        data = await self.do_query(schema, " { fieldThatDoesntExist }")
+        assert data["errors"] is not None
+        assert data["errors"][0]["message"] == "INTERNAL SERVER ERROR"
 
     @override_settings(DEBUG=False, GRAPHQL_QUERY_COST_THRESHOLD=1000)
     @patch("logging.Logger.error")
@@ -201,11 +208,12 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
         assert extension.operation_type == "unknown_type"
         assert extension.operation_name == "unknown_name"
 
-    @patch("sentry_sdk.metrics.incr")
+    @patch("graphql_api.views.GQL_REQUEST_MADE_COUNTER.labels")
+    @patch("graphql_api.views.GQL_ERROR_TYPE_COUNTER.labels")
     @patch("graphql_api.views.AsyncGraphqlView._check_ratelimit")
     @override_settings(DEBUG=False, GRAPHQL_RATE_LIMIT_RPM=1000)
     async def test_when_rate_limit_reached(
-        self, mocked_check_ratelimit, mocked_sentry_incr
+        self, mocked_check_ratelimit, mocked_error_counter, mocked_request_counter
     ):
         schema = generate_cost_test_schema()
         mocked_check_ratelimit.return_value = True
@@ -217,11 +225,10 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
             == "It looks like you've hit the rate limit of 1000 req/min. Try again later."
         )
 
-        expected_calls = [
-            call("graphql.info.request_made", tags={"path": "/graphql/gh"}),
-            call("graphql.error.rate_limit", tags={"path": "/graphql/gh"}),
-        ]
-        mocked_sentry_incr.assert_has_calls(expected_calls)
+        mocked_error_counter.assert_called_with(
+            error_type="rate_limit", path="/graphql/gh"
+        )
+        mocked_request_counter.assert_called_with(path="/graphql/gh")
 
     @override_settings(
         DEBUG=False, GRAPHQL_RATE_LIMIT_RPM=0, GRAPHQL_RATE_LIMIT_ENABLED=False

@@ -2,7 +2,8 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Mapping, Optional, Union
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+import sentry_sdk
+from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
 from codecov.commands.exceptions import ValidationError
@@ -136,8 +137,8 @@ def resolve_modules(
     return bundle_asset.modules
 
 
+@sentry_sdk.trace
 @bundle_asset_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_asset_report_measurements(
     bundle_asset: AssetReport,
@@ -178,6 +179,7 @@ def resolve_assets(
     return list(bundle_report.assets())
 
 
+@sentry_sdk.trace
 @bundle_report_bindable.field("assetsPaginated")
 def resolve_assets_paginated(
     bundle_report: BundleReport,
@@ -272,8 +274,8 @@ def resolve_bundle_report_filtered(
     )
 
 
+@sentry_sdk.trace
 @bundle_report_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_bundle_report_measurements(
     bundle_report: BundleReport,
@@ -295,9 +297,17 @@ def resolve_bundle_report_measurements(
     )
 
     # All measureable names we need to fetch to compute the requested asset types
-    if not asset_types or ASSET_TYPE_UNKNOWN in asset_types:
+    if not asset_types:
         measurables_to_fetch = [
             item for item in list(BundleAnalysisMeasurementsAssetType)
+        ]
+    elif ASSET_TYPE_UNKNOWN in asset_types:
+        measurables_to_fetch = [
+            BundleAnalysisMeasurementsAssetType.REPORT_SIZE,
+            BundleAnalysisMeasurementsAssetType.JAVASCRIPT_SIZE,
+            BundleAnalysisMeasurementsAssetType.STYLESHEET_SIZE,
+            BundleAnalysisMeasurementsAssetType.FONT_SIZE,
+            BundleAnalysisMeasurementsAssetType.IMAGE_SIZE,
         ]
     else:
         measurables_to_fetch = [

@@ -16,8 +16,7 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from sentry_sdk import metrics as sentry_metrics
-from shared.metrics import metrics
+from shared.metrics import inc_counter
 
 from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
@@ -32,13 +31,14 @@ from upload.helpers import (
     determine_upload_commit_to_use,
     determine_upload_pr_to_use,
     dispatch_upload_task,
-    generate_upload_sentry_metrics_tags,
+    generate_upload_prometheus_metrics_labels,
     insert_commit,
     parse_headers,
     parse_params,
     store_report_in_redis,
     validate_upload,
 )
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.views.base import ShelterMixin
 from utils.config import get_config
 from utils.services import get_long_service_name
@@ -75,9 +75,9 @@ class UploadHandler(APIView, ShelterMixin):
     def post(self, request, *args, **kwargs):
         # Extract the version
         version = self.kwargs["version"]
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,
@@ -116,12 +116,7 @@ class UploadHandler(APIView, ShelterMixin):
         if package is not None:
             package_format = r"((codecov-cli/)|((.+-)?uploader-))(\d+.\d+.\d+)"
             match = re.fullmatch(package_format, package)
-            if match:
-                if match.group(2):  # Matches codecov-cli/
-                    metrics.incr(f"upload.cli.{match.group(5)}")
-                else:  # Matches (.+-)?uploader-
-                    metrics.incr(f"upload.uploader.{match.group(5)}")
-            else:
+            if not match:
                 log.warning(
                     "Package query parameter failed to match CLI or uploader format",
                     extra=dict(package=package),
@@ -136,7 +131,6 @@ class UploadHandler(APIView, ShelterMixin):
             )
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Invalid request parameters"
-            metrics.incr("uploads.rejected", 1)
             return response
 
         # Try to determine the repository associated with the upload based on the params provided
@@ -146,12 +140,10 @@ class UploadHandler(APIView, ShelterMixin):
         except ValidationError:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Could not determine repo and owner"
-            metrics.incr("uploads.rejected", 1)
             return response
         except MultipleObjectsReturned:
             response.status_code = status.HTTP_400_BAD_REQUEST
             response.content = "Found too many repos"
-            metrics.incr("uploads.rejected", 1)
             return response
 
         log.info(
@@ -165,9 +157,9 @@ class UploadHandler(APIView, ShelterMixin):
             ),
         )
 
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="legacy_upload",
                 request=self.request,
@@ -175,18 +167,6 @@ class UploadHandler(APIView, ShelterMixin):
                 is_shelter_request=self.is_shelter_request(),
                 position="end",
                 upload_version=version,
-            ),
-        )
-
-        sentry_metrics.set(
-            "upload_set",
-            repository.author.ownerid,
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                endpoint="legacy_upload",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
             ),
         )
 
@@ -309,7 +289,6 @@ class UploadHandler(APIView, ShelterMixin):
                         upload_params=upload_params,
                     ),
                 )
-                metrics.incr("uploads.rejected", 1)
                 return HttpResponseServerError("Unknown error, please try again later")
             log.info(
                 "Returning presign put",
@@ -378,7 +357,6 @@ class UploadHandler(APIView, ShelterMixin):
             response["Content-Type"] = "application/json"
 
         response.status_code = status.HTTP_200_OK
-        metrics.incr("uploads.accepted", 1)
         return response
 
 

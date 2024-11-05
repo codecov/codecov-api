@@ -92,7 +92,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "codecov.wsgi.application"
 
-
 # GraphQL
 
 GRAPHQL_QUERY_COST_THRESHOLD = get_config(
@@ -104,6 +103,8 @@ GRAPHQL_RATE_LIMIT_ENABLED = get_config(
 )
 
 GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", default=300)
+
+GRAPHQL_INTROSPECTION_ENABLED = False
 
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
@@ -183,7 +184,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
@@ -308,7 +308,6 @@ GITLAB_TOKENLESS_BOT_KEY = get_config(
     "gitlab", "bots", "tokenless", "key", default=GITLAB_BOT_KEY
 )
 
-
 GITLAB_ENTERPRISE_CLIENT_ID = get_config("gitlab_enterprise", "client_id")
 GITLAB_ENTERPRISE_CLIENT_SECRET = get_config("gitlab_enterprise", "client_secret")
 GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
@@ -322,7 +321,6 @@ GITLAB_ENTERPRISE_TOKENLESS_BOT_KEY = get_config(
 )
 GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")
 GITLAB_ENTERPRISE_API_URL = get_config("gitlab_enterprise", "api_url")
-
 
 CORS_ALLOW_HEADERS = (
     list(default_headers)
@@ -344,17 +342,22 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
     "setup", "http", "file_upload_max_memory_size", default=2621440
 )
 
-
 CORS_ALLOWED_ORIGIN_REGEXES = get_config(
     "setup", "api_cors_allowed_origin_regexes", default=[]
 )
 CORS_ALLOWED_ORIGINS: list[str] = []
 
-GRAPHQL_PLAYGROUND = True
+GRAPHQL_PLAYGROUND = get_settings_module() in [
+    SettingsModule.DEV.value,
+    SettingsModule.STAGING.value,
+    SettingsModule.TESTING.value,
+]
 
 UPLOAD_THROTTLING_ENABLED = get_config(
     "setup", "upload_throttling_enabled", default=True
 )
+
+HIDE_ALL_CODECOV_TOKENS = get_config("setup", "hide_all_codecov_tokens", default=False)
 
 SENTRY_JWT_SHARED_SECRET = get_config(
     "sentry", "jwt_shared_secret", default=None

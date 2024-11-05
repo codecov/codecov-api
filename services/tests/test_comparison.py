@@ -23,7 +23,6 @@ from shared.utils.merge import LineType
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
 from core.models import Commit
-from reports.models import ReportDetails
 from reports.tests.factories import CommitReportFactory
 from services.comparison import (
     CommitComparisonService,
@@ -1792,14 +1791,6 @@ class CommitComparisonTests(TestCase):
         self.compare_commit = CommitFactory(updatestamp=datetime(2023, 1, 1))
         self.base_commit_report = CommitReportFactory(commit=self.base_commit)
         self.compare_commit_report = CommitReportFactory(commit=self.compare_commit)
-        self.base_report_details = ReportDetails.objects.create(
-            report_id=self.base_commit_report.id,
-            _files_array=[],
-        )
-        self.compare_report_details = ReportDetails.objects.create(
-            report_id=self.compare_commit_report.id,
-            _files_array=[],
-        )
         self.commit_comparison = CommitComparisonFactory(
             base_commit=self.base_commit,
             compare_commit=self.compare_commit,
@@ -1836,30 +1827,6 @@ class CommitComparisonTests(TestCase):
 
         self.compare_commit.updatestamp = datetime(2023, 1, 2)
         self.compare_commit.save()
-
-        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
-        service = CommitComparisonService(commit_comparison)
-
-        assert service.needs_recompute() == True
-
-    def test_stale_base_report_details(self):
-        # base report details were updated after comparison was made
-        self.commit_comparison.updated_at = datetime(2021, 1, 1, tzinfo=pytz.utc)
-        self.commit_comparison.save()
-        self.base_report_details.updated_at = datetime(2023, 1, 2, tzinfo=pytz.utc)
-        self.base_report_details.save()
-
-        commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
-        service = CommitComparisonService(commit_comparison)
-
-        assert service.needs_recompute() == True
-
-    def test_stale_compare_report_details(self):
-        # compare report details were updated after comparison was made
-        self.commit_comparison.updated_at = datetime(2021, 1, 1, tzinfo=pytz.utc)
-        self.commit_comparison.save()
-        self.compare_report_details.updated_at = datetime(2023, 1, 2, tzinfo=pytz.utc)
-        self.compare_report_details.save()
 
         commit_comparison = CommitComparison.objects.get(pk=self.commit_comparison.pk)
         service = CommitComparisonService(commit_comparison)

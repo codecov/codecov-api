@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
@@ -40,6 +41,35 @@ def test_get_repo_not_found(db):
     with pytest.raises(ValidationError) as exp:
         upload_views.get_repo()
     assert exp.match("Repository not found")
+
+
+def test_deactivated_repo(db):
+    repo = RepositoryFactory(
+        name="the_repo",
+        author__username="codecov",
+        author__service="github",
+        active=True,
+        activated=False,
+    )
+    repo.save()
+    repo_slug = f"{repo.author.username}::::{repo.name}"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="token " + repo.upload_token)
+    url = reverse(
+        "new_upload.commits",
+        args=[repo.author.service, repo_slug],
+    )
+    response = client.post(
+        url,
+        {"commitid": "commit_sha"},
+        format="json",
+    )
+    response_json = response.json()
+    assert response.status_code == 400
+    assert response_json == [
+        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings.CODECOV_DASHBOARD_URL}/github/codecov/the_repo/settings"
+    ]
 
 
 def test_get_queryset(db):
@@ -328,7 +358,7 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
         private=False, author__username="codecov", name="the_repo"
     )
     mocked_call = mocker.patch.object(TaskService, "update_commit")
-    mock_sentry_metrics = mocker.patch("upload.views.commits.sentry_metrics.incr")
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     mock_jwt_decode.return_value = {
         "repository": f"url/{repository.name}",
         "repository_owner": repository.author.username,
@@ -374,9 +404,8 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
     }
     assert expected_response == response_json
     mocked_call.assert_called_with(commitid="commit_sha", repoid=repository.repoid)
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_prometheus_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
@@ -384,5 +413,6 @@ def test_commit_github_oidc_auth(mock_jwks_client, mock_jwt_decode, db, mocker):
             "repo_visibility": "public",
             "is_using_shelter": "no",
             "position": "end",
+            "upload_version": None,
         },
     )

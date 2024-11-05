@@ -2,6 +2,7 @@ import math
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional
 
+import sentry_sdk
 from django.conf import settings
 from django.db import connections
 from django.db.models import (
@@ -38,6 +39,7 @@ interval_deltas = {
 }
 
 
+@sentry_sdk.trace
 def refresh_measurement_summaries(start_date: datetime, end_date: datetime) -> None:
     """
     Refresh the measurement summaries for the given time range.
@@ -55,6 +57,7 @@ def refresh_measurement_summaries(start_date: datetime, end_date: datetime) -> N
             cursor.execute(sql)
 
 
+@sentry_sdk.trace
 def aggregate_measurements(
     queryset: QuerySet, group_by: Iterable[str] = None
 ) -> QuerySet:
@@ -99,6 +102,7 @@ def _filter_repos(
     return queryset
 
 
+@sentry_sdk.trace
 def coverage_measurements(
     interval: Interval,
     start_date: Optional[datetime] = None,
@@ -190,6 +194,7 @@ def aligned_start_date(interval: Interval, date: datetime) -> datetime:
     return aligning_date + (intervals_before * delta)
 
 
+@sentry_sdk.trace
 def fill_sparse_measurements(
     measurements: Iterable[dict],
     interval: Interval,
@@ -254,6 +259,7 @@ def fill_sparse_measurements(
     return intervals
 
 
+@sentry_sdk.trace
 def coverage_fallback_query(
     interval: Interval,
     start_date: Optional[datetime] = None,
@@ -321,6 +327,7 @@ def _commits_coverage(
     )
 
 
+@sentry_sdk.trace
 def repository_coverage_measurements_with_fallback(
     repository: Repository,
     interval: Interval,
@@ -371,6 +378,7 @@ def repository_coverage_measurements_with_fallback(
         )
 
 
+@sentry_sdk.trace
 def owner_coverage_measurements_with_fallback(
     owner: Owner,
     repo_ids: Iterable[str],

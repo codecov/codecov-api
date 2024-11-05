@@ -1,15 +1,12 @@
 import unittest.mock as mock
 from io import StringIO
 
-import fakeredis
 import pytest
 from django.core.management import call_command
 from shared.config import ConfigHelper
-from shared.django_apps.core.tests.factories import (
-    CommitFactory,
-    OwnerFactory,
-    RepositoryFactory,
-)
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
+
+from services.redis_configuration import get_redis_connection
 
 
 @pytest.mark.django_db
@@ -85,87 +82,42 @@ def test_update_gitlab_webhook_command(mocker):
 
 
 @pytest.mark.django_db
-def test_backfill_commits_command(mocker):
-    storage_redis = fakeredis.FakeStrictRedis()
-    celery_redis = fakeredis.FakeStrictRedis()
-    mocker.patch(
-        "core.management.commands.backfill_commits.get_storage_redis",
-        return_value=storage_redis,
-    )
-    mocker.patch(
-        "core.management.commands.backfill_commits.get_celery_redis",
-        return_value=celery_redis,
-    )
-
-    backfill_commits = mocker.patch("services.task.TaskService.backfill_commit_data")
-
-    get_config = mocker.patch("shared.config._get_config_instance")
-    config_helper = ConfigHelper()
-    config_helper.set_params(
-        {
-            "setup": {
-                "webhook_url": "http://example.com",
-            },
-        }
-    )
-    get_config.return_value = config_helper
-
-    commit1 = CommitFactory()
-    commit2 = CommitFactory()
-    commit3 = CommitFactory()
-
-    # undrained queue
-
-    celery_redis.lpush("archive", "placeholder")  # mimic > 0 items in the queue
-    call_command(
-        "backfill_commits",
-        stdout=StringIO(),
-        stderr=StringIO(),
-        batch_size=2,
-    )
-
-    # noop - waits for queue to drain
-    assert backfill_commits.mock_calls == []
-    celery_redis.delete("archive")
-
-    # 1st batch
+def test_delete_rate_limit_keys_user_id():
+    redis = get_redis_connection()
+    redis.set("rl-user:1", 1)
+    redis.set("rl-user:2", 1, ex=5000)
+    redis.set("rl-ip:1", 1)
 
     call_command(
-        "backfill_commits",
+        "delete_rate_limit_keys",
         stdout=StringIO(),
         stderr=StringIO(),
-        batch_size=2,
     )
 
-    assert backfill_commits.mock_calls == [
-        mock.call(commit_id=commit3.id),
-        mock.call(commit_id=commit2.id),
-    ]
+    assert redis.get("rl-user:1") is None
+    assert redis.get("rl-user:2") is not None
+    assert redis.get("rl-ip:1") is not None
 
-    backfill_commits.reset_mock()
+    # Get rid of lingering keys
+    redis.delete("rl-ip:1")
+    redis.delete("rl-user:2")
 
-    # 2nd batch
+
+@pytest.mark.django_db
+def test_delete_rate_limit_keys_ip_option():
+    redis = get_redis_connection()
+    redis.set("rl-ip:1", 1)
+    redis.set("rl-ip:2", 1, ex=5000)
+    redis.set("rl-user:1", 1)
 
     call_command(
-        "backfill_commits",
-        stdout=StringIO(),
-        stderr=StringIO(),
-        batch_size=2,
+        "delete_rate_limit_keys", stdout=StringIO(), stderr=StringIO(), ip=True
     )
 
-    assert backfill_commits.mock_calls == [
-        mock.call(commit_id=commit1.id),
-    ]
+    assert redis.get("rl-ip:1") is None
+    assert redis.get("rl-ip:2") is not None
+    assert redis.get("rl-user:1") is not None
 
-    backfill_commits.reset_mock()
-
-    # empty batch
-
-    call_command(
-        "backfill_commits",
-        stdout=StringIO(),
-        stderr=StringIO(),
-        batch_size=2,
-    )
-
-    assert backfill_commits.mock_calls == []
+    # Get rid of lingering keys
+    redis.delete("rl-user:1")
+    redis.delete("rl-ip:2")

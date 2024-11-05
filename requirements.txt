@@ -18,11 +18,11 @@ anyio==3.6.1
     #   starlette
 appdirs==1.4.4
     # via virtualenv
-ariadne==0.19.1
+ariadne==0.23.0
     # via
     #   -r requirements.in
     #   ariadne-django
-ariadne-django==0.2.0
+ariadne-django==0.3.0
     # via -r requirements.in
 asgiref==3.6.0
     # via django
@@ -109,7 +109,7 @@ deprecated==1.2.12
     # via opentelemetry-api
 distlib==0.3.1
     # via virtualenv
-django==4.2.15
+django==4.2.16
     # via
     #   -r requirements.in
     #   ariadne-django
@@ -299,6 +299,8 @@ opentelemetry-util-http==0.45b0
     #   opentelemetry-instrumentation-wsgi
 opentracing==2.4.0
     # via -r requirements.in
+orjson==3.10.9
+    # via shared
 packaging==24.1
     # via
     #   gunicorn
@@ -417,7 +419,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/f0e213c4399563990d43fb424f4be36faa5ce5eb.tar.gz
+shared @ https://github.com/codecov/shared/archive/ebafd805394f22b4ab9e1f6e9a864ab28396dfe4.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
@@ -445,10 +447,10 @@ sqlparse==0.5.0
     # via
     #   ddtrace
     #   django
-starlette==0.36.2
-    # via ariadne
-statsd==3.3.0
-    # via shared
+starlette==0.40.0
+    # via
+    #   -r requirements.in
+    #   ariadne
 stripe==9.6.0
     # via -r requirements.in
 text-unidecode==1.3
