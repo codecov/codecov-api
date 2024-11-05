@@ -87,9 +87,10 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit_sha,
         repoid=repository.repoid,
-        countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+        arguments=ANY,
+        countdown=4,
     )
     mock_metrics.assert_called_with(
         **{
@@ -176,9 +177,10 @@ def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit_sha,
         repoid=repository.repoid,
-        countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+        arguments=ANY,
+        countdown=4,
     )
     mock_metrics.assert_called_with(
         **{
@@ -260,9 +262,10 @@ def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit.commitid,
         repoid=repository.repoid,
-        countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+        arguments=ANY,
+        countdown=4,
     )
     mock_metrics.assert_called_with(
         **{

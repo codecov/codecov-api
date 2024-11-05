@@ -74,8 +74,10 @@ def test_upload_test_results(db, client, mocker, mock_redis):
 
     # saves args in Redis
     redis = get_redis_connection()
-    args = redis.rpop(f"uploads/{repository.repoid}/{commit_sha}/test_results")
-    assert json.loads(args) == {
+    args = json.loads(
+        redis.rpop(f"uploads/{repository.repoid}/{commit_sha}/test_results")
+    )
+    assert args == {
         "reportid": reportid,
         "build": "test-build",
         "build_url": "test-build-url",
@@ -95,9 +97,10 @@ def test_upload_test_results(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit_sha,
         repoid=repository.repoid,
-        countdown=4,
         report_code=None,
         report_type="test_results",
+        arguments=args,
+        countdown=4,
     )
     mock_prometheus_metrics.assert_called_with(
         **{

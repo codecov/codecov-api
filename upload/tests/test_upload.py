@@ -15,7 +15,8 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.reverse import reverse
-from rest_framework.test import APIRequestFactory, APITestCase
+from rest_framework.test import APITestCase
+from shared.api_archive.archive import ArchiveService
 from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.torngit.exceptions import (
     TorngitClientGeneralError,
@@ -37,7 +38,6 @@ from upload.helpers import (
     insert_commit,
     parse_headers,
     parse_params,
-    store_report_in_redis,
     validate_upload,
 )
 from upload.tokenless.tokenless import TokenlessUploadHandler
@@ -713,31 +713,6 @@ class UploadHandlerHelpersTest(TestCase):
                 {"version": "v4"},
             ) == {"content_type": "text/plain", "reduced_redundancy": True}
 
-    def test_store_report_in_redis(self):
-        redis = MockRedis()
-
-        with self.subTest("gzip encoding"):
-            assert (
-                store_report_in_redis(
-                    APIRequestFactory().get("", HTTP_X_CONTENT_ENCODING="gzip"),
-                    "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
-                    "report",
-                    redis,
-                )
-                == "upload/1c78206/report/gzip"
-            )
-
-        with self.subTest("plain encoding"):
-            assert (
-                store_report_in_redis(
-                    APIRequestFactory().get(""),
-                    "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
-                    "report",
-                    redis,
-                )
-                == "upload/1c78206/report/plain"
-            )
-
     def test_validate_upload_repository_moved(self):
         redis = MockRedis()
         owner = G(Owner, plan="users-free")
@@ -893,9 +868,10 @@ class UploadHandlerHelpersTest(TestCase):
         upload.assert_called_once_with(
             repoid=repo.repoid,
             commitid=task_arguments.get("commit"),
-            report_code="local_report",
-            countdown=4,
             report_type="coverage",
+            report_code="local_report",
+            arguments=task_arguments,
+            countdown=4,
         )
 
 
@@ -986,6 +962,7 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    @patch("shared.api_archive.archive.ArchiveService.write_file")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -997,6 +974,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
+        mock_write_file,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1033,6 +1011,14 @@ class UploadHandlerRouteTest(APITestCase):
         )
         assert headers["content-type"] != "text/plain"
 
+        archive_service = ArchiveService(self.repo)
+        datetime = timezone.now().strftime("%Y-%m-%d")
+        repo_hash = archive_service.get_archive_hash(self.repo)
+        expected_url = f"v4/raw/{datetime}/{repo_hash}/b521e55aef79b101f48e2544837ca99a7fa3bf6b/dec1f00b-1883-40d0-afd6-6dcb876510be.txt"
+
+        mock_write_file.assert_called_with(
+            expected_url, b"coverage report", is_already_gzipped=False
+        )
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
             "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
@@ -1045,8 +1031,7 @@ class UploadHandlerRouteTest(APITestCase):
             "build_url": None,
             "branch": None,
             "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
-            "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
-            "url": None,
+            "url": expected_url,
             "job": None,
         }
 
@@ -1060,6 +1045,7 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
+    @patch("shared.api_archive.archive.ArchiveService.write_file")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1071,6 +1057,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
+        mock_write_file,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1107,6 +1094,14 @@ class UploadHandlerRouteTest(APITestCase):
         )
         assert headers["content-type"] != "text/plain"
 
+        archive_service = ArchiveService(self.repo)
+        datetime = timezone.now().strftime("%Y-%m-%d")
+        repo_hash = archive_service.get_archive_hash(self.repo)
+        expected_url = f"v4/raw/{datetime}/{repo_hash}/b521e55aef79b101f48e2544837ca99a7fa3bf6b/dec1f00b-1883-40d0-afd6-6dcb876510be.txt"
+
+        mock_write_file.assert_called_with(
+            expected_url, b"coverage report", is_already_gzipped=False
+        )
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
             "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
@@ -1119,8 +1114,7 @@ class UploadHandlerRouteTest(APITestCase):
             "build_url": None,
             "branch": None,
             "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
-            "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
-            "url": None,
+            "url": expected_url,
             "job": None,
         }
 
