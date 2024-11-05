@@ -18,6 +18,7 @@ from reports.models import CommitReport, ReportResults
 from services.task import TaskService
 from upload.helpers import (
     generate_upload_prometheus_metrics_labels,
+    validate_activated_repo,
 )
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
@@ -70,6 +71,7 @@ class ReportViews(ListCreateAPIView, ReportLogicMixin):
             ),
         )
         repository = self.get_repo()
+        validate_activated_repo(repository)
         commit = self.get_commit(repository)
         log.info(
             "Request to create new report",
