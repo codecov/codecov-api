@@ -1,10 +1,13 @@
-from datetime import datetime, timezone
+import datetime
 from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
+from django.utils import timezone
+from shared.django_apps.core.tests.factories import (
+    OwnerFactory,
+    RepositoryFactory,
+)
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from timeseries.models import Interval
 
 from .helper import GraphQLTestHelper
@@ -18,16 +21,18 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
                 owner(username: "{self.org.username}") {{
                     repository(name: "{self.repo.name}") {{
                         ... on Repository {{
-                            measurements(
-                                interval: INTERVAL_1_DAY
-                                after: "2022-01-01"
-                                before: "2022-01-03"
-                                branch: $branch
-                            ) {{
-                                timestamp
-                                avg
-                                min
-                                max
+                            coverageAnalytics {{
+                                measurements(
+                                    interval: INTERVAL_1_DAY
+                                    after: "2022-01-01"
+                                    before: "2022-01-03"
+                                    branch: $branch
+                                ) {{
+                                    timestamp
+                                    avg
+                                    min
+                                    max
+                                }}
                             }}
                         }}
                     }}
@@ -35,7 +40,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
             }}
         """
         data = self.gql_request(query, owner=self.owner, variables=variables)
-        return data["owner"]["repository"]["measurements"]
+        return data["owner"]["repository"]["coverageAnalytics"]["measurements"]
 
     def setUp(self):
         self.org = OwnerFactory(username="test-org")
@@ -51,8 +56,18 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         self, repository_coverage_measurements_with_fallback
     ):
         repository_coverage_measurements_with_fallback.return_value = [
-            {"timestamp_bin": datetime(2022, 1, 1), "min": 1, "max": 2, "avg": 1.5},
-            {"timestamp_bin": datetime(2022, 1, 2), "min": 3, "max": 4, "avg": 3.5},
+            {
+                "timestamp_bin": datetime.datetime(2022, 1, 1),
+                "min": 1,
+                "max": 2,
+                "avg": 1.5,
+            },
+            {
+                "timestamp_bin": datetime.datetime(2022, 1, 2),
+                "min": 3,
+                "max": 4,
+                "avg": 3.5,
+            },
         ]
 
         assert self._request() == [
@@ -69,8 +84,8 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         repository_coverage_measurements_with_fallback.assert_called_once_with(
             self.repo,
             Interval.INTERVAL_1_DAY,
-            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            start_date=datetime.datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime.datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
             branch=None,
         )
 
@@ -79,8 +94,18 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         self, repository_coverage_measurements_with_fallback
     ):
         repository_coverage_measurements_with_fallback.return_value = [
-            {"timestamp_bin": datetime(2022, 1, 1), "min": 1, "max": 2, "avg": 1.5},
-            {"timestamp_bin": datetime(2022, 1, 2), "min": 3, "max": 4, "avg": 3.5},
+            {
+                "timestamp_bin": datetime.datetime(2022, 1, 1),
+                "min": 1,
+                "max": 2,
+                "avg": 1.5,
+            },
+            {
+                "timestamp_bin": datetime.datetime(2022, 1, 2),
+                "min": 3,
+                "max": 4,
+                "avg": 3.5,
+            },
         ]
 
         assert self._request() == [
@@ -97,8 +122,8 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         repository_coverage_measurements_with_fallback.assert_called_once_with(
             self.repo,
             Interval.INTERVAL_1_DAY,
-            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            start_date=datetime.datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime.datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
             branch=None,
         )
 
@@ -110,7 +135,7 @@ class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
         repository_coverage_measurements_with_fallback.assert_called_once_with(
             self.repo,
             Interval.INTERVAL_1_DAY,
-            start_date=datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
-            end_date=datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
+            start_date=datetime.datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            end_date=datetime.datetime(2022, 1, 3, 0, 0, 0, tzinfo=timezone.utc),
             branch="foo",
         )

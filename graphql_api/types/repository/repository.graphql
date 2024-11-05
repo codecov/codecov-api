@@ -1,14 +1,12 @@
+"""
+Repository is a named collection of files uploaded
+"""
 type Repository {
   isFirstPullRequest: Boolean!
   name: String!
   active: Boolean!
   activated: Boolean!
   private: Boolean!
-  coverage: Float
-  coverageSha: String
-  hits: Int
-  misses: Int
-  lines: Int
   oldestCommitAt: DateTime
   latestCommitAt: DateTime
   updatedAt: DateTime
@@ -39,32 +37,12 @@ type Repository {
     last: Int
     before: String
   ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
-  flags(
-    filters: FlagSetFilters
-    orderingDirection: OrderingDirection
-    first: Int
-    after: String
-    last: Int
-    before: String
-  ): FlagConnection! @cost(complexity: 3, multipliers: ["first", "last"])
   defaultBranch: String
   profilingToken: String
   criticalFiles: [CriticalFile!]!
   graphToken: String
   yaml: String
   bot: Owner
-  flagsCount: Int!
-  flagsMeasurementsActive: Boolean!
-  flagsMeasurementsBackfilled: Boolean!
-  componentsMeasurementsActive: Boolean!
-  componentsMeasurementsBackfilled: Boolean!
-  componentsCount: Int!
-  measurements(
-    interval: MeasurementInterval!
-    after: DateTime
-    before: DateTime
-    branch: String
-  ): [Measurement!]!
   repositoryConfig: RepositoryConfig
   staticAnalysisToken: String
   isATSConfigured: Boolean
@@ -72,36 +50,14 @@ type Repository {
   languages: [String!]
   bundleAnalysisEnabled: Boolean
   coverageEnabled: Boolean
-  components(
-    interval: MeasurementInterval!
-    before: DateTime!
-    after: DateTime!
-    branch: String
-    filters: ComponentMeasurementsSetFilters
-    orderingDirection: OrderingDirection
-  ): [ComponentMeasurements!]!
-  componentsYaml(termId: String): [ComponentsYaml]!
   testAnalyticsEnabled: Boolean
   isGithubRateLimited: Boolean
-  testResults(
-    filters: TestResultsFilters
-    ordering: TestResultsOrdering
-    first: Int
-    after: String
-    last: Int
-    before: String
-  ): TestResultConnection! @cost(complexity: 10, multipliers: ["first", "last"])
-}
 
-type TestResultConnection {
-  edges: [TestResultEdge]!
-  totalCount: Int!
-  pageInfo: PageInfo!
-}
+  "CoverageAnalytics are fields related to Codecov's Coverage product offering"
+  coverageAnalytics: CoverageAnalytics
 
-type TestResultEdge {
-  cursor: String!
-  node: TestResult!
+  "TestAnalytics are fields related to Codecov's Test Analytics product offering"
+  testAnalytics: TestAnalytics
 }
 
 type PullConnection {

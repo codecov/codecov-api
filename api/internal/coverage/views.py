@@ -1,3 +1,6 @@
+from typing import Any
+
+from django.http import HttpRequest
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
@@ -13,7 +16,7 @@ from services.path import ReportPaths
 class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
     permission_classes = [RepositoryArtifactPermissions]
 
-    def get_object(self):
+    def get_object(self) -> ReportPaths:
         commit_sha = self.request.query_params.get("sha")
         if not commit_sha:
             branch_name = self.request.query_params.get("branch", self.repo.branch)
@@ -39,9 +42,7 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
         components = self.request.query_params.getlist("components")
         component_paths = []
         if components:
-            all_components = components_service.commit_components(
-                commit, self.request.user
-            )
+            all_components = components_service.commit_components(commit, self.owner)
             filtered_components = components_service.filter_components_by_name(
                 all_components, components
             )
@@ -62,7 +63,7 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
         return paths
 
     @action(detail=False, methods=["get"], url_path="tree")
-    def tree(self, request, *args, **kwargs):
+    def tree(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         paths = self.get_object()
         serializer = TreeSerializer(paths.single_directory(), many=True)
         return Response(serializer.data)

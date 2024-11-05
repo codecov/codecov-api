@@ -2,7 +2,7 @@ import hashlib
 from typing import List, Union
 
 import sentry_sdk
-from ariadne import ObjectType, UnionType, convert_kwargs_to_snake_case
+from ariadne import ObjectType, UnionType
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
@@ -67,7 +67,6 @@ def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
 @sentry_sdk.trace
 @impacted_file_bindable.field("segments")
 @sync_to_async
-@convert_kwargs_to_snake_case
 def resolve_segments(
     impacted_file: ImpactedFile, info, filters=None
 ) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
@@ -131,6 +130,7 @@ def resolve_misses_count(impacted_file: ImpactedFile, info) -> int:
     return impacted_file.misses_count
 
 
+@sentry_sdk.trace
 @impacted_file_bindable.field("isCriticalFile")
 @sync_to_async
 def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:

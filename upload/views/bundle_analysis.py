@@ -9,8 +9,8 @@ from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from sentry_sdk import metrics as sentry_metrics
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
+from shared.metrics import Counter, inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     BundleAnalysisTokenlessAuthentication,
@@ -26,11 +26,28 @@ from reports.models import CommitReport
 from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, MeasurementName
-from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
+from upload.helpers import (
+    dispatch_upload_task,
+    generate_upload_prometheus_metrics_labels,
+)
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
 
 log = logging.getLogger(__name__)
+
+
+BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER = Counter(
+    "bundle_analysis_upload_views_runs",
+    "Number of times a BA upload was run and with what result",
+    [
+        "agent",
+        "version",
+        "action",
+        "endpoint",
+        "is_using_shelter",
+        "position",
+    ],
+)
 
 
 class UploadBundleAnalysisPermission(BasePermission):
@@ -49,6 +66,8 @@ class UploadSerializer(serializers.Serializer):
     branch = serializers.CharField(required=False, allow_null=True)
     compareSha = serializers.CharField(required=False, allow_null=True)
     git_service = serializers.CharField(required=False, allow_null=True)
+    storage_path = serializers.CharField(required=False, allow_null=True)
+    upload_external_id = serializers.CharField(required=False, allow_null=True)
 
 
 class BundleAnalysisView(APIView, ShelterMixin):
@@ -64,16 +83,19 @@ class BundleAnalysisView(APIView, ShelterMixin):
         return repo_auth_custom_exception_handler
 
     def post(self, request: HttpRequest) -> Response:
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
-                action="bundle_analysis",
-                endpoint="bundle_analysis",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-                position="start",
-            ),
+        labels = generate_upload_prometheus_metrics_labels(
+            action="bundle_analysis",
+            endpoint="bundle_analysis",
+            request=self.request,
+            is_shelter_request=self.is_shelter_request(),
+            position="start",
+            include_empty_labels=False,
         )
+        inc_counter(
+            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+            labels=labels,
+        )
+
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -116,12 +138,16 @@ class BundleAnalysisView(APIView, ShelterMixin):
             },
         )
 
-        upload_external_id = str(uuid.uuid4())
-        storage_path = StoragePaths.upload.path(upload_key=upload_external_id)
-        archive_service = ArchiveService(repo)
-        url = archive_service.storage.create_presigned_put(
-            get_bucket_name(), storage_path, 30
-        )
+        storage_path = data.get("storage_path", None)
+        upload_external_id = data.get("upload_external_id", None)
+        url = None
+        if not self.is_shelter_request():
+            upload_external_id = str(uuid.uuid4())
+            storage_path = StoragePaths.upload.path(upload_key=upload_external_id)
+            archive_service = ArchiveService(repo)
+            url = archive_service.storage.create_presigned_put(
+                get_bucket_name(), storage_path, 30
+            )
 
         task_arguments = {
             # these are used in the upload task when saving an upload record
@@ -148,17 +174,17 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 task_arguments=task_arguments,
             ),
         )
-
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
-                action="bundle_analysis",
-                endpoint="bundle_analysis",
-                request=self.request,
-                repository=repo,
-                is_shelter_request=self.is_shelter_request(),
-                position="end",
-            ),
+        labels = generate_upload_prometheus_metrics_labels(
+            action="bundle_analysis",
+            endpoint="bundle_analysis",
+            request=self.request,
+            is_shelter_request=self.is_shelter_request(),
+            position="end",
+            include_empty_labels=False,
+        )
+        inc_counter(
+            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+            labels=labels,
         )
 
         dispatch_upload_task(

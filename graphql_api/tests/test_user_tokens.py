@@ -1,6 +1,8 @@
 from django.test import TransactionTestCase
-
-from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
+from shared.django_apps.codecov_auth.tests.factories import (
+    OwnerFactory,
+    UserTokenFactory,
+)
 
 from .helper import GraphQLTestHelper, paginate_connection
 

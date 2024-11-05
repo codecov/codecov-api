@@ -1,0 +1,12 @@
+type TestResultsAggregates {
+  totalDuration: Float!
+  totalDurationPercentChange: Float
+  slowestTestsDuration: Float!
+  slowestTestsDurationPercentChange: Float
+  totalFails: Int!
+  totalFailsPercentChange: Float
+  totalSkips: Int!
+  totalSkipsPercentChange: Float
+  totalSlowTests: Int!
+  totalSlowTestsPercentChange: Float
+}

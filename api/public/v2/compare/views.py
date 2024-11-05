@@ -117,7 +117,7 @@ class CompareViewSet(
         Returns component comparisons
         """
         comparison = self.get_object()
-        components = commit_components(comparison.head_commit, request.user)
+        components = commit_components(comparison.head_commit, self.owner)
         component_comparisons = [
             ComponentComparison(comparison, component) for component in components
         ]

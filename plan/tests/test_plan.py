@@ -4,10 +4,13 @@ from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from pytest import raises
-from shared.django_apps.codecov_auth.tests.factories import AccountsUsersFactory
+from shared.django_apps.codecov_auth.tests.factories import (
+    AccountFactory,
+    AccountsUsersFactory,
+    OwnerFactory,
+)
 
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.tests.factories import AccountFactory, OwnerFactory
 from plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,

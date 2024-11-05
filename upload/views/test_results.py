@@ -7,13 +7,14 @@ from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from sentry_sdk import metrics
+from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -22,7 +23,11 @@ from core.models import Commit
 from reports.models import CommitReport
 from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
-from upload.helpers import dispatch_upload_task, generate_upload_sentry_metrics_tags
+from upload.helpers import (
+    dispatch_upload_task,
+    generate_upload_prometheus_metrics_labels,
+)
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import FlagListField
 from upload.views.base import ShelterMixin
 from upload.views.helpers import get_repository_from_string
@@ -54,6 +59,7 @@ class TestResultsView(
 ):
     permission_classes = [UploadTestResultsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
@@ -64,9 +70,9 @@ class TestResultsView(
         return repo_auth_custom_exception_handler
 
     def post(self, request):
-        metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="test_results",
                 endpoint="test_results",
                 request=request,
@@ -105,9 +111,9 @@ class TestResultsView(
         if update_fields:
             repo.save(update_fields=update_fields)
 
-        metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="test_results",
                 endpoint="test_results",
                 request=request,

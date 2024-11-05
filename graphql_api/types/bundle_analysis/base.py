@@ -1,7 +1,9 @@
+from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Mapping, Optional, Union
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+import sentry_sdk
+from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
 from codecov.commands.exceptions import ValidationError
@@ -20,6 +22,8 @@ from services.bundle_analysis import (
 )
 from timeseries.models import Interval
 
+ASSET_TYPE_UNKNOWN = "UNKNOWN_SIZE"
+
 bundle_data_bindable = ObjectType("BundleData")
 bundle_module_bindable = ObjectType("BundleModule")
 bundle_asset_bindable = ObjectType("BundleAsset")
@@ -34,6 +38,35 @@ def _find_index_by_cursor(assets: List, cursor: str) -> int:
     except ValueError:
         pass
     return -1
+
+
+def _compute_unknown_asset_size_raw_measurements(fetched_data: dict) -> List[dict]:
+    """
+    Computes measurements for the unknown asset types, some asset types are not in
+    the predetermined list of types so we must compute those measurements manually.
+    The heuristic will be to get the measurements of the bundle type (ie total bundle size)
+    then substract it from all the known asset type measurements, leaving with only the unknown.
+    """
+    unknown_raw_measurements = deepcopy(
+        fetched_data[BundleAnalysisMeasurementsAssetType.REPORT_SIZE][
+            0
+        ].raw_measurements
+    )
+
+    for name, measurements in fetched_data.items():
+        if name not in (
+            BundleAnalysisMeasurementsAssetType.REPORT_SIZE,
+            BundleAnalysisMeasurementsAssetType.ASSET_SIZE,
+        ):
+            raw_measurements = measurements[0].raw_measurements
+            for i in range(len(raw_measurements)):
+                if len(unknown_raw_measurements) != len(raw_measurements):
+                    return []
+                unknown_raw_measurements[i]["min"] -= raw_measurements[i]["min"]
+                unknown_raw_measurements[i]["max"] -= raw_measurements[i]["max"]
+                unknown_raw_measurements[i]["avg"] -= raw_measurements[i]["avg"]
+
+    return unknown_raw_measurements
 
 
 # ============= Bundle Data Bindable =============
@@ -104,8 +137,8 @@ def resolve_modules(
     return bundle_asset.modules
 
 
+@sentry_sdk.trace
 @bundle_asset_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_asset_report_measurements(
     bundle_asset: AssetReport,
@@ -146,6 +179,7 @@ def resolve_assets(
     return list(bundle_report.assets())
 
 
+@sentry_sdk.trace
 @bundle_report_bindable.field("assetsPaginated")
 def resolve_assets_paginated(
     bundle_report: BundleReport,
@@ -227,8 +261,21 @@ def resolve_bundle_data(
     )
 
 
+@bundle_report_bindable.field("bundleDataFiltered")
+def resolve_bundle_report_filtered(
+    bundle_report: BundleReport,
+    info: GraphQLResolveInfo,
+    filters: dict[str, list[str]] = {},
+) -> BundleData:
+    group = filters.get("report_group")
+    return BundleData(
+        bundle_report.report.total_size(asset_types=[group] if group else None),
+        bundle_report.report.total_gzip_size(asset_types=[group] if group else None),
+    )
+
+
+@sentry_sdk.trace
 @bundle_report_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_bundle_report_measurements(
     bundle_report: BundleReport,
@@ -240,13 +287,7 @@ def resolve_bundle_report_measurements(
     filters: Mapping = {},
     ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
 ) -> List[BundleAnalysisMeasurementData]:
-    if not filters.get("asset_types", []):
-        measurable_names = [item for item in list(BundleAnalysisMeasurementsAssetType)]
-    else:
-        measurable_names = [
-            BundleAnalysisMeasurementsAssetType[item] for item in filters["asset_types"]
-        ]
-
+    asset_types = list(filters.get("asset_types", []))
     bundle_analysis_measurements = BundleAnalysisMeasurementsService(
         repository=info.context["commit"].repository,
         interval=interval,
@@ -255,10 +296,61 @@ def resolve_bundle_report_measurements(
         branch=branch,
     )
 
+    # All measureable names we need to fetch to compute the requested asset types
+    if not asset_types:
+        measurables_to_fetch = [
+            item for item in list(BundleAnalysisMeasurementsAssetType)
+        ]
+    elif ASSET_TYPE_UNKNOWN in asset_types:
+        measurables_to_fetch = [
+            BundleAnalysisMeasurementsAssetType.REPORT_SIZE,
+            BundleAnalysisMeasurementsAssetType.JAVASCRIPT_SIZE,
+            BundleAnalysisMeasurementsAssetType.STYLESHEET_SIZE,
+            BundleAnalysisMeasurementsAssetType.FONT_SIZE,
+            BundleAnalysisMeasurementsAssetType.IMAGE_SIZE,
+        ]
+    else:
+        measurables_to_fetch = [
+            BundleAnalysisMeasurementsAssetType[item] for item in asset_types
+        ]
+
+    # Retrieve all the measurements necessary to compute the requested asset types
+    fetched_data = {}
+    for name in measurables_to_fetch:
+        fetched_data[name] = bundle_analysis_measurements.compute_report(
+            bundle_report, asset_type=name
+        )
+
+    # All measureable name we need to return
+    if not asset_types:
+        measurables_to_display = [
+            item for item in list(BundleAnalysisMeasurementsAssetType)
+        ]
+    else:
+        measurables_to_display = [
+            BundleAnalysisMeasurementsAssetType[item]
+            for item in asset_types
+            if item != ASSET_TYPE_UNKNOWN
+        ]
+
     measurements = []
-    for name in measurable_names:
-        measurements.extend(
-            bundle_analysis_measurements.compute_report(bundle_report, asset_type=name)
+    for measurable in measurables_to_display:
+        measurements.extend(fetched_data[measurable])
+
+    # Compute for unknown asset type size if necessary
+    if not asset_types or ASSET_TYPE_UNKNOWN in asset_types:
+        unknown_size_raw_measurements = _compute_unknown_asset_size_raw_measurements(
+            fetched_data
+        )
+        measurements.append(
+            BundleAnalysisMeasurementData(
+                raw_measurements=unknown_size_raw_measurements,
+                asset_type=ASSET_TYPE_UNKNOWN,
+                asset_name=None,
+                interval=interval,
+                after=after,
+                before=before,
+            )
         )
 
     return sorted(

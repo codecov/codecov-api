@@ -4,18 +4,13 @@ type Commit {
   createdAt: DateTime!
   commitid: String!
   author: Owner
-  totals: CoverageTotals
   parent: Commit
   pullId: Int
   branchName: String
   yaml: String
   yamlState: YamlStates
   ciPassed: Boolean
-  flagNames: [String]
-  coverageFile(path: String!, flags: [String], components: [String]): File
   compareWithParent: ComparisonResult
-  bundleAnalysisCompareWithParent: BundleAnalysisComparisonResult
-  bundleAnalysisReport: BundleAnalysisReportResult
   uploads(
     first: Int
     after: String
@@ -26,9 +21,24 @@ type Commit {
   pathContents(path: String, filters: PathContentsFilters): PathContentsResult
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
   totalUploads: Int!
-  components(filters: ComponentsFilters): [Component!]!
   bundleStatus: CommitStatus
   coverageStatus: CommitStatus
+  coverageAnalytics: CommitCoverageAnalytics
+  bundleAnalysis: CommitBundleAnalysis
+}
+
+"fields related to Codecov's Coverage product offering"
+type CommitCoverageAnalytics {
+  components(filters: ComponentsFilters): [Component!]!
+  coverageFile(path: String!, flags: [String], components: [String]): File
+  flagNames: [String]
+  totals: CoverageTotals
+}
+
+"fields related to Codecov's Bundle Analysis product offering"
+type CommitBundleAnalysis {
+  bundleAnalysisCompareWithParent: BundleAnalysisComparisonResult
+  bundleAnalysisReport: BundleAnalysisReportResult
 }
 
 type CommitErrorsConnection {

@@ -50,7 +50,7 @@ class OktaCloudLoginView(OktaLoginMixin, View):
         self, request: HttpRequest, service: str, org_username: str
     ) -> HttpResponse:
         log_context: dict = {"service": service, "username": org_username}
-        if not request.session.get("current_owner_id"):
+        if not request.user or request.user.is_anonymous:
             log.warning(
                 "User needs to be signed in before authenticating organization with Okta.",
                 extra=log_context,
@@ -114,7 +114,7 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
             "username": org_owner.username,
         }
 
-        if not request.session.get("current_owner_id"):
+        if not request.user or request.user.is_anonymous:
             log.warning(
                 "User not logged in for Okta callback.",
                 extra=log_context,
@@ -133,6 +133,15 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
 
         app_redirect_url = get_app_redirect_url(org_owner.username, org_owner.service)
         oauth_redirect_url = get_oauth_redirect_url()
+
+        # Check for error in the callback
+        error = request.GET.get("error")
+        if error:
+            log.warning(
+                f"Okta authentication error: {error}",
+                extra=log_context,
+            )
+            return redirect(f"{app_redirect_url}?error={error}")
 
         # Redirect URL, need to validate and mark user as logged in
         if request.GET.get("code"):
@@ -164,7 +173,7 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
 
         if not self.verify_state(state):
             log.warning("Invalid state during Okta login")
-            return redirect(app_redirect_url)
+            return redirect(f"{app_redirect_url}?error=invalid_state")
 
         issuer: str = okta_settings.url.strip("/ ")
         user_data: OktaTokenResponse | None = self._fetch_user_data(
@@ -177,9 +186,13 @@ class OktaCloudCallbackView(OktaLoginMixin, View):
 
         if user_data is None:
             log.warning("Can't log in. Invalid Okta Token Response", exc_info=True)
-            return HttpResponse(status=400)
+            return redirect(f"{app_redirect_url}?error=invalid_token_response")
 
-        _ = validate_id_token(issuer, user_data.id_token, okta_settings.client_id)
+        try:
+            _ = validate_id_token(issuer, user_data.id_token, okta_settings.client_id)
+        except Exception as e:
+            log.warning(f"Invalid ID token: {str(e)}", exc_info=True)
+            return redirect(f"{app_redirect_url}?error=invalid_id_token")
 
         self._login_user(request, organization)
 

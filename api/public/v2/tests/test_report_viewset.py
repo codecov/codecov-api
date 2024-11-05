@@ -4,11 +4,18 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.test import TestCase, override_settings
 from rest_framework.reverse import reverse
+from shared.django_apps.codecov_auth.tests.factories import (
+    OwnerFactory,
+    UserTokenFactory,
+)
+from shared.django_apps.core.tests.factories import (
+    BranchFactory,
+    CommitFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory, UserTokenFactory
-from core.tests.factories import BranchFactory, CommitFactory, RepositoryFactory
 from services.components import Component
 from utils.test_utils import APIClient
 
@@ -742,11 +749,11 @@ class ReportViewSetTestCase(TestCase):
     def test_no_report_if_unauthenticated_token_request(
         self,
         super_token_permissions_has_permission,
-        repository_artifact_permisssions_has_permission,
+        repository_artifact_permissions_has_permission,
         _,
     ):
         super_token_permissions_has_permission.return_value = False
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
 
         res = self._request_report()
         assert res.status_code == 403
@@ -757,9 +764,9 @@ class ReportViewSetTestCase(TestCase):
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_report_if_not_super_token_nor_user_token(
-        self, repository_artifact_permisssions_has_permission, _
+        self, repository_artifact_permissions_has_permission, _
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
         res = self._request_report("73c8d301-2e0b-42c0-9ace-95eef6b68e86")
         assert res.status_code == 401
         assert res.data["detail"] == "Invalid token."
@@ -767,9 +774,9 @@ class ReportViewSetTestCase(TestCase):
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
     def test_no_report_if_super_token_but_no_GET_request(
-        self, repository_artifact_permisssions_has_permission, _
+        self, repository_artifact_permissions_has_permission, _
     ):
-        repository_artifact_permisssions_has_permission.return_value = False
+        repository_artifact_permissions_has_permission.return_value = False
         res = self._post_report("testaxs3o76rdcdpfzexuccx3uatui2nw73r")
         assert res.status_code == 403
         assert (
@@ -971,6 +978,7 @@ class ReportViewSetTestCase(TestCase):
         build_report_from_commit.return_value = flags_report()
 
         res = self._request_report(component_id="foo")
+        commit_components.assert_called_once_with(self.commit1, self.org)
         assert res.status_code == 200
         assert res.json() == {
             "totals": {

@@ -6,11 +6,15 @@ import pytest
 from django.conf import settings
 from django.test import TransactionTestCase
 from rest_framework.exceptions import Throttled, ValidationError
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.models import GithubAppInstallation, Service
-from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
@@ -260,7 +264,7 @@ def test_deactivated_repo(db, mocker):
     with pytest.raises(ValidationError) as exp:
         validate_activated_repo(repository)
     assert exp.match(
-        f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
+        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
     )
 
 

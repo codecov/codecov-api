@@ -1,12 +1,16 @@
 from unittest.mock import patch
 
+from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import (
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
 
 from codecov.tests.base_test import InternalAPITest
-from codecov_auth.tests.factories import OwnerFactory
 from core.models import Pull
-from core.tests.factories import PullFactory, RepositoryFactory
 from utils.test_utils import APIClient
 
 
@@ -189,6 +193,103 @@ class PullViewsetTests(InternalAPITest):
                     "pullid": self.pulls[0].pullid,
                 },
             )
+        )
+        assert res.status_code == 200
+        assert res.json() == {
+            "pullid": self.pulls[0].pullid,
+            "title": self.pulls[0].title,
+            "base_totals": None,
+            "head_totals": None,
+            "updatestamp": "2022-01-01T00:00:00Z",
+            "state": "open",
+            "ci_passed": None,
+            "author": None,
+        }
+
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    @patch("api.shared.permissions.SuperTokenPermissions.has_permission")
+    def test_no_pull_if_unauthenticated_token_request(
+        self,
+        super_token_permissions_has_permission,
+        repository_artifact_permissions_has_permission,
+    ):
+        repository_artifact_permissions_has_permission.return_value = False
+        super_token_permissions_has_permission.return_value = False
+
+        res = self.client.get(
+            reverse(
+                "api-v2-pulls-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pullid": self.pulls[0].pullid,
+                },
+            )
+        )
+        assert res.status_code == 403
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_no_pull_if_not_super_token_nor_user_token(
+        self, repository_artifact_permissions_has_permission
+    ):
+        repository_artifact_permissions_has_permission.return_value = False
+
+        res = self.client.get(
+            reverse(
+                "api-v2-pulls-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pullid": self.pulls[0].pullid,
+                },
+            ),
+            HTTP_AUTHORIZATION="Bearer 73c8d301-2e0b-42c0-9ace-95eef6b68e86",
+        )
+        assert res.status_code == 401
+        assert res.data["detail"] == "Invalid token."
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
+    def test_no_pull_if_super_token_but_no_GET_request(
+        self, repository_artifact_permissions_has_permission
+    ):
+        repository_artifact_permissions_has_permission.return_value = False
+        res = self.client.post(
+            reverse(
+                "api-v2-pulls-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pullid": self.pulls[0].pullid,
+                },
+            ),
+            HTTP_AUTHORIZATION="Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r",
+        )
+        assert res.status_code == 403
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
+
+    @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
+    def test_pull_with_valid_super_token(self):
+        res = self.client.get(
+            reverse(
+                "api-v2-pulls-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pullid": self.pulls[0].pullid,
+                },
+            ),
+            HTTP_AUTHORIZATION="Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r",
         )
         assert res.status_code == 200
         assert res.json() == {

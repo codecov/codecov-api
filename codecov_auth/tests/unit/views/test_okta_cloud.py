@@ -12,8 +12,8 @@ from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
 )
+from shared.django_apps.core.tests.factories import OwnerFactory
 
-from codecov_auth.tests.factories import OwnerFactory
 from codecov_auth.views.okta_cloud import (
     OKTA_CURRENT_SESSION,
     OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY,
@@ -409,7 +409,10 @@ def test_okta_callback_perform_login_invalid_state(
         },
     )
     assert res.status_code == 302
-    assert res.url == f"http://localhost:3000/github/{okta_org.username}"
+    assert (
+        res.url
+        == f"http://localhost:3000/github/{okta_org.username}?error=invalid_state"
+    )
 
     assert log_message_exists("Invalid state during Okta login", caplog.records)
 
@@ -448,10 +451,103 @@ def test_okta_callback_perform_login_no_user_data(
             "state": state,
         },
     )
-    assert res.status_code == 400
+    assert res.status_code == 302
+    assert (
+        res.url
+        == f"http://localhost:3000/github/{okta_org.username}?error=invalid_token_response"
+    )
 
     assert log_message_exists(
         "Can't log in. Invalid Okta Token Response", caplog.records
+    )
+
+    updated_session = signed_in_client.session
+    assert updated_session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) is None
+
+
+@pytest.mark.django_db
+def test_okta_callback_perform_login_invalid_id_token(
+    mocker: MockerFixture,
+    signed_in_client: TestClient,
+    caplog: LogCaptureFixture,
+    okta_org: Owner,
+    okta_account: Account,
+    mocked_okta_token_request: Any,
+):
+    state = "test-state"
+    session = signed_in_client.session
+    assert session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) is None
+    session["okta_cloud_oauth_state"] = state
+
+    session[OKTA_CURRENT_SESSION] = {
+        "org_ownerid": okta_org.ownerid,
+        "okta_settings_id": okta_account.okta_settings.first().id,
+    }
+
+    session.save()
+
+    mocked_okta_token_request.return_value = mocker.MagicMock(
+        status_code=200,
+        json=lambda: {"access_token": "mock_access_token", "id_token": "mock_id_token"},
+    )
+
+    mocker.patch(
+        "codecov_auth.views.okta_cloud.validate_id_token",
+        side_effect=Exception("Invalid ID token"),
+    )
+
+    res = signed_in_client.get(
+        "/login/okta/callback",
+        data={
+            "code": "random-code",
+            "state": state,
+        },
+    )
+    assert res.status_code == 302
+    assert (
+        res.url
+        == f"http://localhost:3000/github/{okta_org.username}?error=invalid_id_token"
+    )
+
+    updated_session = signed_in_client.session
+    assert updated_session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) is None
+
+
+@pytest.mark.django_db
+def test_okta_callback_perform_login_access_denied(
+    mocker: MockerFixture,
+    signed_in_client: TestClient,
+    caplog: LogCaptureFixture,
+    okta_org: Owner,
+    okta_account: Account,
+    mocked_okta_token_request: Any,
+):
+    state = "test-state"
+    session = signed_in_client.session
+    assert session.get(OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY) is None
+    session["okta_cloud_oauth_state"] = state
+
+    session[OKTA_CURRENT_SESSION] = {
+        "org_ownerid": okta_org.ownerid,
+        "okta_settings_id": okta_account.okta_settings.first().id,
+    }
+    session.save()
+
+    mocked_okta_token_request.return_value = mocker.MagicMock(
+        status_code=403,
+    )
+
+    res = signed_in_client.get(
+        "/login/okta/callback",
+        data={
+            "state": state,
+            "error": "access_denied",
+        },
+    )
+    assert res.status_code == 302
+    assert (
+        res.url
+        == f"http://localhost:3000/github/{okta_org.username}?error=access_denied"
     )
 
     updated_session = signed_in_client.session

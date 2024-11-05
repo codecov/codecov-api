@@ -1,5 +1,6 @@
 import pytest
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import (
     NotFound,
@@ -7,7 +8,6 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-from codecov_auth.tests.factories import OwnerFactory
 
 from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 
@@ -33,6 +33,16 @@ toto:
 bad_yaml_syntax_error = """
 codecov:
     bot: foo: bar
+"""
+
+good_yaml_with_comments = """
+# comment 1
+codecov:  # comment 2
+
+
+  bot: 'codecov'
+# comment 3
+    #comment 4
 """
 
 
@@ -69,7 +79,12 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
         )
         # check the interactor returns the right owner
         assert owner_updated.ownerid == self.org.ownerid
-        assert owner_updated.yaml == {"codecov": {"require_ci_to_pass": True}}
+        assert owner_updated.yaml == {
+            "codecov": {
+                "require_ci_to_pass": True,
+            },
+            "to_string": "\n" "codecov:\n" "  require_ci_to_pass: yes\n",
+        }
 
     async def test_user_is_part_of_org_and_yaml_has_quotes(self):
         owner_updated = await self.execute(
@@ -77,7 +92,12 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
         )
         # check the interactor returns the right owner
         assert owner_updated.ownerid == self.org.ownerid
-        assert owner_updated.yaml == {"codecov": {"bot": "codecov"}}
+        assert owner_updated.yaml == {
+            "codecov": {
+                "bot": "codecov",
+            },
+            "to_string": "\n" "codecov:\n" "  bot: 'codecov'\n",
+        }
 
     async def test_user_is_part_of_org_and_yaml_is_empty(self):
         owner_updated = await self.execute(self.current_owner, self.org.username, "")
@@ -103,3 +123,23 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             str(e.value)
             == "Syntax error at line 3, column 13: mapping values are not allowed here"
         )
+
+    async def test_yaml_has_comments(self):
+        owner_updated = await self.execute(
+            self.current_owner, self.org.username, good_yaml_with_comments
+        )
+        # check the interactor returns the right owner
+        assert owner_updated.ownerid == self.org.ownerid
+        assert owner_updated.yaml == {
+            "codecov": {
+                "bot": "codecov",
+            },
+            "to_string": "\n"
+            "# comment 1\n"
+            "codecov:  # comment 2\n"
+            "\n"
+            "\n"
+            "  bot: 'codecov'\n"
+            "# comment 3\n"
+            "    #comment 4\n",
+        }

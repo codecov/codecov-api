@@ -18,16 +18,26 @@ from .bundle_analysis import (
     bundle_module_bindable,
     bundle_report_bindable,
 )
-from .commit import commit, commit_bindable
+from .commit import (
+    commit,
+    commit_bindable,
+    commit_bundle_analysis_bindable,
+    commit_coverage_analytics_bindable,
+)
 from .comparison import comparison, comparison_bindable, comparison_result_bindable
 from .component import component, component_bindable
 from .component_comparison import component_comparison, component_comparison_bindable
 from .config import config, config_bindable
+from .coverage_analytics import (
+    coverage_analytics,
+    coverage_analytics_bindable,
+)
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types
 from .file import commit_file, file_bindable
 from .flag import flag, flag_bindable
 from .flag_comparison import flag_comparison, flag_comparison_bindable
+from .flake_aggregates import flake_aggregates, flake_aggregates_bindable
 from .impacted_file import (
     impacted_file,
     impacted_file_bindable,
@@ -64,7 +74,12 @@ from .segment_comparison import (
 )
 from .self_hosted_license import self_hosted_license, self_hosted_license_bindable
 from .session import session, session_bindable
+from .test_analytics import test_analytics, test_analytics_bindable
 from .test_results import test_result_bindable, test_results
+from .test_results_aggregates import (
+    test_results_aggregates,
+    test_results_aggregates_bindable,
+)
 from .upload import upload, upload_bindable, upload_error_bindable
 from .user import user, user_bindable
 from .user_token import user_token, user_token_bindable
@@ -84,6 +99,7 @@ types = [
     component,
     config,
     cost_directive,
+    coverage_analytics,
     coverage_totals,
     enums,
     errors,
@@ -108,12 +124,15 @@ types = [
     segment_comparison,
     self_hosted_license,
     session,
+    test_analytics,
     upload,
     user_token,
     user,
     account,
     okta_config,
     test_results,
+    flake_aggregates,
+    test_results_aggregates,
 ]
 
 bindables = [
@@ -130,11 +149,14 @@ bindables = [
     bundle_module_bindable,
     bundle_report_bindable,
     commit_bindable,
+    commit_bundle_analysis_bindable,
+    commit_coverage_analytics_bindable,
     comparison_bindable,
     comparison_result_bindable,
     component_bindable,
     component_comparison_bindable,
     config_bindable,
+    coverage_analytics_bindable,
     coverage_totals_bindable,
     datetime_scalar,
     file_bindable,
@@ -163,6 +185,7 @@ bindables = [
     segments_result_bindable,
     self_hosted_license_bindable,
     session_bindable,
+    test_analytics_bindable,
     tracking_metadata_bindable,
     upload_bindable,
     upload_error_bindable,
@@ -171,4 +194,6 @@ bindables = [
     account_bindable,
     okta_config_bindable,
     test_result_bindable,
+    test_results_aggregates_bindable,
+    flake_aggregates_bindable,
 ]

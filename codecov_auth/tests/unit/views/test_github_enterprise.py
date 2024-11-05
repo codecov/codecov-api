@@ -4,11 +4,11 @@ import pytest
 from django.http.cookie import SimpleCookie
 from django.urls import reverse
 from django.utils import timezone
+from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.torngit import GithubEnterprise
 from shared.torngit.exceptions import TorngitClientGeneralError
 
 from codecov_auth.models import Owner
-from codecov_auth.tests.factories import OwnerFactory
 
 
 def _get_state_from_redis(mock_redis):

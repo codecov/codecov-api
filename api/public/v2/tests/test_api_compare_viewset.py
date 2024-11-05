@@ -4,6 +4,14 @@ from unittest.mock import PropertyMock, patch
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    CommitWithReportFactory,
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
+from shared.reports.api_report_service import SerializableReport
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
@@ -11,18 +19,10 @@ from shared.utils.sessions import Session
 
 import services.comparison as comparison
 from api.shared.commit.serializers import ReportTotalsSerializer
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import (
-    CommitFactory,
-    CommitWithReportFactory,
-    PullFactory,
-    RepositoryFactory,
-)
 from services.comparison import ComparisonReport
 from services.components import Component
-from services.report import SerializableReport
 from utils.test_utils import APIClient
 
 
@@ -78,13 +78,10 @@ def sample_report2():
 
 class MockSerializableReport(SerializableReport):
     """
-    Stubs the 'file_reports' and 'get' methods of SerializableReport, which usually constructs
+    Stubs the 'get' method of SerializableReport, which usually constructs
     report files on the fly from information not provided by these test, like the chunks
     for example.
     """
-
-    def file_reports(self):
-        return [report_file for name, report_file in self.mocked_files.items()]
 
     def get(self, file_name):
         return self.mocked_files.get(file_name)
@@ -627,16 +624,11 @@ class TestCompareViewSetRetrieve(APITestCase):
         new_callable=PropertyMock,
     )
     @patch(
-        "services.comparison.PullRequestComparison.allow_coverage_offsets",
-        new_callable=PropertyMock,
-    )
-    @patch(
         "services.comparison.PullRequestComparison.update_base_report_with_pseudo_diff"
     )
     def test_pull_request_pseudo_comparison_can_update_base_report(
         self,
         update_base_report_mock,
-        allow_coverage_offsets_mock,
         pseudo_diff_adjusts_tracked_lines_mock,
         adapter_mock,
         base_report_mock,
@@ -645,8 +637,6 @@ class TestCompareViewSetRetrieve(APITestCase):
         adapter_mock.return_value = self.mocked_compare_adapter
         base_report_mock.return_value = self.base_report
         head_report_mock.return_value = self.head_report
-
-        allow_coverage_offsets_mock.return_value = True
 
         pseudo_diff_adjusts_tracked_lines_mock.return_value = True
 
@@ -715,6 +705,7 @@ class TestCompareViewSetRetrieve(APITestCase):
             content_type="application/json",
         )
 
+        commit_components.assert_called_once_with(self.head, self.org)
         assert res.status_code == 200
         assert res.json() == [
             {
@@ -883,8 +874,8 @@ class TestImpactedFilesComparison(APITestCase):
         self.client = APIClient()
         self.client.force_login_owner(self.current_owner)
 
-    @patch("services.report.build_report_from_commit")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_impacted_files_200_found(
         self, adapter_mock, read_file, build_report_from_commit
@@ -919,8 +910,8 @@ class TestImpactedFilesComparison(APITestCase):
         assert len(data["files"]) == 2
         assert data["state"] == "processed"
 
-    @patch("services.report.build_report_from_commit")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     @patch("services.task.TaskService.compute_comparison")
     @patch("api.shared.compare.serializers.ComparisonSerializer.get_files")
@@ -963,7 +954,7 @@ class TestImpactedFilesComparison(APITestCase):
 
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_impacted_file_segment_found(
         self, adapter_mock, read_file, mock_get_file_comparison, mock_compare_validate
@@ -1001,7 +992,7 @@ class TestImpactedFilesComparison(APITestCase):
     @patch("services.task.TaskService.compute_comparison")
     @patch("services.comparison.Comparison.validate")
     @patch("services.comparison.PullRequestComparison.get_file_comparison")
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     @patch("services.repo_providers.RepoProviderService.get_adapter")
     def test_impacted_file_segment_not_found(
         self,

@@ -3,13 +3,13 @@ import json
 import pytest
 from django.urls import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.django_apps.rollouts.models import (
     FeatureFlag,
     FeatureFlagVariant,
     RolloutUniverse,
 )
 
-from codecov_auth.tests.factories import OwnerFactory
 from utils.test_utils import Client
 
 

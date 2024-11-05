@@ -1,8 +1,8 @@
 from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import RepositoryFactory
 
 from core.models import Repository
-from core.tests.factories import RepositoryFactory
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 
 

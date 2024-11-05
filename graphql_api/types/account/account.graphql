@@ -1,4 +1,13 @@
 type Account {
   name: String!
   oktaConfig: OktaConfig
+  totalSeatCount: Int!
+  activatedUserCount: Int!
+  organizations(
+    orderingDirection: OrderingDirection
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): AccountOrganizationConnection! @cost(complexity: 25, multipliers: ["first", "last"])
 }

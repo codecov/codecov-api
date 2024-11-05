@@ -2,7 +2,7 @@ import logging
 
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import ListCreateAPIView
-from sentry_sdk import metrics as sentry_metrics
+from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -10,10 +10,15 @@ from codecov_auth.authentication.repo_auth import (
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
     TokenlessAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit
-from upload.helpers import generate_upload_sentry_metrics_tags
+from upload.helpers import (
+    generate_upload_prometheus_metrics_labels,
+    validate_activated_repo,
+)
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
@@ -25,6 +30,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
@@ -51,9 +57,9 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,
@@ -62,6 +68,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             ),
         )
         repository = self.get_repo()
+        validate_activated_repo(repository)
 
         commit = serializer.save(repository=repository)
 
@@ -70,9 +77,9 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
 
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_commit",
                 request=self.request,

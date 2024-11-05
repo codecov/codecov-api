@@ -1,7 +1,7 @@
 from django.test import TransactionTestCase
+from shared.django_apps.codecov_auth.tests.factories import AccountFactory, OwnerFactory
 
 from codecov_auth.models import OktaSettings
-from codecov_auth.tests.factories import AccountFactory, OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 
 query = """

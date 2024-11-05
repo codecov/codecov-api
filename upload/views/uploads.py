@@ -5,8 +5,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
-from sentry_sdk import metrics as sentry_metrics
-from shared.metrics import metrics
+from shared.metrics import inc_counter
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.authentication.repo_auth import (
@@ -18,6 +17,7 @@ from codecov_auth.authentication.repo_auth import (
     RepositoryLegacyTokenAuthentication,
     TokenlessAuth,
     TokenlessAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.models import OrganizationLevelToken
@@ -28,9 +28,10 @@ from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     dispatch_upload_task,
-    generate_upload_sentry_metrics_tags,
+    generate_upload_prometheus_metrics_labels,
     validate_activated_repo,
 )
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import UploadSerializer
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 from upload.views.base import GetterMixin
@@ -54,6 +55,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         CanDoCoverageUploadsPermission,
     ]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
@@ -66,9 +68,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         return repo_auth_custom_exception_handler
 
     def perform_create(self, serializer: UploadSerializer):
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,
@@ -80,18 +82,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         validate_activated_repo(repository)
         commit: Commit = self.get_commit(repository)
         report: CommitReport = self.get_report(commit)
-
-        sentry_metrics.set(
-            "upload_set",
-            repository.author.ownerid,
-            tags=generate_upload_sentry_metrics_tags(
-                action="coverage",
-                endpoint="create_upload",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-            ),
-        )
 
         version = (
             serializer.validated_data["version"]
@@ -106,8 +96,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
                 cli_version=version,
             ),
         )
-        if version:
-            metrics.incr("upload.cli." + f"{version}")
         archive_service = ArchiveService(repository)
         # Create upload record
         instance: ReportSession = serializer.save(
@@ -139,9 +127,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             instance.storage_path = path
             instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
-        sentry_metrics.incr(
-            "upload",
-            tags=generate_upload_sentry_metrics_tags(
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
                 endpoint="create_upload",
                 request=self.request,
@@ -150,7 +138,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
                 position="end",
             ),
         )
-        metrics.incr("uploads.accepted", 1)
         self.activate_repo(repository)
         self.send_analytics_data(commit, instance, version)
         return instance
@@ -252,7 +239,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             repo = super().get_repo()
             return repo
         except ValidationError as exception:
-            metrics.incr("uploads.rejected", 1)
             raise exception
 
     def get_commit(self, repo: Repository) -> Commit:
@@ -260,7 +246,6 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             commit = super().get_commit(repo)
             return commit
         except ValidationError as excpetion:
-            metrics.incr("uploads.rejected", 1)
             raise excpetion
 
     def get_report(self, commit: Commit) -> CommitReport:
@@ -268,5 +253,4 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             report = super().get_report(commit)
             return report
         except ValidationError as exception:
-            metrics.incr("uploads.rejected", 1)
             raise exception

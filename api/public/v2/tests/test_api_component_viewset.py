@@ -2,11 +2,14 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from rest_framework.reverse import reverse
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from services.components import Component
 from utils.test_utils import APIClient
 
@@ -72,11 +75,11 @@ class ComponentViewSetTestCase(TestCase):
     @patch("api.public.v2.component.views.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_component_list(
-        self, build_report_from_commit, commit_compontents, get_repo_permissions
+        self, build_report_from_commit, commit_components, get_repo_permissions
     ):
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.side_effect = [sample_report()]
-        commit_compontents.return_value = [
+        commit_components.return_value = [
             Component(
                 component_id="foo",
                 paths=[r".*foo"],
@@ -94,6 +97,7 @@ class ComponentViewSetTestCase(TestCase):
         ]
 
         res = self._request_components()
+        commit_components.assert_called_once_with(self.commit, self.org)
         assert res.status_code == 200
         assert res.json() == [
             {"component_id": "foo", "name": "Foo", "coverage": 62.5},
@@ -103,11 +107,11 @@ class ComponentViewSetTestCase(TestCase):
     @patch("api.public.v2.component.views.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_component_list_no_coverage(
-        self, build_report_from_commit, commit_compontents, get_repo_permissions
+        self, build_report_from_commit, commit_components, get_repo_permissions
     ) -> None:
         get_repo_permissions.return_value = (True, True)
         build_report_from_commit.side_effect = [empty_report()]
-        commit_compontents.return_value = [
+        commit_components.return_value = [
             Component(
                 component_id="foo",
                 paths=[r".*foo"],
@@ -118,6 +122,7 @@ class ComponentViewSetTestCase(TestCase):
         ]
 
         res = self._request_components()
+        commit_components.assert_called_once_with(self.commit, self.org)
         assert res.status_code == 200
         assert res.json() == [
             {

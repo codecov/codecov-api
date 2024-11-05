@@ -2,7 +2,6 @@ import logging
 import math
 
 from rest_framework import exceptions, serializers
-from shared.metrics import metrics
 
 from core.models import Commit
 from services.archive import ArchiveService, MinioEndpoints
@@ -154,13 +153,4 @@ class StaticAnalysisSuiteSerializer(serializers.ModelSerializer):
                 created_ids=[f.id for f in created_filepaths], repoid=repository.repoid
             ),
         )
-        metrics.gauge(
-            "static_analysis.suite.files_created",
-            len(file_metadata_array) - len(existing_values_mapping),
-        )
-        metrics.gauge("static_analysis.suite.total_files", len(file_metadata_array))
-        metrics.gauge(
-            "static_analysis.suite.existing_files", len(existing_values_mapping)
-        )
-        metrics.incr("static_analysis.suite.count")
         return obj

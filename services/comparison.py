@@ -10,19 +10,19 @@ from typing import List, Optional, Tuple
 
 import minio
 import pytz
+import shared.reports.api_report_service as report_service
 from asgiref.sync import async_to_sync
 from django.db.models import Prefetch, QuerySet
 from django.utils.functional import cached_property
+from shared.api_archive.archive import ArchiveService
 from shared.helpers.yaml import walk
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
-import services.report as report_service
 from compare.models import CommitComparison
 from core.models import Commit
-from reports.models import CommitReport, ReportDetails
+from reports.models import CommitReport
 from services import ServiceException
-from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
 from utils.config import get_config
@@ -1132,21 +1132,6 @@ class PullRequestComparison(Comparison):
         ) and bool(self.pull.compared_to)
 
     @cached_property
-    def allow_coverage_offsets(self):
-        """
-        Returns True if "coverage offsets" are allowed, False if not, according
-        to repository yaml settings or app yaml settings if not defined in repository
-        yaml settings.
-        """
-        return walk(
-            _dict=self.pull.repository.yaml,
-            keys=("codecov", "allow_coverage_offsets"),
-            _else=get_config(
-                ("site", "codecov", "allow_coverage_offsets"), default=False
-            ),
-        )
-
-    @cached_property
     def pseudo_diff(self):
         """
         Returns the diff between the 'self.pull.compared_to' field and the
@@ -1223,18 +1208,6 @@ class CommitComparisonService:
         if self._last_updated_before(self.base_commit.updatestamp):
             return True
 
-        compare_commit_details = self._commit_report_details(self.compare_commit)
-        if compare_commit_details is not None and self._last_updated_before(
-            compare_commit_details.updated_at
-        ):
-            return True
-
-        base_commit_details = self._commit_report_details(self.base_commit)
-        if base_commit_details is not None and self._last_updated_before(
-            base_commit_details.updated_at
-        ):
-            return True
-
         return False
 
     def _last_updated_before(self, timestamp: datetime) -> bool:
@@ -1252,22 +1225,10 @@ class CommitComparisonService:
 
         return timezone.normalize(self.commit_comparison.updated_at) < timestamp
 
-    def _commit_report_details(self, commit: Commit) -> Optional[ReportDetails]:
-        # CommitDetails records are updated by the worker every time a new upload is processed.
-        # We can use the `updated_at` timestamp as a proxy for when a report was last updated.
-        # These are expected to have been preloaded.
-        if hasattr(commit, "commitreport") and hasattr(
-            commit.commitreport, "reportdetails"
-        ):
-            return commit.commitreport.reportdetails
-
     def _load_commit(self, commit_id: int) -> Optional[Commit]:
         prefetch = Prefetch(
             "reports",
-            queryset=CommitReport.objects.coverage_reports()
-            .filter(code=None)
-            .select_related("reportdetails")
-            .defer("reportdetails___files_array"),
+            queryset=CommitReport.objects.coverage_reports().filter(code=None),
         )
         return (
             Commit.objects.filter(pk=commit_id)

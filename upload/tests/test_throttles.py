@@ -2,10 +2,14 @@ from unittest.mock import MagicMock, Mock
 
 from django.test import override_settings
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
-from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
 from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.redis_configuration import get_redis_connection

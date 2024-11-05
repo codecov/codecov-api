@@ -31,13 +31,13 @@ check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
 test:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ --junitxml=junit.xml
+	COVERAGE_CORE=sysmon python -m pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy
 
 test.unit:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml
+	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy
 
 test.integration:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml
+	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy
 
 lint:
 	make lint.install
@@ -178,6 +178,9 @@ push.self-hosted-rolling:
 	docker push ${DOCKERHUB_REPO}:rolling_no_dependencies
 	docker push ${DOCKERHUB_REPO}:rolling
 
+shell:
+	docker-compose exec api bash
+	
 test_env.up:
 	env | grep GITHUB > .testenv; true
 	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose up -d

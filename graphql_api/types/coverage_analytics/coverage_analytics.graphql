@@ -1,0 +1,62 @@
+"""
+CoverageAnalytics is information related to a repo's test coverage
+"""
+type CoverageAnalytics {
+  "Hits is the number of hits in the latest commit's coverage report"
+  hits: Int # formerly repository.hits
+  "Misses is the number of misses in the latest commit's coverage report"
+  misses: Int # formerly repository.misses
+  "Lines is the number of lines in the latest commit's coverage report"
+  lines: Int # formerly repository.lines
+  "Commit sha is the sha hash of the commit in the latest commit's coverage report"
+  commitSha: String # formerly repository.coverageSha
+  "PercentCovered is percent of lines covered (e.g., 87.25)"
+  percentCovered: Float # formerly repository.coverage
+
+  "Measurements are points in the time series for coverage over time"
+  measurements(
+    interval: MeasurementInterval!
+    after: DateTime
+    before: DateTime
+    branch: String
+  ): [Measurement!]! # formerly repository.measurements
+
+  ## Flags ##
+  "Flags are the measurements by flag for this repository"
+  flags(
+    filters: FlagSetFilters
+    orderingDirection: OrderingDirection
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): FlagConnection! @cost(complexity: 3, multipliers: ["first", "last"])
+  "FlagsCount are how many flags for the given repo"
+  flagsCount: Int!
+  "FlagsMeasurementsActive is whether the flag measurements are currently getting populated"
+  flagsMeasurementsActive: Boolean!
+  "FlagsMeasurementsBackfilled is whether the flag data has been backfilled"
+  flagsMeasurementsBackfilled: Boolean!
+
+  ## Components ##
+  "Components are the measurements by component for this repository"
+  components(
+    interval: MeasurementInterval!
+    before: DateTime!
+    after: DateTime!
+    branch: String
+    filters: ComponentMeasurementsSetFilters
+    orderingDirection: OrderingDirection
+  ): [ComponentMeasurements!]!
+  "ComponentsCount is how many components are configured for the given repo"
+  componentsCount: Int!
+  "ComponentsMeasurementsActive is whether the components measurements are currently getting populated"
+  componentsMeasurementsActive: Boolean!
+  "ComponentsMeasurementsBackfilled is whether the components data has been backfilled"
+  componentsMeasurementsBackfilled: Boolean!
+  "ComponentsYaml is the information related to the configuration yaml for Components"
+  componentsYaml(termId: String): [ComponentsYaml]!
+}
+
+"CoverageAnalyticsResult is CoverageAnalytics or potential error(s)"
+union CoverageAnalyticsResult = CoverageAnalytics | NotFoundError
