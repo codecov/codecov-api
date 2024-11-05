@@ -49,40 +49,8 @@ class CanDoCoverageUploadsPermission(BasePermission):
         )
 
 
-class UploadViews(ListCreateAPIView, GetterMixin):
-    serializer_class = UploadSerializer
-    permission_classes = [
-        CanDoCoverageUploadsPermission,
-    ]
-    authentication_classes = [
-        UploadTokenRequiredAuthenticationCheck,
-        GlobalTokenAuthentication,
-        OrgLevelTokenAuthentication,
-        GitHubOIDCTokenAuthentication,
-        RepositoryLegacyTokenAuthentication,
-        TokenlessAuthentication,
-    ]
-    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
-
-    def get_exception_handler(self):
-        return repo_auth_custom_exception_handler
-
-    def perform_create(self, serializer: UploadSerializer):
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="create_upload",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-                position="start",
-            ),
-        )
-        repository: Repository = self.get_repo()
-        validate_activated_repo(repository)
-        commit: Commit = self.get_commit(repository)
-        report: CommitReport = self.get_report(commit)
-
+class UploadLogicMixin(GetterMixin):
+    def create_upload(self, serializer, repository, commit, report):
         version = (
             serializer.validated_data["version"]
             if "version" in serializer.validated_data
@@ -127,30 +95,9 @@ class UploadViews(ListCreateAPIView, GetterMixin):
             instance.storage_path = path
             instance.save()
         self.trigger_upload_task(repository, commit.commitid, instance, report)
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="create_upload",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-                position="end",
-            ),
-        )
         self.activate_repo(repository)
         self.send_analytics_data(commit, instance, version)
         return instance
-
-    def list(
-        self,
-        request: HttpRequest,
-        service: str,
-        repo: str,
-        commit_sha: str,
-        report_code: str,
-    ):
-        return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def trigger_upload_task(self, repository, commit_sha, upload, report):
         log.info(
@@ -233,6 +180,66 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         else:
             token = repo.upload_token
         return token
+
+
+class UploadViews(ListCreateAPIView, UploadLogicMixin):
+    serializer_class = UploadSerializer
+    permission_classes = [
+        CanDoCoverageUploadsPermission,
+    ]
+    authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
+        GlobalTokenAuthentication,
+        OrgLevelTokenAuthentication,
+        GitHubOIDCTokenAuthentication,
+        RepositoryLegacyTokenAuthentication,
+        TokenlessAuthentication,
+    ]
+    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
+
+    def get_exception_handler(self):
+        return repo_auth_custom_exception_handler
+
+    def perform_create(self, serializer: UploadSerializer):
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
+        repository: Repository = self.get_repo()
+        validate_activated_repo(repository)
+        commit: Commit = self.get_commit(repository)
+        report: CommitReport = self.get_report(commit)
+
+        instance = self.create_upload(serializer, repository, commit, report)
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
+                action="coverage",
+                endpoint="create_upload",
+                request=self.request,
+                repository=repository,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+            ),
+        )
+
+        return instance
+
+    def list(
+        self,
+        request: HttpRequest,
+        service: str,
+        repo: str,
+        commit_sha: str,
+        report_code: str,
+    ):
+        return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def get_repo(self) -> Repository:
         try:

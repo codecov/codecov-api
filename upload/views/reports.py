@@ -18,7 +18,6 @@ from reports.models import CommitReport, ReportResults
 from services.task import TaskService
 from upload.helpers import (
     generate_upload_prometheus_metrics_labels,
-    validate_activated_repo,
 )
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import CommitReportSerializer, ReportResultsSerializer
@@ -28,7 +27,23 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 log = logging.getLogger(__name__)
 
 
-class ReportViews(ListCreateAPIView, GetterMixin):
+class ReportLogicMixin(GetterMixin):
+    def create_report(self, serializer, repository, commit):
+        code = serializer.validated_data.get("code")
+        if code == "default":
+            serializer.validated_data["code"] = None
+        instance, was_created = serializer.save(
+            commit_id=commit.id,
+            report_type=CommitReport.ReportType.COVERAGE,
+        )
+        if was_created:
+            TaskService().preprocess_upload(
+                repository.repoid, commit.commitid, instance.code
+            )
+        return instance
+
+
+class ReportViews(ListCreateAPIView, ReportLogicMixin):
     serializer_class = CommitReportSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
@@ -55,23 +70,12 @@ class ReportViews(ListCreateAPIView, GetterMixin):
             ),
         )
         repository = self.get_repo()
-        validate_activated_repo(repository)
         commit = self.get_commit(repository)
         log.info(
             "Request to create new report",
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
-        code = serializer.validated_data.get("code")
-        if code == "default":
-            serializer.validated_data["code"] = None
-        instance, was_created = serializer.save(
-            commit_id=commit.id,
-            report_type=CommitReport.ReportType.COVERAGE,
-        )
-        if was_created:
-            TaskService().preprocess_upload(
-                repository.repoid, commit.commitid, instance.code
-            )
+        instance = self.create_report(serializer, repository, commit)
 
         inc_counter(
             API_UPLOAD_COUNTER,
