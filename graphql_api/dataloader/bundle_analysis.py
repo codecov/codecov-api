@@ -1,5 +1,6 @@
 from typing import Union
 
+from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import (
     BundleAnalysisReportLoader,
     MissingBaseReportError,
@@ -10,7 +11,6 @@ from shared.storage import get_appropriate_storage_service
 from core.models import Commit
 from graphql_api.types.comparison.comparison import MissingBaseReport, MissingHeadReport
 from reports.models import CommitReport
-from services.archive import ArchiveService
 from services.bundle_analysis import BundleAnalysisComparison, BundleAnalysisReport
 
 
