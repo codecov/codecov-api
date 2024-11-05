@@ -264,7 +264,7 @@ def test_deactivated_repo(db, mocker):
     with pytest.raises(ValidationError) as exp:
         validate_activated_repo(repository)
     assert exp.match(
-        f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
+        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
     )
 
 
