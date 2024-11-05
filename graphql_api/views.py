@@ -188,6 +188,7 @@ class RequestFinalizer:
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [QueryMetricsExtension]
+    introspection = getattr(settings, "GRAPHQL_INTROSPECTION_ENABLED", False)
 
     def get_validation_rules(
         self,
