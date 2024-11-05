@@ -259,12 +259,12 @@ def test_validate_upload_too_many_uploads_for_commit(
 
 def test_deactivated_repo(db, mocker):
     repository = RepositoryFactory.create(active=True, activated=False)
-    /config/general = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/config/general"
+    config_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/config/general"
 
     with pytest.raises(ValidationError) as exp:
         validate_activated_repo(repository)
     assert exp.match(
-        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {/config/general}"
+        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {config_url}"
     )
 
 
