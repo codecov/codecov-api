@@ -189,7 +189,7 @@ class RequestFinalizer:
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [QueryMetricsExtension]
-    introspection = getattr(settings, "GRAPHQL_INTROSPECTION_ENABLED", False)
+    introspection = settings.GRAPHQL_INTROSPECTION_ENABLED
 
     def get_validation_rules(
         self,
@@ -203,10 +203,8 @@ class AsyncGraphqlView(GraphQLAsyncView):
                 default_cost=1,
                 variables=data.get("variables"),
             ),
-            create_max_depth_rule(max_depth=getattr(settings, "GRAPHQL_MAX_DEPTH", 15)),
-            create_max_aliases_rule(
-                max_aliases=getattr(settings, "GRAPHQL_MAX_ALIASES", 15)
-            ),
+            create_max_depth_rule(max_depth=settings.GRAPHQL_MAX_DEPTH),
+            create_max_aliases_rule(max_aliases=settings.GRAPHQL_MAX_ALIASES),
         ]
 
     validation_rules = get_validation_rules  # type: ignore
