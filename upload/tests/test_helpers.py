@@ -259,7 +259,7 @@ def test_validate_upload_too_many_uploads_for_commit(
 
 def test_deactivated_repo(db, mocker):
     repository = RepositoryFactory.create(active=True, activated=False)
-    settings_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/settings"
+    settings_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/config/general"
 
     with pytest.raises(ValidationError) as exp:
         validate_activated_repo(repository)
