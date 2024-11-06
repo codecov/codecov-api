@@ -28,7 +28,7 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 log = logging.getLogger(__name__)
 
 
-class ReportLogicMixin(GetterMixin):
+class ReportLogicMixin:
     def create_report(self, serializer, repository, commit):
         code = serializer.validated_data.get("code")
         if code == "default":
@@ -44,7 +44,7 @@ class ReportLogicMixin(GetterMixin):
         return instance
 
 
-class ReportViews(ListCreateAPIView, ReportLogicMixin):
+class ReportViews(ListCreateAPIView, GetterMixin, ReportLogicMixin):
     serializer_class = CommitReportSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [

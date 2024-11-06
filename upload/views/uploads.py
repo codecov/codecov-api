@@ -49,7 +49,7 @@ class CanDoCoverageUploadsPermission(BasePermission):
         )
 
 
-class UploadLogicMixin(GetterMixin):
+class UploadLogicMixin:
     def create_upload(self, serializer, repository, commit, report):
         version = (
             serializer.validated_data["version"]
@@ -182,7 +182,7 @@ class UploadLogicMixin(GetterMixin):
         return token
 
 
-class UploadViews(ListCreateAPIView, UploadLogicMixin):
+class UploadViews(ListCreateAPIView, GetterMixin, UploadLogicMixin):
     serializer_class = UploadSerializer
     permission_classes = [
         CanDoCoverageUploadsPermission,

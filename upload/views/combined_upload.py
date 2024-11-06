@@ -1,8 +1,11 @@
 import logging
 
+from django.conf import settings
+from django.http import HttpRequest
 from rest_framework import status
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from services.archive import ArchiveService
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -19,6 +22,7 @@ from upload.serializers import (
     UploadSerializer,
 )
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
+from upload.views.base import GetterMixin
 from upload.views.commits import CommitLogicMixin
 from upload.views.reports import ReportLogicMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission, UploadLogicMixin
@@ -26,11 +30,7 @@ from upload.views.uploads import CanDoCoverageUploadsPermission, UploadLogicMixi
 log = logging.getLogger(__name__)
 
 
-class CombinedUploadMixin(CommitLogicMixin, ReportLogicMixin, UploadLogicMixin):
-    pass
-
-
-class CombinedUploadView(ListCreateAPIView, CombinedUploadMixin):
+class CombinedUploadView(APIView, GetterMixin, CommitLogicMixin, ReportLogicMixin, UploadLogicMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         UploadTokenRequiredAuthenticationCheck,
@@ -40,86 +40,62 @@ class CombinedUploadView(ListCreateAPIView, CombinedUploadMixin):
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
-    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def get_exception_handler(self):
         return repo_auth_custom_exception_handler
 
-    def create(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args, **kwargs) -> Response:
         # Create commit
         create_commit_data = dict(
+            commitid=request.data.get("commit_sha"),
+            parent_commit_id=request.data.get("parent_sha"),
+            pullid=request.data.get("pull_request_number"),
             branch=request.data.get("branch"),
-            commit_sha=request.data.get("commit_sha"),
-            fail_on_error=True,
-            git_service=request.data.get("git_service"),
-            parent_sha=request.data.get("parent_sha"),
-            pull_request_number=request.data.get("pull_request_number"),
-            slug=request.data.get("slug"),
-            token=request.data.get("token"),
         )
         commit_serializer = CommitSerializer(data=create_commit_data)
-        commit_serializer.is_valid(raise_exception=True)
-
+        if not commit_serializer.is_valid():
+            return Response(
+                commit_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
+        log.info(f"Creating commit for {commit_serializer.validated_data}")
         repository = self.get_repo()
         commit = self.create_commit(commit_serializer, repository)
 
         # Create report
         commit_report_data = dict(
             code=request.data.get("code"),
-            commit_sha=request.data.get("commit_sha"),
-            fail_on_error=True,
-            git_service=request.data.get("git_service"),
-            slug=request.data.get("slug"),
-            token=request.data.get("token"),
         )
         commit_report_serializer = CommitReportSerializer(data=commit_report_data)
+        if not commit_report_serializer.is_valid():
+            return Response(
+                commit_report_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
         report = self.create_report(commit_report_serializer, repository, commit)
 
         # Do upload
         upload_data = dict(
-            branch=request.data.get("branch"),
-            build_code=request.data.get("build_code"),
-            build_url=request.data.get("build_url"),
-            commit_sha=request.data.get("commit_sha"),
-            disable_file_fixes=request.data.get("disable_file_fixes"),
-            disable_search=request.data.get("disable_search"),
-            dry_run=request.data.get("dry_run"),
-            env_vars=request.data.get("env_vars"),
-            fail_on_error=request.data.get("fail_on_error"),
-            files_search_exclude_folders=request.data.get(
-                "files_search_exclude_folders"
-            ),
-            files_search_explicitly_listed_files=request.data.get(
-                "files_search_explicitly_listed_files"
-            ),
-            files_search_root_folder=request.data.get("files_search_root_folder"),
+            ci_url=request.data.get("build_url"),
+            env=request.data.get("env_vars"),
             flags=request.data.get("flags"),
-            gcov_args=request.data.get("gcov_args"),
-            gcov_executable=request.data.get("gcov_executable"),
-            gcov_ignore=request.data.get("gcov_ignore"),
-            gcov_include=request.data.get("gcov_include"),
-            git_service=request.data.get("git_service"),
-            handle_no_reports_found=request.data.get("handle_no_reports_found"),
+            ci_service=request.data.get("ci_service"),
             job_code=request.data.get("job_code"),
             name=request.data.get("name"),
-            network_filter=request.data.get("network_filter"),
-            network_prefix=request.data.get("network_prefix"),
-            network_root_folder=request.data.get("network_root_folder"),
-            plugin_names=request.data.get("plugin_names"),
-            pull_request_number=request.data.get("pull_request_number"),
-            report_code=report.code,
-            report_type=request.data.get("report_type"),
-            slug=request.data.get("slug"),
-            swift_project=request.data.get("swift_project"),
-            token=request.data.get("token"),
-            use_legacy_uploader=request.data.get("use_legacy_uploader"),
         )
         upload_serializer = UploadSerializer(data=upload_data)
-        upload_serializer.is_valid(raise_exception=True)
-
+        if not upload_serializer.is_valid():
+            return Response(upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         instance = self.create_upload(upload_serializer, repository, commit, report)
+        
+        repository = instance.report.commit.repository
+        commit = instance.report.commit
+        
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+        
+        archive_service = ArchiveService(repository)
+        raw_upload_location = archive_service.create_presigned_put(instance.storage_path)
+        
         if instance:
-            return Response(data=instance.data, status=status.HTTP_201_CREATED)
+            return Response({"raw_upload_location": raw_upload_location, "url": url}, status=status.HTTP_201_CREATED)
         else:
             return Response(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
