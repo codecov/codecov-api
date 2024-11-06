@@ -786,10 +786,9 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
 
     @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
-    def test_fetch_owner_on_unauthenticated_enteprise_guest_access_not_activated(self):
+    def test_fetch_owner_enterprise_no_guest_access(self):
         user = OwnerFactory(username="sample-user")
         owner = OwnerFactory(username="sample-owner", plan_activated_users=[123, 456])
-        user.organizations = [owner.ownerid]
         user.save()
         owner.save()
         query = """{
