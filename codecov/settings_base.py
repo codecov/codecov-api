@@ -106,6 +106,10 @@ GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", defaul
 
 GRAPHQL_INTROSPECTION_ENABLED = False
 
+GRAPHQL_MAX_DEPTH = get_config("setup", "graphql", "max_depth", default=20)
+
+GRAPHQL_MAX_ALIASES = get_config("setup", "graphql", "max_aliases", default=10)
+
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
