@@ -402,6 +402,7 @@ if SENTRY_DSN is not None:
             HttpxIntegration(),
         ],
         environment=SENTRY_ENV,
+        set_default_pii=True,
         traces_sample_rate=SENTRY_SAMPLE_RATE,
         profiles_sample_rate=float(
             os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
