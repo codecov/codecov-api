@@ -401,7 +401,6 @@ if SENTRY_DSN is not None:
             RedisIntegration(),
             HttpxIntegration(),
         ],
-        set_default_pii=True,
         environment=SENTRY_ENV,
         traces_sample_rate=SENTRY_SAMPLE_RATE,
         profiles_sample_rate=float(
