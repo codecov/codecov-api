@@ -198,13 +198,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
         data: dict,
     ) -> Optional[Collection]:
         return [
+            create_max_aliases_rule(max_aliases=settings.GRAPHQL_MAX_ALIASES),
+            create_max_depth_rule(max_depth=settings.GRAPHQL_MAX_DEPTH),
             cost_validator(
                 maximum_cost=settings.GRAPHQL_QUERY_COST_THRESHOLD,
                 default_cost=1,
                 variables=data.get("variables"),
             ),
-            create_max_depth_rule(max_depth=settings.GRAPHQL_MAX_DEPTH),
-            create_max_aliases_rule(max_aliases=settings.GRAPHQL_MAX_ALIASES),
         ]
 
     validation_rules = get_validation_rules  # type: ignore

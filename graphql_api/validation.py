@@ -26,7 +26,7 @@ def create_max_depth_rule(max_depth: int) -> Type[ValidationRule]:
                 self.max_depth_reached = True
                 self.report_error(
                     GraphQLError(
-                        f"Query depth exceeds the maximum allowed depth of {self.max_depth}.",
+                        "Query depth exceeds the maximum allowed depth",
                         node,
                     )
                 )
@@ -57,7 +57,7 @@ def create_max_aliases_rule(max_aliases: int) -> Type[ValidationRule]:
                     self.has_reported_error = True
                     self.report_error(
                         GraphQLError(
-                            f"Query uses too many aliases. Maximum allowed is {self.max_aliases}.",
+                            "Query uses too many aliases",
                             node,
                         )
                     )
