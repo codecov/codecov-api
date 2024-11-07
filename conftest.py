@@ -5,6 +5,7 @@ import pytest
 import vcr
 from django.conf import settings
 from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.storage.memory import MemoryStorageService
 from shared.utils.sessions import Session
 
 # we need to enable this in the test environment since we're often creating

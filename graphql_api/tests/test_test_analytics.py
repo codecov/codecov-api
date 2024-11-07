@@ -6,6 +6,7 @@ import pytest
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory
 from shared.django_apps.core.tests.factories import RepositoryFactory
 from shared.storage.exceptions import BucketAlreadyExistsError
+from shared.storage.memory import MemoryStorageService
 
 from graphql_api.types.enums import (
     OrderingDirection,
@@ -22,6 +23,15 @@ from services.redis_configuration import get_redis_connection
 from services.storage import StorageService
 
 from .helper import GraphQLTestHelper
+
+
+@pytest.fixture
+def mock_storage(mocker):
+    m = mocker.patch("utils.test_results.StorageService")
+    storage_server = MemoryStorageService({})
+    m.return_value = storage_server
+    yield storage_server
+
 
 base_gql_query = """
     query {
@@ -119,14 +129,13 @@ def store_in_redis(repository):
 
 
 @pytest.fixture
-def store_in_storage(repository):
-    storage = StorageService()
+def store_in_storage(repository, mock_storage):
     try:
-        storage.create_root_storage("codecov")
+        mock_storage.create_root_storage("codecov")
     except BucketAlreadyExistsError:
         pass
 
-    storage.write_file(
+    mock_storage.write_file(
         "codecov",
         f"test_results/rollups/{repository.repoid}/{repository.branch}/30",
         test_results_table.write_ipc(None).getvalue(),
@@ -134,7 +143,7 @@ def store_in_storage(repository):
 
     yield
 
-    storage.delete_file(
+    mock_storage.delete_file(
         "codecov",
         f"test_results/rollups/{repository.repoid}/{repository.branch}/30",
     )
@@ -144,17 +153,24 @@ class TestAnalyticsTestCase(
     GraphQLTestHelper,
 ):
     def test_get_test_results(
-        self, transactional_db, repository, store_in_redis, store_in_storage
+        self,
+        transactional_db,
+        repository,
+        store_in_redis,
+        store_in_storage,
+        mock_storage,
     ):
         results = get_results(repository.repoid, repository.branch, 30)
         assert results is not None
         assert results.equals(test_results_table)
 
-    def test_get_test_results_no_storage(self, transactional_db, repository):
+    def test_get_test_results_no_storage(
+        self, transactional_db, repository, mock_storage
+    ):
         assert get_results(repository.repoid, repository.branch, 30) is None
 
     def test_get_test_results_no_redis(
-        self, mocker, transactional_db, repository, store_in_storage
+        self, mocker, transactional_db, repository, store_in_storage, mock_storage
     ):
         m = mocker.patch("services.task.TaskService.cache_test_results_redis")
         results = get_results(repository.repoid, repository.branch, 30)
@@ -163,7 +179,9 @@ class TestAnalyticsTestCase(
 
         m.assert_called_once_with(repository.repoid, repository.branch)
 
-    def test_test_results(self, transactional_db, repository, store_in_redis):
+    def test_test_results(
+        self, transactional_db, repository, store_in_redis, mock_storage
+    ):
         test_results = generate_test_results(
             repoid=repository.repoid,
             ordering=TestResultsOrderingParameter.UPDATED_AT,
@@ -191,7 +209,9 @@ class TestAnalyticsTestCase(
             },
         )
 
-    def test_test_results_asc(self, transactional_db, repository, store_in_redis):
+    def test_test_results_asc(
+        self, transactional_db, repository, store_in_redis, mock_storage
+    ):
         test_results = generate_test_results(
             repoid=repository.repoid,
             ordering=TestResultsOrderingParameter.UPDATED_AT,
@@ -255,6 +275,7 @@ class TestAnalyticsTestCase(
         rows,
         repository,
         store_in_redis,
+        mock_storage,
     ):
         test_results = generate_test_results(
             repoid=repository.repoid,
@@ -331,6 +352,7 @@ class TestAnalyticsTestCase(
         rows,
         repository,
         store_in_redis,
+        mock_storage,
     ):
         test_results = generate_test_results(
             repoid=repository.repoid,
@@ -371,7 +393,7 @@ class TestAnalyticsTestCase(
             },
         )
 
-    def test_test_analytics_term_filter(self, repository, store_in_redis):
+    def test_test_analytics_term_filter(self, repository, store_in_redis, mock_storage):
         test_results = generate_test_results(
             repoid=repository.repoid,
             term="test1",
@@ -421,7 +443,7 @@ class TestAnalyticsTestCase(
             },
         )
 
-    def test_test_analytics_flag_filter(self, repository, store_in_redis):
+    def test_test_analytics_flag_filter(self, repository, store_in_redis, mock_storage):
         test_results = generate_test_results(
             repoid=repository.repoid,
             flags=["flag1"],
@@ -446,7 +468,7 @@ class TestAnalyticsTestCase(
             },
         )
 
-    def test_gql_query(self, repository, store_in_redis):
+    def test_gql_query(self, repository, store_in_redis, mock_storage):
         query = base_gql_query % (
             repository.author.username,
             repository.name,
@@ -492,7 +514,7 @@ class TestAnalyticsTestCase(
             },
         ]
 
-    def test_gql_query_aggregates(self, repository, store_in_redis):
+    def test_gql_query_aggregates(self, repository, store_in_redis, mock_storage):
         query = base_gql_query % (
             repository.author.username,
             repository.name,
@@ -519,7 +541,7 @@ class TestAnalyticsTestCase(
             "totalSlowTests": 1,
         }
 
-    def test_gql_query_flake_aggregates(self, repository, store_in_redis):
+    def test_gql_query_flake_aggregates(self, repository, store_in_redis, mock_storage):
         query = base_gql_query % (
             repository.author.username,
             repository.name,
