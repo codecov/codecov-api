@@ -1,17 +1,11 @@
 from unittest.mock import patch
 
-import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 
-from core.models import Commit
-from reports.models import (
-    CommitReport,
-    ReportSession,
-)
 
 class TestCombinedUpload:
     def test_get_repo(self, db):
