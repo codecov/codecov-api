@@ -36,9 +36,16 @@ indent-width = 4
 target-version = "py312"
 
 [lint]
-# Currently only enabled for F (Pyflakes), I (isort), E,W (pycodestyle:Error/Warning), PLC/PLE (Pylint:Convention/Error) 
-# and PERF (Perflint) rules: https://docs.astral.sh/ruff/rules/
-select = ["F", "I", "E", "W", "PLC", "PLE", "PERF"]
+select = [
+    "ASYNC", # flake8-async - async checks
+    "F", # pyflakes - general Python errors, undefined names
+    "I", # isort - import sorting
+    "E", # pycodestyle - error rules
+    "W", # pycodestyle - warning rules
+    "PLC", # pylint - convention rules
+    "PLE", # pylint - error rules
+    "PERF", # perflint
+]
 ignore = ["F405", "F403", "E501", "E712"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.

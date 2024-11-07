@@ -36,7 +36,6 @@ def resolve_trial_status(plan_service: PlanService, info) -> TrialStatus:
 
 
 @plan_bindable.field("marketingName")
-@sync_to_async
 def resolve_marketing_name(plan_service: PlanService, info) -> str:
     return plan_service.marketing_name
 
