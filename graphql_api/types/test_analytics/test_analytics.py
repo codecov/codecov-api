@@ -1,7 +1,6 @@
 import datetime as dt
 import logging
 from base64 import b64decode, b64encode
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, TypedDict
 

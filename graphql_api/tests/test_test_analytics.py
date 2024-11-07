@@ -20,7 +20,6 @@ from graphql_api.types.test_analytics.test_analytics import (
     get_results,
 )
 from services.redis_configuration import get_redis_connection
-from services.storage import StorageService
 
 from .helper import GraphQLTestHelper
 
