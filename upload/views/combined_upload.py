@@ -3,9 +3,8 @@ import logging
 from django.conf import settings
 from django.http import HttpRequest
 from rest_framework import status
-from rest_framework.views import APIView
 from rest_framework.response import Response
-from services.archive import ArchiveService
+from rest_framework.views import APIView
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -16,12 +15,12 @@ from codecov_auth.authentication.repo_auth import (
     UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
+from services.archive import ArchiveService
 from upload.serializers import (
     CommitReportSerializer,
     CommitSerializer,
     UploadSerializer,
 )
-from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 from upload.views.base import GetterMixin
 from upload.views.commits import CommitLogicMixin
 from upload.views.reports import ReportLogicMixin
@@ -30,7 +29,9 @@ from upload.views.uploads import CanDoCoverageUploadsPermission, UploadLogicMixi
 log = logging.getLogger(__name__)
 
 
-class CombinedUploadView(APIView, GetterMixin, CommitLogicMixin, ReportLogicMixin, UploadLogicMixin):
+class CombinedUploadView(
+    APIView, GetterMixin, CommitLogicMixin, ReportLogicMixin, UploadLogicMixin
+):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         UploadTokenRequiredAuthenticationCheck,
@@ -83,19 +84,26 @@ class CombinedUploadView(APIView, GetterMixin, CommitLogicMixin, ReportLogicMixi
         )
         upload_serializer = UploadSerializer(data=upload_data)
         if not upload_serializer.is_valid():
-            return Response(upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
         instance = self.create_upload(upload_serializer, repository, commit, report)
-        
+
         repository = instance.report.commit.repository
         commit = instance.report.commit
-        
+
         url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
-        
+
         archive_service = ArchiveService(repository)
-        raw_upload_location = archive_service.create_presigned_put(instance.storage_path)
-        
+        raw_upload_location = archive_service.create_presigned_put(
+            instance.storage_path
+        )
+
         if instance:
-            return Response({"raw_upload_location": raw_upload_location, "url": url}, status=status.HTTP_201_CREATED)
+            return Response(
+                {"raw_upload_location": raw_upload_location, "url": url},
+                status=status.HTTP_201_CREATED,
+            )
         else:
             return Response(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
