@@ -5,6 +5,7 @@ from django.http import HttpRequest
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -16,6 +17,8 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from services.archive import ArchiveService
+from upload.helpers import generate_upload_prometheus_metrics_labels
+from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import (
     CommitReportSerializer,
     CommitSerializer,
@@ -48,6 +51,17 @@ class CombinedUploadView(
         return repo_auth_custom_exception_handler
 
     def post(self, request: HttpRequest, *args, **kwargs) -> Response:
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
+                action="coverage",
+                endpoint="combined_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="start",
+            ),
+        )
+
         # Create commit
         create_commit_data = dict(
             commitid=request.data.get("commit_sha"),
@@ -62,6 +76,17 @@ class CombinedUploadView(
             )
         log.info(f"Creating commit for {commit_serializer.validated_data}")
         repository = self.get_repo()
+        
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
+                action="coverage",
+                endpoint="combined_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="create_commit",
+            ),
+        )
         commit = self.create_commit(commit_serializer, repository)
 
         # Create report
@@ -73,6 +98,17 @@ class CombinedUploadView(
             return Response(
                 commit_report_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
+            
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
+                action="coverage",
+                endpoint="combined_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="create_report",
+            ),
+        )
         report = self.create_report(commit_report_serializer, repository, commit)
 
         # Do upload
@@ -91,7 +127,28 @@ class CombinedUploadView(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
+                action="coverage",
+                endpoint="combined_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="create_upload",
+            ),
+        )
         upload = self.create_upload(upload_serializer, repository, commit, report)
+
+        inc_counter(
+            API_UPLOAD_COUNTER,
+            labels=generate_upload_prometheus_metrics_labels(
+                action="coverage",
+                endpoint="combined_upload",
+                request=self.request,
+                is_shelter_request=self.is_shelter_request(),
+                position="end",
+            ),
+        )
 
         if upload:
             url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
