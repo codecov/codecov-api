@@ -175,8 +175,8 @@ class StripeService(AbstractPaymentService):
             subscription=owner.stripe_subscription_id,
             status="paid",
             created={
-                "created.gte": int(start_of_last_period.timestamp()),
-                "created.lt": int(current_subscription_datetime.timestamp()),
+                "gte": int(start_of_last_period.timestamp()),
+                "lt": int(current_subscription_datetime.timestamp()),
             },
         )
 
