@@ -76,7 +76,7 @@ class CombinedUploadView(
             )
         log.info(f"Creating commit for {commit_serializer.validated_data}")
         repository = self.get_repo()
-        
+
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
@@ -98,7 +98,7 @@ class CombinedUploadView(
             return Response(
                 commit_report_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
-            
+
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
