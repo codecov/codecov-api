@@ -151,8 +151,10 @@ class CombinedUploadView(
         )
 
         if upload:
-            url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
-            archive_service = ArchiveService(repository)
+            commitid = upload.report.commit.commitid
+            upload_repository = upload.report.commit.repository
+            url = f"{settings.CODECOV_DASHBOARD_URL}/{upload_repository.author.service}/{upload_repository.author.username}/{upload_repository.name}/commit/{commitid}"
+            archive_service = ArchiveService(upload_repository)
             raw_upload_location = archive_service.create_presigned_put(
                 upload.storage_path
             )
