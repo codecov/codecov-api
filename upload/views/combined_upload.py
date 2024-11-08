@@ -21,6 +21,7 @@ from upload.serializers import (
     CommitSerializer,
     UploadSerializer,
 )
+from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 from upload.views.base import GetterMixin
 from upload.views.commits import CommitLogicMixin
 from upload.views.reports import ReportLogicMixin
@@ -41,6 +42,7 @@ class CombinedUploadView(
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
+    throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def get_exception_handler(self):
         return repo_auth_custom_exception_handler

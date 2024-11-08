@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from rest_framework.exceptions import ValidationError
 from rest_framework.throttling import BaseThrottle
 from shared.reports.enums import UploadType
 from shared.upload.utils import query_monthly_coverage_measurements
@@ -38,7 +39,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
                 )
                 return False
             return True
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, ValidationError):
             return True
 
 
@@ -71,5 +72,5 @@ class UploadsPerWindowThrottle(BaseThrottle):
                             )
                             return False
             return True
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, ValidationError):
             return True
