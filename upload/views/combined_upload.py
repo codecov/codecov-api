@@ -84,26 +84,26 @@ class CombinedUploadView(
             job_code=request.data.get("job_code"),
             name=request.data.get("name"),
         )
+
         upload_serializer = UploadSerializer(data=upload_data)
         if not upload_serializer.is_valid():
             return Response(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
-        instance = self.create_upload(upload_serializer, repository, commit, report)
 
-        repository = instance.report.commit.repository
-        commit = instance.report.commit
+        upload = self.create_upload(upload_serializer, repository, commit, report)
 
-        url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
-
-        archive_service = ArchiveService(repository)
-        raw_upload_location = archive_service.create_presigned_put(
-            instance.storage_path
-        )
-
-        if instance:
+        if upload:
+            url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+            archive_service = ArchiveService(repository)
+            raw_upload_location = archive_service.create_presigned_put(
+                upload.storage_path
+            )
             return Response(
-                {"raw_upload_location": raw_upload_location, "url": url},
+                {
+                    "url": url,
+                    "raw_upload_location": raw_upload_location,
+                },
                 status=status.HTTP_201_CREATED,
             )
         else:
