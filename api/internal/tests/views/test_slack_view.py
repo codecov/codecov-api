@@ -1,9 +1,9 @@
 from django.test import override_settings
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov_auth.models import UserToken
-from codecov_auth.tests.factories import OwnerFactory
 
 codecov_internal_token = "test3n4d079myhiy9fu7d3j7gsepz80df3da"
 

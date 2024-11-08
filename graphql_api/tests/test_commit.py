@@ -8,13 +8,17 @@ import yaml
 from django.test import TransactionTestCase
 from shared.bundle_analysis import StoragePaths
 from shared.bundle_analysis.storage import get_bucket_name
+from shared.django_apps.core.tests.factories import (
+    CommitErrorFactory,
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.types import LineSession
 from shared.storage.memory import MemoryStorageService
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
 from graphql_api.types.enums import CommitStatus, UploadErrorEnum, UploadState
 from graphql_api.types.enums.enums import UploadType
 from reports.models import CommitReport
@@ -210,7 +214,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     def test_fetch_commit_coverage(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
-        query = query_commit % "totals { percentCovered } "
+        query = query_commit % "coverageAnalytics { totals { percentCovered }} "
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -218,7 +222,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["totals"]["percentCovered"] == 12
+        assert commit["coverageAnalytics"]["totals"]["percentCovered"] == 12
 
     def test_fetch_commit_build(self):
         session_one = UploadFactory(report=self.report, provider="circleci")

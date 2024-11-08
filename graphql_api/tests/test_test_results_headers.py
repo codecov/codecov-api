@@ -2,9 +2,8 @@ from datetime import date, datetime, timedelta
 
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from reports.tests.factories import DailyTestRollupFactory, TestFactory
 
 from .helper import GraphQLTestHelper
@@ -54,7 +53,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "totalDuration"
             ]
-            == 435.0
+            == 465.0
         )
 
     def test_fetch_test_result_slowest_tests_runtime(self) -> None:
@@ -81,7 +80,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "slowestTestsDuration"
             ]
-            == 29.0
+            == 30.0
         )
 
     def test_fetch_test_result_failed_tests(self) -> None:
@@ -108,7 +107,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "totalFails"
             ]
-            == 29
+            == 30
         )
 
     def test_fetch_test_result_skipped_tests(self) -> None:
@@ -135,7 +134,7 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
             result["owner"]["repository"]["testAnalytics"]["testResultsAggregates"][
                 "totalSkips"
             ]
-            == 29
+            == 30
         )
 
     def test_fetch_test_result_slow_tests(self) -> None:

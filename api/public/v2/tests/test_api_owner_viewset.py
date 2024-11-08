@@ -5,12 +5,9 @@ from rest_framework import status
 from rest_framework.exceptions import ErrorDetail
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
-from codecov_auth.tests.factories import (
-    DjangoSessionFactory,
-    OwnerFactory,
-    SessionFactory,
-)
+from codecov_auth.tests.factories import DjangoSessionFactory
 from utils.test_utils import APIClient
 
 

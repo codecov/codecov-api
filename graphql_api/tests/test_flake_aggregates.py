@@ -2,10 +2,9 @@ from datetime import date, datetime, timedelta
 
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.django_apps.reports.tests.factories import FlakeFactory
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from reports.tests.factories import DailyTestRollupFactory, TestFactory
 
 from .helper import GraphQLTestHelper
@@ -80,8 +79,8 @@ class TestResultTestCase(GraphQLTestHelper, TransactionTestCase):
 
         assert "errors" not in result
         assert result["owner"]["repository"]["testAnalytics"]["flakeAggregates"] == {
-            "flakeRate": 0.1,
-            "flakeCount": 30,
-            "flakeRatePercentChange": -33.33333,
-            "flakeCountPercentChange": 100.0,
+            "flakeRate": 0.140625,
+            "flakeCount": 31,
+            "flakeRatePercentChange": 31.25,
+            "flakeCountPercentChange": 106.66667,
         }

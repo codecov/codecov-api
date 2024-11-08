@@ -3,8 +3,9 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Union
 
+import sentry_sdk
 from django.utils.functional import cached_property
 from shared.bundle_analysis import AssetReport as SharedAssetReport
 from shared.bundle_analysis import (
@@ -29,6 +30,7 @@ from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementName
 
 
+@sentry_sdk.trace
 def load_report(
     commit: Commit, report_code: Optional[str] = None
 ) -> Optional[SharedBundleAnalysisReport]:
@@ -81,7 +83,7 @@ class BundleAnalysisMeasurementData(object):
     def __init__(
         self,
         raw_measurements: List[dict],
-        asset_type: BundleAnalysisMeasurementsAssetType,
+        asset_type: Union[BundleAnalysisMeasurementsAssetType, str],
         asset_name: Optional[str],
         interval: Interval,
         after: Optional[datetime],
@@ -96,6 +98,8 @@ class BundleAnalysisMeasurementData(object):
 
     @cached_property
     def asset_type(self) -> str:
+        if isinstance(self.measurement_type, str):
+            return self.measurement_type
         return self.measurement_type.name
 
     @cached_property
@@ -395,6 +399,7 @@ class BundleAnalysisMeasurementsService(object):
         self.before = before
         self.branch = branch
 
+    @sentry_sdk.trace
     def _compute_measurements(
         self, measurable_name: str, measurable_ids: List[str]
     ) -> Dict[int, List[Dict[str, Any]]]:
@@ -435,6 +440,7 @@ class BundleAnalysisMeasurementsService(object):
 
         return all_measurements
 
+    @sentry_sdk.trace
     def compute_asset(
         self, asset_report: AssetReport
     ) -> Optional[BundleAnalysisMeasurementData]:
@@ -456,6 +462,7 @@ class BundleAnalysisMeasurementsService(object):
             before=self.before,
         )
 
+    @sentry_sdk.trace
     def compute_report(
         self,
         bundle_report: BundleReport,

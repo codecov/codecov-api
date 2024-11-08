@@ -65,6 +65,8 @@ CORS_ALLOWED_ORIGINS = [
 # 25MB in bytes
 DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400
 
+GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", default=1000)
+
 # Same site is set to none on Staging as we want to be able to call the API
 # From Netlify preview deploy
 COOKIE_SAME_SITE = "None"
@@ -73,3 +75,5 @@ SESSION_COOKIE_SAMESITE = "None"
 CSRF_TRUSTED_ORIGINS = [
     get_config("setup", "trusted_origin", default="https://*.codecov.dev")
 ]
+
+GRAPHQL_INTROSPECTION_ENABLED = True

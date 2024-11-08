@@ -19,8 +19,7 @@ from django.http import (
 )
 from graphql import DocumentNode
 from sentry_sdk import capture_exception
-from sentry_sdk import metrics as sentry_metrics
-from shared.metrics import Counter, Histogram
+from shared.metrics import Counter, Histogram, inc_counter
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
@@ -29,6 +28,7 @@ from services import ServiceException
 from services.redis_configuration import get_redis_connection
 
 from .schema import schema
+from .validation import create_max_aliases_rule, create_max_depth_rule
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +51,17 @@ GQL_REQUEST_LATENCIES = Histogram(
     buckets=[0.05, 0.1, 0.25, 0.5, 0.75, 1, 2, 5, 10, 30],
 )
 
+GQL_REQUEST_MADE_COUNTER = Counter(
+    "api_gql_requests_made",
+    "Total API GQL requests made",
+    ["path"],
+)
+
+GQL_ERROR_TYPE_COUNTER = Counter(
+    "api_gql_errors",
+    "Number of times API GQL endpoint failed with an exception by type",
+    ["error_type", "path"],
+)
 
 # covers named and 3 unnamed operations (see graphql_api/types/query/query.py)
 GQL_TYPE_AND_NAME_PATTERN = r"^(query|mutation|subscription)(?:\(\$input:|) (\w+)(?:\(| \(|{| {|!)|^(?:{) (me|owner|config)(?:\(| |{)"
@@ -109,9 +120,13 @@ class QueryMetricsExtension(Extension):
         """
         self.set_type_and_name(query=context["clean_query"])
         self.start_timestamp = time.perf_counter()
-        GQL_HIT_COUNTER.labels(
-            operation_type=self.operation_type, operation_name=self.operation_name
-        ).inc()
+        inc_counter(
+            GQL_HIT_COUNTER,
+            labels=dict(
+                operation_type=self.operation_type,
+                operation_name=self.operation_name,
+            ),
+        )
 
     def request_finished(self, context):
         """
@@ -174,6 +189,7 @@ class RequestFinalizer:
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [QueryMetricsExtension]
+    introspection = settings.GRAPHQL_INTROSPECTION_ENABLED
 
     def get_validation_rules(
         self,
@@ -182,11 +198,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
         data: dict,
     ) -> Optional[Collection]:
         return [
+            create_max_aliases_rule(max_aliases=settings.GRAPHQL_MAX_ALIASES),
+            create_max_depth_rule(max_depth=settings.GRAPHQL_MAX_DEPTH),
             cost_validator(
                 maximum_cost=settings.GRAPHQL_QUERY_COST_THRESHOLD,
                 default_cost=1,
                 variables=data.get("variables"),
-            )
+            ),
         ]
 
     validation_rules = get_validation_rules  # type: ignore
@@ -226,14 +244,16 @@ class AsyncGraphqlView(GraphQLAsyncView):
             "user": request.user,
         }
         log.info("GraphQL Request", extra=log_data)
-        sentry_metrics.incr("graphql.info.request_made", tags={"path": req_path})
-
+        inc_counter(GQL_REQUEST_MADE_COUNTER, labels=dict(path=req_path))
         if self._check_ratelimit(request=request):
-            sentry_metrics.incr("graphql.error.rate_limit", tags={"path": req_path})
+            inc_counter(
+                GQL_ERROR_TYPE_COUNTER,
+                labels=dict(error_type="rate_limit", path=req_path),
+            )
             return JsonResponse(
                 data={
                     "status": 429,
-                    "detail": "It looks like you've hit the rate limit of 300 req/min. Try again later.",
+                    "detail": f"It looks like you've hit the rate limit of {settings.GRAPHQL_RATE_LIMIT_RPM} req/min. Try again later.",
                 },
                 status=429,
             )
@@ -245,7 +265,10 @@ class AsyncGraphqlView(GraphQLAsyncView):
             data = json.loads(content)
 
             if "errors" in data:
-                sentry_metrics.incr("graphql.error.all", tags={"path": req_path})
+                inc_counter(
+                    GQL_ERROR_TYPE_COUNTER,
+                    labels=dict(error_type="all", path=req_path),
+                )
                 try:
                     if data["errors"][0]["extensions"]["cost"]:
                         costs = data["errors"][0]["extensions"]["cost"]
@@ -257,9 +280,12 @@ class AsyncGraphqlView(GraphQLAsyncView):
                                 request_body=req_body,
                             ),
                         )
-                        sentry_metrics.incr(
-                            "graphql.error.query_cost_exceeded",
-                            tags={"path": req_path},
+                        inc_counter(
+                            GQL_ERROR_TYPE_COUNTER,
+                            labels=dict(
+                                error_type="query_cost_exceeded",
+                                path=req_path,
+                            ),
                         )
                         return HttpResponseBadRequest(
                             JsonResponse("Your query is too costly.")
@@ -270,6 +296,8 @@ class AsyncGraphqlView(GraphQLAsyncView):
 
     def context_value(self, request, *_):
         request_body = json.loads(request.body.decode("utf-8")) if request.body else {}
+        self.request = request
+
         return {
             "request": request,
             "service": request.resolver_match.kwargs["service"],
@@ -278,9 +306,11 @@ class AsyncGraphqlView(GraphQLAsyncView):
         }
 
     def error_formatter(self, error, debug=False):
+        user = self.request.user
+        is_anonymous = user.is_anonymous if user else True
         # the only way to check for a malformed query
         is_bad_query = "Cannot query field" in error.formatted["message"]
-        if debug or is_bad_query:
+        if debug or (not is_anonymous and is_bad_query):
             return format_error(error, debug)
         formatted = error.formatted
         formatted["message"] = "INTERNAL SERVER ERROR"
@@ -306,6 +336,9 @@ class AsyncGraphqlView(GraphQLAsyncView):
             request.user.pk
 
     def _check_ratelimit(self, request):
+        if not settings.GRAPHQL_RATE_LIMIT_ENABLED:
+            return False
+
         redis = get_redis_connection()
 
         try:
@@ -320,7 +353,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             user_ip = self.get_client_ip(request)
             key = f"rl-ip:{user_ip}"
 
-        limit = 300
+        limit = settings.GRAPHQL_RATE_LIMIT_RPM
         window = 60  # in seconds
 
         current_count = redis.get(key)

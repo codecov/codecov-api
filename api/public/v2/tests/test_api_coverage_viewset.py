@@ -3,9 +3,8 @@ from unittest.mock import patch
 import pytest
 from django.conf import settings
 from django.test import TestCase
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import RepositoryFactory
 from reports.tests.factories import RepositoryFlagFactory
 from timeseries.models import MeasurementName
 from timeseries.tests.factories import DatasetFactory, MeasurementFactory
@@ -48,7 +47,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(self.repo.pk),
-            branch="master",
+            branch="main",
             value=80.0,
         )
         MeasurementFactory(
@@ -57,7 +56,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(self.repo.pk),
-            branch="master",
+            branch="main",
             value=90.0,
         )
         MeasurementFactory(
@@ -66,7 +65,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(self.repo.pk),
-            branch="master",
+            branch="main",
             value=100.0,
         )
         MeasurementFactory(
@@ -75,7 +74,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=9999,
             measurable_id="9999",
-            branch="master",
+            branch="main",
             value=10.0,
         )
 
@@ -129,7 +128,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(self.repo.pk),
-            branch="master",
+            branch="main",
             value=90.0,
         )
         MeasurementFactory(
@@ -210,7 +209,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(flag1.pk),
-            branch="master",
+            branch="main",
             value=100.0,
         )
         MeasurementFactory(
@@ -219,7 +218,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(flag1.pk),
-            branch="master",
+            branch="main",
             value=80.0,
         )
         MeasurementFactory(
@@ -228,7 +227,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(flag1.pk),
-            branch="master",
+            branch="main",
             value=90.0,
         )
         MeasurementFactory(
@@ -237,7 +236,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(flag1.pk),
-            branch="master",
+            branch="main",
             value=100.0,
         )
         MeasurementFactory(
@@ -246,7 +245,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(flag2.pk),
-            branch="master",
+            branch="main",
             value=10.0,
         )
         MeasurementFactory(
@@ -255,7 +254,7 @@ class CoverageViewSetTestCase(TestCase):
             owner_id=self.org.pk,
             repo_id=self.repo.pk,
             measurable_id=str(flag1.pk),
-            branch="master",
+            branch="main",
             value=100.0,
         )
 

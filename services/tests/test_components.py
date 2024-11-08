@@ -3,12 +3,15 @@ from unittest.mock import PropertyMock, patch
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.components import Component
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 from shared.yaml.user_yaml import UserYaml
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from services.comparison import Comparison
 from services.components import (
     ComponentComparison,

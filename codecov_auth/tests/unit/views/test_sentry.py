@@ -6,9 +6,13 @@ from django.conf import settings
 from django.contrib import auth
 from django.test import override_settings
 from django.urls import reverse
+from shared.django_apps.codecov_auth.tests.factories import (
+    OwnerFactory,
+    SentryUserFactory,
+    UserFactory,
+)
 
 from codecov_auth.models import SentryUser
-from codecov_auth.tests.factories import OwnerFactory, SentryUserFactory, UserFactory
 from codecov_auth.views.sentry import SentryLoginView
 
 

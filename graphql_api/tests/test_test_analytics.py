@@ -1,12 +1,10 @@
 import datetime
+from base64 import b64encode
 
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.django_apps.reports.tests.factories import FlakeFactory
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
-    RepositoryFactory,
-)
 from reports.tests.factories import (
     DailyTestRollupFactory,
     RepositoryFlagFactory,
@@ -15,6 +13,10 @@ from reports.tests.factories import (
 )
 
 from .helper import GraphQLTestHelper
+
+
+def base64_encode_string(x: str) -> str:
+    return b64encode(x.encode()).decode("utf-8")
 
 
 class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
@@ -119,6 +121,28 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {"edges": [{"node": {"name": test.name}}]}
 
+    def test_interval_filter_on_test_results(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.datetime.now() - datetime.timedelta(days=7),
+            repoid=repo.repoid,
+            branch="main",
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            date=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="feature",
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testResults(filters: { interval: INTERVAL_1_DAY }) { edges { node { name } } }""",
+        )
+        assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
+
     def test_flaky_filter_on_test_results(self) -> None:
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
@@ -129,12 +153,14 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             created_at=datetime.datetime.now(),
             repoid=repo.repoid,
             branch="main",
+            flaky_fail_count=0,
         )
         _ = DailyTestRollupFactory(
             test=test2,
             created_at=datetime.datetime.now(),
             repoid=repo.repoid,
             branch="feature",
+            flaky_fail_count=1000,
         )
         res = self.fetch_test_analytics(
             repo.name,
@@ -167,6 +193,7 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         assert res["testResults"] == {"edges": [{"node": {"name": test2.name}}]}
 
     def test_skipped_filter_on_test_results(self) -> None:
+        # note - this test guards against division by zero errors for the failure/flake rate
         repo = RepositoryFactory(author=self.owner, active=True, private=True)
         test = TestFactory(repository=repo)
         test2 = TestFactory(repository=repo)
@@ -367,8 +394,8 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test.name, "lastDuration": 0.0}},
-                {"node": {"name": test_2.name, "lastDuration": 0.0}},
+                {"node": {"name": test.name, "lastDuration": 2.0}},
+                {"node": {"name": test_2.name, "lastDuration": 3.0}},
             ]
         }
 
@@ -402,8 +429,8 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
         assert res["testResults"] == {
             "edges": [
-                {"node": {"name": test_2.name, "lastDuration": 0.0}},
-                {"node": {"name": test.name, "lastDuration": 0.0}},
+                {"node": {"name": test_2.name, "lastDuration": 3.0}},
+                {"node": {"name": test.name, "lastDuration": 2.0}},
             ]
         }
 
@@ -546,6 +573,96 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
                 {"node": {"name": test_2.name, "failureRate": 0.6}},
                 {"node": {"name": test.name, "failureRate": 0.2}},
             ]
+        }
+
+    def test_desc_failure_rate_ordering_on_test_results_with_after(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today() - datetime.timedelta(days=1),
+            repoid=repo.repoid,
+            pass_count=1,
+            fail_count=1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=3,
+            fail_count=0,
+        )
+        test_2 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test_2,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=2,
+            fail_count=3,
+        )
+
+        test_3 = TestFactory(repository=repo)
+        _ = DailyTestRollupFactory(
+            test=test_3,
+            date=datetime.date.today(),
+            repoid=repo.repoid,
+            pass_count=1,
+            fail_count=4,
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }, first: 1) { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }""",
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_3.name, "failureRate": 0.8}},
+            ],
+            "pageInfo": {
+                "endCursor": base64_encode_string(f"0.8|{test_3.name}"),
+                "hasNextPage": True,
+                "hasPreviousPage": False,
+                "startCursor": base64_encode_string(f"0.8|{test_3.name}"),
+            },
+            "totalCount": 3,
+        }
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }, first: 1, after: "%s") { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }"""
+            % res["testResults"]["pageInfo"]["endCursor"],
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test_2.name, "failureRate": 0.6}},
+            ],
+            "pageInfo": {
+                "endCursor": base64_encode_string(f"0.6|{test_2.name}"),
+                "hasNextPage": True,
+                "hasPreviousPage": False,
+                "startCursor": base64_encode_string(f"0.6|{test_2.name}"),
+            },
+            "totalCount": 3,
+        }
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testResults(ordering: { parameter: FAILURE_RATE, direction: DESC }, first: 1, after: "%s") { edges { node { name failureRate } }, pageInfo { hasNextPage, hasPreviousPage, startCursor, endCursor }, totalCount }"""
+            % res["testResults"]["pageInfo"]["endCursor"],
+        )
+
+        assert res["testResults"] == {
+            "edges": [
+                {"node": {"name": test.name, "failureRate": 0.2}},
+            ],
+            "pageInfo": {
+                "endCursor": base64_encode_string(f"0.2|{test.name}"),
+                "hasNextPage": False,
+                "hasPreviousPage": False,
+                "startCursor": base64_encode_string(f"0.2|{test.name}"),
+            },
+            "totalCount": 3,
         }
 
     def test_flake_rate_filtering_on_test_results(self) -> None:
@@ -704,14 +821,14 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             """testResultsAggregates { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalSlowTests, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange, totalSlowTestsPercentChange }""",
         )
         assert res["testResultsAggregates"] == {
-            "totalDuration": 570.0,
-            "totalDurationPercentChange": -63.1068,
-            "slowestTestsDuration": 29.0,
-            "slowestTestsDurationPercentChange": -50.84746,
-            "totalFails": 10,
-            "totalFailsPercentChange": 100.0,
-            "totalSkips": 5,
-            "totalSkipsPercentChange": -50.0,
+            "totalDuration": 630.0,
+            "totalDurationPercentChange": -57.57576,
+            "slowestTestsDuration": 60.0,
+            "slowestTestsDurationPercentChange": 1.69492,
+            "totalFails": 11,
+            "totalFailsPercentChange": 175.0,
+            "totalSkips": 6,
+            "totalSkipsPercentChange": -33.33333,
             "totalSlowTests": 1,
             "totalSlowTestsPercentChange": 0.0,
         }
@@ -748,6 +865,43 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
             "totalFails": 10,
             "totalFailsPercentChange": None,
             "totalSkips": 5,
+            "totalSkipsPercentChange": None,
+            "totalSlowTests": 1,
+            "totalSlowTestsPercentChange": None,
+        }
+
+    def test_test_results_aggregates_no_history_7_days(self) -> None:
+        repo = RepositoryFactory(
+            author=self.owner, active=True, private=True, branch="main"
+        )
+
+        for i in range(0, 7):
+            test = TestFactory(repository=repo)
+            _ = DailyTestRollupFactory(
+                test=test,
+                repoid=repo.repoid,
+                branch="main",
+                fail_count=1 if i % 3 == 0 else 0,
+                skip_count=1 if i % 6 == 0 else 0,
+                pass_count=1,
+                avg_duration_seconds=float(i),
+                last_duration_seconds=float(i),
+                date=datetime.date.today() - datetime.timedelta(days=i),
+            )
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testResultsAggregates(interval: INTERVAL_7_DAY) { totalDuration, slowestTestsDuration, totalFails, totalSkips, totalSlowTests, totalDurationPercentChange, slowestTestsDurationPercentChange, totalFailsPercentChange, totalSkipsPercentChange, totalSlowTestsPercentChange }""",
+        )
+
+        assert res["testResultsAggregates"] == {
+            "totalDuration": 30.0,
+            "totalDurationPercentChange": None,
+            "slowestTestsDuration": 12.0,
+            "slowestTestsDurationPercentChange": None,
+            "totalFails": 3,
+            "totalFailsPercentChange": None,
+            "totalSkips": 2,
             "totalSkipsPercentChange": None,
             "totalSlowTests": 1,
             "totalSlowTestsPercentChange": None,
@@ -824,10 +978,10 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert res["flakeAggregates"] == {
-            "flakeCount": 2,
-            "flakeRate": 0.125,
-            "flakeCountPercentChange": -33.33333,
-            "flakeRatePercentChange": -50.0,
+            "flakeCount": 3,
+            "flakeRate": 0.2,
+            "flakeCountPercentChange": 0.0,
+            "flakeRatePercentChange": -15.55556,
         }
 
     def test_flake_aggregates_no_history(self) -> None:
@@ -924,12 +1078,102 @@ class TestAnalyticsTestCase(GraphQLTestHelper, TransactionTestCase):
 
         res = self.fetch_test_analytics(
             repo.name,
-            """flakeAggregates(history: INTERVAL_7_DAY) { flakeCount, flakeRate, flakeCountPercentChange, flakeRatePercentChange }""",
+            """flakeAggregates(interval: INTERVAL_7_DAY) { flakeCount, flakeRate, flakeCountPercentChange, flakeRatePercentChange }""",
         )
 
         assert res["flakeAggregates"] == {
             "flakeCount": 1,
-            "flakeRate": 0.125,
+            "flakeRate": 0.1111111111111111,
             "flakeCountPercentChange": -50.0,
-            "flakeRatePercentChange": -43.75,
+            "flakeRatePercentChange": -55.55556,
         }
+
+    def test_test_suites(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo, testsuite="hello_world")
+        test2 = TestFactory(repository=repo, testsuite="goodbye_world")
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testSuites(term: "hello")""",
+        )
+        assert res["testSuites"] == ["hello_world"]
+
+    def test_test_suites_no_term(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo, testsuite="hello_world")
+        test2 = TestFactory(repository=repo, testsuite="goodbye_world")
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = DailyTestRollupFactory(
+            test=test,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=0.1,
+        )
+        _ = DailyTestRollupFactory(
+            test=test2,
+            created_at=datetime.datetime.now(),
+            repoid=repo.repoid,
+            branch="main",
+            avg_duration_seconds=20.0,
+        )
+        res = self.fetch_test_analytics(
+            repo.name,
+            """testSuites""",
+        )
+        assert sorted(res["testSuites"]) == ["goodbye_world", "hello_world"]
+
+    def test_flags(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+        repo_flag2 = RepositoryFlagFactory(repository=repo, flag_name="goodbye_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = TestFlagBridgeFactory(flag=repo_flag2, test=test2)
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """flags(term: "hello")""",
+        )
+        assert res["flags"] == ["hello_world"]
+
+    def test_flags_no_term(self) -> None:
+        repo = RepositoryFactory(author=self.owner, active=True, private=True)
+        test = TestFactory(repository=repo)
+        test2 = TestFactory(repository=repo)
+
+        repo_flag = RepositoryFlagFactory(repository=repo, flag_name="hello_world")
+        repo_flag2 = RepositoryFlagFactory(repository=repo, flag_name="goodbye_world")
+
+        _ = TestFlagBridgeFactory(flag=repo_flag, test=test)
+        _ = TestFlagBridgeFactory(flag=repo_flag2, test=test2)
+
+        res = self.fetch_test_analytics(
+            repo.name,
+            """flags""",
+        )
+        assert sorted(res["flags"]) == ["goodbye_world", "hello_world"]

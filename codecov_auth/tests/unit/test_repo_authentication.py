@@ -12,6 +12,12 @@ from rest_framework import exceptions
 from rest_framework.test import APIRequestFactory
 from shared.django_apps.codecov_auth.models import Owner, Service
 from shared.django_apps.core.models import Repository
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+    RepositoryTokenFactory,
+)
 
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
@@ -26,12 +32,6 @@ from codecov_auth.authentication.repo_auth import (
     UploadTokenRequiredGetFromBodyAuthenticationCheck,
 )
 from codecov_auth.models import SERVICE_GITHUB, OrganizationLevelToken, RepositoryToken
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import (
-    CommitFactory,
-    RepositoryFactory,
-    RepositoryTokenFactory,
-)
 
 
 class TestRepositoryLegacyQueryTokenAuthentication(object):

@@ -4,7 +4,6 @@ type Account {
   totalSeatCount: Int!
   activatedUserCount: Int!
   organizations(
-    ordering: AccountOrganizationOrdering
     orderingDirection: OrderingDirection
     first: Int
     after: String

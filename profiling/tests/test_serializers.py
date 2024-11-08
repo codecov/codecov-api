@@ -1,4 +1,5 @@
-from core.tests.factories import RepositoryFactory
+from shared.django_apps.core.tests.factories import RepositoryFactory
+
 from profiling.models import ProfilingCommit
 from profiling.serializers import ProfilingCommitSerializer
 

@@ -497,9 +497,6 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
     )
 
     edited = False
-    if commit.state != "pending":
-        commit.state = "pending"
-        edited = True
     if parent_commit_id and commit.parent_commit_id is None:
         commit.parent_commit_id = parent_commit_id
         edited = True
@@ -508,7 +505,7 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
         commit.branch = branch
         edited = True
     if edited:
-        commit.save(update_fields=["parent_commit_id", "state", "branch"])
+        commit.save(update_fields=["parent_commit_id", "branch"])
     return commit
 
 
@@ -757,9 +754,9 @@ def dispatch_upload_task(
 
 def validate_activated_repo(repository):
     if repository.active and not repository.activated:
-        settings_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/settings"
+        config_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/config/general"
         raise ValidationError(
-            f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
+            f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {config_url}"
         )
 
 
@@ -790,7 +787,7 @@ def get_version_from_headers(headers):
         return "unknown-user-agent"
 
 
-def generate_upload_sentry_metrics_tags(
+def generate_upload_prometheus_metrics_labels(
     action,
     request,
     is_shelter_request,
@@ -798,6 +795,7 @@ def generate_upload_sentry_metrics_tags(
     repository: Optional[Repository] = None,
     position: Optional[str] = None,
     upload_version: Optional[str] = None,
+    include_empty_labels: bool = True,
 ):
     metrics_tags = dict(
         agent=get_agent_from_headers(request.headers),
@@ -806,13 +804,23 @@ def generate_upload_sentry_metrics_tags(
         endpoint=endpoint,
         is_using_shelter="yes" if is_shelter_request else "no",
     )
+
+    repo_visibility = None
     if repository:
-        metrics_tags["repo_visibility"] = (
-            "private" if repository.private is True else "public"
-        )
-    if position:
-        metrics_tags["position"] = position
-    if upload_version:
-        metrics_tags["upload_version"] = upload_version
+        repo_visibility = "private" if repository.private else "public"
+
+    optional_fields = {
+        "repo_visibility": repo_visibility,
+        "position": position,
+        "upload_version": upload_version,
+    }
+
+    metrics_tags.update(
+        {
+            field: value
+            for field, value in optional_fields.items()
+            if value or include_empty_labels
+        }
+    )
 
     return metrics_tags

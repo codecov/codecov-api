@@ -2,10 +2,9 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.admin.models import LogEntry
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory
 
 from codecov_auth.helpers import History, current_user_part_of_org
-
-from ..factories import OwnerFactory
 
 
 @pytest.mark.django_db
