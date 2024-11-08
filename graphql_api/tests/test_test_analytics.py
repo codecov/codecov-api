@@ -1,5 +1,6 @@
 import datetime
 from base64 import b64encode
+from typing import Any
 
 import polars as pl
 import pytest
@@ -16,12 +17,36 @@ from graphql_api.types.enums.enum_types import MeasurementInterval
 from graphql_api.types.test_analytics.test_analytics import (
     TestResultConnection,
     TestResultsRow,
+    encode_cursor,
     generate_test_results,
     get_results,
 )
 from services.redis_configuration import get_redis_connection
 
 from .helper import GraphQLTestHelper
+
+
+class RowFactory:
+    idx = 0
+
+    def __call__(self, updated_at: datetime.datetime) -> dict[str, Any]:
+        RowFactory.idx += 1
+        return {
+            "name": f"test{RowFactory.idx}",
+            "testsuite": f"testsuite{RowFactory.idx}",
+            "flags": [f"flag{RowFactory.idx}"],
+            "test_id": f"test_id{RowFactory.idx}",
+            "failure_rate": 0.1,
+            "flake_rate": 0.0,
+            "updated_at": updated_at,
+            "avg_duration": 100.0,
+            "total_fail_count": 1,
+            "total_flaky_fail_count": 1 if RowFactory.idx == 1 else 0,
+            "total_pass_count": 1,
+            "total_skip_count": 1,
+            "commits_where_fail": 1,
+            "last_duration": 100.0,
+        }
 
 
 @pytest.fixture
@@ -46,40 +71,8 @@ base_gql_query = """
     }
 """
 
-row_1 = {
-    "name": "test1",
-    "testsuite": "testsuite1",
-    "flags": ["flag1"],
-    "test_id": "test_id1",
-    "failure_rate": 0.1,
-    "flake_rate": 0.0,
-    "updated_at": datetime.datetime(2024, 1, 1),
-    "avg_duration": 100.0,
-    "total_fail_count": 1,
-    "total_flaky_fail_count": 0,
-    "total_pass_count": 1,
-    "total_skip_count": 1,
-    "commits_where_fail": 1,
-    "last_duration": 100.0,
-}
 
-
-row_2 = {
-    "name": "test2",
-    "testsuite": "testsuite2",
-    "flags": ["flag2"],
-    "test_id": "test_id2",
-    "failure_rate": 0.2,
-    "flake_rate": 0.3,
-    "updated_at": datetime.datetime(2024, 1, 2),
-    "avg_duration": 200.0,
-    "total_fail_count": 2,
-    "total_flaky_fail_count": 2,
-    "total_pass_count": 2,
-    "total_skip_count": 2,
-    "commits_where_fail": 2,
-    "last_duration": 200.0,
-}
+rows = [RowFactory()(datetime.datetime(2024, 1, 1 + i)) for i in range(5)]
 
 
 def row_to_camel_case(row: dict) -> dict:
@@ -95,13 +88,15 @@ def row_to_camel_case(row: dict) -> dict:
     }
 
 
-test_results_table = pl.DataFrame(
-    [row_1, row_2],
-)
+test_results_table = pl.DataFrame(rows)
 
 
 def base64_encode_string(x: str) -> str:
     return b64encode(x.encode()).decode("utf-8")
+
+
+def cursor(row: dict) -> str:
+    return encode_cursor(TestResultsRow(**row), TestResultsOrderingParameter.UPDATED_AT)
 
 
 @pytest.fixture(autouse=True)
@@ -189,22 +184,19 @@ class TestAnalyticsTestCase(
         )
         assert test_results is not None
         assert test_results == TestResultConnection(
-            total_count=2,
+            total_count=5,
             edges=[
                 {
-                    "cursor": "MjAyNC0wMS0wMiAwMDowMDowMHx0ZXN0Mg==",
-                    "node": TestResultsRow(**row_2),
-                },
-                {
-                    "cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                    "node": TestResultsRow(**row_1),
-                },
+                    "cursor": cursor(row),
+                    "node": TestResultsRow(**row),
+                }
+                for row in reversed(rows)
             ],
             page_info={
                 "has_next_page": False,
                 "has_previous_page": False,
-                "start_cursor": "MjAyNC0wMS0wMiAwMDowMDowMHx0ZXN0Mg==",
-                "end_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
+                "start_cursor": cursor(rows[4]),
+                "end_cursor": cursor(rows[0]),
             },
         )
 
@@ -219,47 +211,96 @@ class TestAnalyticsTestCase(
         )
         assert test_results is not None
         assert test_results == TestResultConnection(
-            total_count=2,
+            total_count=5,
             edges=[
                 {
-                    "cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                    "node": TestResultsRow(**row_1),
-                },
-                {
-                    "cursor": "MjAyNC0wMS0wMiAwMDowMDowMHx0ZXN0Mg==",
-                    "node": TestResultsRow(**row_2),
-                },
+                    "cursor": cursor(row),
+                    "node": TestResultsRow(**row),
+                }
+                for row in rows
             ],
             page_info={
                 "has_next_page": False,
                 "has_previous_page": False,
-                "start_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                "end_cursor": "MjAyNC0wMS0wMiAwMDowMDowMHx0ZXN0Mg==",
+                "start_cursor": cursor(rows[0]),
+                "end_cursor": cursor(rows[4]),
             },
         )
 
     @pytest.mark.parametrize(
-        "first, after, before, last, has_next_page, has_previous_page, rows",
+        "first, after, last, before, has_next_page, has_previous_page, start_cursor, end_cursor, expected_rows",
         [
-            (1, None, None, None, True, False, [row_2]),
-            (
+            pytest.param(
                 1,
-                base64_encode_string(f"{row_2['updated_at']}|{row_2['name']}"),
                 None,
                 None,
+                None,
+                True,
                 False,
-                False,
-                [row_1],
+                cursor(rows[4]),
+                cursor(rows[4]),
+                [rows[4]],
+                id="first_1",
             ),
-            (None, None, None, 1, False, True, [row_1]),
-            (
-                None,
-                None,
-                base64_encode_string(f"{row_1['updated_at']}|{row_1['name']}"),
+            pytest.param(
                 1,
+                cursor(rows[4]),
+                None,
+                None,
+                True,
+                False,
+                cursor(rows[3]),
+                cursor(rows[3]),
+                [rows[3]],
+                id="first_1_after",
+            ),
+            pytest.param(
+                1,
+                cursor(rows[1]),
+                None,
+                None,
                 False,
                 False,
-                [row_2],
+                cursor(rows[0]),
+                cursor(rows[0]),
+                [rows[0]],
+                id="first_1_after_no_next",
+            ),
+            pytest.param(
+                None,
+                None,
+                1,
+                None,
+                False,
+                True,
+                cursor(rows[0]),
+                cursor(rows[0]),
+                [rows[0]],
+                id="last_1",
+            ),
+            pytest.param(
+                None,
+                None,
+                1,
+                cursor(rows[0]),
+                False,
+                True,
+                cursor(rows[1]),
+                cursor(rows[1]),
+                [rows[1]],
+                id="last_1_before",
+            ),
+            pytest.param(
+                None,
+                None,
+                1,
+                cursor(rows[3]),
+                False,
+                False,
+                cursor(rows[4]),
+                cursor(rows[4]),
+                [rows[4]],
+                id="last_1_before_no_previous",
             ),
         ],
     )
@@ -271,7 +312,9 @@ class TestAnalyticsTestCase(
         last,
         has_next_page,
         has_previous_page,
-        rows,
+        expected_rows,
+        start_cursor,
+        end_cursor,
         repository,
         store_in_redis,
         mock_storage,
@@ -287,56 +330,96 @@ class TestAnalyticsTestCase(
             last=last,
         )
         assert test_results == TestResultConnection(
-            total_count=2,
+            total_count=5,
             edges=[
                 {
-                    "cursor": base64_encode_string(
-                        f"{row['updated_at']}|{row['name']}"
-                    ),
+                    "cursor": cursor(row),
                     "node": TestResultsRow(**row),
                 }
-                for row in rows
+                for row in expected_rows
             ],
             page_info={
                 "has_next_page": has_next_page,
                 "has_previous_page": has_previous_page,
-                "start_cursor": base64_encode_string(
-                    f"{rows[0]['updated_at']}|{rows[0]['name']}"
-                )
-                if after
-                else base64_encode_string(
-                    f"{rows[-1]['updated_at']}|{rows[-1]['name']}"
-                ),
-                "end_cursor": base64_encode_string(
-                    f"{rows[-1]['updated_at']}|{rows[-1]['name']}"
-                )
-                if before
-                else base64_encode_string(f"{rows[0]['updated_at']}|{rows[0]['name']}"),
+                "start_cursor": start_cursor,
+                "end_cursor": end_cursor,
             },
         )
 
     @pytest.mark.parametrize(
-        "first, after, before, last, has_next_page, has_previous_page, rows",
+        "first, after, last, before, has_next_page, has_previous_page, start_cursor, end_cursor, expected_rows",
         [
-            (1, None, None, None, True, False, [row_1]),
-            (
+            pytest.param(
                 1,
-                base64_encode_string(f"{row_1['updated_at']}|{row_1['name']}"),
                 None,
                 None,
+                None,
+                True,
                 False,
-                False,
-                [row_2],
+                cursor(rows[0]),
+                cursor(rows[0]),
+                [rows[0]],
+                id="first_1",
             ),
-            (None, None, None, 1, False, True, [row_2]),
-            (
-                None,
-                None,
-                base64_encode_string(f"{row_2['updated_at']}|{row_2['name']}"),
+            pytest.param(
                 1,
+                cursor(rows[0]),
+                None,
+                None,
+                True,
+                False,
+                cursor(rows[1]),
+                cursor(rows[1]),
+                [rows[1]],
+                id="first_1_after",
+            ),
+            pytest.param(
+                1,
+                cursor(rows[3]),
+                None,
+                None,
                 False,
                 False,
-                [row_1],
+                cursor(rows[4]),
+                cursor(rows[4]),
+                [rows[4]],
+                id="first_1_after_no_next",
+            ),
+            pytest.param(
+                None,
+                None,
+                1,
+                None,
+                False,
+                True,
+                cursor(rows[4]),
+                cursor(rows[4]),
+                [rows[4]],
+                id="last_1",
+            ),
+            pytest.param(
+                None,
+                None,
+                1,
+                cursor(rows[4]),
+                False,
+                True,
+                cursor(rows[3]),
+                cursor(rows[3]),
+                [rows[3]],
+                id="last_1_before",
+            ),
+            pytest.param(
+                None,
+                None,
+                1,
+                cursor(rows[1]),
+                False,
+                False,
+                cursor(rows[0]),
+                cursor(rows[0]),
+                [rows[0]],
+                id="last_1_before_no_previous",
             ),
         ],
     )
@@ -348,7 +431,9 @@ class TestAnalyticsTestCase(
         last,
         has_next_page,
         has_previous_page,
-        rows,
+        expected_rows,
+        start_cursor,
+        end_cursor,
         repository,
         store_in_redis,
         mock_storage,
@@ -364,38 +449,26 @@ class TestAnalyticsTestCase(
             last=last,
         )
         assert test_results == TestResultConnection(
-            total_count=2,
+            total_count=5,
             edges=[
                 {
-                    "cursor": base64_encode_string(
-                        f"{row['updated_at']}|{row['name']}"
-                    ),
+                    "cursor": cursor(row),
                     "node": TestResultsRow(**row),
                 }
-                for row in rows
+                for row in expected_rows
             ],
             page_info={
                 "has_next_page": has_next_page,
                 "has_previous_page": has_previous_page,
-                "start_cursor": base64_encode_string(
-                    f"{rows[0]['updated_at']}|{rows[0]['name']}"
-                )
-                if after
-                else base64_encode_string(
-                    f"{rows[-1]['updated_at']}|{rows[-1]['name']}"
-                ),
-                "end_cursor": base64_encode_string(
-                    f"{rows[-1]['updated_at']}|{rows[-1]['name']}"
-                )
-                if before
-                else base64_encode_string(f"{rows[0]['updated_at']}|{rows[0]['name']}"),
+                "start_cursor": start_cursor,
+                "end_cursor": end_cursor,
             },
         )
 
     def test_test_analytics_term_filter(self, repository, store_in_redis, mock_storage):
         test_results = generate_test_results(
             repoid=repository.repoid,
-            term="test1",
+            term=rows[0]["name"],
             ordering=TestResultsOrderingParameter.UPDATED_AT,
             ordering_direction=OrderingDirection.DESC,
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
@@ -405,22 +478,22 @@ class TestAnalyticsTestCase(
             total_count=1,
             edges=[
                 {
-                    "cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                    "node": TestResultsRow(**row_1),
+                    "cursor": cursor(rows[0]),
+                    "node": TestResultsRow(**rows[0]),
                 },
             ],
             page_info={
                 "has_next_page": False,
                 "has_previous_page": False,
-                "start_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                "end_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
+                "start_cursor": cursor(rows[0]),
+                "end_cursor": cursor(rows[0]),
             },
         )
 
     def test_test_analytics_testsuite_filter(self, repository, store_in_redis):
         test_results = generate_test_results(
             repoid=repository.repoid,
-            testsuites=["testsuite1"],
+            testsuites=[rows[0]["testsuite"]],
             ordering=TestResultsOrderingParameter.UPDATED_AT,
             ordering_direction=OrderingDirection.DESC,
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
@@ -430,22 +503,22 @@ class TestAnalyticsTestCase(
             total_count=1,
             edges=[
                 {
-                    "cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                    "node": TestResultsRow(**row_1),
+                    "cursor": cursor(rows[0]),
+                    "node": TestResultsRow(**rows[0]),
                 },
             ],
             page_info={
                 "has_next_page": False,
                 "has_previous_page": False,
-                "start_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                "end_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
+                "start_cursor": cursor(rows[0]),
+                "end_cursor": cursor(rows[0]),
             },
         )
 
     def test_test_analytics_flag_filter(self, repository, store_in_redis, mock_storage):
         test_results = generate_test_results(
             repoid=repository.repoid,
-            flags=["flag1"],
+            flags=[rows[0]["flags"][0]],
             ordering=TestResultsOrderingParameter.UPDATED_AT,
             ordering_direction=OrderingDirection.DESC,
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
@@ -455,15 +528,15 @@ class TestAnalyticsTestCase(
             total_count=1,
             edges=[
                 {
-                    "cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                    "node": TestResultsRow(**row_1),
+                    "cursor": cursor(rows[0]),
+                    "node": TestResultsRow(**rows[0]),
                 },
             ],
             page_info={
                 "has_next_page": False,
                 "has_previous_page": False,
-                "start_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                "end_cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
+                "start_cursor": cursor(rows[0]),
+                "end_cursor": cursor(rows[0]),
             },
         )
 
@@ -498,19 +571,16 @@ class TestAnalyticsTestCase(
 
         assert (
             result["owner"]["repository"]["testAnalytics"]["testResults"]["totalCount"]
-            == 2
+            == 5
         )
         assert result["owner"]["repository"]["testAnalytics"]["testResults"][
             "edges"
         ] == [
             {
-                "cursor": "MjAyNC0wMS0wMiAwMDowMDowMHx0ZXN0Mg==",
-                "node": row_to_camel_case(row_2),
-            },
-            {
-                "cursor": "MjAyNC0wMS0wMSAwMDowMDowMHx0ZXN0MQ==",
-                "node": row_to_camel_case(row_1),
-            },
+                "cursor": cursor(row),
+                "node": row_to_camel_case(row),
+            }
+            for row in reversed(rows)
         ]
 
     def test_gql_query_aggregates(self, repository, store_in_redis, mock_storage):
@@ -534,9 +604,9 @@ class TestAnalyticsTestCase(
             "testResultsAggregates"
         ] == {
             "totalDuration": 1000.0,
-            "slowestTestsDuration": 800.0,
-            "totalFails": 3,
-            "totalSkips": 3,
+            "slowestTestsDuration": 200.0,
+            "totalFails": 5,
+            "totalSkips": 5,
             "totalSlowTests": 1,
         }
 
@@ -555,6 +625,6 @@ class TestAnalyticsTestCase(
         result = self.gql_request(query, owner=repository.author)
 
         assert result["owner"]["repository"]["testAnalytics"]["flakeAggregates"] == {
-            "flakeRate": 1 / 3,
+            "flakeRate": 0.1,
             "flakeCount": 1,
         }

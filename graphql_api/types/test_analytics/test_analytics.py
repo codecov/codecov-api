@@ -218,31 +218,20 @@ def generate_test_results(
         case TestResultsFilterParameter.SLOWEST_TESTS:
             table = table.filter(
                 pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95)
-            ).top_k(100, by=pl.col("avg_duration"))
+            ).top_k(min(100, max(table.height // 20, 1)), by=pl.col("avg_duration"))
 
     total_count = table.height
 
-    if after:
-        if ordering_direction == OrderingDirection.ASC:
-            is_forward = True
-        else:
-            is_forward = False
-
-        cursor_value = decode_cursor(after, ordering)
+    if after or before:
+        comparison_direction = (ordering_direction == OrderingDirection.ASC) == (
+            bool(first)
+        )
+        cursor_value = (
+            decode_cursor(after, ordering) if after else decode_cursor(before, ordering)
+        )
         if cursor_value:
             table = table.filter(
-                ordering_expression(ordering, cursor_value, is_forward)
-            )
-    elif before:
-        if ordering_direction == OrderingDirection.DESC:
-            is_forward = True
-        else:
-            is_forward = False
-
-        cursor_value = decode_cursor(before, ordering)
-        if cursor_value:
-            table = table.filter(
-                ordering_expression(ordering, cursor_value, is_forward)
+                ordering_expression(ordering, cursor_value, comparison_direction)
             )
 
     table = table.sort(
@@ -253,7 +242,7 @@ def generate_test_results(
     if first:
         page_elements = table.slice(0, first)
     elif last:
-        page_elements = table.reverse().slice(0, last)
+        page_elements = table.slice(-last, last)
     else:
         page_elements = table
 

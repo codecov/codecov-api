@@ -38,7 +38,7 @@ def calculate_aggregates(table: pl.DataFrame) -> pl.DataFrame:
                 * (pl.col("total_pass_count") + pl.col("total_fail_count"))
             )
             .otherwise(0)
-            .top_k(100)
+            .top_k(min(100, max(table.height // 20, 1)))
             .sum()
             .alias("slowest_tests_duration")
         ),
@@ -46,7 +46,7 @@ def calculate_aggregates(table: pl.DataFrame) -> pl.DataFrame:
         (pl.col("total_fail_count").sum()).alias("fails"),
         (
             (pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95))
-            .top_k(100)
+            .top_k(min(100, max(table.height // 20, 1)))
             .sum()
         ).alias("total_slow_tests"),
     )
