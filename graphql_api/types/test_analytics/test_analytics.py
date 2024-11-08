@@ -29,6 +29,10 @@ from utils.test_results import get_results
 
 log = logging.getLogger(__name__)
 
+INTERVAL_30_DAY = 30
+INTERVAL_7_DAY = 7
+INTERVAL_1_DAY = 1
+
 
 @dataclass
 class TestResultsRow:
@@ -109,7 +113,7 @@ def validate(
     first: int | None,
     last: int | None,
 ) -> None:
-    if interval not in {1, 7, 30}:
+    if interval not in {INTERVAL_1_DAY, INTERVAL_7_DAY, INTERVAL_30_DAY}:
         raise ValidationError(f"Invalid interval: {interval}")
 
     if not isinstance(ordering_direction, OrderingDirection):
@@ -123,6 +127,22 @@ def validate(
 
     if after is not None and before is not None:
         raise ValidationError("After and before can not be used at the same time")
+
+
+def ordering_expression(
+    ordering: TestResultsOrderingParameter, cursor_value: CursorValue, is_forward: bool
+) -> pl.Expr:
+    if is_forward:
+        ordering_expression = (pl.col(ordering.value) > cursor_value.ordered_value) | (
+            (pl.col(ordering.value) == cursor_value.ordered_value)
+            & (pl.col("name") > cursor_value.name)
+        )
+    else:
+        ordering_expression = (pl.col(ordering.value) < cursor_value.ordered_value) | (
+            (pl.col(ordering.value) == cursor_value.ordered_value)
+            & (pl.col("name") > cursor_value.name)
+        )
+    return ordering_expression
 
 
 def generate_test_results(
@@ -182,7 +202,8 @@ def generate_test_results(
 
     if flags:
         table = table.filter(
-            pl.col("flags").list.eval(pl.element().is_in(flags)).list.any()
+            pl.col("flags").is_not_null()
+            & pl.col("flags").list.eval(pl.element().is_in(flags)).list.any()
         )
 
     match parameter:
@@ -201,23 +222,6 @@ def generate_test_results(
 
     total_count = table.height
 
-    def ordering_expression(cursor_value: CursorValue, is_forward: bool) -> pl.Expr:
-        if is_forward:
-            ordering_expression = (
-                pl.col(ordering.value) > cursor_value.ordered_value
-            ) | (
-                (pl.col(ordering.value) == cursor_value.ordered_value)
-                & (pl.col("name") > cursor_value.name)
-            )
-        else:
-            ordering_expression = (
-                pl.col(ordering.value) < cursor_value.ordered_value
-            ) | (
-                (pl.col(ordering.value) == cursor_value.ordered_value)
-                & (pl.col("name") > cursor_value.name)
-            )
-        return ordering_expression
-
     if after:
         if ordering_direction == OrderingDirection.ASC:
             is_forward = True
@@ -226,7 +230,9 @@ def generate_test_results(
 
         cursor_value = decode_cursor(after, ordering)
         if cursor_value:
-            table = table.filter(ordering_expression(cursor_value, is_forward))
+            table = table.filter(
+                ordering_expression(ordering, cursor_value, is_forward)
+            )
     elif before:
         if ordering_direction == OrderingDirection.DESC:
             is_forward = True
@@ -235,7 +241,9 @@ def generate_test_results(
 
         cursor_value = decode_cursor(before, ordering)
         if cursor_value:
-            table = table.filter(ordering_expression(cursor_value, is_forward))
+            table = table.filter(
+                ordering_expression(ordering, cursor_value, is_forward)
+            )
 
     table = table.sort(
         [ordering.value, "name"],
@@ -363,7 +371,8 @@ async def resolve_test_results_aggregates(
     **_: Any,
 ) -> TestResultsAggregates | None:
     return await sync_to_async(generate_test_results_aggregates)(
-        repoid=repository.repoid, interval=interval.value if interval else 30
+        repoid=repository.repoid,
+        interval=interval if interval else MeasurementInterval.INTERVAL_30_DAY,
     )
 
 
@@ -375,7 +384,8 @@ async def resolve_flake_aggregates(
     **_: Any,
 ) -> FlakeAggregates | None:
     return await sync_to_async(generate_flake_aggregates)(
-        repoid=repository.repoid, interval=interval.value if interval else 30
+        repoid=repository.repoid,
+        interval=interval if interval else MeasurementInterval.INTERVAL_30_DAY,
     )
 
 

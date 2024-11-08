@@ -5,6 +5,7 @@ from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 from shared.django_apps.core.models import Repository
 
+from graphql_api.types.enums.enum_types import MeasurementInterval
 from utils.test_results import get_results
 
 
@@ -48,13 +49,17 @@ def flake_aggregates_with_percentage(
     return FlakeAggregates(**aggregates)
 
 
-def generate_flake_aggregates(repoid: int, interval: int) -> FlakeAggregates | None:
+def generate_flake_aggregates(
+    repoid: int, interval: MeasurementInterval
+) -> FlakeAggregates | None:
     repo = Repository.objects.get(repoid=repoid)
 
-    curr_results = get_results(repo.repoid, repo.branch, interval)
+    curr_results = get_results(repo.repoid, repo.branch, interval.value)
     if curr_results is None:
         return None
-    past_results = get_results(repo.repoid, repo.branch, interval * 2, interval)
+    past_results = get_results(
+        repo.repoid, repo.branch, interval.value * 2, interval.value
+    )
     if past_results is None:
         return flake_aggregates_from_table(curr_results)
     else:

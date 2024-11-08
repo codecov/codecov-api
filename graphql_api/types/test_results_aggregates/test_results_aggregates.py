@@ -6,6 +6,7 @@ from graphql import GraphQLResolveInfo
 from shared.django_apps.core.models import Repository
 
 from utils.test_results import get_results
+from graphql_api.types.enums.enum_types import MeasurementInterval
 
 
 @dataclass
@@ -43,9 +44,11 @@ def calculate_aggregates(table: pl.DataFrame) -> pl.DataFrame:
         ),
         (pl.col("total_skip_count").sum()).alias("skips"),
         (pl.col("total_fail_count").sum()).alias("fails"),
-        ((pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95)).sum()).alias(
-            "total_slow_tests"
-        ),
+        (
+            (pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95))
+            .top_k(100)
+            .sum()
+        ).alias("total_slow_tests"),
     )
 
 
@@ -65,6 +68,8 @@ def test_results_aggregates_with_percentage(
 
     merged_results: pl.DataFrame = pl.concat([past_aggregates, curr_aggregates])
 
+    # with_columns upserts the new columns, so if the name already exists it get overwritten
+    # otherwise it's just added
     merged_results = merged_results.with_columns(
         pl.all().pct_change().name.suffix("_percent_change")
     )
@@ -74,14 +79,16 @@ def test_results_aggregates_with_percentage(
 
 
 def generate_test_results_aggregates(
-    repoid: int, interval: int
+    repoid: int, interval: MeasurementInterval
 ) -> TestResultsAggregates | None:
     repo = Repository.objects.get(repoid=repoid)
 
-    curr_results = get_results(repo.repoid, repo.branch, interval)
+    curr_results = get_results(repo.repoid, repo.branch, interval.value)
     if curr_results is None:
         return None
-    past_results = get_results(repo.repoid, repo.branch, interval * 2, interval)
+    past_results = get_results(
+        repo.repoid, repo.branch, interval.value * 2, interval.value
+    )
     if past_results is None:
         return test_results_aggregates_from_table(curr_results)
     else:
