@@ -982,7 +982,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
 
     def test_fetch_upload_token_required(self):
-        owner = OwnerFactory(username="sample-owner", service="github")
+        owner = OwnerFactory(
+            username="sample-owner",
+            service="github",
+            upload_token_required_for_public_repos=True,
+        )
         query = """{
             owner(username: "%s") {
                 uploadTokenRequired

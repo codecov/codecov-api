@@ -307,6 +307,7 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         author__username="codecov",
         author__service="github",
         private=private,
+        author__upload_token_required_for_public_repos=True,
     )
     commit = CommitFactory(repository=repository)
     commit.branch = branch
@@ -589,6 +590,7 @@ def test_uploads_post_github_oidc_auth(
         name="the_repo",
         author__username="codecov",
         author__service="github",
+        author__upload_token_required_for_public_repos=True,
         private=False,
     )
     mock_jwt_decode.return_value = {
@@ -861,6 +863,7 @@ class TestGitlabEnterpriseOIDC(APITestCase):
             name="the_repo",
             author__username="codecov",
             author__service="github_enterprise",
+            author__upload_token_required_for_public_repos=True,
             private=False,
         )
         mock_jwt_decode.return_value = {
