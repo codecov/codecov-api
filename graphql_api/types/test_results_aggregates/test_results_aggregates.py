@@ -5,8 +5,8 @@ from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 from shared.django_apps.core.models import Repository
 
-from utils.test_results import get_results
 from graphql_api.types.enums.enum_types import MeasurementInterval
+from utils.test_results import get_results
 
 
 @dataclass
