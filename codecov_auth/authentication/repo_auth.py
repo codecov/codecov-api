@@ -424,9 +424,7 @@ class UploadTokenRequiredGetFromBodyAuthenticationCheck(
         BA sends this in as git_service, TA sends this in as service.
         Use this function so this Check class can be used by both views.
         """
-        git_service = validated_data.get("git_service")
-        if not git_service:
-            git_service = validated_data.get("service")
+        git_service = validated_data.get("git_service") or validated_data.get("service")
         return git_service
 
     def _get_info_from_request_body(
