@@ -30,7 +30,7 @@ def test_get_bbs_redirect(client, settings, mocker):
         == "https://my.bitbucketserver.com/plugins/servlet/oauth/authorize?oauth_token=SomeToken"
     )
     client_request_mock.assert_called_with(
-        "POST", f"{settings.BITBUCKET_SERVER_URL}/z_plugins/servlet/oauth/request-token"
+        "POST", f"{settings.BITBUCKET_SERVER_URL}/plugins/servlet/oauth/request-token"
     )
 
 
@@ -66,11 +66,11 @@ def test_get_bbs_already_token(client, settings, mocker, db, mock_redis):
 
     async def fake_api(method, url):
         if method == "POST" and (
-            url.endswith("/z_plugins/servlet/oauth/access-token")
-            or url.endswith("/z_plugins/servlet/oauth/request-token")
+            url.endswith("/plugins/servlet/oauth/access-token")
+            or url.endswith("/plugins/servlet/oauth/request-token")
         ):
             return dict(oauth_token="SomeToken", oauth_token_secret="SomeTokenSecret")
-        elif method == "GET" and url.endswith("/z_plugins/servlet/applinks/whoami"):
+        elif method == "GET" and url.endswith("/plugins/servlet/applinks/whoami"):
             return "ThiagoCodecov"
         elif method == "GET" and ("/users/ThiagoCodecov" in url):
             return dict(

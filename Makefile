@@ -40,10 +40,8 @@ test.integration:
 	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy
 
 lint:
-#	make lint.install
-#	make lint.run
-
-	make mypy-check
+	make lint.install
+	make lint.run
 
 lint.install:
 	echo "Installing..."
@@ -58,15 +56,6 @@ lint.check:
 	ruff check
 	echo "Formatting..."
 	ruff format --check
-
-
-# Check if mypy and django-stubs are installed and run type checks
-mypy-check:
-	# Install mypy and django-stubs if they aren't already installed
-	pip show mypy > /dev/null || pip install mypy
-	pip show django-stubs > /dev/null || pip install django-stubs
-	# Run mypy with verbose output
-	mypy --config-file mypy.ini .
 
 build.requirements:
 	# if docker pull succeeds, we have already build this version of

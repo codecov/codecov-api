@@ -21,6 +21,7 @@ def resolve_name(account: Account, info: GraphQLResolveInfo) -> str:
 
 
 @account_bindable.field("oktaConfig")
+@sync_to_async
 def resolve_okta_config(
     account: Account, info: GraphQLResolveInfo
 ) -> OktaSettings | None:
