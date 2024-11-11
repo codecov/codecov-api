@@ -29,6 +29,7 @@ minio
 opentelemetry-instrumentation-django>=0.45b0
 opentelemetry-sdk>=1.24.0
 opentracing
+polars==1.12.0
 pre-commit
 psycopg2
 PyJWT
