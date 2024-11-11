@@ -1,4 +1,5 @@
 import polars as pl
+from django.conf import settings
 from shared.storage.exceptions import FileNotInStorageError
 
 from services.redis_configuration import get_redis_connection
@@ -57,7 +58,9 @@ def get_results(
         storage_service = StorageService()
         key = storage_key(repoid, branch, interval_start, interval_end)
         try:
-            result = storage_service.read_file(bucket_name="codecov", path=key)
+            result = storage_service.read_file(
+                bucket_name=settings.GCS_BUCKET_NAME, path=key
+            )
             # cache to redis
             TaskService().cache_test_results_redis(repoid, branch)
         except FileNotInStorageError:

@@ -115,6 +115,10 @@ GRAPHQL_MAX_ALIASES = get_config("setup", "graphql", "max_aliases", default=10)
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
+# GCS
+GCS_BUCKET_NAME = "codecov"
+
+
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
