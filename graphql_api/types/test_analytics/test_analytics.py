@@ -218,13 +218,15 @@ def generate_test_results(
         case TestResultsFilterParameter.SLOWEST_TESTS:
             table = table.filter(
                 pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95)
-            ).top_k(min(100, max(table.height // 20, 1)), by=pl.col("avg_duration"))
+            ).top_k(
+                min(100, max(table.height // 20, 1)), by=pl.col("avg_duration")
+            )  # the top k operation here is to make sure we don't show too many slowest tests in the case of a low sample size
 
     total_count = table.height
 
     if after or before:
         comparison_direction = (ordering_direction == OrderingDirection.ASC) == (
-            bool(first)
+            bool(after)
         )
         cursor_value = (
             decode_cursor(after, ordering) if after else decode_cursor(before, ordering)
