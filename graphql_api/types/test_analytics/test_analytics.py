@@ -189,7 +189,12 @@ def generate_test_results(
         return TestResultConnection(
             edges=[],
             total_count=0,
-            page_info={},
+            page_info={
+                "has_next_page": False,
+                "has_previous_page": False,
+                "start_cursor": None,
+                "end_cursor": None,
+            },
         )
 
     if term:
