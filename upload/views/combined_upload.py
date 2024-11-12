@@ -77,9 +77,9 @@ class CombinedUploadView(
             return Response(
                 commit_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
-        log.info(f"Creating commit for {commit_serializer.validated_data}")
-        repository = self.get_repo()
 
+        repository = self.get_repo()
+        log.info(f"Creating commit for {commit_serializer.validated_data}")
         self.emit_metrics(position="create_commit")
         commit = self.create_commit(commit_serializer, repository)
 
@@ -93,6 +93,7 @@ class CombinedUploadView(
                 commit_report_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
+        log.info(f"Creating report for {commit_report_serializer.validated_data}")
         self.emit_metrics(position="create_report")
         report = self.create_report(commit_report_serializer, repository, commit)
 
@@ -104,7 +105,11 @@ class CombinedUploadView(
             ci_service=request.data.get("ci_service"),
             job_code=request.data.get("job_code"),
             name=request.data.get("name"),
+            version=request.data.get("version"),
         )
+
+        if self.is_shelter_request():
+            upload_data["storage_path"] = request.data.get("storage_path")
 
         upload_serializer = UploadSerializer(data=upload_data)
         if not upload_serializer.is_valid():
@@ -112,6 +117,7 @@ class CombinedUploadView(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
+        log.info(f"Creating upload for {upload_serializer.validated_data}")
         self.emit_metrics(position="create_upload")
         upload = self.create_upload(upload_serializer, repository, commit, report)
 
@@ -129,8 +135,10 @@ class CombinedUploadView(
         raw_upload_location = archive_service.create_presigned_put(upload.storage_path)
         return Response(
             {
-                "url": url,
+                "external_id": str(upload.external_id),
+                "created_at": upload.created_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 "raw_upload_location": raw_upload_location,
+                "url": url,
             },
             status=status.HTTP_201_CREATED,
         )
