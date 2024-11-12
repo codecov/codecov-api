@@ -49,7 +49,7 @@ class CombinedUploadView(
 
     def get_exception_handler(self):
         return repo_auth_custom_exception_handler
-    
+
     def emit_metrics(self, position: str) -> None:
         inc_counter(
             API_UPLOAD_COUNTER,
@@ -117,22 +117,20 @@ class CombinedUploadView(
 
         self.emit_metrics(position="end")
 
-        if upload:
-            commitid = upload.report.commit.commitid
-            upload_repository = upload.report.commit.repository
-            url = f"{settings.CODECOV_DASHBOARD_URL}/{upload_repository.author.service}/{upload_repository.author.username}/{upload_repository.name}/commit/{commitid}"
-            archive_service = ArchiveService(upload_repository)
-            raw_upload_location = archive_service.create_presigned_put(
-                upload.storage_path
-            )
-            return Response(
-                {
-                    "url": url,
-                    "raw_upload_location": raw_upload_location,
-                },
-                status=status.HTTP_201_CREATED,
-            )
-        else:
+        if not upload:
             return Response(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
+
+        commitid = upload.report.commit.commitid
+        upload_repository = upload.report.commit.repository
+        url = f"{settings.CODECOV_DASHBOARD_URL}/{upload_repository.author.service}/{upload_repository.author.username}/{upload_repository.name}/commit/{commitid}"
+        archive_service = ArchiveService(upload_repository)
+        raw_upload_location = archive_service.create_presigned_put(upload.storage_path)
+        return Response(
+            {
+                "url": url,
+                "raw_upload_location": raw_upload_location,
+            },
+            status=status.HTTP_201_CREATED,
+        )
