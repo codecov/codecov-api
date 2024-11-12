@@ -72,6 +72,8 @@ GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", defaul
 COOKIE_SAME_SITE = "None"
 SESSION_COOKIE_SAMESITE = "None"
 
+GCS_BUCKET_NAME = "codecov-staging"
+
 CSRF_TRUSTED_ORIGINS = [
     get_config("setup", "trusted_origin", default="https://*.codecov.dev")
 ]
