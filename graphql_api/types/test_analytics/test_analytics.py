@@ -285,7 +285,7 @@ def get_test_suites(
     if term:
         testsuites = testsuites.filter(pl.col("testsuite").str.starts_with(term))
 
-    return testsuites.to_series().to_list()
+    return testsuites.to_series().drop_nulls().to_list() or []
 
 
 def get_flags(repoid: int, term: str | None = None, interval: int = 30) -> list[str]:
@@ -300,7 +300,7 @@ def get_flags(repoid: int, term: str | None = None, interval: int = 30) -> list[
     if term:
         flags = flags.filter(pl.col("flags").str.starts_with(term))
 
-    return flags.to_series().to_list()
+    return flags.to_series().drop_nulls().to_list() or []
 
 
 class TestResultsOrdering(TypedDict):
