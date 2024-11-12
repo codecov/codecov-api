@@ -115,6 +115,10 @@ GRAPHQL_MAX_ALIASES = get_config("setup", "graphql", "max_aliases", default=10)
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
+# GCS
+GCS_BUCKET_NAME = "codecov"
+
+
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
@@ -170,6 +174,8 @@ CSP_DEFAULT_SRC = [
     "'sha256-eKdXhLyOdPl2/gp1Ob116rCU2Ox54rseyz1MwCmzb6w='",
     "'sha256-a1pELtDJXf8fPX1YL2JiBM91RQBeIAswunzgwMEsvwA='",
     "'sha256-cNIcuS0BVLuBVP5rpfeFE42xHz7r5hMyf9YdfknWuCg='",
+    "'sha256-bmwAzHxhO1mBINfkKkKPopyKEv4ppCHx/z84wQJ9nOY='",
+    "'sha256-jQoC6QpIonlMBPFbUGlJFRJFFWbbijMl7Z8XqWrb46o='",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",

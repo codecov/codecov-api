@@ -3,7 +3,7 @@ from datetime import datetime
 from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
-from utils.test_results import TestResultsRow
+from graphql_api.types.test_analytics.test_analytics import TestResultsRow
 
 test_result_bindable = ObjectType("TestResult")
 
