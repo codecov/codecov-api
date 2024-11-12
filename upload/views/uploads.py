@@ -39,7 +39,7 @@ from upload.views.base import GetterMixin
 log = logging.getLogger(__name__)
 
 
-def create_upload(serializer, repository, commit, report, is_shelter_request, token):
+def create_upload(serializer, repository, commit, report, is_shelter_request, analytics_token):
     version = (
         serializer.validated_data["version"]
         if "version" in serializer.validated_data
@@ -77,7 +77,7 @@ def create_upload(serializer, repository, commit, report, is_shelter_request, to
         instance.save()
     trigger_upload_task(repository, commit.commitid, instance, report)
     activate_repo(repository)
-    send_analytics_data(commit, instance, version, token)
+    send_analytics_data(commit, instance, version, analytics_token)
     return instance
 
 
@@ -126,7 +126,7 @@ def activate_repo(repository):
     )
 
 
-def send_analytics_data(commit: Commit, upload: ReportSession, version, token):
+def send_analytics_data(commit: Commit, upload: ReportSession, version, analytics_token):
     analytics_upload_data = {
         "commit": commit.commitid,
         "branch": commit.branch,
@@ -142,7 +142,7 @@ def send_analytics_data(commit: Commit, upload: ReportSession, version, token):
         # therefore we are removing this for now to see if it is the source of the issue
         "flags": "",
         "owner": commit.repository.author.ownerid,
-        "token": str(token),
+        "token": str(analytics_token),
         "version": version,
         "uploader_type": "CLI",
     }
@@ -154,14 +154,14 @@ def send_analytics_data(commit: Commit, upload: ReportSession, version, token):
 def get_token_for_analytics(commit: Commit, request):
     repo = commit.repository
     if isinstance(request.auth, TokenlessAuth):
-        token = "tokenless_upload"
+        analytics_token = "tokenless_upload"
     elif isinstance(request.auth, OrgLevelTokenRepositoryAuth):
-        token = OrganizationLevelToken.objects.filter(owner=repo.author).first().token
+        analytics_token = OrganizationLevelToken.objects.filter(owner=repo.author).first().token
     elif isinstance(request.auth, OIDCTokenRepositoryAuth):
-        token = "oidc_token_upload"
+        analytics_token = "oidc_token_upload"
     else:
-        token = repo.upload_token
-    return token
+        analytics_token = repo.upload_token
+    return analytics_token
 
 
 class CanDoCoverageUploadsPermission(BasePermission):
