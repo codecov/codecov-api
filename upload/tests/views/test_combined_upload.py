@@ -106,7 +106,7 @@ def test_combined_upload_post(db, mocker):
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
-        "upload.views.uploads.UploadLogicMixin.trigger_upload_task", return_value=True
+        "upload.views.uploads.trigger_upload_task", return_value=True
     )
 
     repository = RepositoryFactory(
@@ -204,7 +204,7 @@ def test_combined_upload_post_shelter(db, mocker):
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
-        "upload.views.uploads.UploadLogicMixin.trigger_upload_task", return_value=True
+        "upload.views.uploads.trigger_upload_task", return_value=True
     )
 
     repository = RepositoryFactory(

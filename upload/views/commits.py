@@ -26,14 +26,13 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 log = logging.getLogger(__name__)
 
 
-class CommitLogicMixin:
-    def create_commit(self, serializer, repository):
-        validate_activated_repo(repository)
-        commit = serializer.save(repository=repository)
-        return commit
+def create_commit(serializer, repository):
+    validate_activated_repo(repository)
+    commit = serializer.save(repository=repository)
+    return commit
 
 
-class CommitViews(ListCreateAPIView, GetterMixin, CommitLogicMixin):
+class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
@@ -75,7 +74,7 @@ class CommitViews(ListCreateAPIView, GetterMixin, CommitLogicMixin):
             ),
         )
         repository = self.get_repo()
-        commit = self.create_commit(serializer, repository)
+        commit = create_commit(serializer, repository)
 
         log.info(
             "Request to create new commit",

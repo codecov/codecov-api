@@ -39,6 +39,131 @@ from upload.views.base import GetterMixin
 log = logging.getLogger(__name__)
 
 
+def create_upload(serializer, repository, commit, report, is_shelter_request, token):
+    version = (
+        serializer.validated_data["version"]
+        if "version" in serializer.validated_data
+        else None
+    )
+    archive_service = ArchiveService(repository)
+    # Create upload record
+    instance: ReportSession = serializer.save(
+        report_id=report.id,
+        upload_extras={"format_version": "v1"},
+    )
+
+    # Inserts mirror upload record into measurements table. CLI hits this endpoint
+    insert_coverage_measurement(
+        owner_id=repository.author.ownerid,
+        repo_id=repository.repoid,
+        commit_id=commit.id,
+        upload_id=instance.id,
+        uploader_used=UploaderType.CLI.value,
+        private_repo=repository.private,
+        report_type=report.report_type,
+    )
+
+    # only Shelter requests are allowed to set their own `storage_path`
+    if instance.storage_path is None or not is_shelter_request:
+        path = MinioEndpoints.raw_with_upload_id.get_path(
+            version="v4",
+            date=timezone.now().strftime("%Y-%m-%d"),
+            repo_hash=archive_service.storage_hash,
+            commit_sha=commit.commitid,
+            reportid=report.external_id,
+            uploadid=instance.external_id,
+        )
+        instance.storage_path = path
+        instance.save()
+    trigger_upload_task(repository, commit.commitid, instance, report)
+    activate_repo(repository)
+    send_analytics_data(commit, instance, version, token)
+    return instance
+
+
+def trigger_upload_task(repository, commit_sha, upload, report):
+    log.info(
+        "Triggering upload task",
+        extra=dict(
+            repo=repository.name,
+            commit=commit_sha,
+            upload_id=upload.id,
+            report_code=report.code,
+        ),
+    )
+    redis = get_redis_connection()
+    task_arguments = {
+        "commit": commit_sha,
+        "upload_id": upload.id,
+        "version": "v4",
+        "report_code": report.code,
+        "reportid": str(report.external_id),
+    }
+    dispatch_upload_task(task_arguments, repository, redis)
+
+
+def activate_repo(repository):
+    # Only update the fields if needed
+    if (
+        repository.activated
+        and repository.active
+        and not repository.deleted
+        and repository.coverage_enabled
+    ):
+        return
+    repository.activated = True
+    repository.active = True
+    repository.deleted = False
+    repository.coverage_enabled = True
+    repository.save(
+        update_fields=[
+            "activated",
+            "active",
+            "deleted",
+            "coverage_enabled",
+            "updatestamp",
+        ]
+    )
+
+
+def send_analytics_data(commit: Commit, upload: ReportSession, version, token):
+    analytics_upload_data = {
+        "commit": commit.commitid,
+        "branch": commit.branch,
+        "pr": commit.pullid,
+        "repo": commit.repository.name,
+        "repository_name": commit.repository.name,
+        "repository_id": commit.repository.repoid,
+        "service": commit.repository.service,
+        "build": upload.build_code,
+        "build_url": upload.build_url,
+        # we were previously using upload.flag_names here, and this query might not be optimized
+        # we weren't doing it in the legacy endpoint, but in the new one we are, and it may be causing problems
+        # therefore we are removing this for now to see if it is the source of the issue
+        "flags": "",
+        "owner": commit.repository.author.ownerid,
+        "token": str(token),
+        "version": version,
+        "uploader_type": "CLI",
+    }
+    AnalyticsService().account_uploaded_coverage_report(
+        commit.repository.author.ownerid, analytics_upload_data
+    )
+
+
+def get_token_for_analytics(commit: Commit, request):
+    repo = commit.repository
+    if isinstance(request.auth, TokenlessAuth):
+        token = "tokenless_upload"
+    elif isinstance(request.auth, OrgLevelTokenRepositoryAuth):
+        token = OrganizationLevelToken.objects.filter(owner=repo.author).first().token
+    elif isinstance(request.auth, OIDCTokenRepositoryAuth):
+        token = "oidc_token_upload"
+    else:
+        token = repo.upload_token
+    return token
+
+
 class CanDoCoverageUploadsPermission(BasePermission):
     def has_permission(self, request, view):
         repository = view.get_repo()
@@ -49,140 +174,7 @@ class CanDoCoverageUploadsPermission(BasePermission):
         )
 
 
-class UploadLogicMixin:
-    def create_upload(self, serializer, repository, commit, report):
-        version = (
-            serializer.validated_data["version"]
-            if "version" in serializer.validated_data
-            else None
-        )
-        log.info(
-            "Request to create new upload",
-            extra=dict(
-                repo=repository.name,
-                commit=commit.commitid,
-                cli_version=version,
-            ),
-        )
-        archive_service = ArchiveService(repository)
-        # Create upload record
-        instance: ReportSession = serializer.save(
-            report_id=report.id,
-            upload_extras={"format_version": "v1"},
-        )
-
-        # Inserts mirror upload record into measurements table. CLI hits this endpoint
-        insert_coverage_measurement(
-            owner_id=repository.author.ownerid,
-            repo_id=repository.repoid,
-            commit_id=commit.id,
-            upload_id=instance.id,
-            uploader_used=UploaderType.CLI.value,
-            private_repo=repository.private,
-            report_type=report.report_type,
-        )
-
-        # only Shelter requests are allowed to set their own `storage_path`
-        if instance.storage_path is None or not self.is_shelter_request():
-            path = MinioEndpoints.raw_with_upload_id.get_path(
-                version="v4",
-                date=timezone.now().strftime("%Y-%m-%d"),
-                repo_hash=archive_service.storage_hash,
-                commit_sha=commit.commitid,
-                reportid=report.external_id,
-                uploadid=instance.external_id,
-            )
-            instance.storage_path = path
-            instance.save()
-        self.trigger_upload_task(repository, commit.commitid, instance, report)
-        self.activate_repo(repository)
-        self.send_analytics_data(commit, instance, version)
-        return instance
-
-    def trigger_upload_task(self, repository, commit_sha, upload, report):
-        log.info(
-            "Triggering upload task",
-            extra=dict(
-                repo=repository.name,
-                commit=commit_sha,
-                upload_id=upload.id,
-                report_code=report.code,
-            ),
-        )
-        redis = get_redis_connection()
-        task_arguments = {
-            "commit": commit_sha,
-            "upload_id": upload.id,
-            "version": "v4",
-            "report_code": report.code,
-            "reportid": str(report.external_id),
-        }
-        dispatch_upload_task(task_arguments, repository, redis)
-
-    def activate_repo(self, repository):
-        # Only update the fields if needed
-        if (
-            repository.activated
-            and repository.active
-            and not repository.deleted
-            and repository.coverage_enabled
-        ):
-            return
-        repository.activated = True
-        repository.active = True
-        repository.deleted = False
-        repository.coverage_enabled = True
-        repository.save(
-            update_fields=[
-                "activated",
-                "active",
-                "deleted",
-                "coverage_enabled",
-                "updatestamp",
-            ]
-        )
-
-    def send_analytics_data(self, commit: Commit, upload: ReportSession, version):
-        token = self.get_token_for_analytics(commit)
-        analytics_upload_data = {
-            "commit": commit.commitid,
-            "branch": commit.branch,
-            "pr": commit.pullid,
-            "repo": commit.repository.name,
-            "repository_name": commit.repository.name,
-            "repository_id": commit.repository.repoid,
-            "service": commit.repository.service,
-            "build": upload.build_code,
-            "build_url": upload.build_url,
-            # we were previously using upload.flag_names here, and this query might not be optimized
-            # we weren't doing it in the legacy endpoint, but in the new one we are, and it may be causing problems
-            # therefore we are removing this for now to see if it is the source of the issue
-            "flags": "",
-            "owner": commit.repository.author.ownerid,
-            "token": str(token),
-            "version": version,
-            "uploader_type": "CLI",
-        }
-        AnalyticsService().account_uploaded_coverage_report(
-            commit.repository.author.ownerid, analytics_upload_data
-        )
-
-    def get_token_for_analytics(self, commit: Commit):
-        repo = commit.repository
-        if isinstance(self.request.auth, TokenlessAuth):
-            token = "tokenless_upload"
-        elif isinstance(self.request.auth, OrgLevelTokenRepositoryAuth):
-            token = (
-                OrganizationLevelToken.objects.filter(owner=repo.author).first().token
-            )
-        elif isinstance(self.request.auth, OIDCTokenRepositoryAuth):
-            token = "oidc_token_upload"
-        else:
-            token = repo.upload_token
-        return token
-
-
-class UploadViews(ListCreateAPIView, GetterMixin, UploadLogicMixin):
+class UploadViews(ListCreateAPIView, GetterMixin):
     serializer_class = UploadSerializer
     permission_classes = [
         CanDoCoverageUploadsPermission,
@@ -216,7 +208,25 @@ class UploadViews(ListCreateAPIView, GetterMixin, UploadLogicMixin):
         commit: Commit = self.get_commit(repository)
         report: CommitReport = self.get_report(commit)
 
-        instance = self.create_upload(serializer, repository, commit, report)
+        log.info(
+            "Request to create new upload",
+            extra=dict(
+                repo=repository.name,
+                commit=commit.commitid,
+                cli_version=serializer.validated_data["version"]
+                if "version" in serializer.validated_data
+                else None,
+            ),
+        )
+
+        instance = create_upload(
+            serializer,
+            repository,
+            commit,
+            report,
+            self.is_shelter_request(),
+            get_token_for_analytics(commit, self.request),
+        )
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(

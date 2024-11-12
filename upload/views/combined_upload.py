@@ -26,16 +26,18 @@ from upload.serializers import (
 )
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 from upload.views.base import GetterMixin
-from upload.views.commits import CommitLogicMixin
-from upload.views.reports import ReportLogicMixin
-from upload.views.uploads import CanDoCoverageUploadsPermission, UploadLogicMixin
+from upload.views.commits import create_commit
+from upload.views.reports import create_report
+from upload.views.uploads import (
+    CanDoCoverageUploadsPermission,
+    create_upload,
+    get_token_for_analytics,
+)
 
 log = logging.getLogger(__name__)
 
 
-class CombinedUploadView(
-    APIView, GetterMixin, CommitLogicMixin, ReportLogicMixin, UploadLogicMixin
-):
+class CombinedUploadView(APIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         UploadTokenRequiredAuthenticationCheck,
@@ -79,9 +81,16 @@ class CombinedUploadView(
             )
 
         repository = self.get_repo()
-        log.info(f"Creating commit for {commit_serializer.validated_data}")
         self.emit_metrics(position="create_commit")
-        commit = self.create_commit(commit_serializer, repository)
+        commit = create_commit(commit_serializer, repository)
+
+        log.info(
+            "Request to create new combined upload",
+            extra=dict(
+                repo=repository.name,
+                commit=commit.commitid,
+            ),
+        )
 
         # Create report
         commit_report_data = dict(
@@ -93,9 +102,8 @@ class CombinedUploadView(
                 commit_report_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        log.info(f"Creating report for {commit_report_serializer.validated_data}")
         self.emit_metrics(position="create_report")
-        report = self.create_report(commit_report_serializer, repository, commit)
+        report = create_report(commit_report_serializer, repository, commit)
 
         # Do upload
         upload_data = dict(
@@ -117,9 +125,15 @@ class CombinedUploadView(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        log.info(f"Creating upload for {upload_serializer.validated_data}")
         self.emit_metrics(position="create_upload")
-        upload = self.create_upload(upload_serializer, repository, commit, report)
+        upload = create_upload(
+            upload_serializer,
+            repository,
+            commit,
+            report,
+            self.is_shelter_request(),
+            get_token_for_analytics(commit, self.request),
+        )
 
         self.emit_metrics(position="end")
 
