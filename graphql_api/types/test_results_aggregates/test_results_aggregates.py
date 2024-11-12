@@ -73,7 +73,7 @@ def test_results_aggregates_with_percentage(
     merged_results = merged_results.with_columns(
         pl.all().pct_change().name.suffix("_percent_change")
     )
-    aggregates = merged_results.row(0, named=True)
+    aggregates = merged_results.row(1, named=True)
 
     return TestResultsAggregates(**aggregates)
 
