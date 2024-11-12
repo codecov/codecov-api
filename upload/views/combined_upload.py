@@ -49,8 +49,8 @@ class CombinedUploadView(
 
     def get_exception_handler(self):
         return repo_auth_custom_exception_handler
-
-    def post(self, request: HttpRequest, *args, **kwargs) -> Response:
+    
+    def emit_metrics(self, position: str) -> None:
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
@@ -58,9 +58,12 @@ class CombinedUploadView(
                 endpoint="combined_upload",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
-                position="start",
+                position=position,
             ),
         )
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> Response:
+        self.emit_metrics(position="start")
 
         # Create commit
         create_commit_data = dict(
@@ -77,16 +80,7 @@ class CombinedUploadView(
         log.info(f"Creating commit for {commit_serializer.validated_data}")
         repository = self.get_repo()
 
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="combined_upload",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-                position="create_commit",
-            ),
-        )
+        self.emit_metrics(position="create_commit")
         commit = self.create_commit(commit_serializer, repository)
 
         # Create report
@@ -99,16 +93,7 @@ class CombinedUploadView(
                 commit_report_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="combined_upload",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-                position="create_report",
-            ),
-        )
+        self.emit_metrics(position="create_report")
         report = self.create_report(commit_report_serializer, repository, commit)
 
         # Do upload
@@ -127,28 +112,10 @@ class CombinedUploadView(
                 upload_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="combined_upload",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-                position="create_upload",
-            ),
-        )
+        self.emit_metrics(position="create_upload")
         upload = self.create_upload(upload_serializer, repository, commit, report)
 
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="combined_upload",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-                position="end",
-            ),
-        )
+        self.emit_metrics(position="end")
 
         if upload:
             commitid = upload.report.commit.commitid
