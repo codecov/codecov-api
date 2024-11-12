@@ -219,15 +219,16 @@ class PlanService:
         Returns:
             No value
         """
-        # Start a new trial plan for free users currently not on trial
-        if self.plan_name in FREE_PLAN_REPRESENTATIONS:
-            self._start_trial_helper(current_owner, end_date, is_extension=False)
         # Extend an existing trial plan for users currently on trial
-        elif self.plan_name in TRIAL_PLAN_REPRESENTATION:
+        if self.plan_name in TRIAL_PLAN_REPRESENTATION:
             self._start_trial_helper(current_owner, end_date, is_extension=True)
-        # Paying users cannot start a trial
+        # Start a new trial plan for any users, used to be free but temporarily doing it for anyone
+        # as long as the person extending the trial is responsible to manually returning the users
+        # the way they were before
         else:
-            raise ValidationError("Cannot trial from a paid plan")
+            self._start_trial_helper(current_owner, end_date, is_extension=False)
+        # Paying users cannot start a trial
+        #     raise ValidationError("Cannot trial from a paid plan")
 
     def cancel_trial(self) -> None:
         if not self.is_org_trialing:
