@@ -70,4 +70,7 @@ def get_results(
     # deserialize
     table = pl.read_ipc(result)
 
+    if table.height == 0:
+        return None
+
     return table
