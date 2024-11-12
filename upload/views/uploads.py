@@ -39,7 +39,9 @@ from upload.views.base import GetterMixin
 log = logging.getLogger(__name__)
 
 
-def create_upload(serializer, repository, commit, report, is_shelter_request, analytics_token):
+def create_upload(
+    serializer, repository, commit, report, is_shelter_request, analytics_token
+):
     version = (
         serializer.validated_data["version"]
         if "version" in serializer.validated_data
@@ -126,7 +128,9 @@ def activate_repo(repository):
     )
 
 
-def send_analytics_data(commit: Commit, upload: ReportSession, version, analytics_token):
+def send_analytics_data(
+    commit: Commit, upload: ReportSession, version, analytics_token
+):
     analytics_upload_data = {
         "commit": commit.commitid,
         "branch": commit.branch,
@@ -156,7 +160,9 @@ def get_token_for_analytics(commit: Commit, request):
     if isinstance(request.auth, TokenlessAuth):
         analytics_token = "tokenless_upload"
     elif isinstance(request.auth, OrgLevelTokenRepositoryAuth):
-        analytics_token = OrganizationLevelToken.objects.filter(owner=repo.author).first().token
+        analytics_token = (
+            OrganizationLevelToken.objects.filter(owner=repo.author).first().token
+        )
     elif isinstance(request.auth, OIDCTokenRepositoryAuth):
         analytics_token = "oidc_token_upload"
     else:
