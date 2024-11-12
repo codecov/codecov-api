@@ -38,13 +38,13 @@ target-version = "py312"
 [lint]
 select = [
     "ASYNC", # flake8-async - async checks
+    "E", # pycodestyle - error rules
     "F", # pyflakes - general Python errors, undefined names
     "I", # isort - import sorting
-    "E", # pycodestyle - error rules
-    "W", # pycodestyle - warning rules
+    "PERF", # perflint - https://docs.astral.sh/ruff/rules/
     "PLC", # pylint - convention rules
     "PLE", # pylint - error rules
-    "PERF", # perflint
+    "W", # pycodestyle - warning rules
 ]
 ignore = ["F405", "F403", "E501", "E712"]
 
