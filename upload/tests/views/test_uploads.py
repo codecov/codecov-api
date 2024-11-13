@@ -23,7 +23,12 @@ from reports.models import (
 )
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.archive import ArchiveService, MinioEndpoints
-from upload.views.uploads import CanDoCoverageUploadsPermission, UploadViews
+from upload.views.uploads import (
+    CanDoCoverageUploadsPermission,
+    UploadViews,
+    activate_repo,
+    trigger_upload_task,
+)
 
 
 def test_upload_permission_class_pass(db, mocker):
@@ -197,7 +202,7 @@ def test_uploads_post(db, mocker, mock_redis):
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
-        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+        "upload.views.uploads.trigger_upload_task", return_value=True
     )
 
     repository = RepositoryFactory(
@@ -293,7 +298,7 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
-        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+        "upload.views.uploads.trigger_upload_task", return_value=True
     )
     analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
 
@@ -433,7 +438,7 @@ def test_uploads_post_token_required_auth_check(
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
-        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+        "upload.views.uploads.trigger_upload_task", return_value=True
     )
     analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
 
@@ -577,7 +582,7 @@ def test_uploads_post_github_oidc_auth(
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
-        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
+        "upload.views.uploads.trigger_upload_task", return_value=True
     )
 
     repository = RepositoryFactory(
@@ -696,9 +701,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
         "services.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
-    mocker.patch(
-        "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
-    )
+    mocker.patch("upload.views.uploads.trigger_upload_task", return_value=True)
     mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
 
     repository = RepositoryFactory(
@@ -798,14 +801,13 @@ def test_deactivated_repo(db, mocker, mock_redis):
 
 
 def test_trigger_upload_task(db, mocker):
-    upload_views = UploadViews()
     repo = RepositoryFactory.create()
     upload = UploadFactory.create()
     report = CommitReportFactory.create()
     commitid = "commit id"
     mocked_redis = mocker.patch("upload.views.uploads.get_redis_connection")
     mocked_dispatched_task = mocker.patch("upload.views.uploads.dispatch_upload_task")
-    upload_views.trigger_upload_task(repo, commitid, upload, report)
+    trigger_upload_task(repo, commitid, upload, report)
     mocked_redis.assert_called()
     mocked_dispatched_task.assert_called()
 
@@ -814,8 +816,7 @@ def test_activate_repo(db):
     repo = RepositoryFactory(
         active=False, deleted=True, activated=False, coverage_enabled=False
     )
-    upload_views = UploadViews()
-    upload_views.activate_repo(repo)
+    activate_repo(repo)
     assert repo.active
     assert repo.activated
     assert not repo.deleted
@@ -826,8 +827,7 @@ def test_activate_already_activated_repo(db):
     repo = RepositoryFactory(
         active=True, activated=True, deleted=False, coverage_enabled=True
     )
-    upload_views = UploadViews()
-    upload_views.activate_repo(repo)
+    activate_repo(repo)
     assert repo.active
 
 
@@ -855,9 +855,7 @@ class TestGitlabEnterpriseOIDC(APITestCase):
             "services.archive.StorageService.create_presigned_put",
             return_value="presigned put",
         )
-        self.mocker.patch(
-            "upload.views.uploads.UploadViews.trigger_upload_task", return_value=True
-        )
+        self.mocker.patch("upload.views.uploads.trigger_upload_task", return_value=True)
 
         repository = RepositoryFactory(
             name="the_repo",
