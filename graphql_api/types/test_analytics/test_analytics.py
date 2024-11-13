@@ -295,7 +295,7 @@ def get_flags(repoid: int, term: str | None = None, interval: int = 30) -> list[
     if table is None:
         return []
 
-    flags = table.select(pl.col("flags")).unique()
+    flags = table.select(pl.col("flags").explode()).unique()
 
     if term:
         flags = flags.filter(pl.col("flags").str.starts_with(term))
