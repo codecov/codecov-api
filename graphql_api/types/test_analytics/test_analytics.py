@@ -218,7 +218,7 @@ def generate_test_results(
             table = table.filter(pl.col("total_flaky_fail_count") > 0)
         case TestResultsFilterParameter.SKIPPED_TESTS:
             table = table.filter(
-                pl.col("total_skip_count") > 0 & pl.col("total_pass_count") == 0
+                (pl.col("total_skip_count") > 0) & (pl.col("total_pass_count") == 0)
             )
         case TestResultsFilterParameter.SLOWEST_TESTS:
             table = table.filter(
