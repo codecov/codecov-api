@@ -17,6 +17,7 @@ from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    UploadTokenRequiredGetFromBodyAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -73,6 +74,7 @@ class UploadSerializer(serializers.Serializer):
 class BundleAnalysisView(APIView, ShelterMixin):
     permission_classes = [UploadBundleAnalysisPermission]
     authentication_classes = [
+        UploadTokenRequiredGetFromBodyAuthenticationCheck,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,

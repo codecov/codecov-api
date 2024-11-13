@@ -614,6 +614,48 @@ def test_upload_bundle_analysis_tokenless_success(db, client, mocker, mock_redis
 
 
 @pytest.mark.django_db(databases={"default", "timeseries"})
+def test_upload_bundle_analysis_true_tokenless_success(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+
+    create_presigned_put = mocker.patch(
+        "services.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create(
+        private=False,
+        author__upload_token_required_for_public_repos=False,
+        author__service="github",
+    )
+    client = APIClient()
+
+    res = client.post(
+        reverse("upload-bundle-analysis"),
+        {
+            "commit": "any",
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "test-service",
+            "compareSha": "6fd5b89357fc8cdf34d6197549ac7c6d7e5aaaaa",
+            "branch": "f1:main",
+            "git_service": "github",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+
+    assert res.status_code == 201
+
+    # returns presigned storage URL
+    assert res.json() == {"url": "test-presigned-put"}
+
+    assert upload.called
+    create_presigned_put.assert_called_once_with("bundle-analysis", ANY, 30)
+
+
+@pytest.mark.django_db(databases={"default", "timeseries"})
 def test_upload_bundle_analysis_tokenless_no_repo(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
 
