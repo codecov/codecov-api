@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from typing import List
 
 import stripe
@@ -13,7 +12,6 @@ from rest_framework.views import APIView
 
 from codecov_auth.models import Owner
 from plan.service import PlanService
-from services.task.task import TaskService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
 
@@ -64,43 +62,6 @@ class StripeWebhookHandler(APIView):
         )
         owners.update(delinquent=True)
         self._log_updated(list(owners))
-
-        # Send failed payment email to all owner admins
-
-        admin_ids = set()
-        for owner in owners:
-            if owner.admins:
-                admin_ids.update(owner.admins)
-
-            # Add the owner's email as well - for user owners, admins is empty.
-            if owner.email:
-                admin_ids.add(owner.ownerid)
-
-        admins: QuerySet[Owner] = Owner.objects.filter(pk__in=admin_ids)
-
-        task_service = TaskService()
-        card = (
-            invoice.default_payment_method.card
-            if invoice.default_payment_method
-            else None
-        )
-        template_vars = {
-            "amount": invoice.total / 100,
-            "card_type": card.brand if card else None,
-            "last_four": card.last4 if card else None,
-            "cta_link": invoice.hosted_invoice_url,
-            "date": datetime.now().strftime("%B %-d, %Y"),
-        }
-
-        for admin in admins:
-            if admin.email:
-                task_service.send_email(
-                    to_addr=admin.email,
-                    subject="Your Codecov payment failed",
-                    template_name="failed-payment",
-                    name=admin.username,
-                    **template_vars,
-                )
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         log.info(
