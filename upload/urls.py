@@ -1,13 +1,13 @@
 from django.urls import path, re_path
 
 from upload.views.bundle_analysis import BundleAnalysisView
-from upload.views.upload_coverage import UploadCoverageView
 from upload.views.commits import CommitViews
 from upload.views.empty_upload import EmptyUploadView
 from upload.views.legacy import UploadDownloadHandler, UploadHandler
 from upload.views.reports import ReportResultsView, ReportViews
 from upload.views.test_results import TestResultsView
 from upload.views.upload_completion import UploadCompletionView
+from upload.views.upload_coverage import UploadCoverageView
 from upload.views.uploads import UploadViews
 
 urlpatterns = [
