@@ -762,7 +762,10 @@ def test_upload_bundle_analysis_tokenless_mismatched_branch(
     upload = mocker.patch.object(TaskService, "upload")
 
     commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
-    repository = RepositoryFactory.create(private=False)
+    repository = RepositoryFactory.create(
+        private=False,
+        author__upload_token_required_for_public_repos=True,
+    )
     CommitFactory.create(repository=repository, commitid=commit_sha, branch="main")
 
     client = APIClient()
