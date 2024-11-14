@@ -234,7 +234,10 @@ def test_create_commit_already_exists(db, client, mocker):
 @pytest.mark.parametrize("private", [True, False])
 def test_commit_tokenless(db, client, mocker, branch, private):
     repository = RepositoryFactory.create(
-        private=private, author__username="codecov", name="the_repo"
+        private=private,
+        author__username="codecov",
+        name="the_repo",
+        author__upload_token_required_for_public_repos=True,
     )
     mocked_call = mocker.patch.object(TaskService, "update_commit")
 

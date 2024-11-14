@@ -161,6 +161,7 @@ def test_reports_post_tokenless(client, db, mocker, private, branch, branch_sent
         name="the_repo",
         author__username="codecov",
         author__service="github",
+        author__upload_token_required_for_public_repos=True,
         private=private,
     )
     commit = CommitFactory(repository=repository)
