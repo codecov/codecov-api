@@ -34,6 +34,8 @@ pre-commit
 psycopg2
 PyJWT
 pydantic
+nltk==3.8.1
+textblob==0.17.1
 pytest>=7.2.0
 pytest-cov
 pytest-django
