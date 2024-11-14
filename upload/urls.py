@@ -1,7 +1,7 @@
 from django.urls import path, re_path
 
 from upload.views.bundle_analysis import BundleAnalysisView
-from upload.views.combined_upload import CombinedUploadView
+from upload.views.upload_coverage import UploadCoverageView
 from upload.views.commits import CommitViews
 from upload.views.empty_upload import EmptyUploadView
 from upload.views.legacy import UploadDownloadHandler, UploadHandler
@@ -59,9 +59,9 @@ urlpatterns = [
         name="new_upload.commits",
     ),
     path(
-        "<str:service>/<str:repo>/combined-upload",
-        CombinedUploadView.as_view(),
-        name="new_upload.combined_upload",
+        "<str:service>/<str:repo>/upload-coverage",
+        UploadCoverageView.as_view(),
+        name="new_upload.upload_coverage",
     ),
     # This was getting in the way of the new endpoints, so I moved to the end
     re_path(r"(?P<version>\w+)/?", UploadHandler.as_view(), name="upload-handler"),
