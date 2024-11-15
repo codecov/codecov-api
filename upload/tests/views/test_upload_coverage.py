@@ -15,7 +15,7 @@ from reports.models import (
     UploadFlagMembership,
 )
 from services.archive import ArchiveService, MinioEndpoints
-from upload.views.combined_upload import CanDoCoverageUploadsPermission
+from upload.views.upload_coverage import CanDoCoverageUploadsPermission
 
 
 def test_get_repo(db):
@@ -25,7 +25,7 @@ def test_get_repo(db):
     repository.save()
     repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
-        "new_upload.combined_upload",
+        "new_upload.upload_coverage",
         args=[repository.author.service, repo_slug],
     )
     client = APIClient()
@@ -42,7 +42,7 @@ def test_get_repo_not_found(upload, db):
     )
     repo_slug = "codecov::::wrong-repo-name"
     url = reverse(
-        "new_upload.combined_upload",
+        "new_upload.upload_coverage",
         args=[repository.author.service, repo_slug],
     )
     client = APIClient()
@@ -63,7 +63,7 @@ def test_deactivated_repo(db):
     repository.save()
     repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
-        "new_upload.combined_upload",
+        "new_upload.upload_coverage",
         args=[repository.author.service, repo_slug],
     )
     client = APIClient()
@@ -73,11 +73,11 @@ def test_deactivated_repo(db):
     assert "This repository is deactivated" in str(response.json())
 
 
-def test_combined_upload_with_errors(db):
+def test_upload_coverage_with_errors(db):
     repository = RepositoryFactory()
     repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
-        "new_upload.combined_upload",
+        "new_upload.upload_coverage",
         args=[repository.author.service, repo_slug],
     )
 
@@ -97,7 +97,7 @@ def test_combined_upload_with_errors(db):
     assert "flags" in response.json()
 
 
-def test_combined_upload_post(db, mocker):
+def test_upload_coverage_post(db, mocker):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -121,7 +121,7 @@ def test_combined_upload_post(db, mocker):
     client.force_authenticate(user=owner)
     repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
-        "new_upload.combined_upload",
+        "new_upload.upload_coverage",
         args=[repository.author.service, repo_slug],
     )
     response = client.post(
@@ -195,7 +195,7 @@ def test_combined_upload_post(db, mocker):
 
 
 @override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
-def test_combined_upload_post_shelter(db, mocker):
+def test_upload_coverage_post_shelter(db, mocker):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -219,7 +219,7 @@ def test_combined_upload_post_shelter(db, mocker):
     client.force_authenticate(user=owner)
     repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
-        "new_upload.combined_upload",
+        "new_upload.upload_coverage",
         args=[repository.author.service, repo_slug],
     )
     response = client.post(

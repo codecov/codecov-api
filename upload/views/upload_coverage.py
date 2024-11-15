@@ -37,7 +37,7 @@ from upload.views.uploads import (
 log = logging.getLogger(__name__)
 
 
-class CombinedUploadView(APIView, GetterMixin):
+class UploadCoverageView(APIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         UploadTokenRequiredAuthenticationCheck,
@@ -57,7 +57,7 @@ class CombinedUploadView(APIView, GetterMixin):
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
                 action="coverage",
-                endpoint="combined_upload",
+                endpoint="upload_coverage",
                 request=self.request,
                 is_shelter_request=self.is_shelter_request(),
                 position=position,
@@ -85,7 +85,7 @@ class CombinedUploadView(APIView, GetterMixin):
         commit = create_commit(commit_serializer, repository)
 
         log.info(
-            "Request to create new combined upload",
+            "Request to create new coverage upload",
             extra=dict(
                 repo=repository.name,
                 commit=commit.commitid,
