@@ -73,7 +73,7 @@ def test_results_aggregates_with_percentage(
     merged_results = merged_results.with_columns(
         pl.all()
         .pct_change()
-        .replace([float("inf"), None], None)
+        .replace([float("inf"), float("-inf")], None)
         .fill_nan(0)
         .name.suffix("_percent_change")
     )
