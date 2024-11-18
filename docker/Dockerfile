@@ -6,9 +6,8 @@ ARG BERGLAS_VERSION=2.0.6
 FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 
 FROM $REQUIREMENTS_IMAGE as app
-COPY . /app
 WORKDIR /app
-RUN pip install setuptools==71.1.0
+ADD . /app
 RUN python manage.py collectstatic --no-input
 
 FROM app as local
@@ -20,7 +19,6 @@ COPY --chmod=755 --from=berglas /bin/berglas /usr/local/bin/berglas
 
 FROM app as self-hosted
 
-RUN pip uninstall -y typing
 # set settings module
 ENV DJANGO_SETTINGS_MODULE="codecov.settings_enterprise"
 # Remove the settings dev and enterprise files.
@@ -57,6 +55,7 @@ FROM self-hosted as self-hosted-runtime
 USER root
 ARG EXTERNAL_DEPS_FOLDER=./external_deps
 RUN mkdir $EXTERNAL_DEPS_FOLDER
+# TODO - replace the pip install here?
 RUN pip install --target $EXTERNAL_DEPS_FOLDER psycopg2-binary tlslite-ng
 RUN chown codecov:application $EXTERNAL_DEPS_FOLDER
 USER codecov

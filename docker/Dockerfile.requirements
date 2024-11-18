@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-ARG PYTHON_IMAGE=python:3.12-slim-bookworm
+ARG PYTHON_IMAGE=ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
 FROM $PYTHON_IMAGE as build
@@ -7,14 +7,39 @@ FROM $PYTHON_IMAGE as build
 RUN apt-get update
 RUN apt-get install -y \
     build-essential \
+    git \
     libffi-dev \
     libpq-dev \
     curl
 
-COPY requirements.txt /
-WORKDIR /pip-packages/
-RUN pip wheel -r /requirements.txt
-RUN rm -rf /pip-packages/src
+ENV UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PYTHON=python \
+    UV_PROJECT_ENVIRONMENT=/worker
+
+# Then, add the rest of the project source code and install it
+# Installing separately from its dependencies allows optimal layer caching
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv export --no-hashes --frozen --format requirements-txt > requirements.txt
+
+RUN grep -v '^-e ' requirements.txt > requirements.remote.txt
+
+# build all remote wheels
+RUN pip wheel -w wheels --find-links wheels -r requirements.remote.txt
+
+# build all local packages to wheels
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv build --all-packages --wheel -o wheels
 
 # RUNTIME STAGE - Copy packages from build stage and install runtime dependencies
 FROM $PYTHON_IMAGE
@@ -22,13 +47,16 @@ FROM $PYTHON_IMAGE
 # Our postgres driver psycopg2 requires libpq-dev as a runtime dependency
 RUN apt-get update
 RUN apt-get install -y \
+    git \
     libpq-dev \
     make \
     curl \
     libexpat1 \
     && pip install --upgrade pip
 
-WORKDIR /pip-packages/
-COPY --from=build /pip-packages/ /pip-packages/
+COPY --from=build /wheels/ /wheels/
 
-RUN pip install --no-deps --no-index --find-links=/pip-packages/ /pip-packages/*
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv pip install --no-deps --no-index --find-links=wheels wheels/* --system

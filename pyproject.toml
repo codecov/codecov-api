@@ -1,0 +1,85 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Codecov's API layer"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiodataloader",
+    "ariadne==0.23",
+    "ariadne_django==0.3.0",
+    "codecovopentelem",
+    "celery>=5.3.6",
+    "cerberus",
+    "ddtrace",
+    "Django>=4.2.16",
+    "django-cors-headers",
+    "django-csp",
+    "django-dynamic-fixture",
+    "django-filter",
+    "django-model-utils",
+    "django-postgres-extra>=2.0.8",
+    "django-prometheus",
+    "djangorestframework==3.15.2",
+    "drf-spectacular",
+    "drf-spectacular-sidecar",
+    "elastic-apm",
+    "google-cloud-pubsub",
+    "gunicorn>=22.0.0",
+    "idna>=3.7",
+    "minio",
+    "opentelemetry-instrumentation-django>=0.45b0",
+    "opentelemetry-sdk>=1.24.0",
+    "opentracing",
+    "polars==1.12.0",
+    "psycopg2",
+    "PyJWT",
+    "pydantic",
+    "python-dateutil",
+    "python-json-logger",
+    "python-redis-lock",
+    "pytz",
+    "redis",
+    "regex",
+    "requests",
+    "sentry-sdk>=2.13.0",
+    "setproctitle",
+    "shared",
+    "simplejson",
+    "starlette==0.40.0",
+    "stripe>=9.6.0",
+    "test-results-parser",
+    "timestring",
+    "urllib3>=1.26.19",
+    "vcrpy",
+    "whitenoise",
+    "django-autocomplete-light",
+    "django-better-admin-arrayfield",
+    "certifi>=2024.07.04",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.uv]
+dev-dependencies = [
+    "factory-boy",
+    "fakeredis",
+    "freezegun",
+    "pre-commit",
+    "pytest>=7.2.0",
+    "pytest-cov",
+    "pytest-asyncio",
+    "pytest-django",
+    "pytest-mock",
+    "vcrpy",
+]
+
+
+[tool.uv.sources]
+codecovopentelem = { git = "https://github.com/codecov/opentelem-python", rev = "df1e241927d4794fc0e24f96431f0fb730edac21" }
+shared = { git = "https://github.com/codecov/shared", rev = "9c31870de026a8a3f026f0753b1991e8c832fadb" }
