@@ -108,7 +108,7 @@ class UploadCoverageView(APIView, GetterMixin):
         # Do upload
         upload_data = dict(
             ci_service=request.data.get("ci_service"),
-            ci_url=request.data.get("ci_url"), 
+            ci_url=request.data.get("ci_url"),
             env=request.data.get("env"),
             flags=request.data.get("flags"),
             job_code=request.data.get("job_code"),
