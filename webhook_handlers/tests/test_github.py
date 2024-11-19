@@ -238,7 +238,10 @@ class GithubWebhookHandlerTests(APITestCase):
         assert not self.repo.activated
 
     @patch("redis.Redis.sismember", lambda x, y, z: False)
-    def test_push_updates_only_unmerged_commits_with_branch_name(self):
+    @patch("services.task.TaskService.update_commit")
+    def test_push_updates_only_unmerged_commits_with_branch_name(
+        self, update_commit_mock
+    ):
         commit1 = CommitFactory(merged=False, repository=self.repo)
         commit2 = CommitFactory(merged=False, repository=self.repo)
 
@@ -273,8 +276,15 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert merged_commit.branch == merged_branch_name
 
+        update_commit_mock.assert_has_calls(
+            [
+                call(repoid=self.repo.repoid, commitid=merged_commit.commitid),
+            ]
+        )
+
     @patch("redis.Redis.sismember", lambda x, y, z: False)
-    def test_push_updates_commit_on_default_branch(self):
+    @patch("services.task.TaskService.update_commit")
+    def test_push_updates_commit_on_default_branch(self, update_commit_mock):
         commit1 = CommitFactory(merged=False, repository=self.repo)
         commit2 = CommitFactory(merged=False, repository=self.repo)
 
@@ -309,7 +319,14 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert merged_commit.branch == merged_branch_name
 
-    def test_push_exits_early_with_200_if_repo_not_active(self):
+        update_commit_mock.assert_has_calls(
+            [
+                call(repoid=self.repo.repoid, commitid=merged_commit.commitid),
+            ]
+        )
+
+    @patch("services.task.TaskService.update_commit")
+    def test_push_exits_early_with_200_if_repo_not_active(self, update_commit_mock):
         self.repo.active = False
         self.repo.save()
         unmerged_commit = CommitFactory(repository=self.repo, merged=False)
@@ -331,8 +348,13 @@ class GithubWebhookHandlerTests(APITestCase):
         unmerged_commit.refresh_from_db()
         assert unmerged_commit.branch != branch_name
 
+        update_commit_mock.assert_not_called()
+
     @patch("webhook_handlers.views.github.get_config")
-    def test_push_exits_early_with_200_if_repo_name_is_ignored(self, get_config_mock):
+    @patch("services.task.TaskService.update_commit")
+    def test_push_exits_early_with_200_if_repo_name_is_ignored(
+        self, update_commit_mock, get_config_mock
+    ):
         get_config_mock.side_effect = [WEBHOOK_SECRET.decode("utf-8"), [self.repo.name]]
 
         self.repo.save()
@@ -356,10 +378,13 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert unmerged_commit.branch != branch_name
 
+        update_commit_mock.assert_not_called()
+
     @patch("redis.Redis.sismember", lambda x, y, z: True)
     @patch("services.task.TaskService.status_set_pending")
+    @patch("services.task.TaskService.update_commit")
     def test_push_triggers_set_pending_task_on_most_recent_commit(
-        self, set_pending_mock
+        self, update_commit_mock, set_pending_mock
     ):
         commit1 = CommitFactory(merged=False, repository=self.repo)
         commit2 = CommitFactory(merged=False, repository=self.repo)
@@ -384,10 +409,15 @@ class GithubWebhookHandlerTests(APITestCase):
             on_a_pull_request=False,
         )
 
+        update_commit_mock.assert_called_once_with(
+            repoid=self.repo.repoid, commitid=commit2.commitid
+        )
+
     @patch("redis.Redis.sismember", lambda x, y, z: False)
     @patch("services.task.TaskService.status_set_pending")
+    @patch("services.task.TaskService.update_commit")
     def test_push_doesnt_trigger_task_if_repo_not_part_of_beta_set(
-        self, set_pending_mock
+        self, update_commit_mock, set_pending_mock
     ):
         commit1 = CommitFactory(merged=False, repository=self.repo)
 
@@ -401,10 +431,16 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         set_pending_mock.assert_not_called()
+        update_commit_mock.assert_called_once_with(
+            repoid=self.repo.repoid, commitid=commit1.commitid
+        )
 
     @patch("redis.Redis.sismember", lambda x, y, z: True)
     @patch("services.task.TaskService.status_set_pending")
-    def test_push_doesnt_trigger_task_if_ci_skipped(self, set_pending_mock):
+    @patch("services.task.TaskService.update_commit")
+    def test_push_doesnt_trigger_task_if_ci_skipped(
+        self, update_commit_mock, set_pending_mock
+    ):
         commit1 = CommitFactory(merged=False, repository=self.repo, message="[ci skip]")
 
         response = self._post_event_data(
@@ -418,6 +454,10 @@ class GithubWebhookHandlerTests(APITestCase):
 
         assert response.data == "CI Skipped"
         set_pending_mock.assert_not_called()
+
+        update_commit_mock.assert_called_once_with(
+            repoid=self.repo.repoid, commitid=commit1.commitid
+        )
 
     def test_status_exits_early_if_repo_not_active(self):
         self.repo.active = False

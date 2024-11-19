@@ -3,15 +3,17 @@ import logging
 import re
 from contextlib import suppress
 from hashlib import sha1, sha256
-from typing import Optional
+from typing import Any, Optional
 
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Empty, Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
@@ -276,6 +278,10 @@ class GithubWebhookHandler(APIView):
         )
 
         most_recent_commit = commits[-1]
+
+        TaskService().update_commit(
+            commitid=most_recent_commit.get("id"), repoid=repo.repoid
+        )
 
         if regexp_ci_skip(most_recent_commit.get("message")):
             log.info(
