@@ -71,7 +71,11 @@ def test_results_aggregates_with_percentage(
     # with_columns upserts the new columns, so if the name already exists it get overwritten
     # otherwise it's just added
     merged_results = merged_results.with_columns(
-        pl.all().pct_change().fill_nan(0).name.suffix("_percent_change")
+        pl.all()
+        .pct_change()
+        .replace([float("inf"), float("-inf")], None)
+        .fill_nan(0)
+        .name.suffix("_percent_change")
     )
     aggregates = merged_results.row(1, named=True)
 
