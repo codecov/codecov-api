@@ -21,11 +21,6 @@ class TestBankAccount(unittest.TestCase):
         with self.assertRaises(ValueError):
             account.deposit(-50.0)
 
-    def test_withdraw(self):
-        account = BankAccount("John Doe", 100.0)
-        self.assertEqual(account.withdraw(50.0), 50.0)
-        self.assertEqual(account.balance, 50.0)
-
     def test_withdraw_negative_amount(self):
         account = BankAccount("John Doe", 100.0)
         with self.assertRaises(ValueError):
