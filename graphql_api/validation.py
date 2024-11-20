@@ -1,8 +1,57 @@
-from typing import Any, Type
+from typing import Any, Dict, Type
 
 from graphql import GraphQLError, ValidationRule
-from graphql.language.ast import DocumentNode, FieldNode, OperationDefinitionNode
+from graphql.language.ast import (
+    DocumentNode,
+    FieldNode,
+    OperationDefinitionNode,
+    VariableDefinitionNode,
+)
 from graphql.validation import ValidationContext
+
+
+class MissingVariablesError(Exception):
+    """
+    Custom error class to represent errors where required variables defined in the query does
+    not have a matching definition in the variables part of the request. Normally when this
+    scenario occurs it would raise a GraphQLError type but that would cause a uncaught
+    exception for some reason. The aim of this is to surface the error in the response clearly
+    and to prevent internal server errors when it occurs.
+    """
+
+    pass
+
+
+def create_required_variables_rule(variables: Dict) -> Type[ValidationRule]:
+    class RequiredVariablesValidationRule(ValidationRule):
+        def __init__(self, context: ValidationContext) -> None:
+            super().__init__(context)
+            self.variables = variables
+
+        def enter_operation_definition(
+            self, node: OperationDefinitionNode, *_args: Any
+        ) -> None:
+            # Get variable definitions
+            variable_definitions = node.variable_definitions or []
+
+            # Extract variables marked as Non Null
+            required_variables = [
+                var_def.variable.name.value
+                for var_def in variable_definitions
+                if isinstance(var_def, VariableDefinitionNode)
+                and var_def.type.kind == "non_null_type"
+            ]
+
+            # Check if these required variables are provided
+            missing_variables = [
+                var for var in required_variables if var not in self.variables
+            ]
+            if missing_variables:
+                raise MissingVariablesError(
+                    f"Missing required variables: {', '.join(missing_variables)}",
+                )
+
+    return RequiredVariablesValidationRule
 
 
 def create_max_depth_rule(max_depth: int) -> Type[ValidationRule]:
