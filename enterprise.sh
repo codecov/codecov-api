@@ -35,7 +35,7 @@ then
 elif [[ "$1" = "rti" ]];
 then
   # Start api
-  ${SUB}$prefix gunicorn codecov.wsgi:application --log-level=info --workers=$GUNICORN_WORKERS --bind ${CODECOV_API_BIND:-0.0.0.0}:${CODECOV_API_PORT:-8000} --access-logfile '-' ${statsd}--timeout "${GUNICORN_TIMEOUT:-600}"${POST}
+  ${SUB}$prefix gunicorn codecov.wsgi:application --workers=$GUNICORN_WORKERS --bind ${CODECOV_API_BIND:-0.0.0.0}:${CODECOV_API_PORT:-8000} --access-logfile '-' ${statsd}--timeout "${GUNICORN_TIMEOUT:-600}"${POST}
 elif [[ "$1" = "migrate" ]];
 then
   python manage.py migrate

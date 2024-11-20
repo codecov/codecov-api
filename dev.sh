@@ -24,7 +24,7 @@ _start_gunicorn() {
       pip install debugpy
       python -m debugpy --listen 0.0.0.0:12345 -m gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
   fi
-  gunicorn codecov.wsgi:application --log-level=info --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
+  gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
 }
 
 if [ -z "$1" ];
