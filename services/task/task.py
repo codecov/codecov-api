@@ -2,8 +2,12 @@ import logging
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional, Tuple
 
+import celery
 from celery import Celery, chain, group, signature
+from celery.canvas import Signature
+from django.conf import settings
 from sentry_sdk import set_tag
+from sentry_sdk.integrations.celery import _wrap_task_run
 from shared import celery_config
 
 from core.models import Repository
@@ -14,6 +18,13 @@ celery_app = Celery("tasks")
 celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
 
 log = logging.getLogger(__name__)
+
+if settings.SENTRY_ENV:
+    celery.group.apply_async = _wrap_task_run(celery.group.apply_async)
+    celery.chunks.apply_async = _wrap_task_run(celery.chunks.apply_async)
+    celery.canvas._chain.apply_async = _wrap_task_run(celery.canvas._chain.apply_async)
+    celery.canvas._chord.apply_async = _wrap_task_run(celery.canvas._chord.apply_async)
+    Signature.apply_async = _wrap_task_run(Signature.apply_async)
 
 
 class TaskService(object):
