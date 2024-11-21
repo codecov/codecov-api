@@ -19,6 +19,7 @@ celery_app.config_from_object("shared.celery_config:BaseCeleryConfig")
 
 log = logging.getLogger(__name__)
 
+# https://github.com/getsentry/sentry-python/issues/1416
 if settings.SENTRY_ENV:
     celery.group.apply_async = _wrap_task_run(celery.group.apply_async)
     celery.chunks.apply_async = _wrap_task_run(celery.chunks.apply_async)
