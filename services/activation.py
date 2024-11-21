@@ -71,7 +71,7 @@ def _get_activator(org: Owner, owner: Owner) -> BaseActivator:
 
 def try_auto_activate(org: Owner, owner: Owner) -> bool:
     """
-    Returns true iff the user was able to be activated, false otherwise.
+    Returns true if the user was able to be activated, false otherwise.
     """
     activator = _get_activator(org, owner)
 

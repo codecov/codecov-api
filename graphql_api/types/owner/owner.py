@@ -162,19 +162,23 @@ async def resolve_repository(
         return NotFoundError()
 
     current_owner = info.context["request"].current_owner
-    has_products_enabled = (
-        repository.bundle_analysis_enabled
-        or repository.coverage_enabled
-        or repository.test_analytics_enabled
-    )
+    product_flags = [
+        repository.bundle_analysis_enabled,
+        repository.coverage_enabled,
+        repository.test_analytics_enabled,
+    ]
+    has_products_enabled = any(product_flags)
+    all_products_enabled = all(product_flags)
 
     if repository.private and has_products_enabled:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
-        is_owner_activated = await sync_to_async(activation.is_activated)(
-            owner, current_owner
-        )
-        if not is_owner_activated:
-            return OwnerNotActivatedError()
+
+    is_owner_activated = await sync_to_async(activation.is_activated)(
+        owner, current_owner
+    )
+
+    if all_products_enabled and not is_owner_activated:
+        return OwnerNotActivatedError()
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
     return repository
