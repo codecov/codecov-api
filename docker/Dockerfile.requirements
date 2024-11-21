@@ -16,7 +16,7 @@ ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON=python \
-    UV_PROJECT_ENVIRONMENT=/worker
+    UV_PROJECT_ENVIRONMENT=/api
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching

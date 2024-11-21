@@ -169,7 +169,7 @@ requires-dist = [
     { name = "redis" },
     { name = "regex" },
     { name = "requests" },
-    { name = "sentry-sdk", specifier = ">=2.13.0" },
+    { name = "sentry-sdk", specifier = ">=2.18.0" },
     { name = "setproctitle" },
     { name = "shared", git = "https://github.com/codecov/shared?rev=9c31870de026a8a3f026f0753b1991e8c832fadb" },
     { name = "simplejson" },

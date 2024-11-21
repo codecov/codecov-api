@@ -42,7 +42,7 @@ dependencies = [
     "redis",
     "regex",
     "requests",
-    "sentry-sdk>=2.13.0",
+    "sentry-sdk>=2.18.0",
     "setproctitle",
     "shared",
     "simplejson",
@@ -78,7 +78,6 @@ dev-dependencies = [
     "pytest-mock",
     "vcrpy",
 ]
-
 
 [tool.uv.sources]
 codecovopentelem = { git = "https://github.com/codecov/opentelem-python", rev = "df1e241927d4794fc0e24f96431f0fb730edac21" }
