@@ -3,7 +3,7 @@ import logging
 import os
 import socket
 import time
-from asyncio import iscoroutine
+from asyncio import iscoroutine, wait_for
 from typing import Any, Collection, Optional
 
 import regex
@@ -259,7 +259,12 @@ class AsyncGraphqlView(GraphQLAsyncView):
             )
 
         with RequestFinalizer(request):
-            response = await super().post(request, *args, **kwargs)
+            try:
+                response = await wait_for(
+                    super().post(request, *args, **kwargs), timeout=3
+                )
+            except TimeoutError:
+                return JsonResponse({"error": "Request timed out"}, status=408)
 
             content = response.content.decode("utf-8")
             data = json.loads(content)
@@ -317,9 +322,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         formatted["type"] = "ServerError"
         # if this is one of our own command exception, we can tell a bit more
         original_error = error.original_error
-        if isinstance(original_error, BaseException) or isinstance(
-            original_error, ServiceException
-        ):
+        if isinstance(original_error, (BaseException, ServiceException, TimeoutError)):
             formatted["message"] = original_error.message
             formatted["type"] = type(original_error).__name__
         else:
