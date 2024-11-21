@@ -33,7 +33,7 @@ attrs==20.3.0
     #   jsonschema
 billiard==4.2.0
     # via celery
-boto3==1.20.25
+boto3==1.35.59
     # via shared
 botocore==1.23.25
     # via
