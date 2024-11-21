@@ -68,7 +68,7 @@ def test_deactivated_repo(db):
     )
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION="token " + repository.upload_token)
-    response = client.post(url, {"commit_sha": "abc123"}, format="json")
+    response = client.post(url, {"commitid": "abc123"}, format="json")
     assert response.status_code == 400
     assert "This repository is deactivated" in str(response.json())
 
@@ -91,7 +91,7 @@ def test_upload_coverage_with_errors(db):
 
     # Invalid flag format
     response = client.post(
-        url, {"commit_sha": "abc123", "flags": "not-a-list"}, format="json"
+        url, {"commitid": "abc123", "flags": "not-a-list"}, format="json"
     )
     assert response.status_code == 400
     assert "flags" in response.json()
@@ -131,7 +131,7 @@ def test_upload_coverage_post(db, mocker):
             "ci_service": "ci_service",
             "ci_url": "ci_url",
             "code": "code",
-            "commit_sha": commit.commitid,
+            "commitid": commit.commitid,
             "flags": ["flag1", "flag2"],
             "job_code": "job_code",
             "version": "version",
@@ -229,7 +229,7 @@ def test_upload_coverage_post_shelter(db, mocker):
             "ci_service": "ci_service",
             "ci_url": "ci_url",
             "code": "code",
-            "commit_sha": commit.commitid,
+            "commitid": commit.commitid,
             "flags": ["flag1", "flag2"],
             "job_code": "job_code",
             "storage_path": "shelter/test/path.txt",
