@@ -37,7 +37,7 @@ from graphql_api.helpers.mutation import (
     require_shared_account_or_part_of_org,
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
-from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
@@ -162,23 +162,14 @@ async def resolve_repository(
         return NotFoundError()
 
     current_owner = info.context["request"].current_owner
-    product_flags = [
-        repository.bundle_analysis_enabled,
-        repository.coverage_enabled,
-        repository.test_analytics_enabled,
-    ]
-    has_products_enabled = any(product_flags)
-    all_products_enabled = all(product_flags)
+    has_products_enabled = (
+        repository.bundle_analysis_enabled
+        or repository.coverage_enabled
+        or repository.test_analytics_enabled
+    )
 
     if repository.private and has_products_enabled:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
-
-    is_owner_activated = await sync_to_async(activation.is_activated)(
-        owner, current_owner
-    )
-
-    if all_products_enabled and not is_owner_activated:
-        return OwnerNotActivatedError()
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
     return repository
