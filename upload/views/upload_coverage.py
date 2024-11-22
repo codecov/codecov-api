@@ -69,10 +69,10 @@ class UploadCoverageView(APIView, GetterMixin):
 
         # Create commit
         create_commit_data = dict(
-            commitid=request.data.get("commit_sha"),
-            parent_commit_id=request.data.get("parent_sha"),
-            pullid=request.data.get("pull_request_number"),
             branch=request.data.get("branch"),
+            commitid=request.data.get("commitid"),
+            parent_commit_id=request.data.get("parent_commit_id"),
+            pullid=request.data.get("pullid"),
         )
         commit_serializer = CommitSerializer(data=create_commit_data)
         if not commit_serializer.is_valid():
@@ -107,10 +107,10 @@ class UploadCoverageView(APIView, GetterMixin):
 
         # Do upload
         upload_data = dict(
-            ci_url=request.data.get("build_url"),
-            env=request.data.get("env_vars"),
-            flags=request.data.get("flags"),
             ci_service=request.data.get("ci_service"),
+            ci_url=request.data.get("ci_url"),
+            env=request.data.get("env"),
+            flags=request.data.get("flags"),
             job_code=request.data.get("job_code"),
             name=request.data.get("name"),
             version=request.data.get("version"),
