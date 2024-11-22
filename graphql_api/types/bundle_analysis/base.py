@@ -158,6 +158,13 @@ def resolve_asset_report_measurements(
     return bundle_analysis_measurements.compute_asset(bundle_asset)
 
 
+@bundle_asset_bindable.field("routes")
+def resolve_routes(
+    bundle_asset: AssetReport, info: GraphQLResolveInfo
+) -> Optional[List[str]]:
+    return ["/", "/about", "/login", "/super/long/url/path"]
+
+
 # ============= Bundle Report Bindable =============
 
 
