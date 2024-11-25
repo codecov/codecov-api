@@ -3256,3 +3256,70 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "bundleDataFiltered": {"size": {"gzip": 20, "uncompress": 20}},
             },
         }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_asset_routes(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/bundle_with_assets_and_modules.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b5") {
+                                                asset(name: "assets/LazyComponent-fcbb0922.js") {
+                                                    name
+                                                    normalizedName
+                                                    routes
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        asset_report = commit["bundleAnalysis"]["bundleAnalysisReport"]["bundle"][
+            "asset"
+        ]
+
+        assert asset_report is not None
+        assert asset_report["name"] == "assets/LazyComponent-fcbb0922.js"
+        assert asset_report["normalizedName"] == "assets/LazyComponent-*.js"
+        assert asset_report["routes"] == [
+            "/",
+            "/about",
+            "/login",
+            "/super/long/url/path",
+        ]

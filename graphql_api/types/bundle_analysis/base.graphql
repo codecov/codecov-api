@@ -55,6 +55,7 @@ type BundleAsset {
     after: DateTime
     branch: String
   ): BundleAnalysisMeasurements
+  routes: [String!]
 }
 
 type BundleReport {
