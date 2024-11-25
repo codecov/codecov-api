@@ -9,9 +9,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
     AccountsUsersFactory,
     OwnerFactory,
 )
-
-from codecov.commands.exceptions import ValidationError
-from plan.constants import (
+from shared.plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,
     FREE_PLAN_REPRESENTATIONS,
@@ -24,6 +22,8 @@ from plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
+
+from codecov.commands.exceptions import ValidationError
 from plan.service import PlanService
 
 

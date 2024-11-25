@@ -14,11 +14,11 @@ from shared.django_apps.codecov_auth.tests.factories import (
     OwnerFactory,
     UserFactory,
 )
+from shared.plan.constants import PlanName, TrialStatus
 from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
 from codecov_auth.models import Service
-from plan.constants import PlanName, TrialStatus
 from utils.test_utils import APIClient
 
 curr_path = os.path.dirname(__file__)

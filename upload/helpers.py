@@ -13,6 +13,7 @@ from django.utils import timezone
 from jwt import PyJWKClient, PyJWTError
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.github import InvalidInstallationError
+from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 from shared.upload.utils import query_monthly_coverage_measurements
@@ -25,7 +26,6 @@ from codecov_auth.models import (
     Owner,
 )
 from core.models import Commit, Repository
-from plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService

@@ -8,6 +8,7 @@ import yaml
 from ariadne import ObjectType
 from django.conf import settings
 from graphql import GraphQLResolveInfo
+from shared.plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 
 import services.activation as activation
 import timeseries.helpers as timeseries_helpers
@@ -39,7 +40,6 @@ from graphql_api.helpers.mutation import (
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
-from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
 from plan.service import PlanService
 from services.billing import BillingService
 from services.profiling import ProfilingSummary
