@@ -4,7 +4,6 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
-
 from shared.plan.constants import PlanName, TrialStatus
 
 from .helper import GraphQLTestHelper

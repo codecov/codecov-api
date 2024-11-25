@@ -24,6 +24,10 @@ from shared.django_apps.codecov_auth.tests.factories import (
     UserFactory,
 )
 from shared.django_apps.core.tests.factories import PullFactory, RepositoryFactory
+from shared.plan.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    PlanName,
+)
 
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.admin import (
@@ -37,10 +41,6 @@ from codecov_auth.admin import (
 )
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from core.models import Pull
-from shared.plan.constants import (
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    PlanName,
-)
 
 
 class OwnerAdminTest(TestCase):

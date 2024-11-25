@@ -6,10 +6,10 @@ from django.conf import settings
 from django.test import TestCase
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import PlanName
 from stripe import InvalidRequestError
 
 from codecov_auth.models import Service
-from shared.plan.constants import PlanName
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
 SCHEDULE_RELEASE_OFFSET = 10

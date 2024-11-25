@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import List, Optional
 
 from ariadne import ObjectType
-
-from codecov.db import sync_to_async
-from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from shared.plan.constants import (
     TrialStatus,
 )
+
+from codecov.db import sync_to_async
+from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from plan.service import PlanService
 
 plan = ariadne_load_local_graphql(__file__, "plan.graphql")

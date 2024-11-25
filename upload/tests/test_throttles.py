@@ -8,9 +8,9 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
+from shared.plan.constants import PlanName
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
-from shared.plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.redis_configuration import get_redis_connection
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle

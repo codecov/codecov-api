@@ -2,8 +2,6 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from codecov.commands.exceptions import ValidationError
-from codecov_auth.models import Owner
 from shared.plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,
@@ -20,6 +18,9 @@ from shared.plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
+
+from codecov.commands.exceptions import ValidationError
+from codecov_auth.models import Owner
 from services import sentry
 from services.self_hosted import enterprise_has_seats_left, license_seats
 from utils.config import get_config

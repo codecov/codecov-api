@@ -16,9 +16,9 @@ from shared.django_apps.core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+from shared.plan.constants import PlanName
 
 from codecov_auth.models import GithubAppInstallation, Owner, Service
-from shared.plan.constants import PlanName
 from utils.config import get_config
 from webhook_handlers.constants import (
     GitHubHTTPHeaders,

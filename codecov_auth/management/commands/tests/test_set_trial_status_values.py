@@ -4,10 +4,10 @@ from django.core.management.base import BaseCommand
 from django.test import TestCase
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import PlanName, TrialStatus
 
 from codecov_auth.management.commands.set_trial_status_values import Command
 from codecov_auth.models import Owner
-from shared.plan.constants import PlanName, TrialStatus
 
 
 @freeze_time("2023-07-17T00:00:00")

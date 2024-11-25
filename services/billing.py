@@ -6,9 +6,6 @@ from datetime import datetime, timezone
 import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-
-from billing.constants import REMOVED_INVOICE_STATUSES
-from codecov_auth.models import Owner
 from shared.plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PAID_PLANS,
@@ -16,6 +13,9 @@ from shared.plan.constants import (
     USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
 )
+
+from billing.constants import REMOVED_INVOICE_STATUSES
+from codecov_auth.models import Owner
 from plan.service import PlanService
 
 log = logging.getLogger(__name__)

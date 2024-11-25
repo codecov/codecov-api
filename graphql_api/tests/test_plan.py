@@ -8,9 +8,8 @@ from freezegun import freeze_time
 from shared.django_apps.codecov_auth.tests.factories import AccountFactory
 from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.license import LicenseInformation
-from shared.utils.test_utils import mock_config_helper
-
 from shared.plan.constants import PlanName, TrialStatus
+from shared.utils.test_utils import mock_config_helper
 
 from .helper import GraphQLTestHelper
 
