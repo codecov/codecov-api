@@ -10,7 +10,7 @@ from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.license import LicenseInformation
 from shared.utils.test_utils import mock_config_helper
 
-from plan.constants import PlanName, TrialStatus
+from shared.plan.constants import PlanName, TrialStatus
 
 from .helper import GraphQLTestHelper
 

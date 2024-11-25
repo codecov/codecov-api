@@ -28,7 +28,7 @@ from codecov.commands.exceptions import (
 )
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
-from plan.constants import PlanName, TrialStatus
+from shared.plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from .helper import GraphQLTestHelper, paginate_connection

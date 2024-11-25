@@ -9,7 +9,7 @@ from django.conf import settings
 
 from billing.constants import REMOVED_INVOICE_STATUSES
 from codecov_auth.models import Owner
-from plan.constants import (
+from shared.plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PAID_PLANS,
     TEAM_PLANS,

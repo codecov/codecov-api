@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
-from plan.constants import (
+from shared.plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,
     FREE_PLAN_REPRESENTATIONS,

@@ -25,7 +25,7 @@ from codecov.commands.exceptions import ValidationError
 from codecov_auth.helpers import History
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, Session, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
-from plan.constants import USER_PLAN_REPRESENTATIONS
+from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from services.task import TaskService
 from utils.services import get_short_service_name

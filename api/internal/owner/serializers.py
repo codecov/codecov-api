@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
 from codecov_auth.models import Owner
-from plan.constants import (
+from shared.plan.constants import (
     PAID_PLANS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     TEAM_PLAN_MAX_USERS,

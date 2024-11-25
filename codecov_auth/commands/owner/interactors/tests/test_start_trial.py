@@ -8,7 +8,7 @@ from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthorized, ValidationError
 from codecov_auth.models import Owner
-from plan.constants import TRIAL_PLAN_SEATS, PlanName, TrialDaysAmount, TrialStatus
+from shared.plan.constants import TRIAL_PLAN_SEATS, PlanName, TrialDaysAmount, TrialStatus
 
 from ..start_trial import StartTrialInteractor
 

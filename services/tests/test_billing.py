@@ -9,7 +9,7 @@ from shared.django_apps.core.tests.factories import OwnerFactory
 from stripe import InvalidRequestError
 
 from codecov_auth.models import Service
-from plan.constants import PlanName
+from shared.plan.constants import PlanName
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
 SCHEDULE_RELEASE_OFFSET = 10

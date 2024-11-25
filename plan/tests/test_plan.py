@@ -11,7 +11,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
 )
 
 from codecov.commands.exceptions import ValidationError
-from plan.constants import (
+from shared.plan.constants import (
     BASIC_PLAN,
     FREE_PLAN,
     FREE_PLAN_REPRESENTATIONS,

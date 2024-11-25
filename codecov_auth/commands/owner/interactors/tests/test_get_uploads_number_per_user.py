@@ -9,7 +9,7 @@ from shared.django_apps.core.tests.factories import (
 from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
-from plan.constants import TrialStatus
+from shared.plan.constants import TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from ..get_uploads_number_per_user import GetUploadsNumberPerUserInteractor

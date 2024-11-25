@@ -37,7 +37,7 @@ from codecov_auth.admin import (
 )
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
 from core.models import Pull
-from plan.constants import (
+from shared.plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
 )

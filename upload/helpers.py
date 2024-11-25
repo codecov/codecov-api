@@ -25,7 +25,7 @@ from codecov_auth.models import (
     Owner,
 )
 from core.models import Commit, Repository
-from plan.constants import USER_PLAN_REPRESENTATIONS
+from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from plan.service import PlanService
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService

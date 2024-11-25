@@ -5,7 +5,7 @@ from ariadne import ObjectType
 
 from codecov.db import sync_to_async
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
-from plan.constants import (
+from shared.plan.constants import (
     TrialStatus,
 )
 from plan.service import PlanService

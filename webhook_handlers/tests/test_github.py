@@ -24,7 +24,7 @@ from codecov_auth.models import (
     Owner,
     Service,
 )
-from plan.constants import PlanName
+from shared.plan.constants import PlanName
 from webhook_handlers.constants import (
     GitHubHTTPHeaders,
     GitHubWebhookEvents,

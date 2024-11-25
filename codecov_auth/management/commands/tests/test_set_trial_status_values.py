@@ -7,7 +7,7 @@ from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov_auth.management.commands.set_trial_status_values import Command
 from codecov_auth.models import Owner
-from plan.constants import PlanName, TrialStatus
+from shared.plan.constants import PlanName, TrialStatus
 
 
 @freeze_time("2023-07-17T00:00:00")

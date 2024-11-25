@@ -15,7 +15,7 @@ from shared.django_apps.reports.models import ReportType
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.models import GithubAppInstallation, Service
-from plan.constants import PlanName
+from shared.plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     check_commit_upload_constraints,
