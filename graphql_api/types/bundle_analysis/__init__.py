@@ -5,6 +5,7 @@ from .base import (
     bundle_data_bindable,
     bundle_module_bindable,
     bundle_report_bindable,
+    bundle_report_info_bindable,
 )
 from .comparison import (
     bundle_analysis_comparison_bindable,
@@ -26,6 +27,7 @@ __all__ = [
     "bundle_data_bindable",
     "bundle_module_bindable",
     "bundle_report_bindable",
+    "bundle_report_info_bindable",
     "bundle_analysis_comparison_bindable",
     "bundle_analysis_comparison_result_bindable",
     "bundle_comparison_bindable",

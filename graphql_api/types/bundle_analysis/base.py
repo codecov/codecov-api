@@ -29,7 +29,7 @@ bundle_data_bindable = ObjectType("BundleData")
 bundle_module_bindable = ObjectType("BundleModule")
 bundle_asset_bindable = ObjectType("BundleAsset")
 bundle_report_bindable = ObjectType("BundleReport")
-bundle_info_bindable = ObjectType("BundleInfo")
+bundle_report_info_bindable = ObjectType("BundleReportInfo")
 
 
 def _find_index_by_cursor(assets: List, cursor: str) -> int:
@@ -383,50 +383,50 @@ def resolve_bundle_report_info(
     return BundleReportInfo(bundle_report.info)
 
 
-@bundle_info_bindable.field("version")
-def resolve_bundle_info_version(
-    bundle_info: BundleReportInfo, info: GraphQLResolveInfo
+@bundle_report_info_bindable.field("version")
+def resolve_bundle_report_info_version(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
-    return bundle_info.version
+    return bundle_report_info.version
 
 
-@bundle_info_bindable.field("plugin_name")
-def resolve_bundle_info_plugin_name(
-    bundle_info: BundleReportInfo, info: GraphQLResolveInfo
+@bundle_report_info_bindable.field("plugin_name")
+def resolve_bundle_report_info_plugin_name(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
-    return bundle_info.plugin_name
+    return bundle_report_info.plugin_name
 
 
-@bundle_info_bindable.field("plugin_version")
-def resolve_bundle_info_plugin_version(
-    bundle_info: BundleReportInfo, info: GraphQLResolveInfo
+@bundle_report_info_bindable.field("plugin_version")
+def resolve_bundle_report_info_plugin_version(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
-    return bundle_info.plugin_version
+    return bundle_report_info.plugin_version
 
 
-@bundle_info_bindable.field("built_at")
-def resolve_bundle_info_built_at(
-    bundle_info: BundleReportInfo, info: GraphQLResolveInfo
+@bundle_report_info_bindable.field("built_at")
+def resolve_bundle_report_info_built_at(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
-    return bundle_info.built_at
+    return bundle_report_info.built_at
 
 
-@bundle_info_bindable.field("duration")
-def resolve_bundle_info_duration(
-    bundle_info: BundleReportInfo, info: GraphQLResolveInfo
+@bundle_report_info_bindable.field("duration")
+def resolve_bundle_report_info_duration(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> int:
-    return bundle_info.duration
+    return bundle_report_info.duration
 
 
-@bundle_info_bindable.field("bundler_name")
-def resolve_bundle_info_bundler_name(
-    bundle_info: BundleReportInfo, info: GraphQLResolveInfo
+@bundle_report_info_bindable.field("bundler_name")
+def resolve_bundle_report_info_bundler_name(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
-    return bundle_info.bundler_name
+    return bundle_report_info.bundler_name
 
 
-@bundle_info_bindable.field("bundler_version")
-def resolve_bundle_info_bundler_version(
-    bundle_info: BundleReportInfo, info: GraphQLResolveInfo
+@bundle_report_info_bindable.field("bundler_version")
+def resolve_bundle_report_info_bundler_version(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
-    return bundle_info.bundler_version
+    return bundle_report_info.bundler_version
