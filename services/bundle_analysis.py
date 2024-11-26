@@ -298,6 +298,44 @@ class BundleReport(object):
     def is_cached(self) -> bool:
         return self.report.is_cached()
 
+    @cached_property
+    def info(self) -> dict:
+        return self.report.info()
+
+
+@dataclass
+class BundleReportInfo(object):
+    def __init__(self, info: dict) -> None:
+        self.info = info
+
+    @cached_property
+    def version(self) -> str:
+        return self.info.get("version", "unknown")
+
+    @cached_property
+    def plugin_name(self) -> str:
+        return self.info.get("plugin_name", "unknown")
+
+    @cached_property
+    def plugin_version(self) -> str:
+        return self.info.get("plugin_version", "unknown")
+
+    @cached_property
+    def built_at(self) -> str:
+        return str(datetime.fromtimestamp(self.info.get("built_at", 0) / 1000))
+
+    @cached_property
+    def duration(self) -> int:
+        return self.info.get("duration", -1)
+
+    @cached_property
+    def bundler_name(self) -> str:
+        return self.info.get("bundler_name", "unknown")
+
+    @cached_property
+    def bundler_version(self) -> str:
+        return self.info.get("bundler_version", "unknown")
+
 
 @dataclass
 class BundleAnalysisReport(object):

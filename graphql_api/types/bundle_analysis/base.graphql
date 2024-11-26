@@ -58,6 +58,16 @@ type BundleAsset {
   routes: [String!]
 }
 
+type BundleInfo {
+  version: String!
+  plugin_name: String!
+  plugin_version: String!
+  built_at: String!
+  duration: Int!
+  bundler_name: String!
+  bundler_version: String!
+}
+
 type BundleReport {
   name: String!
   moduleCount: Int!
@@ -82,6 +92,7 @@ type BundleReport {
     last: Int
     before: String
   ): AssetConnection
+  info: BundleInfo!
 }
 
 type BundleAnalysisMeasurements{
