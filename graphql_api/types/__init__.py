@@ -17,6 +17,7 @@ from .bundle_analysis import (
     bundle_data_bindable,
     bundle_module_bindable,
     bundle_report_bindable,
+    bundle_report_info_bindable,
 )
 from .commit import (
     commit,
@@ -148,6 +149,7 @@ bindables = [
     bundle_data_bindable,
     bundle_module_bindable,
     bundle_report_bindable,
+    bundle_report_info_bindable,
     commit_bindable,
     commit_bundle_analysis_bindable,
     commit_coverage_analytics_bindable,
