@@ -228,6 +228,103 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
     return {"results": sort_path_contents(items, filters)}
 
 
+@commit_bindable.field("deprecatedPathContents")
+@sync_to_async
+def resolve_deprecated_path_contents(
+    commit: Commit,
+    info,
+    path: str = None,
+    filters=None,
+    first=None,
+    after=None,
+    last=None,
+    before=None,
+):
+    """
+    The file directory tree is a list of all the files and directories
+    extracted from the commit report of the latest, head commit.
+    The is resolver results in a list that represent the tree with files
+    and nested directories.
+    """
+    current_owner = info.context["request"].current_owner
+
+    # TODO: Might need to add reports here filtered by flags in the future
+    commit_report = report_service.build_report_from_commit(
+        commit, report_class=ReadOnlyReport
+    )
+    if not commit_report:
+        return MissingHeadReport()
+
+    if filters is None:
+        filters = {}
+    search_value = filters.get("search_value")
+    display_type = filters.get("display_type")
+
+    flags_filter = filters.get("flags", [])
+    component_filter = filters.get("components", [])
+
+    component_paths = []
+    component_flags = []
+
+    if component_filter:
+        all_components = components_service.commit_components(commit, current_owner)
+        filtered_components = components_service.filter_components_by_name(
+            all_components, component_filter
+        )
+
+        if not filtered_components:
+            return MissingCoverage(
+                f"missing coverage for report with components: {component_filter}"
+            )
+
+        for component in filtered_components:
+            component_paths.extend(component.paths)
+            if commit_report.flags:
+                component_flags.extend(
+                    component.get_matching_flags(commit_report.flags.keys())
+                )
+
+    if component_flags:
+        if flags_filter:
+            flags_filter = list(set(flags_filter) & set(component_flags))
+        else:
+            flags_filter = component_flags
+
+    if flags_filter and not commit_report.flags:
+        return UnknownFlags(f"No coverage with chosen flags: {flags_filter}")
+
+    report_paths = ReportPaths(
+        report=commit_report,
+        path=path,
+        search_term=search_value,
+        filter_flags=flags_filter,
+        filter_paths=component_paths,
+    )
+
+    if len(report_paths.paths) == 0:
+        # we do not know about this path
+
+        if path_service.provider_path_exists(path, commit, current_owner) is False:
+            # file doesn't exist
+            return UnknownPath(f"path does not exist: {path}")
+
+        # we're just missing coverage for the file
+        return MissingCoverage(f"missing coverage for path: {path}")
+
+    if search_value or display_type == PathContentDisplayType.LIST:
+        items = report_paths.full_filelist()
+    else:
+        items = report_paths.single_directory()
+
+    sorted_items = sort_path_contents(items, filters)
+
+    kwargs = {"first": first, "after": after, "last": last, "before": before}
+
+    return queryset_to_connection_sync(
+        sorted_items, ordering_direction=OrderingDirection.ASC, **kwargs
+    )
+
+
 @commit_bindable.field("errors")
 async def resolve_errors(commit, info, error_type):
     command = info.context["executor"].get_command("commit")

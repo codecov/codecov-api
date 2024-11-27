@@ -1,6 +1,7 @@
 import enum
 from dataclasses import dataclass
 from functools import cached_property
+from typing import Any, Dict, List, Optional
 
 from cursor_pagination import CursorPage, CursorPaginator
 from django.db.models import QuerySet
@@ -68,6 +69,104 @@ class Connection:
         }
 
 
+class ArrayPaginator:
+    """Cursor-based paginator for in-memory arrays."""
+
+    def __init__(
+        self,
+        data: List[Any],
+        first: Optional[int] = None,
+        last: Optional[int] = None,
+        after: Optional[str] = None,
+        before: Optional[str] = None,
+    ):
+        self.data = data
+        self.start_index = 0
+        self.end_index = len(data)
+
+        if last and first:
+            raise ValueError("Cannot provide both last and first")
+
+        # Handle 'after' cursor
+        if after is not None:
+            self.start_index = int(after) + 1
+
+        # Apply first/last pagination
+        if first:
+            self.end_index = min(self.start_index + first, len(data))
+        if last:
+            self.start_index = max(len(data) - last, 0)
+            self.end_index = len(data)
+
+        # Handle 'before' cursor
+        if before is not None:
+            self.start_index = len(data) - (int(last) + 1)
+            self.end_index = int(before)
+
+    def cursor(self, position: int) -> str:
+        """Generate a cursor based on the position (index)"""
+        return str(position)
+
+    @property
+    def page(self) -> List[Any]:
+        """Returns the sliced page of data"""
+        return self.data[self.start_index : self.end_index]
+
+    @property
+    def has_next(self) -> bool:
+        """Check if there's a next page"""
+        return self.end_index < len(self.data)
+
+    @property
+    def has_previous(self) -> bool:
+        """Check if there's a previous page"""
+        return self.start_index > 0
+
+
+class ArrayConnection:
+    """Connection wrapper for array pagination."""
+
+    def __init__(self, data: List[Any], paginator: ArrayPaginator, page: List[Any]):
+        self.data = data
+        self.paginator = paginator
+        self.page = page
+
+    @property
+    def edges(self) -> List[Dict[str, Any]]:
+        """Generate edges with cursor and node information"""
+        return [
+            {"cursor": self.paginator.cursor(pos), "node": node}
+            for pos, node in enumerate(self.page)
+        ]
+
+    @property
+    def total_count(self) -> int:
+        """Total number of items in the original data"""
+        return len(self.data)
+
+    @property
+    def start_cursor(self) -> Optional[str]:
+        """Cursor for the first item in the page"""
+        return self.paginator.cursor(self.paginator.start_index) if self.page else None
+
+    @property
+    def end_cursor(self) -> Optional[str]:
+        """Cursor for the last item in the page"""
+        return (
+            self.paginator.cursor(self.paginator.end_index - 1) if self.page else None
+        )
+
+    @property
+    def page_info(self) -> Dict[str, Any]:
+        """Pagination information"""
+        return {
+            "has_next_page": self.paginator.has_next,
+            "has_previous_page": self.paginator.has_previous,
+            "start_cursor": self.start_cursor,
+            "end_cursor": self.end_cursor,
+        }
+
+
 class DictCursorPaginator(CursorPaginator):
     """
     WARNING: DictCursorPaginator does not work for dict objects where a key contains the following string: "__"
@@ -112,26 +211,33 @@ class DictCursorPaginator(CursorPaginator):
 
 
 def queryset_to_connection_sync(
-    queryset,
+    data: QuerySet | list,
     *,
-    ordering,
-    ordering_direction,
+    ordering=None,
+    ordering_direction=None,
     first=None,
     after=None,
     last=None,
     before=None,
 ):
     """
-    A method to take a queryset and return it in paginated order based on the cursor pattern.
+    A method to take a queryset or an array and return it in paginated order based on the cursor pattern.
+    Handles both QuerySets (database queries) and arrays (in-memory data).
     """
     if not first and not last:
         first = 25
 
-    ordering = tuple(field_order(field, ordering_direction) for field in ordering)
-    paginator = DictCursorPaginator(queryset, ordering=ordering)
-    page = paginator.page(first=first, after=after, last=last, before=before)
+    if isinstance(data, QuerySet):
+        ordering = tuple(field_order(field, ordering_direction) for field in ordering)
+        paginator = DictCursorPaginator(data, ordering=ordering)
+        page = paginator.page(first=first, after=after, last=last, before=before)
+        return Connection(data, paginator, page)
 
-    return Connection(queryset, paginator, page)
+    else:
+        array_paginator = ArrayPaginator(
+            data, first=first, last=last, after=after, before=before
+        )
+        return ArrayConnection(data, array_paginator, array_paginator.page)
 
 
 @sync_to_async
