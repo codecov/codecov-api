@@ -3,12 +3,15 @@ from typing import Any
 from django.db.models import Q, QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from api.public.v2.schema import owner_parameters, service_parameter
+from api.public.v2.schema import (
+    owner_parameters,
+    service_parameter,
+)
 from api.shared.owner.mixins import (
     OwnerViewSetMixin,
     UserSessionViewSetMixin,
@@ -16,7 +19,12 @@ from api.shared.owner.mixins import (
 )
 from codecov_auth.models import Owner, Service
 
-from .serializers import OwnerSerializer, UserSerializer, UserSessionSerializer
+from .serializers import (
+    OwnerSerializer,
+    UserSerializer,
+    UserSessionSerializer,
+    UserUpdateActivationSerializer,
+)
 
 
 @extend_schema(parameters=owner_parameters, tags=["Users"])
@@ -51,6 +59,34 @@ class UserViewSet(UserViewSetMixin, mixins.ListModelMixin, mixins.RetrieveModelM
         """
         Returns a user for the specified owner_username or ownerid
         """
+        return super().retrieve(request, *args, **kwargs)
+
+    @extend_schema(summary="Update a user", request=UserUpdateActivationSerializer)
+    def partial_update(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """
+        Updates a user for the specified owner_username or ownerid
+
+        Allowed fields
+          - activated: boolean value to activate or deactivate the use
+        """
+        instance = self.get_object()
+        serializer = UserUpdateActivationSerializer(
+            instance,
+            data=request.data,
+        )
+        serializer.is_valid(raise_exception=True)
+
+        if serializer.validated_data["activated"]:
+            if self.owner.can_activate_user(instance):
+                print("can activate")
+                self.owner.activate_user(instance)
+            else:
+                raise PermissionDenied(
+                    f"Cannot activate user {self.owner.username} -- not enough seats left."
+                )
+        else:
+            self.owner.deactivate_user(instance)
+
         return super().retrieve(request, *args, **kwargs)
 
 
