@@ -232,7 +232,7 @@ def queryset_to_connection_sync(
     """
     if not first and not last:
         first = 25
-        
+
     if isinstance(data, list):
         array_paginator = ArrayPaginator(
             data, first=first, last=last, after=after, before=before
