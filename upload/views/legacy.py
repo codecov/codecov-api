@@ -16,13 +16,13 @@ from rest_framework import renderers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from shared.api_archive.archive import ArchiveService
 from shared.metrics import inc_counter
 
 from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
 from services.analytics import AnalyticsService
-from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     check_commit_upload_constraints,
@@ -207,6 +207,11 @@ class UploadHandler(APIView, ShelterMixin):
         # Get the url where the commit details can be found on the Codecov site, we'll return this in the response
         destination_url = f"{settings.CODECOV_DASHBOARD_URL}/{owner.service}/{owner.username}/{repository.name}/commit/{commitid}"
 
+        archive_service = ArchiveService(repository)
+        datetime = timezone.now().strftime("%Y-%m-%d")
+        repo_hash = archive_service.get_archive_hash(repository)
+        default_path = f"v4/raw/{datetime}/{repo_hash}/{commitid}/{reportid}.txt"
+
         # v2 - store request body in redis
         if version == "v2":
             log.info(
@@ -259,25 +264,14 @@ class UploadHandler(APIView, ShelterMixin):
             )
 
             parse_headers(request.META, upload_params)
-            archive_service = ArchiveService(repository)
 
             # only Shelter requests are allowed to set their own `storage_path`
             path = upload_params.get("storage_path")
             if path is None or not self.is_shelter_request():
-                path = "/".join(
-                    (
-                        "v4/raw",
-                        timezone.now().strftime("%Y-%m-%d"),
-                        archive_service.get_archive_hash(repository),
-                        commitid,
-                        f"{reportid}.txt",
-                    )
-                )
+                path = default_path
 
             try:
-                upload_url = archive_service.create_raw_upload_presigned_put(
-                    commit_sha=commitid, filename="{}.txt".format(reportid)
-                )
+                upload_url = archive_service.create_presigned_put(default_path)
             except Exception as e:
                 log.warning(
                     f"Error generating minio presign put {e}",

@@ -1238,8 +1238,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.content == b"Found too many repos"
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1289,8 +1289,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1342,8 +1342,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1410,8 +1410,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.content == b"Could not determine repo and owner"
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")

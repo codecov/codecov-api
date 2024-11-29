@@ -1,10 +1,10 @@
 from django.conf import settings
 from rest_framework import serializers
+from shared.api_archive.archive import ArchiveService
 
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportResults, ReportSession, RepositoryFlag
-from services.archive import ArchiveService
 from services.task import TaskService
 
 

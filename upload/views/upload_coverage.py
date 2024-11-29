@@ -5,6 +5,7 @@ from django.http import HttpRequest
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.api_archive.archive import ArchiveService
 from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -16,7 +17,6 @@ from codecov_auth.authentication.repo_auth import (
     UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
-from services.archive import ArchiveService
 from upload.helpers import generate_upload_prometheus_metrics_labels
 from upload.metrics import API_UPLOAD_COUNTER
 from upload.serializers import (

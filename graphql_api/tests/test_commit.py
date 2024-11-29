@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, PropertyMock, patch
 
 import yaml
 from django.test import TransactionTestCase
+from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import StoragePaths
 from shared.bundle_analysis.storage import get_bucket_name
 from shared.django_apps.core.tests.factories import (
@@ -30,7 +31,6 @@ from reports.tests.factories import (
     UploadFactory,
     UploadFlagMembershipFactory,
 )
-from services.archive import ArchiveService
 from services.comparison import MissingComparisonReport
 from services.components import Component
 from services.profiling import CriticalFile
