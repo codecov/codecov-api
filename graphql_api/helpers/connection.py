@@ -84,42 +84,50 @@ class ArrayPaginator:
         self.start_index = 0
         self.end_index = len(data)
 
-        if last and first:
-            raise ValueError("Cannot provide both last and first")
+        if first and last:
+            raise ValueError("Cannot provide both 'first' and 'last'")
 
         # Handle 'after' cursor
         if after is not None:
             self.start_index = int(after) + 1
 
-        # Apply first/last pagination
-        if first:
-            self.end_index = min(self.start_index + first, len(data))
-        if last:
-            self.start_index = max(len(data) - last, 0)
-            self.end_index = len(data)
-
         # Handle 'before' cursor
         if before is not None:
-            self.start_index = len(data) - (int(last) + 1)
-            self.end_index = int(before)
+            self.end_index = min(self.end_index, int(before))
+
+        # Ensure valid bounds after 'after' and 'before'
+        self.start_index = max(self.start_index, 0)
+        self.end_index = min(self.end_index, len(data))
+
+        if first is not None:
+            self.end_index = min(self.start_index + first, len(data))
+
+        if last is not None:
+            range_length = self.end_index - self.start_index
+            if range_length > last:
+                self.start_index = self.end_index - last
+
+        # Ensure bounds remain valid
+        self.start_index = max(self.start_index, 0)
+        self.end_index = min(self.end_index, len(data))
 
     def cursor(self, position: int) -> str:
-        """Generate a cursor based on the position (index)"""
+        """Generate a cursor based on the position (index)."""
         return str(position)
 
     @property
     def page(self) -> List[Any]:
-        """Returns the sliced page of data"""
+        """Returns the sliced page of data."""
         return self.data[self.start_index : self.end_index]
 
     @property
     def has_next(self) -> bool:
-        """Check if there's a next page"""
+        """Check if there's a next page."""
         return self.end_index < len(self.data)
 
     @property
     def has_previous(self) -> bool:
-        """Check if there's a previous page"""
+        """Check if there's a previous page."""
         return self.start_index > 0
 
 

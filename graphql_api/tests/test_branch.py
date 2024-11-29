@@ -74,6 +74,61 @@ query_files = """
     }
 """
 
+query_files_connection = """
+    query FetchFiles($org: String!, $repo: String!, $branch: String!, $path: String!, $filters: PathContentsFilters!, $first: Int, $after: String, $last: Int, $before: String) {
+        owner(username: $org) {
+            repository(name: $repo) {
+                ... on Repository {
+                    branch(name: $branch) {
+                        head {
+                            deprecatedPathContents (path: $path, filters: $filters, first: $first, after: $after, last: $last, before: $before) {
+                                __typename
+                                ... on PathContentConnection {
+                                    edges {
+                                        cursor
+                                        node {
+                                            __typename
+                                            name
+                                            path
+                                            hits
+                                            misses
+                                            partials
+                                            lines
+                                            percentCovered
+                                            ... on PathContentFile {
+                                                isCriticalFile
+                                            }
+                                        }
+                                    }
+                                    totalCount
+                                    pageInfo {
+                                        hasNextPage
+                                        hasPreviousPage
+                                        startCursor
+                                        endCursor
+                                    }
+                                }
+                                ... on MissingHeadReport {
+                                    message
+                                }
+                                ... on MissingCoverage {
+                                    message
+                                }
+                                ... on UnknownPath {
+                                    message
+                                }
+                                ... on UnknownFlags {
+                                    message
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+"""
+
 
 class MockCoverage(object):
     def __init__(self, coverage, hits, lines):
@@ -1078,6 +1133,142 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "path": "fileA.py",
                                     }
                                 ],
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_fetch_path_contents_deprecated(self, report_mock, critical_files_mock):
+        report_mock.return_value = MockReport()
+        critical_files_mock.return_value = []
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {},
+        }
+
+        data = self.gql_request(query_files, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "pathContents": {
+                                "__typename": "PathContents",
+                                "results": [
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileA.py",
+                                        "path": "fileA.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentFile",
+                                        "name": "fileB.py",
+                                        "path": "fileB.py",
+                                        "hits": 8,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 10,
+                                        "percentCovered": 80.0,
+                                        "isCriticalFile": False,
+                                    },
+                                    {
+                                        "__typename": "PathContentDir",
+                                        "name": "folder",
+                                        "path": "folder",
+                                        "hits": 24,
+                                        "misses": 0,
+                                        "partials": 0,
+                                        "lines": 30,
+                                        "percentCovered": 80.0,
+                                    },
+                                ],
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @patch(
+        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
+    )
+    @patch("shared.reports.api_report_service.build_report_from_commit")
+    def test_fetch_path_contents_deprecated_paginated(
+        self, report_mock, critical_files_mock
+    ):
+        report_mock.return_value = MockReport()
+        critical_files_mock.return_value = []
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {},
+            "first": 2,
+        }
+
+        data = self.gql_request(query_files_connection, variables=variables)
+        assert data == {
+            "owner": {
+                "repository": {
+                    "branch": {
+                        "head": {
+                            "deprecatedPathContents": {
+                                "__typename": "PathContentConnection",
+                                "edges": [
+                                    {
+                                        "cursor": "0",
+                                        "node": {
+                                            "__typename": "PathContentFile",
+                                            "name": "fileA.py",
+                                            "path": "fileA.py",
+                                            "hits": 8,
+                                            "misses": 0,
+                                            "partials": 0,
+                                            "lines": 10,
+                                            "percentCovered": 80.0,
+                                            "isCriticalFile": False,
+                                        },
+                                    },
+                                    {
+                                        "cursor": "1",
+                                        "node": {
+                                            "__typename": "PathContentFile",
+                                            "name": "fileB.py",
+                                            "path": "fileB.py",
+                                            "hits": 8,
+                                            "misses": 0,
+                                            "partials": 0,
+                                            "lines": 10,
+                                            "percentCovered": 80.0,
+                                            "isCriticalFile": False,
+                                        },
+                                    },
+                                ],
+                                "totalCount": 3,
+                                "pageInfo": {
+                                    "hasNextPage": True,
+                                    "hasPreviousPage": False,
+                                    "startCursor": "0",
+                                    "endCursor": "1",
+                                },
                             }
                         }
                     }

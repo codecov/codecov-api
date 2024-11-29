@@ -126,14 +126,14 @@ class RepositoryQuerySetTests(TransactionTestCase):
         data = [1, 2, 3, 4, 5]
 
         connection = queryset_to_connection_sync(data, last=3, before="3")
-        self.assertEqual([edge["node"] for edge in connection.edges], [2, 3])
+        self.assertEqual([edge["node"] for edge in connection.edges], [1, 2, 3])
 
     def test_array_pagination_edge_cases_with_before_and_after(self):
         from graphql_api.helpers.connection import queryset_to_connection_sync
 
         data = [1, 2, 3, 4, 5]
 
-        connection = queryset_to_connection_sync(data, last=3, before="3", after="1")
+        connection = queryset_to_connection_sync(data, last=3, before="3", after="0")
         self.assertEqual([edge["node"] for edge in connection.edges], [2, 3])
 
     def test_both_first_and_last(self):
