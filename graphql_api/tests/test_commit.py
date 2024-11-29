@@ -3488,12 +3488,12 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                             bundle(name: "b5") {
                                                 info {
                                                     version
-                                                    plugin_name
-                                                    plugin_version
-                                                    built_at
+                                                    pluginName
+                                                    pluginVersion
+                                                    builtAt
                                                     duration
-                                                    bundler_name
-                                                    bundler_version
+                                                    bundlerName
+                                                    bundlerVersion
                                                 }
                                             }
                                         }
@@ -3517,9 +3517,9 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         bundle_info = commit["bundleAnalysis"]["bundleAnalysisReport"]["bundle"]["info"]
 
         assert bundle_info["version"] == "1"
-        assert bundle_info["plugin_name"] == "codecov-vite-bundle-analysis-plugin"
-        assert bundle_info["plugin_version"] == "1.0.0"
-        assert bundle_info["built_at"] == "2023-12-01 17:17:28.604000"
+        assert bundle_info["pluginName"] == "codecov-vite-bundle-analysis-plugin"
+        assert bundle_info["pluginVersion"] == "1.0.0"
+        assert bundle_info["builtAt"] == "2023-12-01 17:17:28.604000"
         assert bundle_info["duration"] == 331
-        assert bundle_info["bundler_name"] == "rollup"
-        assert bundle_info["bundler_version"] == "3.29.4"
+        assert bundle_info["bundlerName"] == "rollup"
+        assert bundle_info["bundlerVersion"] == "3.29.4"
