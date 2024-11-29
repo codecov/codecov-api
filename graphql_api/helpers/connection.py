@@ -232,18 +232,18 @@ def queryset_to_connection_sync(
     """
     if not first and not last:
         first = 25
-
-    if isinstance(data, QuerySet):
-        ordering = tuple(field_order(field, ordering_direction) for field in ordering)
-        paginator = DictCursorPaginator(data, ordering=ordering)
-        page = paginator.page(first=first, after=after, last=last, before=before)
-        return Connection(data, paginator, page)
-
-    else:
+        
+    if isinstance(data, list):
         array_paginator = ArrayPaginator(
             data, first=first, last=last, after=after, before=before
         )
         return ArrayConnection(data, array_paginator, array_paginator.page)
+
+    else:
+        ordering = tuple(field_order(field, ordering_direction) for field in ordering)
+        paginator = DictCursorPaginator(data, ordering=ordering)
+        page = paginator.page(first=first, after=after, last=last, before=before)
+        return Connection(data, paginator, page)
 
 
 @sync_to_async
