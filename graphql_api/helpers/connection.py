@@ -87,11 +87,9 @@ class ArrayPaginator:
         if first and last:
             raise ValueError("Cannot provide both 'first' and 'last'")
 
-        # Handle 'after' cursor
         if after is not None:
             self.start_index = int(after) + 1
 
-        # Handle 'before' cursor
         if before is not None:
             self.end_index = min(self.end_index, int(before))
 
