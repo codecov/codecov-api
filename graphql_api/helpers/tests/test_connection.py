@@ -152,3 +152,6 @@ class RepositoryQuerySetTests(TransactionTestCase):
 
         with self.assertRaises(ValidationError):
             queryset_to_connection_sync(data, last=3, before="invalid")
+
+        with self.assertRaises(ValidationError):
+            queryset_to_connection_sync(data, first=3, after="invalid")
