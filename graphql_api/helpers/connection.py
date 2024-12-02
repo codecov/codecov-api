@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from cursor_pagination import CursorPage, CursorPaginator
 from django.db.models import QuerySet
 
+from codecov.commands.exceptions import ValidationError
 from codecov.db import sync_to_async
 from graphql_api.types.enums import OrderingDirection
 
@@ -85,13 +86,19 @@ class ArrayPaginator:
         self.end_index = len(data)
 
         if first and last:
-            raise ValueError("Cannot provide both 'first' and 'last'")
+            raise ValidationError("Cannot provide both 'first' and 'last'")
 
         if after is not None:
-            self.start_index = int(after) + 1
+            try:
+                self.start_index = int(after) + 1
+            except ValueError:
+                raise ValidationError("'after' cursor must be an integer")
 
         if before is not None:
-            self.end_index = min(self.end_index, int(before))
+            try:
+                self.end_index = min(self.end_index, int(before))
+            except ValueError:
+                raise ValidationError("'before' cursor must be an integer")
 
         # Ensure valid bounds after 'after' and 'before'
         self.start_index = max(self.start_index, 0)
@@ -132,10 +139,10 @@ class ArrayPaginator:
 class ArrayConnection:
     """Connection wrapper for array pagination."""
 
-    def __init__(self, data: List[Any], paginator: ArrayPaginator, page: List[Any]):
-        self.data = data
+    def __init__(self, paginator: ArrayPaginator):
+        self.data = paginator.data
         self.paginator = paginator
-        self.page = page
+        self.page = paginator.page
 
     @property
     def edges(self) -> List[Dict[str, Any]]:
@@ -237,7 +244,7 @@ def queryset_to_connection_sync(
         array_paginator = ArrayPaginator(
             data, first=first, last=last, after=after, before=before
         )
-        return ArrayConnection(data, array_paginator, array_paginator.page)
+        return ArrayConnection(array_paginator)
 
     else:
         ordering = tuple(field_order(field, ordering_direction) for field in ordering)

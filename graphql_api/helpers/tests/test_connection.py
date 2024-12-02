@@ -2,6 +2,7 @@ from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 from shared.django_apps.core.tests.factories import RepositoryFactory
 
+from codecov.commands.exceptions import ValidationError
 from core.models import Repository
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 
@@ -141,5 +142,13 @@ class RepositoryQuerySetTests(TransactionTestCase):
 
         data = [1, 2, 3, 4, 5]
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             queryset_to_connection_sync(data, last=3, first=2)
+
+    def test_invalid_cursors(self):
+        from graphql_api.helpers.connection import queryset_to_connection_sync
+
+        data = [1, 2, 3, 4, 5]
+
+        with self.assertRaises(ValidationError):
+            queryset_to_connection_sync(data, last=3, before="invalid")
