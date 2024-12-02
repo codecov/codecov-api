@@ -242,6 +242,10 @@ class AssetReport(object):
     def module_extensions(self) -> List[str]:
         return list(set([module.extension for module in self.modules]))
 
+    @cached_property
+    def routes(self) -> Optional[List[str]]:
+        return self.asset.routes()
+
 
 @dataclass
 class BundleReport(object):
