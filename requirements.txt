@@ -412,7 +412,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/6a50384e504f3c6997461e90e9069a87e859523f.tar.gz
+shared @ https://github.com/codecov/shared/archive/00e90bb2085d3a54709328e9b3a39d578feb9992.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
