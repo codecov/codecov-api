@@ -687,18 +687,6 @@ def parse_headers(headers, upload_params):
     return {"content_type": content_type, "reduced_redundancy": reduced_redundancy}
 
 
-def store_report_in_redis(request, commitid, reportid, redis):
-    encoding = request.META.get("HTTP_X_CONTENT_ENCODING") or request.META.get(
-        "HTTP_CONTENT_ENCODING"
-    )
-    redis_key = (
-        f"upload/{commitid[:7]}/{reportid}/{'gzip' if encoding == 'gzip' else 'plain'}"
-    )
-    redis.setex(redis_key, 10800, request.body)
-
-    return redis_key
-
-
 def dispatch_upload_task(
     task_arguments,
     repository,
@@ -746,6 +734,7 @@ def dispatch_upload_task(
         commitid=commitid,
         report_type=str(report_type),
         report_code=task_arguments.get("report_code"),
+        arguments=task_arguments,
         countdown=max(
             countdown, int(get_config("setup", "upload_processing_delay") or 0)
         ),

@@ -5,6 +5,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
+from shared.api_archive.archive import ArchiveService, MinioEndpoints
 from shared.metrics import inc_counter
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
@@ -24,7 +25,6 @@ from codecov_auth.models import OrganizationLevelToken
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
-from services.archive import ArchiveService, MinioEndpoints
 from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     dispatch_upload_task,
