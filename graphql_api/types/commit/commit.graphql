@@ -19,6 +19,7 @@ type Commit {
   ): UploadConnection @cost(complexity: 10, multipliers: ["first", "last"])
   criticalFiles: [CriticalFile!]!
   pathContents(path: String, filters: PathContentsFilters): PathContentsResult
+  deprecatedPathContents(path: String, filters: PathContentsFilters, first: Int, after: String, last: Int, before: String): DeprecatedPathContentsResult
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
   totalUploads: Int!
   bundleStatus: CommitStatus
