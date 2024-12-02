@@ -1891,7 +1891,7 @@ class BillingServiceTests(TestCase):
         )
         delete_subscription_mock.assert_called_once_with(owner)
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")

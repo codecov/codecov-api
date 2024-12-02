@@ -16,7 +16,7 @@ from shared.plan.constants import (
 
 from billing.constants import REMOVED_INVOICE_STATUSES
 from codecov_auth.models import Owner
-from plan.service import PlanService
+from shared.plan.service import PlanService
 
 log = logging.getLogger(__name__)
 

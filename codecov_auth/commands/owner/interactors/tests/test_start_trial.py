@@ -12,7 +12,8 @@ from shared.plan.constants import (
     TrialStatus,
 )
 
-from codecov.commands.exceptions import Unauthorized, ValidationError
+from codecov.commands.exceptions import Unauthorized, ValidationError as CodecovValidationError
+from shared.django_apps.codecov.commands.exceptions import ValidationError
 from codecov_auth.models import Owner
 
 from ..start_trial import StartTrialInteractor
@@ -31,7 +32,7 @@ class StartTrialInteractorTest(TransactionTestCase):
             username="random-user-123",
             service="github",
         )
-        with pytest.raises(ValidationError):
+        with pytest.raises(CodecovValidationError):
             self.execute(current_user=current_user, org_username="some-other-username")
 
     def test_cancel_trial_raises_exception_when_current_user_not_part_of_org(self):

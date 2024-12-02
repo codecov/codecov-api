@@ -4,7 +4,7 @@ from ariadne import ObjectType
 from shared.plan.constants import PlanData
 
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
-from plan.service import PlanService
+from shared.plan.service import PlanService
 
 plan_representation = ariadne_load_local_graphql(
     __file__, "plan_representation.graphql"

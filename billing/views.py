@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from codecov_auth.models import Owner
-from plan.service import PlanService
+from shared.plan.service import PlanService
 from services.task.task import TaskService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents

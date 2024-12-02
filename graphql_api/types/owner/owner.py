@@ -40,7 +40,7 @@ from graphql_api.helpers.mutation import (
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
-from plan.service import PlanService
+from shared.plan.service import PlanService
 from services.billing import BillingService
 from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection

@@ -26,7 +26,7 @@ from codecov_auth.models import (
     Owner,
 )
 from core.models import Commit, Repository
-from plan.service import PlanService
+from shared.plan.service import PlanService
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
 from services.redis_configuration import get_redis_connection
