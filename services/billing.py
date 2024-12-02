@@ -13,10 +13,10 @@ from shared.plan.constants import (
     USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
 )
+from shared.plan.service import PlanService
 
 from billing.constants import REMOVED_INVOICE_STATUSES
 from codecov_auth.models import Owner
-from shared.plan.service import PlanService
 
 log = logging.getLogger(__name__)
 

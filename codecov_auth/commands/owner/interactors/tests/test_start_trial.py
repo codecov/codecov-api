@@ -4,6 +4,7 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from shared.django_apps.codecov.commands.exceptions import ValidationError
 from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.plan.constants import (
     TRIAL_PLAN_SEATS,
@@ -12,8 +13,8 @@ from shared.plan.constants import (
     TrialStatus,
 )
 
-from codecov.commands.exceptions import Unauthorized, ValidationError as CodecovValidationError
-from shared.django_apps.codecov.commands.exceptions import ValidationError
+from codecov.commands.exceptions import Unauthorized
+from codecov.commands.exceptions import ValidationError as CodecovValidationError
 from codecov_auth.models import Owner
 
 from ..start_trial import StartTrialInteractor

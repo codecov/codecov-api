@@ -190,7 +190,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 }
                 """ % (enterprise_org.username)
         data = self.gql_request(query, owner=enterprise_org)
-        print(data, 'look here 1')
+        print(data, "look here 1")
         assert data["owner"]["plan"]["planUserCount"] == 5
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
 

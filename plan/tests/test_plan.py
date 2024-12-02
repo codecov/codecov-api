@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from pytest import raises
+from shared.django_apps.codecov.commands.exceptions import ValidationError
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     AccountsUsersFactory,
@@ -22,8 +23,6 @@ from shared.plan.constants import (
     TrialDaysAmount,
     TrialStatus,
 )
-
-from shared.django_apps.codecov.commands.exceptions import ValidationError
 from shared.plan.service import PlanService
 
 
