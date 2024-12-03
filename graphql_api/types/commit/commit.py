@@ -178,7 +178,7 @@ def resolve_path_contents(commit: Commit, info, path: str = None, filters=None):
 
     if component_filter:
         all_components = components_service.commit_components(commit, current_owner)
-        filtered_components = components_service.filter_components_by_name(
+        filtered_components = components_service.filter_components_by_name_or_id(
             all_components, component_filter
         )
 
@@ -268,7 +268,7 @@ def resolve_deprecated_path_contents(
 
     if component_filter:
         all_components = components_service.commit_components(commit, current_owner)
-        filtered_components = components_service.filter_components_by_name(
+        filtered_components = components_service.filter_components_by_name_or_id(
             all_components, component_filter
         )
 
@@ -394,7 +394,7 @@ def resolve_coverage_file(commit, info, path, flags=None, components=None):
         all_components = components_service.commit_components(
             commit, info.context["request"].current_owner
         )
-        filtered_components = components_service.filter_components_by_name(
+        filtered_components = components_service.filter_components_by_name_or_id(
             all_components, components
         )
         for fc in filtered_components:
@@ -423,7 +423,7 @@ def resolve_coverage_components(commit: Commit, info, filters=None) -> List[Comp
     all_components = components_service.commit_components(commit, current_owner)
 
     if filters and filters.get("components"):
-        return components_service.filter_components_by_name(
+        return components_service.filter_components_by_name_or_id(
             all_components, filters["components"]
         )
 
