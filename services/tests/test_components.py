@@ -16,7 +16,7 @@ from services.comparison import Comparison
 from services.components import (
     ComponentComparison,
     commit_components,
-    component_filtered_report,
+    component_filtered_report, filter_components_by_name_or_id,
 )
 
 
@@ -158,8 +158,8 @@ class ComponentComparisonTest(TransactionTestCase):
         component_comparison = ComponentComparison(self.comparison, component_go)
         assert component_comparison.base_report.files == ["file_1.go"]
         assert (
-            component_comparison.base_report.totals.coverage
-            == report.get("file_1.go").totals.coverage
+                component_comparison.base_report.totals.coverage
+                == report.get("file_1.go").totals.coverage
         )
 
     @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
@@ -176,8 +176,8 @@ class ComponentComparisonTest(TransactionTestCase):
         component_comparison = ComponentComparison(self.comparison, component_go)
         assert component_comparison.head_report.files == ["file_1.go"]
         assert (
-            component_comparison.head_report.totals.coverage
-            == report.get("file_1.go").totals.coverage
+                component_comparison.head_report.totals.coverage
+                == report.get("file_1.go").totals.coverage
         )
 
     @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
@@ -221,3 +221,27 @@ class ComponentComparisonTest(TransactionTestCase):
 
         # removed 1 tested line, added 1 tested and 1 untested line
         assert component_comparison.patch_totals.coverage == "50.00000"
+
+    def test_filter_components_by_name_or_id(self):
+        components = [
+            Component(name="ComponentA", component_id="123"),
+            Component(name="ComponentB", component_id="456"),
+            Component(name="ComponentC", component_id="789"),
+        ]
+        terms = ["comPOnentA", "123", "456"]
+
+        filtered = filter_components_by_name_or_id(components, terms)
+        self.assertEqual(len(filtered), 2)
+        self.assertEqual(filtered[0].name, "ComponentA")
+        self.assertEqual(filtered[1].component_id, "456")
+
+    def test_filter_components_by_name_or_id_no_matches(self):
+        components = [
+            Component(name="ComponentA", component_id="123"),
+            Component(name="ComponentB", component_id="456"),
+            Component(name="ComponentC", component_id="789"),
+        ]
+        terms = ["nonexistent", "000"]
+
+        filtered = filter_components_by_name_or_id(components, terms)
+        self.assertEqual(len(filtered), 0)
