@@ -16,7 +16,8 @@ from services.comparison import Comparison
 from services.components import (
     ComponentComparison,
     commit_components,
-    component_filtered_report, filter_components_by_name_or_id,
+    component_filtered_report,
+    filter_components_by_name_or_id,
 )
 
 
@@ -158,8 +159,8 @@ class ComponentComparisonTest(TransactionTestCase):
         component_comparison = ComponentComparison(self.comparison, component_go)
         assert component_comparison.base_report.files == ["file_1.go"]
         assert (
-                component_comparison.base_report.totals.coverage
-                == report.get("file_1.go").totals.coverage
+            component_comparison.base_report.totals.coverage
+            == report.get("file_1.go").totals.coverage
         )
 
     @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
@@ -176,8 +177,8 @@ class ComponentComparisonTest(TransactionTestCase):
         component_comparison = ComponentComparison(self.comparison, component_go)
         assert component_comparison.head_report.files == ["file_1.go"]
         assert (
-                component_comparison.head_report.totals.coverage
-                == report.get("file_1.go").totals.coverage
+            component_comparison.head_report.totals.coverage
+            == report.get("file_1.go").totals.coverage
         )
 
     @patch("services.comparison.Comparison.git_comparison", new_callable=PropertyMock)
@@ -224,9 +225,27 @@ class ComponentComparisonTest(TransactionTestCase):
 
     def test_filter_components_by_name_or_id(self):
         components = [
-            Component(name="ComponentA", component_id="123", paths=[], flag_regexes=[], statuses=[]),
-            Component(name="ComponentB", component_id="456", paths=[], flag_regexes=[], statuses=[]),
-            Component(name="ComponentC", component_id="789", paths=[], flag_regexes=[], statuses=[]),
+            Component(
+                name="ComponentA",
+                component_id="123",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentB",
+                component_id="456",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentC",
+                component_id="789",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
         ]
         terms = ["comPOnentA", "123", "456"]
 
@@ -237,9 +256,27 @@ class ComponentComparisonTest(TransactionTestCase):
 
     def test_filter_components_by_name_or_id_no_matches(self):
         components = [
-            Component(name="ComponentA", component_id="123", paths=[], flag_regexes=[], statuses=[]),
-            Component(name="ComponentB", component_id="456", paths=[], flag_regexes=[], statuses=[]),
-            Component(name="ComponentC", component_id="789", paths=[], flag_regexes=[], statuses=[]),
+            Component(
+                name="ComponentA",
+                component_id="123",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentB",
+                component_id="456",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentC",
+                component_id="789",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
         ]
         terms = ["nonexistent", "000"]
 
