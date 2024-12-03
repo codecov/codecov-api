@@ -12,9 +12,9 @@ from shared.plan.constants import (
     TEAM_PLAN_MAX_USERS,
     TEAM_PLAN_REPRESENTATIONS,
 )
+from shared.plan.service import PlanService
 
 from codecov_auth.models import Owner
-from plan.service import PlanService
 from services.billing import BillingService
 from services.sentry import send_user_webhook as send_sentry_webhook
 

@@ -136,7 +136,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {"hasSeatsLeft": True}
 
-    @patch("services.self_hosted.get_current_license")
+    @patch("shared.self_hosted.service.get_current_license")
     def test_plan_user_count_for_enterprise_org(self, mocked_license):
         """
         If an Org has an enterprise license, number_allowed_users from their license
@@ -190,10 +190,11 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 }
                 """ % (enterprise_org.username)
         data = self.gql_request(query, owner=enterprise_org)
+        print(data, "look here 1")
         assert data["owner"]["plan"]["planUserCount"] == 5
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
 
-    @patch("services.self_hosted.get_current_license")
+    @patch("shared.self_hosted.service.get_current_license")
     def test_plan_user_count_for_enterprise_org_invaild_license(self, mocked_license):
         mock_enterprise_license = LicenseInformation(
             is_valid=False,

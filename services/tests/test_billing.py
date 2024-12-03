@@ -1891,7 +1891,7 @@ class BillingServiceTests(TestCase):
         )
         delete_subscription_mock.assert_called_once_with(owner)
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1913,7 +1913,7 @@ class BillingServiceTests(TestCase):
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1934,7 +1934,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1955,7 +1955,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
