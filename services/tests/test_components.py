@@ -224,9 +224,9 @@ class ComponentComparisonTest(TransactionTestCase):
 
     def test_filter_components_by_name_or_id(self):
         components = [
-            Component(name="ComponentA", component_id="123"),
-            Component(name="ComponentB", component_id="456"),
-            Component(name="ComponentC", component_id="789"),
+            Component(name="ComponentA", component_id="123", paths=[], flag_regexes=[], statuses=[]),
+            Component(name="ComponentB", component_id="456", paths=[], flag_regexes=[], statuses=[]),
+            Component(name="ComponentC", component_id="789", paths=[], flag_regexes=[], statuses=[]),
         ]
         terms = ["comPOnentA", "123", "456"]
 
@@ -237,9 +237,9 @@ class ComponentComparisonTest(TransactionTestCase):
 
     def test_filter_components_by_name_or_id_no_matches(self):
         components = [
-            Component(name="ComponentA", component_id="123"),
-            Component(name="ComponentB", component_id="456"),
-            Component(name="ComponentC", component_id="789"),
+            Component(name="ComponentA", component_id="123", paths=[], flag_regexes=[], statuses=[]),
+            Component(name="ComponentB", component_id="456", paths=[], flag_regexes=[], statuses=[]),
+            Component(name="ComponentC", component_id="789", paths=[], flag_regexes=[], statuses=[]),
         ]
         terms = ["nonexistent", "000"]
 
