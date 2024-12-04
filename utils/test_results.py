@@ -1,10 +1,10 @@
 import polars as pl
+from django.conf import settings
 from shared.api_archive.storage import StorageService
 from shared.storage.exceptions import FileNotInStorageError
 
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService
-from utils.config import get_config
 
 
 def redis_key(
@@ -53,14 +53,14 @@ def get_results(
     key = redis_key(repoid, branch, interval_start, interval_end)
     result: bytes | None = redis_conn.get(key)
 
-    bucket_name: str = get_config("services", "minio", "bucket", default="archive")  # type: ignore
-
     if result is None:
         # try storage
         storage_service = StorageService()
         key = storage_key(repoid, branch, interval_start, interval_end)
         try:
-            result = storage_service.read_file(bucket_name=bucket_name, path=key)
+            result = storage_service.read_file(
+                bucket_name=settings.GCS_BUCKET_NAME, path=key
+            )
             # cache to redis
             TaskService().cache_test_results_redis(repoid, branch)
         except FileNotInStorageError:
