@@ -434,11 +434,11 @@ class UserViewSetTests(APITestCase):
             },
             data={"activated": True},
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data == {
             "detail": ErrorDetail(
-                string=f"Cannot activate user {self.org.username} -- not enough seats left.",
-                code="permission_denied",
+                string="Cannot activate user -- not enough seats left.",
+                code="no_seats_left",
             )
         }
 
