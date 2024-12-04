@@ -5,10 +5,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 from rest_framework.throttling import BaseThrottle
+from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
 from shared.upload.utils import query_monthly_coverage_measurements
 
-from plan.service import PlanService
 from reports.models import ReportSession
 from services.redis_configuration import get_redis_connection
 from upload.helpers import _determine_responsible_owner

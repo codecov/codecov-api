@@ -164,7 +164,7 @@ def resolve_asset_report_measurements(
 def resolve_routes(
     bundle_asset: AssetReport, info: GraphQLResolveInfo
 ) -> Optional[List[str]]:
-    return ["/", "/about", "/login", "/super/long/url/path"]
+    return bundle_asset.routes
 
 
 # ============= Bundle Report Bindable =============
@@ -390,21 +390,21 @@ def resolve_bundle_report_info_version(
     return bundle_report_info.version
 
 
-@bundle_report_info_bindable.field("plugin_name")
+@bundle_report_info_bindable.field("pluginName")
 def resolve_bundle_report_info_plugin_name(
     bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
     return bundle_report_info.plugin_name
 
 
-@bundle_report_info_bindable.field("plugin_version")
+@bundle_report_info_bindable.field("pluginVersion")
 def resolve_bundle_report_info_plugin_version(
     bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
     return bundle_report_info.plugin_version
 
 
-@bundle_report_info_bindable.field("built_at")
+@bundle_report_info_bindable.field("builtAt")
 def resolve_bundle_report_info_built_at(
     bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
@@ -418,14 +418,14 @@ def resolve_bundle_report_info_duration(
     return bundle_report_info.duration
 
 
-@bundle_report_info_bindable.field("bundler_name")
+@bundle_report_info_bindable.field("bundlerName")
 def resolve_bundle_report_info_bundler_name(
     bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
     return bundle_report_info.bundler_name
 
 
-@bundle_report_info_bindable.field("bundler_version")
+@bundle_report_info_bindable.field("bundlerVersion")
 def resolve_bundle_report_info_bundler_version(
     bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
 ) -> str:
