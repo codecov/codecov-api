@@ -116,7 +116,7 @@ GRAPHQL_MAX_ALIASES = get_config("setup", "graphql", "max_aliases", default=10)
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
 
 # GCS
-GCS_BUCKET_NAME = "codecov"
+GCS_BUCKET_NAME = get_config("services", "minio", "bucket", default="codecov")
 
 
 # Password validation
