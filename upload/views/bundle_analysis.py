@@ -9,6 +9,7 @@ from rest_framework.exceptions import NotAuthenticated, NotFound
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
 from shared.metrics import Counter, inc_counter
 
@@ -24,7 +25,6 @@ from codecov_auth.authentication.types import RepositoryAsUser
 from codecov_auth.models import Owner, Service
 from core.models import Commit
 from reports.models import CommitReport
-from services.archive import ArchiveService
 from services.redis_configuration import get_redis_connection
 from timeseries.models import Dataset, MeasurementName
 from upload.helpers import (

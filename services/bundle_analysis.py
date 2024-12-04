@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import sentry_sdk
 from django.utils.functional import cached_property
+from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import AssetReport as SharedAssetReport
 from shared.bundle_analysis import (
     BundleAnalysisComparison as SharedBundleAnalysisComparison,
@@ -25,7 +26,6 @@ from graphql_api.actions.measurements import (
     measurements_last_uploaded_before_start_date,
 )
 from reports.models import CommitReport
-from services.archive import ArchiveService
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementName
 
@@ -241,6 +241,10 @@ class AssetReport(object):
     @cached_property
     def module_extensions(self) -> List[str]:
         return list(set([module.extension for module in self.modules]))
+
+    @cached_property
+    def routes(self) -> Optional[List[str]]:
+        return self.asset.routes()
 
 
 @dataclass

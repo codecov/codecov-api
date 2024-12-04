@@ -203,7 +203,7 @@ def resolve_component_comparisons(
     list_components = comparison_report.commit_comparison.component_comparisons.all()
 
     if filters and filters.get("components"):
-        components = components_service.filter_components_by_name(
+        components = components_service.filter_components_by_name_or_id(
             components, filters["components"]
         )
 

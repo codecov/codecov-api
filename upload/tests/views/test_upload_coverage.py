@@ -4,17 +4,10 @@ from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
-from shared.django_apps.core.tests.factories import (
-    CommitFactory,
-    RepositoryFactory,
-)
+from shared.api_archive.archive import ArchiveService, MinioEndpoints
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from reports.models import (
-    ReportSession,
-    RepositoryFlag,
-    UploadFlagMembership,
-)
-from services.archive import ArchiveService, MinioEndpoints
+from reports.models import ReportSession, RepositoryFlag, UploadFlagMembership
 from upload.views.upload_coverage import CanDoCoverageUploadsPermission
 
 
@@ -102,7 +95,7 @@ def test_upload_coverage_post(db, mocker):
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
     presigned_put_mock = mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
@@ -200,7 +193,7 @@ def test_upload_coverage_post_shelter(db, mocker):
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
     presigned_put_mock = mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(

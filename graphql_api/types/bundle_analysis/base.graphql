@@ -60,12 +60,12 @@ type BundleAsset {
 
 type BundleReportInfo {
   version: String!
-  plugin_name: String!
-  plugin_version: String!
-  built_at: String!
+  pluginName: String!
+  pluginVersion: String!
+  builtAt: String!
   duration: Int!
-  bundler_name: String!
-  bundler_version: String!
+  bundlerName: String!
+  bundlerVersion: String!
 }
 
 type BundleReport {
