@@ -16,7 +16,17 @@ from shared.django_apps.codecov_auth.models import (
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     InvoiceBillingFactory,
+    OrganizationLevelTokenFactory,
+    OwnerFactory,
+    SentryUserFactory,
+    SessionFactory,
     StripeBillingFactory,
+    UserFactory,
+)
+from shared.django_apps.core.tests.factories import PullFactory, RepositoryFactory
+from shared.plan.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    PlanName,
 )
 
 from codecov.commands.exceptions import ValidationError
@@ -30,19 +40,7 @@ from codecov_auth.admin import (
     find_and_remove_stale_users,
 )
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
-from codecov_auth.tests.factories import (
-    OrganizationLevelTokenFactory,
-    OwnerFactory,
-    SentryUserFactory,
-    SessionFactory,
-    UserFactory,
-)
 from core.models import Pull
-from core.tests.factories import PullFactory, RepositoryFactory
-from plan.constants import (
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
-    PlanName,
-)
 
 
 class OwnerAdminTest(TestCase):
@@ -302,7 +300,7 @@ class OwnerAdminTest(TestCase):
         assert res.status_code == 200
         assert "Extending trial for:" in str(res.content)
 
-    @patch("plan.service.PlanService.start_trial_manually")
+    @patch("shared.plan.service.PlanService.start_trial_manually")
     def test_start_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
         org_to_be_trialed = OwnerFactory()
@@ -319,7 +317,7 @@ class OwnerAdminTest(TestCase):
         assert res.status_code == 302
         assert mock_start_trial_service.called
 
-    @patch("plan.service.PlanService._start_trial_helper")
+    @patch("shared.plan.service.PlanService._start_trial_helper")
     def test_extend_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
         org_to_be_trialed = OwnerFactory()
@@ -339,7 +337,7 @@ class OwnerAdminTest(TestCase):
         assert mock_start_trial_service.called
         assert mock_start_trial_service.call_args.kwargs == {"is_extension": True}
 
-    @patch("plan.service.PlanService.start_trial_manually")
+    @patch("shared.plan.service.PlanService.start_trial_manually")
     def test_start_trial_paid_plan(self, mock_start_trial_service):
         mock_start_trial_service.side_effect = ValidationError(
             "Cannot trial from a paid plan"

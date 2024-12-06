@@ -5,12 +5,9 @@ from rest_framework import status
 from rest_framework.exceptions import ErrorDetail
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
-from codecov_auth.tests.factories import (
-    DjangoSessionFactory,
-    OwnerFactory,
-    SessionFactory,
-)
+from codecov_auth.tests.factories import DjangoSessionFactory
 from utils.test_utils import APIClient
 
 
@@ -65,6 +62,11 @@ class UserViewSetTests(APITestCase):
 
     def _detail(self, kwargs):
         return self.client.get(reverse("api-v2-users-detail", kwargs=kwargs))
+
+    def _patch(self, kwargs, data):
+        return self.client.patch(
+            reverse("api-v2-users-detail", kwargs=kwargs), data=data
+        )
 
     def setUp(self):
         self.org = OwnerFactory(service="github")
@@ -180,6 +182,302 @@ class UserViewSetTests(APITestCase):
             "activated": False,
             "is_admin": False,
             "email": another_user.email,
+        }
+
+    def test_update_activate_by_username(self):
+        another_user = OwnerFactory(service="github", organizations=[self.org.pk])
+
+        # Activate user
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": True,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+        # Deactivate user
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": False},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+    def test_update_activate_by_ownerid(self):
+        another_user = OwnerFactory(service="github", organizations=[self.org.pk])
+
+        # Activate user
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.ownerid,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": True,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+        # Deactivate user
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.ownerid,
+            },
+            data={"activated": False},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+    def test_update_activate_unauthorized_members_of_other_orgs(self):
+        another_org = OwnerFactory(service="github")
+        another_user = OwnerFactory(service="github", organizations=[another_org.pk])
+
+        # Activate user - not allowed
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        # Deactivate user - not allowed
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": False},
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        # Request allowed after user joins the org
+        another_user.organizations.append(self.org.pk)
+        another_user.save()
+
+        # Activate user
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": True,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+        # Deactivate user
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": False},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+    def test_update_activate_unauthorized_not_member_of_org(self):
+        another_org = OwnerFactory(service="github")
+        another_user = OwnerFactory(service="github", organizations=[another_org.pk])
+
+        # Activate user - not allowed
+        response = self._patch(
+            kwargs={
+                "service": another_org.service,
+                "owner_username": another_org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        # Deactivate user - not allowed
+        response = self._patch(
+            kwargs={
+                "service": another_org.service,
+                "owner_username": another_org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": False},
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        # Request owner now joins the other org and thus is allowed to activate/deactivate
+        self.current_owner.organizations.append(another_org.pk)
+        self.current_owner.save()
+
+        # Activate user
+        response = self._patch(
+            kwargs={
+                "service": another_org.service,
+                "owner_username": another_org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": True,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+        # Deactivate user
+        response = self._patch(
+            kwargs={
+                "service": another_org.service,
+                "owner_username": another_org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": False},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+    def test_update_activate_no_seats_left(self):
+        another_user = OwnerFactory(service="github", organizations=[self.org.pk])
+        another_user_2 = OwnerFactory(service="github", organizations=[self.org.pk])
+
+        # Activate user 1
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": True,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+        # Activate user 2
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user_2.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data == {
+            "detail": ErrorDetail(
+                string="Cannot activate user -- not enough seats left.",
+                code="no_seats_left",
+            )
+        }
+
+        # Deactivate user 1 to make room for user 2
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user.username,
+            },
+            data={"activated": False},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user.username,
+            "name": another_user.name,
+            "activated": False,
+            "is_admin": False,
+            "email": another_user.email,
+        }
+
+        # Activate user 2 now that there's room
+        response = self._patch(
+            kwargs={
+                "service": self.org.service,
+                "owner_username": self.org.username,
+                "user_username_or_ownerid": another_user_2.username,
+            },
+            data={"activated": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "service": "github",
+            "username": another_user_2.username,
+            "name": another_user_2.name,
+            "activated": True,
+            "is_admin": False,
+            "email": another_user_2.email,
         }
 
 

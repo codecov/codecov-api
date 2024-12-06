@@ -7,9 +7,9 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from freezegun.api import FakeDatetime
+from shared.django_apps.codecov_auth.tests.factories import UserFactory
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
-from codecov_auth.tests.factories import UserFactory
 
 from ..save_terms_agreement import SaveTermsAgreementInteractor
 
@@ -20,17 +20,16 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         self.updated_at = FakeDatetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 
     @async_to_sync
-    def execute(
-        self,
-        current_user,
-        input={
+    def execute(self, current_user, input=None):
+        real_input = {
             "business_email": None,
             "terms_agreement": False,
             "marketing_consent": False,
-        },
-    ):
+        }
+        if input:
+            real_input.update(input)
         return SaveTermsAgreementInteractor(None, "github", current_user).execute(
-            input=input,
+            input=real_input,
         )
 
     @freeze_time("2022-01-01T00:00:00")

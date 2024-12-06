@@ -1,5 +1,6 @@
 from typing import Any, Optional, Union
 
+import sentry_sdk
 from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
@@ -58,6 +59,7 @@ def is_first_pull_request(pull: Pull) -> bool:
     return pull.repository.pull_requests.order_by("id").first() == pull
 
 
+@sentry_sdk.trace
 @pull_bindable.field("compareWithBase")
 async def resolve_compare_with_base(
     pull: Pull, info: GraphQLResolveInfo, **kwargs: Any
@@ -88,6 +90,7 @@ async def resolve_compare_with_base(
         return ComparisonReport(commit_comparison)
 
 
+@sentry_sdk.trace
 @pull_bindable.field("bundleAnalysisCompareWithBase")
 @sync_to_async
 def resolve_bundle_analysis_compare_with_base(

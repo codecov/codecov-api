@@ -1,9 +1,7 @@
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
-
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory
+from shared.django_apps.core.tests.factories import CommitFactory, OwnerFactory
 
 from ..upload import UploadCommands
 

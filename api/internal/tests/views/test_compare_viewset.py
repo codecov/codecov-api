@@ -3,27 +3,28 @@ from unittest.mock import PropertyMock, patch
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    PullFactory,
+    RepositoryFactory,
+)
+from shared.reports.api_report_service import SerializableReport
 from shared.reports.resources import ReportFile
 from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType
 
 import services.comparison as comparison
 from api.shared.commit.serializers import ReportTotalsSerializer
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, PullFactory, RepositoryFactory
-from services.report import SerializableReport
 from utils.test_utils import Client
 
 
 class MockSerializableReport(SerializableReport):
     """
-    Stubs the 'file_reports' and 'get' methods of SerializableReport, which usually constructs
+    Stubs the 'get' method of SerializableReport, which usually constructs
     report files on the fly from information not provided by these test, like the chunks
     for example.
     """
-
-    def file_reports(self):
-        return [report_file for name, report_file in self.mocked_files.items()]
 
     def get(self, file_name):
         return self.mocked_files.get(file_name)

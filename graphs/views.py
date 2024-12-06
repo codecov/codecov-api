@@ -1,5 +1,6 @@
 import logging
 
+import shared.reports.api_report_service as report_service
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from rest_framework import exceptions
@@ -7,8 +8,8 @@ from rest_framework.exceptions import NotFound
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from shared.metrics import Counter, inc_counter
 
-import services.report as report_service
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
 from graphs.settings import settings
@@ -18,6 +19,21 @@ from .helpers.graphs import icicle, sunburst, tree
 from .mixins import GraphBadgeAPIMixin
 
 log = logging.getLogger(__name__)
+
+FLARE_USE_COUNTER = Counter(
+    "graph_activity",
+    "How are graphs and flare being used?",
+    [
+        "position",
+    ],
+)
+FLARE_SUCCESS_COUNTER = Counter(
+    "graph_success",
+    "How often are graphs successfully generated?",
+    [
+        "graph_type",
+    ],
+)
 
 
 class IgnoreClientContentNegotiation(DefaultContentNegotiation):
@@ -151,7 +167,16 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         options = dict()
         graph = self.kwargs.get("graph")
 
+        # a flare graph has been requested
+        inc_counter(FLARE_USE_COUNTER, labels=dict(position=0))
+        log.info(
+            msg="flare graph activity",
+            extra=dict(position="start", graph_type=graph, kwargs=self.kwargs),
+        )
+
         flare = self.get_flare()
+        # flare success, will generate and return graph
+        inc_counter(FLARE_USE_COUNTER, labels=dict(position=20))
 
         if graph == "tree":
             options["width"] = int(
@@ -163,6 +188,11 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
                 self.request.query_params.get(
                     "height", settings["sunburst"]["options"]["height"] or 100
                 )
+            )
+            inc_counter(FLARE_SUCCESS_COUNTER, labels=dict(graph_type=graph))
+            log.info(
+                msg="flare graph activity",
+                extra=dict(position="success", graph_type=graph, kwargs=self.kwargs),
             )
             return tree(flare, None, None, **options)
         elif graph == "icicle":
@@ -176,6 +206,11 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
                     "height", settings["icicle"]["options"]["height"] or 100
                 )
             )
+            inc_counter(FLARE_SUCCESS_COUNTER, labels=dict(graph_type=graph))
+            log.info(
+                msg="flare graph activity",
+                extra=dict(position="success", graph_type=graph, kwargs=self.kwargs),
+            )
             return icicle(flare, **options)
         elif graph == "sunburst":
             options["width"] = int(
@@ -188,16 +223,27 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
                     "height", settings["sunburst"]["options"]["height"] or 100
                 )
             )
+            inc_counter(FLARE_SUCCESS_COUNTER, labels=dict(graph_type=graph))
+            log.info(
+                msg="flare graph activity",
+                extra=dict(position="success", graph_type=graph, kwargs=self.kwargs),
+            )
             return sunburst(flare, **options)
 
     def get_flare(self):
         pullid = self.kwargs.get("pullid")
 
         if not pullid:
+            # pullid not in kwargs, try to generate flare from commit
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=12))
             return self.get_commit_flare()
         else:
+            # pullid was included in the request
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=1))
             pull_flare = self.get_pull_flare(pullid)
             if pull_flare is None:
+                # failed to get flare from pull OR commit - graph request failed
+                inc_counter(FLARE_USE_COUNTER, labels=dict(position=15))
                 raise NotFound(
                     "Not found. Note: private repositories require ?token arguments"
                 )
@@ -207,38 +253,60 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         commit = self.get_commit()
 
         if commit is None:
+            # could not find a commit - graph request failed
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=13))
             raise NotFound(
                 "Not found. Note: private repositories require ?token arguments"
             )
 
+        # will attempt to build a report from a commit
+        inc_counter(FLARE_USE_COUNTER, labels=dict(position=10))
         report = report_service.build_report_from_commit(commit)
 
         if report is None:
+            # report generation failed
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=14))
             raise NotFound("Not found. Note: file for chunks not found in storage")
 
+        # report successfully generated
+        inc_counter(FLARE_USE_COUNTER, labels=dict(position=11))
         return report.flare(None, [70, 100])
 
     def get_pull_flare(self, pullid):
         try:
             repo = self.repo
+            # repo was included
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=2))
         except Http404:
             return None
         pull = Pull.objects.filter(pullid=pullid, repository_id=repo.repoid).first()
         if pull is not None:
+            # pull found
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=3))
             if pull._flare is not None or pull._flare_storage_path is not None:
+                # pull has flare
+                inc_counter(FLARE_USE_COUNTER, labels=dict(position=4))
                 return pull.flare
+        # pull not found or pull does not have flare, try to generate flare
+        inc_counter(FLARE_USE_COUNTER, labels=dict(position=5))
         return self.get_commit_flare()
 
     def get_commit(self):
         try:
             repo = self.repo
+            # repo included in request
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=6))
         except Http404:
             return None
         if repo.private and repo.image_token != self.request.query_params.get("token"):
+            # failed auth
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=7))
             return None
 
         commitid = self.kwargs.get("commit")
         if commitid:
+            # commitid included on request
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=8))
             commit = repo.commits.filter(commitid=commitid).first()
         else:
             branch_name = self.kwargs.get("branch") or repo.branch
@@ -246,8 +314,12 @@ class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
                 name=branch_name, repository_id=repo.repoid
             ).first()
             if branch is None:
+                # failed to get a commit
+                inc_counter(FLARE_USE_COUNTER, labels=dict(position=16))
                 return None
 
+            # found a commit by finding a branch
+            inc_counter(FLARE_USE_COUNTER, labels=dict(position=9))
             commit = repo.commits.filter(commitid=branch.head).first()
 
         return commit

@@ -4,8 +4,8 @@ from django.http import HttpResponse
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -51,9 +51,7 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-    mock_sentry_metrics = mocker.patch(
-        "upload.views.upload_completion.sentry_metrics.incr"
-    )
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     repository = RepositoryFactory(
         name="the_repo", author__username="codecov", author__service="github"
     )
@@ -88,9 +86,8 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
         "uploads_error": 0,
     }
     mocked_manual_trigger.assert_called_once_with(repository.repoid, commit.commitid)
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_prometheus_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
@@ -98,6 +95,7 @@ def test_upload_completion_view_processed_uploads(mocked_manual_trigger, db, moc
             "repo_visibility": "private",
             "is_using_shelter": "no",
             "position": "end",
+            "upload_version": None,
         },
     )
 

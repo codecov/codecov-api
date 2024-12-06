@@ -92,7 +92,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "codecov.wsgi.application"
 
-
 # GraphQL
 
 GRAPHQL_QUERY_COST_THRESHOLD = get_config(
@@ -105,10 +104,20 @@ GRAPHQL_RATE_LIMIT_ENABLED = get_config(
 
 GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", default=300)
 
+GRAPHQL_INTROSPECTION_ENABLED = False
+
+GRAPHQL_MAX_DEPTH = get_config("setup", "graphql", "max_depth", default=20)
+
+GRAPHQL_MAX_ALIASES = get_config("setup", "graphql", "max_aliases", default=10)
+
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 DATABASE_ROUTERS = ["codecov.db.DatabaseRouter"]
+
+# GCS
+GCS_BUCKET_NAME = get_config("services", "minio", "bucket", default="codecov")
+
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
@@ -165,6 +174,8 @@ CSP_DEFAULT_SRC = [
     "'sha256-eKdXhLyOdPl2/gp1Ob116rCU2Ox54rseyz1MwCmzb6w='",
     "'sha256-a1pELtDJXf8fPX1YL2JiBM91RQBeIAswunzgwMEsvwA='",
     "'sha256-cNIcuS0BVLuBVP5rpfeFE42xHz7r5hMyf9YdfknWuCg='",
+    "'sha256-bmwAzHxhO1mBINfkKkKPopyKEv4ppCHx/z84wQJ9nOY='",
+    "'sha256-jQoC6QpIonlMBPFbUGlJFRJFFWbbijMl7Z8XqWrb46o='",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
@@ -183,7 +194,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
@@ -308,7 +318,6 @@ GITLAB_TOKENLESS_BOT_KEY = get_config(
     "gitlab", "bots", "tokenless", "key", default=GITLAB_BOT_KEY
 )
 
-
 GITLAB_ENTERPRISE_CLIENT_ID = get_config("gitlab_enterprise", "client_id")
 GITLAB_ENTERPRISE_CLIENT_SECRET = get_config("gitlab_enterprise", "client_secret")
 GITLAB_ENTERPRISE_REDIRECT_URI = get_config(
@@ -322,7 +331,6 @@ GITLAB_ENTERPRISE_TOKENLESS_BOT_KEY = get_config(
 )
 GITLAB_ENTERPRISE_URL = get_config("gitlab_enterprise", "url")
 GITLAB_ENTERPRISE_API_URL = get_config("gitlab_enterprise", "api_url")
-
 
 CORS_ALLOW_HEADERS = (
     list(default_headers)
@@ -344,17 +352,22 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
     "setup", "http", "file_upload_max_memory_size", default=2621440
 )
 
-
 CORS_ALLOWED_ORIGIN_REGEXES = get_config(
     "setup", "api_cors_allowed_origin_regexes", default=[]
 )
 CORS_ALLOWED_ORIGINS: list[str] = []
 
-GRAPHQL_PLAYGROUND = True
+GRAPHQL_PLAYGROUND = get_settings_module() in [
+    SettingsModule.DEV.value,
+    SettingsModule.STAGING.value,
+    SettingsModule.TESTING.value,
+]
 
 UPLOAD_THROTTLING_ENABLED = get_config(
     "setup", "upload_throttling_enabled", default=True
 )
+
+HIDE_ALL_CODECOV_TOKENS = get_config("setup", "hide_all_codecov_tokens", default=False)
 
 SENTRY_JWT_SHARED_SECRET = get_config(
     "sentry", "jwt_shared_secret", default=None
@@ -382,10 +395,6 @@ DISABLE_GIT_BASED_LOGIN = IS_ENTERPRISE and get_config(
 )
 
 SHELTER_SHARED_SECRET = get_config("setup", "shelter_shared_secret", default=None)
-
-# list of repo IDs that will use the new-style report builder
-# TODO: we can eventually get rid of this once it's confirmed working well for many repos
-REPORT_BUILDER_REPO_IDS = get_config("setup", "report_builder", "repo_ids", default=[])
 
 SENTRY_ENV = os.environ.get("CODECOV_ENV", False)
 SENTRY_DSN = os.environ.get("SERVICES__SENTRY__SERVER_DSN", None)

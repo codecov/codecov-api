@@ -3,9 +3,8 @@ from datetime import timedelta
 from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
-
-from codecov_auth.tests.factories import OwnerFactory
-from plan.constants import PlanName, TrialStatus
+from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import PlanName, TrialStatus
 
 from .helper import GraphQLTestHelper
 

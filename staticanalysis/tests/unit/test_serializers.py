@@ -3,9 +3,9 @@ from uuid import UUID, uuid4
 
 import pytest
 from rest_framework.exceptions import NotFound, ValidationError
+from shared.api_archive.archive import ArchiveService
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
-from core.tests.factories import CommitFactory, RepositoryFactory
-from services.archive import ArchiveService
 from staticanalysis.models import (
     StaticAnalysisSingleFileSnapshotState,
     StaticAnalysisSuite,

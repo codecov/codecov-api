@@ -1,5 +1,6 @@
 import pytest
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from codecov.commands.exceptions import (
     NotFound,
@@ -7,7 +8,7 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-from codecov_auth.tests.factories import OwnerFactory
+from codecov.db import sync_to_async
 
 from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 
@@ -19,6 +20,18 @@ codecov:
 good_yaml_with_quotes = """
 codecov:
   bot: 'codecov'
+"""
+
+good_yaml_with_bot_and_branch = """
+codecov:
+  branch: 'test-1'
+  bot: 'codecov'
+"""
+
+yaml_with_changed_branch_and_bot = """
+codecov:
+  branch: 'test-2'
+  bot: 'codecov-2'
 """
 
 bad_yaml_not_dict = """
@@ -142,4 +155,16 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             "  bot: 'codecov'\n"
             "# comment 3\n"
             "    #comment 4\n",
+        }
+
+    async def test_user_changes_yaml_bot_and_branch(self):
+        await sync_to_async(RepositoryFactory)(author=self.org, branch="fake-branch")
+        owner_updated = await self.execute(
+            self.current_owner, self.org.username, yaml_with_changed_branch_and_bot
+        )
+        # check the interactor returns the right owner
+        assert owner_updated.ownerid == self.org.ownerid
+        assert owner_updated.yaml == {
+            "codecov": {"branch": "test-2", "bot": "codecov-2"},
+            "to_string": "\ncodecov:\n  branch: 'test-2'\n  bot: 'codecov-2'\n",
         }

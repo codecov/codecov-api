@@ -2,9 +2,7 @@ from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandParser
 from django.db.models import Q
-
-from codecov_auth.models import Owner
-from plan.constants import (
+from shared.plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PLANS_THAT_CAN_TRIAL,
     PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
@@ -12,6 +10,8 @@ from plan.constants import (
     PlanName,
     TrialStatus,
 )
+
+from codecov_auth.models import Owner
 
 
 class Command(BaseCommand):

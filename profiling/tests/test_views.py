@@ -2,17 +2,20 @@ import re
 
 from django.urls import reverse
 from rest_framework.test import APIClient
+from shared.api_archive.archive import ArchiveService
+from shared.django_apps.core.tests.factories import (
+    RepositoryFactory,
+    RepositoryTokenFactory,
+)
 
-from core.tests.factories import RepositoryFactory, RepositoryTokenFactory
 from profiling.models import ProfilingCommit, ProfilingUpload
-from services.archive import ArchiveService
 from services.task import TaskService
 
 
 def test_simple_profiling_apicall(db, mocker):
     mocked_call = mocker.patch.object(TaskService, "normalize_profiling_upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="banana.txt",
     )
     repo = RepositoryFactory.create(active=True)

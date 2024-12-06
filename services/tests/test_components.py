@@ -3,17 +3,21 @@ from unittest.mock import PropertyMock, patch
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase
 from shared.components import Component
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 from shared.yaml.user_yaml import UserYaml
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from services.comparison import Comparison
 from services.components import (
     ComponentComparison,
     commit_components,
     component_filtered_report,
+    filter_components_by_name_or_id,
 )
 
 
@@ -218,3 +222,63 @@ class ComponentComparisonTest(TransactionTestCase):
 
         # removed 1 tested line, added 1 tested and 1 untested line
         assert component_comparison.patch_totals.coverage == "50.00000"
+
+    def test_filter_components_by_name_or_id(self):
+        components = [
+            Component(
+                name="ComponentA",
+                component_id="123",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentB",
+                component_id="456",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentC",
+                component_id="789",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+        ]
+        terms = ["comPOnentA", "123", "456"]
+
+        filtered = filter_components_by_name_or_id(components, terms)
+        self.assertEqual(len(filtered), 2)
+        self.assertEqual(filtered[0].name, "ComponentA")
+        self.assertEqual(filtered[1].component_id, "456")
+
+    def test_filter_components_by_name_or_id_no_matches(self):
+        components = [
+            Component(
+                name="ComponentA",
+                component_id="123",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentB",
+                component_id="456",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+            Component(
+                name="ComponentC",
+                component_id="789",
+                paths=[],
+                flag_regexes=[],
+                statuses=[],
+            ),
+        ]
+        terms = ["nonexistent", "000"]
+
+        filtered = filter_components_by_name_or_id(components, terms)
+        self.assertEqual(len(filtered), 0)

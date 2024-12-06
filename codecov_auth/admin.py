@@ -19,14 +19,14 @@ from shared.django_apps.codecov_auth.models import (
     InvoiceBilling,
     StripeBilling,
 )
+from shared.plan.constants import USER_PLAN_REPRESENTATIONS
+from shared.plan.service import PlanService
 
 from codecov.admin import AdminMixin
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.helpers import History
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, Session, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
-from plan.constants import USER_PLAN_REPRESENTATIONS
-from plan.service import PlanService
 from services.task import TaskService
 from utils.services import get_short_service_name
 
@@ -379,10 +379,6 @@ def find_and_remove_stale_users(
         )
 
     stale_users = {user.ownerid for user in resolved_users if is_stale(user)}
-
-    # TODO: the existing stale user cleanup script clears the `oauth_token`, though the reason for that is not clear?
-    # Owner.objects.filter(ownerid__in=stale_users).update(oauth_token=None)
-
     affected_orgs = {
         org for org in orgs if stale_users.intersection(set(org.plan_activated_users))
     }

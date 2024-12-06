@@ -6,15 +6,20 @@ from unittest.mock import AsyncMock, PropertyMock, patch
 
 import yaml
 from django.test import TransactionTestCase
+from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import StoragePaths
 from shared.bundle_analysis.storage import get_bucket_name
+from shared.django_apps.core.tests.factories import (
+    CommitErrorFactory,
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.reports.types import LineSession
 from shared.storage.memory import MemoryStorageService
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import CommitErrorFactory, CommitFactory, RepositoryFactory
 from graphql_api.types.enums import CommitStatus, UploadErrorEnum, UploadState
 from graphql_api.types.enums.enums import UploadType
 from reports.models import CommitReport
@@ -26,7 +31,6 @@ from reports.tests.factories import (
     UploadFactory,
     UploadFlagMembershipFactory,
 )
-from services.archive import ArchiveService
 from services.comparison import MissingComparisonReport
 from services.components import Component
 from services.profiling import CriticalFile
@@ -210,7 +214,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
 
     def test_fetch_commit_coverage(self):
         ReportLevelTotalsFactory(report=self.report, coverage=12)
-        query = query_commit % "totals { percentCovered } "
+        query = query_commit % "coverageAnalytics { totals { percentCovered }} "
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -218,7 +222,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         }
         data = self.gql_request(query, variables=variables)
         commit = data["owner"]["repository"]["commit"]
-        assert commit["totals"]["percentCovered"] == 12
+        assert commit["coverageAnalytics"]["totals"]["percentCovered"] == 12
 
     def test_fetch_commit_build(self):
         session_one = UploadFactory(report=self.report, provider="circleci")
@@ -3252,3 +3256,270 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                 "bundleDataFiltered": {"size": {"gzip": 20, "uncompress": 20}},
             },
         }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_asset_routes(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/bundle_with_asset_routes.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "@codecov/example-sveltekit-app-client-esm") {
+                                                assets {
+                                                    name
+                                                    normalizedName
+                                                    routes
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        asset_reports = commit["bundleAnalysis"]["bundleAnalysisReport"]["bundle"][
+            "assets"
+        ]
+
+        assert asset_reports == [
+            {
+                "name": "_app/immutable/assets/svelte-welcome.VNiyy3gC.png",
+                "normalizedName": "_app/immutable/assets/svelte-welcome.*.png",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/svelte-welcome.0pIiHnVF.webp",
+                "normalizedName": "_app/immutable/assets/svelte-welcome.*.webp",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/fira-mono-all-400-normal.B2mvLtSD.woff",
+                "normalizedName": "_app/immutable/assets/fira-mono-all-400-normal.*.woff",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/chunks/entry.BaWB2kHj.js",
+                "normalizedName": "_app/immutable/chunks/entry.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/nodes/4.CcjRtXvw.js",
+                "normalizedName": "_app/immutable/nodes/4.*.js",
+                "routes": ["/sverdle"],
+            },
+            {
+                "name": "_app/immutable/assets/fira-mono-latin-400-normal.DKjLVgQi.woff2",
+                "normalizedName": "_app/immutable/assets/fira-mono-latin-400-normal.*.woff2",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/fira-mono-cyrillic-ext-400-normal.B04YIrm4.woff2",
+                "normalizedName": "_app/immutable/assets/fira-mono-cyrillic-ext-400-normal.*.woff2",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/fira-mono-latin-ext-400-normal.D6XfiR-_.woff2",
+                "normalizedName": "_app/immutable/assets/fira-mono-latin-ext-400-normal.D6XfiR-_.woff2",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/fira-mono-greek-400-normal.C3zng6O6.woff2",
+                "normalizedName": "_app/immutable/assets/fira-mono-greek-400-normal.*.woff2",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/fira-mono-cyrillic-400-normal.36-45Uyg.woff2",
+                "normalizedName": "_app/immutable/assets/fira-mono-cyrillic-400-normal.*.woff2",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/nodes/0.CL_S-12h.js",
+                "normalizedName": "_app/immutable/nodes/0.CL_S-12h.js",
+                "routes": ["/"],
+            },
+            {
+                "name": "_app/immutable/assets/fira-mono-greek-ext-400-normal.CsqI23CO.woff2",
+                "normalizedName": "_app/immutable/assets/fira-mono-greek-ext-400-normal.*.woff2",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/chunks/index.DDRweiI9.js",
+                "normalizedName": "_app/immutable/chunks/index.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/entry/app.Dd9ByE1Q.js",
+                "normalizedName": "_app/immutable/entry/app.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/nodes/2.BMQFqo-e.js",
+                "normalizedName": "_app/immutable/nodes/2.*.js",
+                "routes": ["/"],
+            },
+            {
+                "name": "_app/immutable/assets/0.CT0x_Q5c.css",
+                "normalizedName": "_app/immutable/assets/0.CT0x_Q5c.css",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/4.DOkkq0IA.css",
+                "normalizedName": "_app/immutable/assets/4.*.css",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/nodes/5.CwxmUzn6.js",
+                "normalizedName": "_app/immutable/nodes/5.*.js",
+                "routes": ["/sverdle/how-to-play"],
+            },
+            {
+                "name": "_app/immutable/chunks/scheduler.Dk-snqIU.js",
+                "normalizedName": "_app/immutable/chunks/scheduler.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/nodes/3.BqQOub2U.js",
+                "normalizedName": "_app/immutable/nodes/3.*.js",
+                "routes": ["/about"],
+            },
+            {
+                "name": "_app/immutable/assets/2.Cs8KR-Bb.css",
+                "normalizedName": "_app/immutable/assets/2.*.css",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/nodes/1.stWWSe4n.js",
+                "normalizedName": "_app/immutable/nodes/1.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/assets/5.CU6psp88.css",
+                "normalizedName": "_app/immutable/assets/5.*.css",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/chunks/index.Ice1EKvx.js",
+                "normalizedName": "_app/immutable/chunks/index.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/chunks/stores.BrqGIpx3.js",
+                "normalizedName": "_app/immutable/chunks/stores.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/entry/start.B1Q1eB84.js",
+                "normalizedName": "_app/immutable/entry/start.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/immutable/chunks/index.R8ovVqwX.js",
+                "normalizedName": "_app/immutable/chunks/index.*.js",
+                "routes": [],
+            },
+            {
+                "name": "_app/version.json",
+                "normalizedName": "_app/version.json",
+                "routes": [],
+            },
+        ]
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_analysis_report_info(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        head_commit_report = CommitReportFactory(
+            commit=self.commit, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+        )
+
+        with open(
+            "./services/tests/samples/bundle_with_assets_and_modules.sqlite", "rb"
+        ) as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "b5") {
+                                                info {
+                                                    version
+                                                    pluginName
+                                                    pluginVersion
+                                                    builtAt
+                                                    duration
+                                                    bundlerName
+                                                    bundlerVersion
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        bundle_info = commit["bundleAnalysis"]["bundleAnalysisReport"]["bundle"]["info"]
+
+        assert bundle_info["version"] == "1"
+        assert bundle_info["pluginName"] == "codecov-vite-bundle-analysis-plugin"
+        assert bundle_info["pluginVersion"] == "1.0.0"
+        assert bundle_info["builtAt"] == "2023-12-01 17:17:28.604000"
+        assert bundle_info["duration"] == 331
+        assert bundle_info["bundlerName"] == "rollup"
+        assert bundle_info["bundlerVersion"] == "3.29.4"

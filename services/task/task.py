@@ -134,6 +134,7 @@ class TaskService(object):
         commitid,
         report_type=None,
         report_code=None,
+        arguments=None,
         debug=False,
         rebuild=False,
         immutable=False,
@@ -145,6 +146,7 @@ class TaskService(object):
                 commitid=commitid,
                 report_type=report_type,
                 report_code=report_code,
+                arguments=arguments,
                 debug=debug,
                 rebuild=rebuild,
             ),
@@ -157,6 +159,7 @@ class TaskService(object):
         commitid,
         report_type=None,
         report_code=None,
+        arguments=None,
         countdown=0,
         debug=False,
         rebuild=False,
@@ -166,6 +169,7 @@ class TaskService(object):
             commitid,
             report_type=report_type,
             report_code=report_code,
+            arguments=arguments,
             debug=debug,
             rebuild=rebuild,
         ).apply_async(countdown=countdown)
@@ -380,14 +384,6 @@ class TaskService(object):
             ),
         ).apply_async()
 
-    def backfill_commit_data(self, commit_id: int):
-        self._create_signature(
-            "app.tasks.archive.BackfillCommitDataToStorage",
-            kwargs=dict(
-                commitid=commit_id,
-            ),
-        ).apply_async()
-
     def preprocess_upload(self, repoid, commitid, report_code):
         self._create_signature(
             "app.tasks.upload.PreProcessUpload",
@@ -399,15 +395,23 @@ class TaskService(object):
         ).apply_async()
 
     def send_email(
-        self, ownerid, template_name: str, from_addr: str, subject: str, **kwargs
+        self,
+        to_addr: str,
+        subject: str,
+        template_name: str,
+        from_addr: str | None = None,
+        **kwargs,
     ):
+        # Disabling this while we fix HTML templates.
+        return
+        # Templates can be found in worker/templates
         self._create_signature(
             "app.tasks.send_email.SendEmail",
             kwargs=dict(
-                ownerid=ownerid,
+                to_addr=to_addr,
+                subject=subject,
                 template_name=template_name,
                 from_addr=from_addr,
-                subject=subject,
                 **kwargs,
             ),
         ).apply_async()
@@ -425,4 +429,10 @@ class TaskService(object):
                 measurement_type=MeasurementName.COMPONENT_COVERAGE.value,
                 measurement_id=component_id,
             ),
+        ).apply_async()
+
+    def cache_test_results_redis(self, repoid: int, branch: str) -> None:
+        self._create_signature(
+            celery_config.cache_test_rollups_redis_task_name,
+            kwargs=dict(repoid=repoid, branch=branch),
         ).apply_async()

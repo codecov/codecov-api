@@ -4,8 +4,8 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from prometheus_client import REGISTRY
+from shared.django_apps.core.tests.factories import OwnerFactory
 
-from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.types.user.user import resolve_customer_intent
 
 from ..views import GQL_ERROR_COUNTER, GQL_HIT_COUNTER, GQL_REQUEST_LATENCIES

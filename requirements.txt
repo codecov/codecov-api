@@ -6,10 +6,10 @@
 #
 aiodataloader==0.4.0
     # via -r requirements.in
+amplitude-analytics==1.1.4
+    # via -r requirements.in
 amqp==5.2.0
     # via kombu
-analytics-python==1.3.0b1
-    # via shared
 annotated-types==0.7.0
     # via pydantic
 anyio==3.6.1
@@ -18,11 +18,11 @@ anyio==3.6.1
     #   starlette
 appdirs==1.4.4
     # via virtualenv
-ariadne==0.19.1
+ariadne==0.23.0
     # via
     #   -r requirements.in
     #   ariadne-django
-ariadne-django==0.2.0
+ariadne-django==0.3.0
     # via -r requirements.in
 asgiref==3.6.0
     # via django
@@ -33,8 +33,6 @@ attrs==20.3.0
     #   cattrs
     #   ddtrace
     #   jsonschema
-backoff==1.6.0
-    # via analytics-python
 billiard==4.2.0
     # via celery
 boto3==1.20.25
@@ -68,7 +66,6 @@ certifi==2024.7.4
     #   minio
     #   requests
     #   sentry-sdk
-    #   shared
 cffi==1.14.2
     # via
     #   cryptography
@@ -109,7 +106,7 @@ deprecated==1.2.12
     # via opentelemetry-api
 distlib==0.3.1
     # via virtualenv
-django==4.2.15
+django==4.2.16
     # via
     #   -r requirements.in
     #   ariadne-django
@@ -159,8 +156,6 @@ drf-spectacular==0.26.2
     # via -r requirements.in
 drf-spectacular-sidecar==2023.3.1
     # via -r requirements.in
-ecdsa==0.18.0
-    # via tlslite-ng
 elastic-apm==6.13.2
     # via -r requirements.in
 envier==0.5.1
@@ -175,12 +170,12 @@ filelock==3.0.12
     # via virtualenv
 freezegun==1.1.0
     # via -r requirements.in
-google-api-core[grpc]==2.11.1
+google-api-core[grpc]==2.23.0
     # via
     #   google-cloud-core
     #   google-cloud-pubsub
     #   google-cloud-storage
-google-auth==2.21.0
+google-auth==2.36.0
     # via
     #   google-api-core
     #   google-cloud-core
@@ -192,11 +187,13 @@ google-cloud-pubsub==2.18.4
     # via
     #   -r requirements.in
     #   shared
-google-cloud-storage==2.10.0
+google-cloud-storage==2.18.2
     # via shared
 google-crc32c==1.0.0
-    # via google-resumable-media
-google-resumable-media==2.5.0
+    # via
+    #   google-cloud-storage
+    #   google-resumable-media
+google-resumable-media==2.7.2
     # via google-cloud-storage
 googleapis-common-protos[grpc]==1.59.1
     # via
@@ -224,7 +221,7 @@ h11==0.12.0
     # via httpcore
 httpcore==0.15.0
     # via httpx
-httplib2==0.20.2
+httplib2==0.22.0
     # via oauth2
 httpx==0.23.0
     # via shared
@@ -259,14 +256,12 @@ minio==7.1.13
     #   shared
 mmh3==4.0.1
     # via shared
-monotonic==1.5
-    # via analytics-python
 multidict==4.7.6
     # via yarl
 nodeenv==1.5.0
     # via pre-commit
 oauth2==1.9.0.post1
-    # via shared
+    # via -r requirements.in
 oauthlib==3.1.0
     # via shared
 opentelemetry-api==1.24.0
@@ -299,12 +294,16 @@ opentelemetry-util-http==0.45b0
     #   opentelemetry-instrumentation-wsgi
 opentracing==2.4.0
     # via -r requirements.in
+orjson==3.10.9
+    # via shared
 packaging==24.1
     # via
     #   gunicorn
     #   pytest
 pluggy==1.5.0
     # via pytest
+polars==1.12.0
+    # via -r requirements.in
 pre-commit==2.11.1
     # via -r requirements.in
 prometheus-client==0.17.1
@@ -314,7 +313,9 @@ prometheus-client==0.17.1
 prompt-toolkit==3.0.28
     # via click-repl
 proto-plus==1.22.3
-    # via google-cloud-pubsub
+    # via
+    #   google-api-core
+    #   google-cloud-pubsub
 protobuf==4.24.3
     # via
     #   ddtrace
@@ -324,7 +325,6 @@ protobuf==4.24.3
     #   grpc-google-iam-v1
     #   grpcio-status
     #   proto-plus
-    #   shared
 psycopg2==2.9.2
     # via -r requirements.in
 pyasn1==0.4.8
@@ -367,7 +367,6 @@ pytest-mock==3.14.0
 python-dateutil==2.9.0.post0
     # via
     #   -r requirements.in
-    #   analytics-python
     #   botocore
     #   celery
     #   django-postgres-extra
@@ -380,13 +379,12 @@ python-redis-lock==4.0.0
     #   -r requirements.in
     #   shared
 pytz==2022.1
-    # via
-    #   -r requirements.in
-    #   shared
+    # via -r requirements.in
 pyyaml==6.0.1
     # via
     #   drf-spectacular
     #   pre-commit
+    #   shared
     #   vcrpy
 redis==4.4.4
     # via
@@ -399,7 +397,6 @@ regex==2023.12.25
 requests==2.32.3
     # via
     #   -r requirements.in
-    #   analytics-python
     #   codecovopentelem
     #   google-api-core
     #   google-cloud-storage
@@ -417,19 +414,16 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/88117b96a4b420d88549b8df2649c3eb9c61c2a5.tar.gz
+shared @ https://github.com/codecov/shared/archive/22622868034aa8dbaad88901ba7156e3ae6b9539.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
 six==1.16.0
     # via
-    #   analytics-python
     #   click-repl
     #   ddsketch
     #   ddtrace
     #   django-dynamic-fixture
-    #   ecdsa
-    #   google-auth
     #   python-dateutil
     #   virtualenv
 sniffio==1.2.0
@@ -445,20 +439,16 @@ sqlparse==0.5.0
     # via
     #   ddtrace
     #   django
-starlette==0.36.2
-    # via ariadne
-statsd==3.3.0
-    # via shared
+starlette==0.40.0
+    # via
+    #   -r requirements.in
+    #   ariadne
 stripe==9.6.0
     # via -r requirements.in
 text-unidecode==1.3
     # via faker
-tlslite-ng==0.8.0b1
-    # via shared
 toml==0.10.2
     # via pre-commit
-typing==3.7.4.3
-    # via shared
 typing-extensions==4.6.2
     # via
     #   aiodataloader
@@ -467,7 +457,6 @@ typing-extensions==4.6.2
     #   opentelemetry-sdk
     #   pydantic
     #   pydantic-core
-    #   shared
     #   stripe
 tzdata==2024.1
     # via celery
@@ -478,11 +467,9 @@ urllib3==1.26.19
     #   -r requirements.in
     #   botocore
     #   elastic-apm
-    #   google-auth
     #   minio
     #   requests
     #   sentry-sdk
-    #   shared
 vcrpy==6.0.1
     # via -r requirements.in
 vine==5.1.0
@@ -508,6 +495,8 @@ yarl==1.9.4
     # via vcrpy
 zipp==3.19.2
     # via importlib-metadata
+zstandard==0.23.0
+    # via shared
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

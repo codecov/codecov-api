@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+import sentry_sdk
 from django.db.models import QuerySet
 from shared.django_apps.codecov_auth.models import Owner
 from shared.django_apps.core.models import Repository
@@ -30,6 +31,7 @@ def apply_filters_to_queryset(queryset, filters: dict[str, Any]) -> QuerySet:
     return queryset
 
 
+@sentry_sdk.trace
 def list_repository_for_owner(
     current_owner: Owner,
     owner: Owner,
@@ -50,6 +52,7 @@ def list_repository_for_owner(
     return queryset
 
 
+@sentry_sdk.trace
 def search_repos(
     current_owner: Owner,
     filters: dict[str, Any] | None,

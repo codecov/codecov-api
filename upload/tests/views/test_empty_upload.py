@@ -2,10 +2,12 @@ from unittest.mock import patch
 
 from django.urls import reverse
 from rest_framework.test import APIClient
+from shared.django_apps.codecov_auth.tests.factories import (
+    OrganizationLevelTokenFactory,
+)
+from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 from shared.yaml.user_yaml import UserYaml
 
-from codecov_auth.tests.factories import OrganizationLevelTokenFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 
@@ -49,7 +51,7 @@ def test_empty_upload_with_yaml_ignored_files(
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
-    mock_sentry_metrics = mocker.patch("upload.views.empty_upload.sentry_metrics.incr")
+    mock_prometheus_metrics = mocker.patch("upload.metrics.API_UPLOAD_COUNTER.labels")
     mock_final_yaml.return_value = UserYaml(
         {
             "ignore": [
@@ -91,9 +93,8 @@ def test_empty_upload_with_yaml_ignored_files(
     notify_mock.assert_called_once_with(
         repoid=repository.repoid, commitid=commit.commitid, empty_upload="pass"
     )
-    mock_sentry_metrics.assert_called_with(
-        "upload",
-        tags={
+    mock_prometheus_metrics.assert_called_with(
+        **{
             "agent": "cli",
             "version": "0.4.7",
             "action": "coverage",
@@ -101,6 +102,7 @@ def test_empty_upload_with_yaml_ignored_files(
             "repo_visibility": "private",
             "is_using_shelter": "no",
             "position": "end",
+            "upload_version": None,
         },
     )
 

@@ -1,8 +1,11 @@
 from django.conf import settings
 from rest_framework.exceptions import ErrorDetail
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from reports.tests.factories import (
     CommitReportFactory,
     ReportResultsFactory,
@@ -42,7 +45,7 @@ def get_fake_upload_with_flags():
 
 def test_serialize_upload(transactional_db, mocker):
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
     fake_upload = get_fake_upload()
@@ -59,7 +62,7 @@ def test_serialize_upload(transactional_db, mocker):
 
 def test_upload_serializer_contains_expected_fields_no_flags(transactional_db, mocker):
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload = get_fake_upload()
@@ -86,7 +89,7 @@ def test_upload_serializer_contains_expected_fields_with_flags(
     transactional_db, mocker
 ):
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload = get_fake_upload_with_flags()
@@ -124,7 +127,7 @@ def test_upload_serializer_null_build_url_empty_flags(transactional_db, mocker):
 
 def test__create_existing_flags_map(transactional_db, mocker):
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload = get_fake_upload_with_flags()

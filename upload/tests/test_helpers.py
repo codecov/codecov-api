@@ -6,12 +6,16 @@ import pytest
 from django.conf import settings
 from django.test import TransactionTestCase
 from rest_framework.exceptions import Throttled, ValidationError
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 from shared.django_apps.reports.models import ReportType
+from shared.plan.constants import PlanName
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov_auth.models import GithubAppInstallation, Service
-from core.tests.factories import CommitFactory, OwnerFactory, RepositoryFactory
-from plan.constants import PlanName
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     check_commit_upload_constraints,
@@ -255,12 +259,12 @@ def test_validate_upload_too_many_uploads_for_commit(
 
 def test_deactivated_repo(db, mocker):
     repository = RepositoryFactory.create(active=True, activated=False)
-    settings_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/settings"
+    config_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/config/general"
 
     with pytest.raises(ValidationError) as exp:
         validate_activated_repo(repository)
     assert exp.match(
-        f"This repository has been deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
+        f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {config_url}"
     )
 
 

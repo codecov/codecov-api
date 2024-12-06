@@ -6,11 +6,10 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.django_apps.codecov_auth.tests.factories import AccountFactory
+from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.license import LicenseInformation
+from shared.plan.constants import PlanName, TrialStatus
 from shared.utils.test_utils import mock_config_helper
-
-from codecov_auth.tests.factories import OwnerFactory
-from plan.constants import PlanName, TrialStatus
 
 from .helper import GraphQLTestHelper
 
@@ -137,7 +136,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {"hasSeatsLeft": True}
 
-    @patch("services.self_hosted.get_current_license")
+    @patch("shared.self_hosted.service.get_current_license")
     def test_plan_user_count_for_enterprise_org(self, mocked_license):
         """
         If an Org has an enterprise license, number_allowed_users from their license
@@ -191,10 +190,11 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 }
                 """ % (enterprise_org.username)
         data = self.gql_request(query, owner=enterprise_org)
+        print(data, "look here 1")
         assert data["owner"]["plan"]["planUserCount"] == 5
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
 
-    @patch("services.self_hosted.get_current_license")
+    @patch("shared.self_hosted.service.get_current_license")
     def test_plan_user_count_for_enterprise_org_invaild_license(self, mocked_license):
         mock_enterprise_license = LicenseInformation(
             is_valid=False,

@@ -2,7 +2,8 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Mapping, Optional, Union
 
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+import sentry_sdk
+from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
 from codecov.commands.exceptions import ValidationError
@@ -16,6 +17,7 @@ from services.bundle_analysis import (
     BundleData,
     BundleLoadTime,
     BundleReport,
+    BundleReportInfo,
     BundleSize,
     ModuleReport,
 )
@@ -27,6 +29,7 @@ bundle_data_bindable = ObjectType("BundleData")
 bundle_module_bindable = ObjectType("BundleModule")
 bundle_asset_bindable = ObjectType("BundleAsset")
 bundle_report_bindable = ObjectType("BundleReport")
+bundle_report_info_bindable = ObjectType("BundleReportInfo")
 
 
 def _find_index_by_cursor(assets: List, cursor: str) -> int:
@@ -136,8 +139,8 @@ def resolve_modules(
     return bundle_asset.modules
 
 
+@sentry_sdk.trace
 @bundle_asset_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_asset_report_measurements(
     bundle_asset: AssetReport,
@@ -155,6 +158,13 @@ def resolve_asset_report_measurements(
         branch=branch,
     )
     return bundle_analysis_measurements.compute_asset(bundle_asset)
+
+
+@bundle_asset_bindable.field("routes")
+def resolve_routes(
+    bundle_asset: AssetReport, info: GraphQLResolveInfo
+) -> Optional[List[str]]:
+    return bundle_asset.routes
 
 
 # ============= Bundle Report Bindable =============
@@ -178,6 +188,7 @@ def resolve_assets(
     return list(bundle_report.assets())
 
 
+@sentry_sdk.trace
 @bundle_report_bindable.field("assetsPaginated")
 def resolve_assets_paginated(
     bundle_report: BundleReport,
@@ -272,8 +283,8 @@ def resolve_bundle_report_filtered(
     )
 
 
+@sentry_sdk.trace
 @bundle_report_bindable.field("measurements")
-@convert_kwargs_to_snake_case
 @sync_to_async
 def resolve_bundle_report_measurements(
     bundle_report: BundleReport,
@@ -295,9 +306,17 @@ def resolve_bundle_report_measurements(
     )
 
     # All measureable names we need to fetch to compute the requested asset types
-    if not asset_types or ASSET_TYPE_UNKNOWN in asset_types:
+    if not asset_types:
         measurables_to_fetch = [
             item for item in list(BundleAnalysisMeasurementsAssetType)
+        ]
+    elif ASSET_TYPE_UNKNOWN in asset_types:
+        measurables_to_fetch = [
+            BundleAnalysisMeasurementsAssetType.REPORT_SIZE,
+            BundleAnalysisMeasurementsAssetType.JAVASCRIPT_SIZE,
+            BundleAnalysisMeasurementsAssetType.STYLESHEET_SIZE,
+            BundleAnalysisMeasurementsAssetType.FONT_SIZE,
+            BundleAnalysisMeasurementsAssetType.IMAGE_SIZE,
         ]
     else:
         measurables_to_fetch = [
@@ -355,3 +374,59 @@ def resolve_bundle_report_is_cached(
     bundle_report: BundleReport, info: GraphQLResolveInfo
 ) -> bool:
     return bundle_report.is_cached
+
+
+@bundle_report_bindable.field("info")
+def resolve_bundle_report_info(
+    bundle_report: BundleReport, info: GraphQLResolveInfo
+) -> BundleReportInfo:
+    return BundleReportInfo(bundle_report.info)
+
+
+@bundle_report_info_bindable.field("version")
+def resolve_bundle_report_info_version(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
+) -> str:
+    return bundle_report_info.version
+
+
+@bundle_report_info_bindable.field("pluginName")
+def resolve_bundle_report_info_plugin_name(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
+) -> str:
+    return bundle_report_info.plugin_name
+
+
+@bundle_report_info_bindable.field("pluginVersion")
+def resolve_bundle_report_info_plugin_version(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
+) -> str:
+    return bundle_report_info.plugin_version
+
+
+@bundle_report_info_bindable.field("builtAt")
+def resolve_bundle_report_info_built_at(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
+) -> str:
+    return bundle_report_info.built_at
+
+
+@bundle_report_info_bindable.field("duration")
+def resolve_bundle_report_info_duration(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
+) -> int:
+    return bundle_report_info.duration
+
+
+@bundle_report_info_bindable.field("bundlerName")
+def resolve_bundle_report_info_bundler_name(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
+) -> str:
+    return bundle_report_info.bundler_name
+
+
+@bundle_report_info_bindable.field("bundlerVersion")
+def resolve_bundle_report_info_bundler_version(
+    bundle_report_info: BundleReportInfo, info: GraphQLResolveInfo
+) -> str:
+    return bundle_report_info.bundler_version

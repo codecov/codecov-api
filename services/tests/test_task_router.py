@@ -1,10 +1,9 @@
 import pytest
 import shared.celery_config as shared_celery_config
 from shared.billing import BillingPlan
+from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
-from codecov_auth.tests.factories import OwnerFactory
 from compare.tests.factories import CommitComparisonFactory
-from core.tests.factories import RepositoryFactory
 from labelanalysis.tests.factories import LabelAnalysisRequestFactory
 from profiling.models import ProfilingUpload
 from profiling.tests.factories import ProfilingCommitFactory

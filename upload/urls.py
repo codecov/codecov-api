@@ -7,6 +7,7 @@ from upload.views.legacy import UploadDownloadHandler, UploadHandler
 from upload.views.reports import ReportResultsView, ReportViews
 from upload.views.test_results import TestResultsView
 from upload.views.upload_completion import UploadCompletionView
+from upload.views.upload_coverage import UploadCoverageView
 from upload.views.uploads import UploadViews
 
 urlpatterns = [
@@ -56,6 +57,11 @@ urlpatterns = [
         "<str:service>/<str:repo>/commits",
         CommitViews.as_view(),
         name="new_upload.commits",
+    ),
+    path(
+        "<str:service>/<str:repo>/upload-coverage",
+        UploadCoverageView.as_view(),
+        name="new_upload.upload_coverage",
     ),
     # This was getting in the way of the new endpoints, so I moved to the end
     re_path(r"(?P<version>\w+)/?", UploadHandler.as_view(), name="upload-handler"),

@@ -3,8 +3,11 @@ from uuid import uuid4
 from django.urls import reverse
 from rest_framework.test import APIClient
 from shared.celery_config import static_analysis_task_name
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    RepositoryTokenFactory,
+)
 
-from core.tests.factories import CommitFactory, RepositoryTokenFactory
 from services.task import TaskService
 from staticanalysis.models import StaticAnalysisSuite
 from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
@@ -13,7 +16,7 @@ from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
 def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
     mocked_task_service = mocker.patch.object(TaskService, "schedule_task")
     mocked_presigned_put = mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="banana.txt",
     )
     commit = CommitFactory.create(repository__active=True)

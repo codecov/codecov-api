@@ -1,10 +1,10 @@
 from django.test import TransactionTestCase
 from prometheus_client import REGISTRY
+from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import PlanName, TrialStatus
 
-from codecov_auth.tests.factories import OwnerFactory
 from graphql_api.tests.helper import GraphQLTestHelper
 from graphql_api.views import GQL_ERROR_COUNTER, GQL_HIT_COUNTER, GQL_REQUEST_LATENCIES
-from plan.constants import PlanName, TrialStatus
 
 query = """
     mutation($input: CancelTrialInput!) {

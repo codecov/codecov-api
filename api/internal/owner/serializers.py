@@ -6,15 +6,15 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
-
-from codecov_auth.models import Owner
-from plan.constants import (
+from shared.plan.constants import (
     PAID_PLANS,
     SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     TEAM_PLAN_MAX_USERS,
     TEAM_PLAN_REPRESENTATIONS,
 )
-from plan.service import PlanService
+from shared.plan.service import PlanService
+
+from codecov_auth.models import Owner
 from services.billing import BillingService
 from services.sentry import send_user_webhook as send_sentry_webhook
 

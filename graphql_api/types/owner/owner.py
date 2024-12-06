@@ -5,8 +5,11 @@ from typing import Any, Iterable, List, Optional
 import shared.rate_limits as rate_limits
 import stripe
 import yaml
-from ariadne import ObjectType, convert_kwargs_to_snake_case
+from ariadne import ObjectType
+from django.conf import settings
 from graphql import GraphQLResolveInfo
+from shared.plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
+from shared.plan.service import PlanService
 
 import services.activation as activation
 import timeseries.helpers as timeseries_helpers
@@ -36,9 +39,8 @@ from graphql_api.helpers.mutation import (
     require_shared_account_or_part_of_org,
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
-from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
-from plan.service import PlanService
+from graphql_api.types.errors.errors import NotFoundError
+from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from services.billing import BillingService
 from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection
@@ -53,7 +55,6 @@ AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 @owner_bindable.field("repositories")
-@convert_kwargs_to_snake_case
 def resolve_repositories(
     owner: Owner,
     info: GraphQLResolveInfo,
@@ -108,7 +109,6 @@ def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
 
 
 @owner_bindable.field("pretrialPlan")
-@convert_kwargs_to_snake_case
 @require_part_of_org
 def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
@@ -116,7 +116,6 @@ def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanD
 
 
 @owner_bindable.field("availablePlans")
-@convert_kwargs_to_snake_case
 @require_part_of_org
 def resolve_available_plans(owner: Owner, info: GraphQLResolveInfo) -> List[PlanData]:
     plan_service = PlanService(current_org=owner)
@@ -164,16 +163,13 @@ async def resolve_repository(
 
     current_owner = info.context["request"].current_owner
     has_products_enabled = (
-        repository.bundle_analysis_enabled and repository.coverage_enabled
+        repository.bundle_analysis_enabled
+        or repository.coverage_enabled
+        or repository.test_analytics_enabled
     )
 
     if repository.private and has_products_enabled:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
-        is_owner_activated = await sync_to_async(activation.is_activated)(
-            owner, current_owner
-        )
-        if not is_owner_activated:
-            return OwnerNotActivatedError()
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
     return repository
@@ -208,7 +204,13 @@ def resolve_hash_ownerid(owner: Owner, info: GraphQLResolveInfo) -> str:
 def resolve_org_upload_token(
     owner: Owner, info: GraphQLResolveInfo, **kwargs: Any
 ) -> str:
+    should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
+    current_owner = info.context["request"].current_owner
     command = info.context["executor"].get_command("owner")
+    is_owner_admin = current_owner.is_admin(owner)
+    if should_hide_tokens and not is_owner_admin:
+        return TOKEN_UNAVAILABLE
+
     return command.get_org_upload_token(owner)
 
 
@@ -223,7 +225,6 @@ def resolve_org_default_org_username(
 
 @owner_bindable.field("measurements")
 @sync_to_async
-@convert_kwargs_to_snake_case
 def resolve_measurements(
     owner: Owner,
     info: GraphQLResolveInfo,
@@ -313,7 +314,6 @@ def resolve_is_github_rate_limited(
 
 @owner_bindable.field("invoice")
 @require_part_of_org
-@convert_kwargs_to_snake_case
 def resolve_owner_invoice(
     owner: Owner,
     info: GraphQLResolveInfo,

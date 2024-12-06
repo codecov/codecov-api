@@ -15,17 +15,17 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.reverse import reverse
-from rest_framework.test import APIRequestFactory, APITestCase
+from rest_framework.test import APITestCase
+from shared.api_archive.archive import ArchiveService
+from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.torngit.exceptions import (
     TorngitClientGeneralError,
     TorngitObjectNotFoundError,
     TorngitRateLimitError,
 )
-from shared.utils.test_utils import mock_metrics as utils_mock_metrics
 from simplejson import JSONDecodeError
 
 from codecov_auth.models import Owner
-from codecov_auth.tests.factories import OwnerFactory
 from core.models import Commit, Repository
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
@@ -38,7 +38,6 @@ from upload.helpers import (
     insert_commit,
     parse_headers,
     parse_params,
-    store_report_in_redis,
     validate_upload,
 )
 from upload.tokenless.tokenless import TokenlessUploadHandler
@@ -637,7 +636,7 @@ class UploadHandlerHelpersTest(TestCase):
                 repository=repo,
                 parent_commit_id=None,
             )
-            # parent_commit_id, state, and branch should be updated
+            # parent_commit_id and branch should be updated
             insert_commit(
                 "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
                 "oranges",
@@ -651,7 +650,6 @@ class UploadHandlerHelpersTest(TestCase):
                 commitid="1c78206f1a46dc6db8412a491fc770eb7d0f8a47"
             )
             assert commit.repository == repo
-            assert commit.state == "pending"
             assert commit.branch == "oranges"
             assert commit.pullid == 456
             assert commit.merged is None
@@ -672,7 +670,6 @@ class UploadHandlerHelpersTest(TestCase):
                 commitid="8458a8c72aafb5fb4c5cd58f467a2f71298f1b61"
             )
             assert commit.repository == repo
-            assert commit.state == "pending"
             assert commit.branch == "test"
             assert commit.pullid is None
             assert commit.merged is None
@@ -715,31 +712,6 @@ class UploadHandlerHelpersTest(TestCase):
                 },
                 {"version": "v4"},
             ) == {"content_type": "text/plain", "reduced_redundancy": True}
-
-    def test_store_report_in_redis(self):
-        redis = MockRedis()
-
-        with self.subTest("gzip encoding"):
-            assert (
-                store_report_in_redis(
-                    APIRequestFactory().get("", HTTP_X_CONTENT_ENCODING="gzip"),
-                    "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
-                    "report",
-                    redis,
-                )
-                == "upload/1c78206/report/gzip"
-            )
-
-        with self.subTest("plain encoding"):
-            assert (
-                store_report_in_redis(
-                    APIRequestFactory().get(""),
-                    "1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
-                    "report",
-                    redis,
-                )
-                == "upload/1c78206/report/plain"
-            )
 
     def test_validate_upload_repository_moved(self):
         redis = MockRedis()
@@ -896,9 +868,10 @@ class UploadHandlerHelpersTest(TestCase):
         upload.assert_called_once_with(
             repoid=repo.repoid,
             commitid=task_arguments.get("commit"),
-            report_code="local_report",
-            countdown=4,
             report_type="coverage",
+            report_code="local_report",
+            arguments=task_arguments,
+            countdown=4,
         )
 
 
@@ -969,35 +942,27 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
     def test_invalid_request_params(self):
-        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": "codecov-cli/0.0.0"}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert metrics.data["upload.cli.0.0.0"] == 1
-        assert metrics.data["uploads.rejected"] == 1
 
     def test_invalid_request_params_uploader_package(self):
-        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": "uploader-0.0.0"}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert metrics.data["upload.uploader.0.0.0"] == 1
-        assert metrics.data["uploads.rejected"] == 1
 
     def test_invalid_request_params_invalid_package(self):
-        metrics = utils_mock_metrics(self.mocker)
         query_params = {"pr": 9838, "flags": "flags!!!", "package": ""}
 
         response = self._post(kwargs={"version": "v5"}, query=query_params)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert metrics.data["uploads.rejected"] == 1
 
-    @patch("shared.metrics.metrics.incr")
+    @patch("shared.api_archive.archive.ArchiveService.write_file")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1009,7 +974,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
+        mock_write_file,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1036,7 +1001,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 200
-        mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
         headers = response.headers
 
@@ -1047,6 +1011,14 @@ class UploadHandlerRouteTest(APITestCase):
         )
         assert headers["content-type"] != "text/plain"
 
+        archive_service = ArchiveService(self.repo)
+        datetime = timezone.now().strftime("%Y-%m-%d")
+        repo_hash = archive_service.get_archive_hash(self.repo)
+        expected_url = f"v4/raw/{datetime}/{repo_hash}/b521e55aef79b101f48e2544837ca99a7fa3bf6b/dec1f00b-1883-40d0-afd6-6dcb876510be.txt"
+
+        mock_write_file.assert_called_with(
+            expected_url, b"coverage report", is_already_gzipped=False
+        )
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
             "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
@@ -1059,8 +1031,7 @@ class UploadHandlerRouteTest(APITestCase):
             "build_url": None,
             "branch": None,
             "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
-            "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
-            "url": None,
+            "url": expected_url,
             "job": None,
         }
 
@@ -1074,7 +1045,7 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
-    @patch("shared.metrics.metrics.incr")
+    @patch("shared.api_archive.archive.ArchiveService.write_file")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1086,7 +1057,7 @@ class UploadHandlerRouteTest(APITestCase):
         mock_dispatch_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
+        mock_write_file,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1113,7 +1084,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 200
-        mock_metrics.assert_called_once_with("uploads.accepted", 1)
 
         headers = response.headers
 
@@ -1124,6 +1094,14 @@ class UploadHandlerRouteTest(APITestCase):
         )
         assert headers["content-type"] != "text/plain"
 
+        archive_service = ArchiveService(self.repo)
+        datetime = timezone.now().strftime("%Y-%m-%d")
+        repo_hash = archive_service.get_archive_hash(self.repo)
+        expected_url = f"v4/raw/{datetime}/{repo_hash}/b521e55aef79b101f48e2544837ca99a7fa3bf6b/dec1f00b-1883-40d0-afd6-6dcb876510be.txt"
+
+        mock_write_file.assert_called_with(
+            expected_url, b"coverage report", is_already_gzipped=False
+        )
         assert mock_dispatch_upload.call_args[0][0] == {
             "commit": "b521e55aef79b101f48e2544837ca99a7fa3bf6b",
             "token": "a03e5d02-9495-4413-b0d8-05651bb2e842",
@@ -1136,8 +1114,7 @@ class UploadHandlerRouteTest(APITestCase):
             "build_url": None,
             "branch": None,
             "reportid": "dec1f00b-1883-40d0-afd6-6dcb876510be",
-            "redis_key": "upload/b521e55/dec1f00b-1883-40d0-afd6-6dcb876510be/plain",
-            "url": None,
+            "url": expected_url,
             "job": None,
         }
 
@@ -1151,7 +1128,6 @@ class UploadHandlerRouteTest(APITestCase):
             == "https://app.codecov.io/github/codecovtest/upload-test-repo/commit/b521e55aef79b101f48e2544837ca99a7fa3bf6b"
         )
 
-    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.determine_repo_for_upload")
@@ -1163,7 +1139,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_determine_repo_for_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1193,7 +1168,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 400
-        mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
         headers = response.headers
 
@@ -1206,7 +1180,6 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.content == b"Could not determine repo and owner"
 
-    @patch("shared.metrics.metrics.incr")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.determine_repo_for_upload")
@@ -1218,7 +1191,6 @@ class UploadHandlerRouteTest(APITestCase):
         mock_determine_repo_for_upload,
         mock_uuid4,
         mock_get_redis,
-        mock_metrics,
     ):
         class MockRepoProviderAdapter:
             async def get_commit(self, commit, token):
@@ -1248,7 +1220,6 @@ class UploadHandlerRouteTest(APITestCase):
         )
 
         assert response.status_code == 400
-        mock_metrics.assert_called_once_with("uploads.rejected", 1)
 
         headers = response.headers
 
@@ -1261,8 +1232,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.content == b"Found too many repos"
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1312,8 +1283,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1365,8 +1336,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.status_code == 200
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")
@@ -1433,8 +1404,8 @@ class UploadHandlerRouteTest(APITestCase):
 
         assert response.content == b"Could not determine repo and owner"
 
-    @patch("services.storage.MINIO_CLIENT.presigned_put_object")
-    @patch("services.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.ArchiveService.create_presigned_put")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
     @patch("upload.views.legacy.get_redis_connection")
     @patch("upload.views.legacy.uuid4")
     @patch("upload.views.legacy.dispatch_upload_task")

@@ -1,9 +1,12 @@
 from collections import Counter
 
 from django.test import TransactionTestCase
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
-from codecov_auth.tests.factories import OwnerFactory
-from core.tests.factories import CommitFactory, RepositoryFactory
 from graphql_api.actions.commits import repo_commits
 from reports.models import CommitReport
 from reports.tests.factories import CommitReportFactory, UploadFactory
