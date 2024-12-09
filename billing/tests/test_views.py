@@ -9,8 +9,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
-
-from plan.constants import PlanName
+from shared.plan.constants import PlanName
 
 from ..constants import StripeHTTPHeaders
 
@@ -572,7 +571,7 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
 
     @freeze_time("2023-06-19")
-    @patch("plan.service.PlanService.expire_trial_when_upgrading")
+    @patch("shared.plan.service.PlanService.expire_trial_when_upgrading")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_created_can_trigger_trial_expiration(

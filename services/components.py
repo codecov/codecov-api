@@ -39,15 +39,20 @@ def component_filtered_report(
     return filtered_report
 
 
-def filter_components_by_name(
+def filter_components_by_name_or_id(
     components: List[Component], terms: List[str]
 ) -> List[Component]:
     """
     Given a list of Components and a list of strings (terms),
     return a new list of Components only including Components with names in terms (case insensitive)
+    OR component_id in terms (case insensitive)
     """
     terms = [v.lower() for v in terms]
-    return list(filter(lambda c: c.name.lower() in terms, components))
+    return [
+        component
+        for component in components
+        if component.name.lower() in terms or component.component_id.lower() in terms
+    ]
 
 
 class ComponentComparison:

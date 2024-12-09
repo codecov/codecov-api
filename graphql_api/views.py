@@ -28,6 +28,12 @@ from services import ServiceException
 from services.redis_configuration import get_redis_connection
 
 from .schema import schema
+from .validation import (
+    MissingVariablesError,
+    create_max_aliases_rule,
+    create_max_depth_rule,
+    create_required_variables_rule,
+)
 
 log = logging.getLogger(__name__)
 
@@ -188,7 +194,7 @@ class RequestFinalizer:
 class AsyncGraphqlView(GraphQLAsyncView):
     schema = schema
     extensions = [QueryMetricsExtension]
-    introspection = getattr(settings, "GRAPHQL_INTROSPECTION_ENABLED", False)
+    introspection = settings.GRAPHQL_INTROSPECTION_ENABLED
 
     def get_validation_rules(
         self,
@@ -197,11 +203,14 @@ class AsyncGraphqlView(GraphQLAsyncView):
         data: dict,
     ) -> Optional[Collection]:
         return [
+            create_required_variables_rule(variables=data.get("variables")),
+            create_max_aliases_rule(max_aliases=settings.GRAPHQL_MAX_ALIASES),
+            create_max_depth_rule(max_depth=settings.GRAPHQL_MAX_DEPTH),
             cost_validator(
                 maximum_cost=settings.GRAPHQL_QUERY_COST_THRESHOLD,
                 default_cost=1,
                 variables=data.get("variables"),
-            )
+            ),
         ]
 
     validation_rules = get_validation_rules  # type: ignore
@@ -256,7 +265,16 @@ class AsyncGraphqlView(GraphQLAsyncView):
             )
 
         with RequestFinalizer(request):
-            response = await super().post(request, *args, **kwargs)
+            try:
+                response = await super().post(request, *args, **kwargs)
+            except MissingVariablesError as e:
+                return JsonResponse(
+                    data={
+                        "status": 400,
+                        "detail": str(e),
+                    },
+                    status=400,
+                )
 
             content = response.content.decode("utf-8")
             data = json.loads(content)

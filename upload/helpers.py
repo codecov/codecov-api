@@ -13,6 +13,8 @@ from django.utils import timezone
 from jwt import PyJWKClient, PyJWTError
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.github import InvalidInstallationError
+from shared.plan.constants import USER_PLAN_REPRESENTATIONS
+from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
 from shared.upload.utils import query_monthly_coverage_measurements
@@ -25,8 +27,6 @@ from codecov_auth.models import (
     Owner,
 )
 from core.models import Commit, Repository
-from plan.constants import USER_PLAN_REPRESENTATIONS
-from plan.service import PlanService
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
 from services.redis_configuration import get_redis_connection
@@ -687,18 +687,6 @@ def parse_headers(headers, upload_params):
     return {"content_type": content_type, "reduced_redundancy": reduced_redundancy}
 
 
-def store_report_in_redis(request, commitid, reportid, redis):
-    encoding = request.META.get("HTTP_X_CONTENT_ENCODING") or request.META.get(
-        "HTTP_CONTENT_ENCODING"
-    )
-    redis_key = (
-        f"upload/{commitid[:7]}/{reportid}/{'gzip' if encoding == 'gzip' else 'plain'}"
-    )
-    redis.setex(redis_key, 10800, request.body)
-
-    return redis_key
-
-
 def dispatch_upload_task(
     task_arguments,
     repository,
@@ -746,6 +734,7 @@ def dispatch_upload_task(
         commitid=commitid,
         report_type=str(report_type),
         report_code=task_arguments.get("report_code"),
+        arguments=task_arguments,
         countdown=max(
             countdown, int(get_config("setup", "upload_processing_delay") or 0)
         ),
@@ -754,9 +743,9 @@ def dispatch_upload_task(
 
 def validate_activated_repo(repository):
     if repository.active and not repository.activated:
-        settings_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/settings"
+        config_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/config/general"
         raise ValidationError(
-            f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {settings_url}"
+            f"This repository is deactivated. To resume uploading to it, please activate the repository in the codecov UI: {config_url}"
         )
 
 

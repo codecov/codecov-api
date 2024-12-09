@@ -1,9 +1,10 @@
+from shared.plan.service import PlanService
+
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthorized, ValidationError
 from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import Owner
-from plan.service import PlanService
 
 
 class CancelTrialInteractor(BaseInteractor):

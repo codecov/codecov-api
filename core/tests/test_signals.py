@@ -10,7 +10,9 @@ def test_shelter_repo_sync(mocker):
     publish = mocker.patch("google.cloud.pubsub_v1.PublisherClient.publish")
 
     # this triggers the publish via Django signals
-    repo = RepositoryFactory(repoid=91728376, author=OwnerFactory(ownerid=555))
+    repo = RepositoryFactory(
+        repoid=91728376, author=OwnerFactory(ownerid=555), active=False, activated=False
+    )
 
     # triggers publish on create
     publish.assert_has_calls(
@@ -38,12 +40,26 @@ def test_shelter_repo_sync(mocker):
         b'{"type": "repo", "sync": "one", "id": 91728376}',
     )
 
+    # Does not trigger another publish with untracked field
     repo.message = "foo"
     repo.save()
 
     publish_calls = publish.call_args_list
-    # does not trigger another publish
     assert len(publish_calls) == 3
+
+    # Triggers call when active is changed
+    repo.active = True
+    repo.save()
+
+    publish_calls = publish.call_args_list
+    assert len(publish_calls) == 4
+
+    # Triggers call when activated is changed
+    repo.activated = True
+    repo.save()
+
+    publish_calls = publish.call_args_list
+    assert len(publish_calls) == 5
 
 
 @pytest.mark.django_db

@@ -2,9 +2,9 @@ import logging
 import math
 
 from rest_framework import exceptions, serializers
+from shared.api_archive.archive import ArchiveService, MinioEndpoints
 
 from core.models import Commit
-from services.archive import ArchiveService, MinioEndpoints
 from staticanalysis.models import (
     StaticAnalysisSingleFileSnapshot,
     StaticAnalysisSingleFileSnapshotState,

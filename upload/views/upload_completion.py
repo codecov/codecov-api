@@ -10,6 +10,7 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from reports.models import ReportSession
@@ -25,6 +26,7 @@ log = logging.getLogger(__name__)
 class UploadCompletionView(CreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,

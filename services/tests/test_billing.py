@@ -6,10 +6,10 @@ from django.conf import settings
 from django.test import TestCase
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import PlanName
 from stripe import InvalidRequestError
 
 from codecov_auth.models import Service
-from plan.constants import PlanName
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
 SCHEDULE_RELEASE_OFFSET = 10
@@ -448,7 +448,7 @@ class StripeServiceTests(TestCase):
         list_invoice_mock.assert_called_once_with(
             subscription=stripe_subscription_id,
             status="paid",
-            created={"created.gte": 1458263420, "created.lt": 1489799420},
+            created={"gte": 1458263420, "lt": 1489799420},
         )
         self.assertEqual(create_refund_mock.call_count, 2)
         modify_customer_mock.assert_called_once_with(
@@ -523,7 +523,7 @@ class StripeServiceTests(TestCase):
         list_invoice_mock.assert_called_once_with(
             subscription=stripe_subscription_id,
             status="paid",
-            created={"created.gte": 1458263420, "created.lt": 1489799420},
+            created={"gte": 1458263420, "lt": 1489799420},
         )
         self.assertEqual(create_refund_mock.call_count, 2)
         modify_customer_mock.assert_called_once_with(
@@ -600,7 +600,7 @@ class StripeServiceTests(TestCase):
         list_invoice_mock.assert_called_once_with(
             subscription=stripe_subscription_id,
             status="paid",
-            created={"created.gte": 1458263420, "created.lt": 1489799420},
+            created={"gte": 1458263420, "lt": 1489799420},
         )
         create_refund_mock.assert_not_called()
         modify_customer_mock.assert_not_called()
@@ -1891,7 +1891,7 @@ class BillingServiceTests(TestCase):
         )
         delete_subscription_mock.assert_called_once_with(owner)
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1913,7 +1913,7 @@ class BillingServiceTests(TestCase):
         modify_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1934,7 +1934,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         create_checkout_session_mock.assert_not_called()
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
@@ -1955,7 +1955,7 @@ class BillingServiceTests(TestCase):
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
 
-    @patch("plan.service.PlanService.set_default_plan_data")
+    @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")

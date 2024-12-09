@@ -134,6 +134,7 @@ class TaskService(object):
         commitid,
         report_type=None,
         report_code=None,
+        arguments=None,
         debug=False,
         rebuild=False,
         immutable=False,
@@ -145,6 +146,7 @@ class TaskService(object):
                 commitid=commitid,
                 report_type=report_type,
                 report_code=report_code,
+                arguments=arguments,
                 debug=debug,
                 rebuild=rebuild,
             ),
@@ -157,6 +159,7 @@ class TaskService(object):
         commitid,
         report_type=None,
         report_code=None,
+        arguments=None,
         countdown=0,
         debug=False,
         rebuild=False,
@@ -166,6 +169,7 @@ class TaskService(object):
             commitid,
             report_type=report_type,
             report_code=report_code,
+            arguments=arguments,
             debug=debug,
             rebuild=rebuild,
         ).apply_async(countdown=countdown)
@@ -398,6 +402,8 @@ class TaskService(object):
         from_addr: str | None = None,
         **kwargs,
     ):
+        # Disabling this while we fix HTML templates.
+        return
         # Templates can be found in worker/templates
         self._create_signature(
             "app.tasks.send_email.SendEmail",
@@ -423,4 +429,10 @@ class TaskService(object):
                 measurement_type=MeasurementName.COMPONENT_COVERAGE.value,
                 measurement_id=component_id,
             ),
+        ).apply_async()
+
+    def cache_test_results_redis(self, repoid: int, branch: str) -> None:
+        self._create_signature(
+            celery_config.cache_test_rollups_redis_task_name,
+            kwargs=dict(repoid=repoid, branch=branch),
         ).apply_async()

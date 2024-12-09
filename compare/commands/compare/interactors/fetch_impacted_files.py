@@ -45,7 +45,7 @@ class FetchImpactedFiles(BaseInteractor):
             all_components = components.commit_components(
                 comparison.head_commit, comparison.user
             )
-            filtered_components = components.filter_components_by_name(
+            filtered_components = components.filter_components_by_name_or_id(
                 all_components, components_filter
             )
             for component in filtered_components:

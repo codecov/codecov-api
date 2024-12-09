@@ -35,7 +35,6 @@ services:
   redis_url: redis://redis:@localhost:6379/
   minio:
     hash_key: testixik8qdauiab1yiffydimvi72ekq # never change this
-    periodic_callback_ms: false
     access_key_id: codecov-default-key
     secret_access_key: codecov-default-secret
     verify_ssl: false

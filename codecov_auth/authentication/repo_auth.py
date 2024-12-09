@@ -8,7 +8,7 @@ from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 from jwt import PyJWTError
-from rest_framework import authentication, exceptions
+from rest_framework import authentication, exceptions, serializers
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.views import exception_handler
 from shared.django_apps.codecov_auth.models import Owner
@@ -345,7 +345,7 @@ class BundleAnalysisTokenlessAuthentication(TokenlessAuthentication):
         body = json.loads(str(request.body, "utf8"))
 
         # If commit is not created yet (ie first upload for this commit), we just validate branch format.
-        # However if a commit exists already (ie not the first upload for this commit), we must additionally
+        # However, if a commit exists already (ie not the first upload for this commit), we must additionally
         # validate the saved commit branch matches what is requested in this upload call.
         commit = Commit.objects.filter(repository_id=repoid, commitid=commitid).first()
         if commit and commit.branch != body.get("branch"):
@@ -381,10 +381,15 @@ class UploadTokenRequiredAuthenticationCheck(authentication.TokenAuthentication)
 
         return repository, owner
 
+    def get_repository_and_owner(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        return self._get_info_from_request_path(request)
+
     def authenticate(
         self, request: HttpRequest
     ) -> tuple[RepositoryAsUser, TokenlessAuth] | None:
-        repository, owner = self._get_info_from_request_path(request)
+        repository, owner = self.get_repository_and_owner(request)
 
         if (
             repository is None
@@ -398,3 +403,54 @@ class UploadTokenRequiredAuthenticationCheck(authentication.TokenAuthentication)
             RepositoryAsUser(repository),
             TokenlessAuth(repository),
         )
+
+
+class UploadTokenRequiredGetFromBodySerializer(serializers.Serializer):
+    slug = serializers.CharField(required=True)
+    service = serializers.CharField(required=False)  # git_service from TA
+    git_service = serializers.CharField(required=False)  # git_service from BA
+
+
+class UploadTokenRequiredGetFromBodyAuthenticationCheck(
+    UploadTokenRequiredAuthenticationCheck
+):
+    """
+    Get Repository and Owner from request body instead of path,
+    then use the same authenticate() as parent class.
+    """
+
+    def _get_git(self, validated_data):
+        """
+        BA sends this in as git_service, TA sends this in as service.
+        Use this function so this Check class can be used by both views.
+        """
+        git_service = validated_data.get("git_service") or validated_data.get("service")
+        return git_service
+
+    def _get_info_from_request_body(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        try:
+            body = json.loads(str(request.body, "utf8"))
+
+            serializer = UploadTokenRequiredGetFromBodySerializer(data=body)
+
+            if serializer.is_valid():
+                git_service = self._get_git(validated_data=serializer.validated_data)
+                service_enum = Service(git_service)
+                return get_repository_and_owner_from_string(
+                    service=service_enum,
+                    repo_identifier=serializer.validated_data["slug"],
+                )
+
+        except (json.JSONDecodeError, ValueError):
+            # exceptions raised by json.loads() and Service()
+            # catch rather than raise to continue to next auth class
+            pass
+
+        return None, None  # continue to next auth class
+
+    def get_repository_and_owner(
+        self, request: HttpRequest
+    ) -> tuple[Repository | None, Owner | None]:
+        return self._get_info_from_request_body(request)

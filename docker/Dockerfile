@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.4
 ARG REQUIREMENTS_IMAGE
 ARG BUILD_ENV=self-hosted
-ARG BERGLAS_VERSION=2.0.2
+ARG BERGLAS_VERSION=2.0.6
 
 FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 

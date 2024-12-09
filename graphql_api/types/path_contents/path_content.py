@@ -3,6 +3,10 @@ from typing import List, Union
 from ariadne import InterfaceType, ObjectType, UnionType
 
 from codecov.db import sync_to_async
+from graphql_api.helpers.connection import (
+    ArrayConnection,
+    Connection,
+)
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
 from services.path import Dir, File
@@ -81,3 +85,20 @@ def resolve_path_contents_result_type(res, *_):
         return "UnknownFlags"
     if isinstance(res, type({"results": List[Union[File, Dir]]})):
         return "PathContents"
+
+
+deprecated_path_contents_result_bindable = UnionType("DeprecatedPathContentsResult")
+
+
+@deprecated_path_contents_result_bindable.type_resolver
+def resolve_deprecated_path_contents_result_type(res, *_):
+    if isinstance(res, MissingHeadReport):
+        return "MissingHeadReport"
+    elif isinstance(res, MissingCoverage):
+        return "MissingCoverage"
+    elif isinstance(res, UnknownPath):
+        return "UnknownPath"
+    elif isinstance(res, UnknownFlags):
+        return "UnknownFlags"
+    elif isinstance(res, (Connection, ArrayConnection)):
+        return "PathContentConnection"

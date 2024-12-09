@@ -4,11 +4,13 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 from freezegun import freeze_time
+from shared.django_apps.codecov.commands.exceptions import ValidationError
 from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import PlanName, TrialStatus
 
-from codecov.commands.exceptions import Unauthorized, ValidationError
+from codecov.commands.exceptions import Unauthorized
+from codecov.commands.exceptions import ValidationError as CodecovValidationError
 from codecov_auth.models import Owner
-from plan.constants import PlanName, TrialStatus
 
 from ..cancel_trial import CancelTrialInteractor
 
@@ -26,7 +28,7 @@ class CancelTrialInteractorTest(TransactionTestCase):
             username="random-user-123",
             service="github",
         )
-        with pytest.raises(ValidationError):
+        with pytest.raises(CodecovValidationError):
             self.execute(current_user=current_user, org_username="some-other-username")
 
     def test_cancel_trial_raises_exception_when_current_user_not_part_of_org(self):

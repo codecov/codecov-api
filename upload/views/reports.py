@@ -28,6 +28,21 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 log = logging.getLogger(__name__)
 
 
+def create_report(serializer, repository, commit):
+    code = serializer.validated_data.get("code")
+    if code == "default":
+        serializer.validated_data["code"] = None
+    instance, was_created = serializer.save(
+        commit_id=commit.id,
+        report_type=CommitReport.ReportType.COVERAGE,
+    )
+    if was_created:
+        TaskService().preprocess_upload(
+            repository.repoid, commit.commitid, instance.code
+        )
+    return instance
+
+
 class ReportViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitReportSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
@@ -61,17 +76,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
             "Request to create new report",
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
-        code = serializer.validated_data.get("code")
-        if code == "default":
-            serializer.validated_data["code"] = None
-        instance, was_created = serializer.save(
-            commit_id=commit.id,
-            report_type=CommitReport.ReportType.COVERAGE,
-        )
-        if was_created:
-            TaskService().preprocess_upload(
-                repository.repoid, commit.commitid, instance.code
-            )
+        instance = create_report(serializer, repository, commit)
 
         inc_counter(
             API_UPLOAD_COUNTER,

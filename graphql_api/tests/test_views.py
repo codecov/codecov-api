@@ -1,7 +1,7 @@
 import json
 from unittest.mock import Mock, patch
 
-from ariadne import ObjectType, make_executable_schema
+from ariadne import ObjectType, gql, make_executable_schema
 from ariadne.validation import cost_directive
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import ResolverMatch
@@ -39,11 +39,34 @@ def generate_cost_test_schema():
     return make_executable_schema([types, cost_directive], query_bindable)
 
 
+def generate_schema_with_required_variables():
+    types = gql(
+        """
+        type Query {
+            person_exists(name: String!): Boolean
+            stuff: String
+        }
+        """
+    )
+    query_bindable = ObjectType("Query")
+
+    # Add a resolver for the `person_exists` field
+    @query_bindable.field("person_exists")
+    def resolve_person_exists(_, info, name):
+        return name is not None  # Example resolver logic
+
+    return make_executable_schema(types, query_bindable)
+
+
 class AriadneViewTestCase(GraphQLTestHelper, TestCase):
-    async def do_query(self, schema, query="{ failing }"):
+    async def do_query(self, schema, query="{ failing }", variables=None):
         view = AsyncGraphqlView.as_view(schema=schema)
+        data = {"query": query}
+        if variables is not None:
+            data["variables"] = variables
+
         request = RequestFactory().post(
-            "/graphql/gh", {"query": query}, content_type="application/json"
+            "/graphql/gh", data, content_type="application/json"
         )
         match = ResolverMatch(func=lambda: None, args=(), kwargs={"service": "github"})
 
@@ -256,3 +279,33 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
 
         result = view.get_client_ip(request)
         assert result == "lol"
+
+    async def test_required_variable_present(self):
+        schema = generate_schema_with_required_variables()
+
+        query = """
+        query ($name: String!) {
+            person_exists(name: $name)
+        }
+        """
+
+        #  Provide the variable
+        data = await self.do_query(schema, query=query, variables={"name": "Bob"})
+
+        assert data is not None
+        assert "data" in data
+        assert data["data"]["person_exists"] is True
+
+    async def test_required_variable_missing(self):
+        schema = generate_schema_with_required_variables()
+
+        query = """
+        query ($name: String!) {
+            person_exists(name: $name)
+        }
+        """
+
+        # Don't provide the variable
+        data = await self.do_query(schema, query=query, variables={})
+
+        assert data == {"detail": "Missing required variables: name", "status": 400}

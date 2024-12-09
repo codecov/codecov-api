@@ -16,6 +16,7 @@ from codecov_auth.authentication.repo_auth import (
     GlobalTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
+    UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
@@ -73,6 +74,7 @@ class EmptyUploadSerializer(serializers.Serializer):
 class EmptyUploadView(CreateAPIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
+        UploadTokenRequiredAuthenticationCheck,
         GlobalTokenAuthentication,
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,

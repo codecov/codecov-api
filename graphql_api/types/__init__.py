@@ -17,6 +17,7 @@ from .bundle_analysis import (
     bundle_data_bindable,
     bundle_module_bindable,
     bundle_report_bindable,
+    bundle_report_info_bindable,
 )
 from .commit import (
     commit,
@@ -51,6 +52,7 @@ from .mutation import mutation, mutation_resolvers
 from .okta_config import okta_config, okta_config_bindable
 from .owner import owner, owner_bindable
 from .path_contents import (
+    deprecated_path_contents_result_bindable,
     path_content,
     path_content_bindable,
     path_content_file_bindable,
@@ -148,6 +150,7 @@ bindables = [
     bundle_data_bindable,
     bundle_module_bindable,
     bundle_report_bindable,
+    bundle_report_info_bindable,
     commit_bindable,
     commit_bundle_analysis_bindable,
     commit_coverage_analytics_bindable,
@@ -173,6 +176,7 @@ bindables = [
     path_content_bindable,
     path_content_file_bindable,
     path_contents_result_bindable,
+    deprecated_path_contents_result_bindable,
     plan_bindable,
     plan_representation_bindable,
     profile_bindable,

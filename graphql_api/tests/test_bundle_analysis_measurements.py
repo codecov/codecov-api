@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.test import TransactionTestCase
+from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import StoragePaths
 from shared.bundle_analysis.storage import get_bucket_name
 from shared.django_apps.core.tests.factories import (
@@ -11,10 +12,7 @@ from shared.django_apps.core.tests.factories import (
 from shared.storage.memory import MemoryStorageService
 
 from reports.models import CommitReport
-from reports.tests.factories import (
-    CommitReportFactory,
-)
-from services.archive import ArchiveService
+from reports.tests.factories import CommitReportFactory
 from timeseries.tests.factories import MeasurementFactory
 
 from .helper import GraphQLTestHelper

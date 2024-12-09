@@ -68,8 +68,8 @@ class UploadDownloadHelperTest(APITransactionTestCase):
         )
         assert response.status_code == 404
 
-    @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("services.archive.StorageService.create_presigned_get")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.StorageService.create_presigned_get")
     def test_invalid_archive_path(self, create_presigned_get, get_archive_hash):
         create_presigned_get.side_effect = [
             minio.error.S3Error(
@@ -92,8 +92,8 @@ class UploadDownloadHelperTest(APITransactionTestCase):
         )
         assert response.status_code == 404
 
-    @patch("services.archive.ArchiveService.get_archive_hash")
-    @patch("services.storage.StorageService.create_presigned_get")
+    @patch("shared.api_archive.archive.ArchiveService.get_archive_hash")
+    @patch("shared.api_archive.archive.StorageService.create_presigned_get")
     def test_valid_repo_archive_path(self, create_presigned_get, get_archive_hash):
         create_presigned_get.return_value = "presigned-url"
         get_archive_hash.return_value = "hasssshhh"
@@ -112,7 +112,7 @@ class UploadDownloadHelperTest(APITransactionTestCase):
             "archive", "v4/raw/hasssshhh", expires=30
         )
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_invalid_repo_archive_path(self, mock_read_file):
         mock_read_file.return_value = "Report!"
         response = self._get(

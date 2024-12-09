@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import sentry_sdk
 from django.utils.functional import cached_property
+from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import AssetReport as SharedAssetReport
 from shared.bundle_analysis import (
     BundleAnalysisComparison as SharedBundleAnalysisComparison,
@@ -25,7 +26,6 @@ from graphql_api.actions.measurements import (
     measurements_last_uploaded_before_start_date,
 )
 from reports.models import CommitReport
-from services.archive import ArchiveService
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval, MeasurementName
 
@@ -242,6 +242,10 @@ class AssetReport(object):
     def module_extensions(self) -> List[str]:
         return list(set([module.extension for module in self.modules]))
 
+    @cached_property
+    def routes(self) -> Optional[List[str]]:
+        return self.asset.routes()
+
 
 @dataclass
 class BundleReport(object):
@@ -297,6 +301,44 @@ class BundleReport(object):
     @cached_property
     def is_cached(self) -> bool:
         return self.report.is_cached()
+
+    @cached_property
+    def info(self) -> dict:
+        return self.report.info()
+
+
+@dataclass
+class BundleReportInfo(object):
+    def __init__(self, info: dict) -> None:
+        self.info = info
+
+    @cached_property
+    def version(self) -> str:
+        return self.info.get("version", "unknown")
+
+    @cached_property
+    def plugin_name(self) -> str:
+        return self.info.get("plugin_name", "unknown")
+
+    @cached_property
+    def plugin_version(self) -> str:
+        return self.info.get("plugin_version", "unknown")
+
+    @cached_property
+    def built_at(self) -> str:
+        return str(datetime.fromtimestamp(self.info.get("built_at", 0) / 1000))
+
+    @cached_property
+    def duration(self) -> int:
+        return self.info.get("duration", -1)
+
+    @cached_property
+    def bundler_name(self) -> str:
+        return self.info.get("bundler_name", "unknown")
+
+    @cached_property
+    def bundler_version(self) -> str:
+        return self.info.get("bundler_version", "unknown")
 
 
 @dataclass

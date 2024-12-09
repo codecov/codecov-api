@@ -1,7 +1,7 @@
 from rest_framework import serializers
+from shared.api_archive.archive import ArchiveService
 
 from profiling.models import ProfilingCommit, ProfilingUpload
-from services.archive import ArchiveService
 
 
 class CreatableProfilingCommitRelatedField(serializers.SlugRelatedField):

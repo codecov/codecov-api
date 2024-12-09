@@ -33,8 +33,26 @@ type PathContents {
   results: [PathContent!]!
 }
 
+type PathContentEdge {
+  cursor: String!
+  node: PathContent!
+}
+
+type PathContentConnection {
+  edges: [PathContentEdge!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
 union PathContentsResult =
-    PathContents
+  PathContents
+  | MissingHeadReport
+  | MissingCoverage
+  | UnknownPath
+  | UnknownFlags
+
+union DeprecatedPathContentsResult =
+  PathContentConnection
   | MissingHeadReport
   | MissingCoverage
   | UnknownPath

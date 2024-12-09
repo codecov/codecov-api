@@ -43,7 +43,7 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
         component_paths = []
         if components:
             all_components = components_service.commit_components(commit, self.owner)
-            filtered_components = components_service.filter_components_by_name(
+            filtered_components = components_service.filter_components_by_name_or_id(
                 all_components, components
             )
 

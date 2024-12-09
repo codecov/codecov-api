@@ -4,9 +4,9 @@ import uuid
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.forms import ValidationError
+from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 
 from codecov_auth.models import OrganizationLevelToken, Owner
-from plan.constants import USER_PLAN_REPRESENTATIONS
 
 log = logging.getLogger(__name__)
 

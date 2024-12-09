@@ -26,6 +26,12 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 log = logging.getLogger(__name__)
 
 
+def create_commit(serializer, repository):
+    validate_activated_repo(repository)
+    commit = serializer.save(repository=repository)
+    return commit
+
+
 class CommitViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
@@ -68,9 +74,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             ),
         )
         repository = self.get_repo()
-        validate_activated_repo(repository)
-
-        commit = serializer.save(repository=repository)
+        commit = create_commit(serializer, repository)
 
         log.info(
             "Request to create new commit",

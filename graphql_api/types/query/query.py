@@ -44,7 +44,7 @@ def resolve_owner(_, info, username):
     configure_sentry_scope(query_name(info))
 
     service = info.context["service"]
-    user = info.context["request"].current_owner
+    user = info.context["request"].current_owner or info.context["request"].user
 
     if settings.IS_ENTERPRISE and settings.GUEST_ACCESS is False:
         if not user or not user.is_authenticated:

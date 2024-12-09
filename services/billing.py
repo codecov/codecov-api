@@ -6,17 +6,17 @@ from datetime import datetime, timezone
 import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-
-from billing.constants import REMOVED_INVOICE_STATUSES
-from codecov_auth.models import Owner
-from plan.constants import (
+from shared.plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PAID_PLANS,
     TEAM_PLANS,
     USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
 )
-from plan.service import PlanService
+from shared.plan.service import PlanService
+
+from billing.constants import REMOVED_INVOICE_STATUSES
+from codecov_auth.models import Owner
 
 log = logging.getLogger(__name__)
 
@@ -175,8 +175,8 @@ class StripeService(AbstractPaymentService):
             subscription=owner.stripe_subscription_id,
             status="paid",
             created={
-                "created.gte": int(start_of_last_period.timestamp()),
-                "created.lt": int(current_subscription_datetime.timestamp()),
+                "gte": int(start_of_last_period.timestamp()),
+                "lt": int(current_subscription_datetime.timestamp()),
             },
         )
 

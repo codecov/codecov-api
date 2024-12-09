@@ -3,11 +3,11 @@ from uuid import uuid4
 
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import BasePermission
+from shared.api_archive.archive import ArchiveService, MinioEndpoints
 
 from codecov_auth.authentication.repo_auth import RepositoryTokenAuthentication
 from profiling.models import ProfilingCommit
 from profiling.serializers import ProfilingCommitSerializer, ProfilingUploadSerializer
-from services.archive import ArchiveService, MinioEndpoints
 from services.task import TaskService
 
 log = logging.getLogger(__name__)

@@ -16,6 +16,7 @@ from shared.django_apps.core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+from shared.plan.constants import PlanName
 from shared.utils.test_utils import mock_config_helper
 
 from codecov_auth.models import (
@@ -24,7 +25,6 @@ from codecov_auth.models import (
     Owner,
     Service,
 )
-from plan.constants import PlanName
 from webhook_handlers.constants import (
     GitHubHTTPHeaders,
     GitHubWebhookEvents,
