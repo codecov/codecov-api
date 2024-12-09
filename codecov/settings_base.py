@@ -412,7 +412,6 @@ if SENTRY_DSN is not None:
             HttpxIntegration(),
         ],
         environment=SENTRY_ENV,
-        set_default_pii=True,
         traces_sample_rate=SENTRY_SAMPLE_RATE,
         profiles_sample_rate=float(
             os.environ.get("SERVICES__SENTRY__PROFILE_SAMPLE_RATE", 0.01)
@@ -420,7 +419,6 @@ if SENTRY_DSN is not None:
     )
     if os.getenv("CLUSTER_ENV"):
         sentry_sdk.set_tag("cluster", os.getenv("CLUSTER_ENV"))
-    sentry_sdk.set_user({"ip_address": "{{auto}}"})
 elif IS_DEV:
     sentry_sdk.init(
         spotlight=IS_DEV,
