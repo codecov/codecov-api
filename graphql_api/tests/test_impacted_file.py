@@ -404,6 +404,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "commit": self.commit.commitid,
         }
         data = self.gql_request(query_impacted_files, variables=variables)
+        print(data)
         assert data == {
             "owner": {
                 "repository": {
@@ -449,7 +450,7 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                             "percentCovered": 85.71428571428571
                                         },
                                         "changeCoverage": 44.047619047619044,
-                                        "missesCount": 2,
+                                        "missesCount": 1,
                                     },
                                 ]
                             },

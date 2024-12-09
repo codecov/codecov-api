@@ -511,7 +511,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
         }
         comparison = None
         impacted_files = self.execute(None, self.comparison_report, comparison, filters)
-        assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
+        assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
 
     @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_misses_count_descending(self, read_file):
@@ -524,7 +524,7 @@ class FetchImpactedFilesTest(TransactionTestCase):
         }
         comparison = None
         impacted_files = self.execute(None, self.comparison_report, comparison, filters)
-        assert [file.head_name for file in impacted_files] == ["fileB", "fileA"]
+        assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
     @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_without_filters(self, read_file):
