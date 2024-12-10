@@ -1,7 +1,7 @@
 type Plan {
   baseUnitPrice: Int!
   benefits: [String!]!
-  billingRate: PlanBillingRate!
+  billingRate: String
   hasSeatsLeft: Boolean!
   isEnterprisePlan: Boolean!
   isFreePlan: Boolean!
