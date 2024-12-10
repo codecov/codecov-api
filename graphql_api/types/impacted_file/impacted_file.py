@@ -99,6 +99,7 @@ def resolve_segments(
         segments = [segment for segment in segments if segment.has_unintended_changes]
     elif filters.get("has_unintended_changes") is False:
         # segments with at least 1 diff change
+
         segments = [segment for segment in segments if segment.has_diff_changes and not segment.has_unintended_changes]
 
     return SegmentComparisons(results=segments)
