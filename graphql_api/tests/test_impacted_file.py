@@ -762,7 +762,6 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
             "repo": self.repo.name,
             "pull": self.pull.pullid,
             "path": "fileA",
-            "filters": {"hasUnintendedChanges": False},
         }
         data = self.gql_request(query_impacted_file_through_pull, variables=variables)
         assert data == {
