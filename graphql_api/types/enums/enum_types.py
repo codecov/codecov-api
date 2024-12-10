@@ -1,5 +1,5 @@
 from ariadne import EnumType
-from shared.plan.constants import TierName, TrialStatus
+from shared.plan.constants import PlanBillingRate, TierName, TrialStatus
 
 from codecov_auth.models import RepositoryToken
 from compare.commands.compare.interactors.fetch_impacted_files import (
@@ -51,6 +51,7 @@ enum_types = [
     EnumType("SyncProvider", SyncProvider),
     EnumType("TierName", TierName),
     EnumType("TrialStatus", TrialStatus),
+    EnumType("PlanBillingRate", PlanBillingRate),
     EnumType("YamlStates", YamlStates),
     EnumType("BundleLoadTypes", BundleLoadTypes),
     EnumType("TestResultsOrderingParameter", TestResultsOrderingParameter),
