@@ -1,7 +1,7 @@
 import enum
 import logging
 from functools import lru_cache
-from typing import Dict
+from typing import Dict, Optional
 
 from asgiref.sync import async_to_sync
 from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
@@ -70,6 +70,6 @@ def final_commit_yaml(commit: Commit, owner: Owner | None) -> UserYaml:
     )
 
 
-def get_yaml_state(yaml: UserYaml) -> YamlStates:
+def get_yaml_state(yaml: UserYaml) -> Optional[YamlStates]:
     if yaml == get_config("site", default={}):
         return YamlStates.DEFAULT

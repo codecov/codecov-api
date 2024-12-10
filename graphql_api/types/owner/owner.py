@@ -1,6 +1,6 @@
 from datetime import datetime
 from hashlib import sha1
-from typing import Any, Iterable, List, Optional
+from typing import Any, Coroutine, Iterable, List, Optional
 
 import shared.rate_limits as rate_limits
 import stripe
@@ -62,7 +62,7 @@ def resolve_repositories(
     ordering: Optional[RepositoryOrdering] = RepositoryOrdering.ID,
     ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
     **kwargs: Any,
-) -> Connection:
+) -> Coroutine[Any, Any, Connection]:
     current_owner = info.context["request"].current_owner
     okta_account_auths: list[int] = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []

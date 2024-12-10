@@ -1,14 +1,16 @@
 import fnmatch
 import logging
-from typing import List
+from typing import Any, Callable, List, Optional
 
 import regex
 from asgiref.sync import async_to_sync
+from django.http import HttpRequest
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from shared.metrics import inc_counter
+from shared.torngit.base import TorngitBaseAdapter
 from shared.torngit.exceptions import TorngitClientError, TorngitClientGeneralError
 
 from codecov_auth.authentication.repo_auth import (
@@ -20,6 +22,7 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from codecov_auth.authentication.types import RepositoryAsUser
+from core.models import Commit
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from services.yaml import final_commit_yaml
@@ -81,10 +84,10 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
         RepositoryLegacyTokenAuthentication,
     ]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable[[Exception, dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
@@ -188,7 +191,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             status=status.HTTP_200_OK,
         )
 
-    def get_changed_files_from_provider(self, commit, provider, pull_id):
+    def get_changed_files_from_provider(
+        self, commit: Commit, provider: TorngitBaseAdapter, pull_id: int
+    ) -> List[str]:
         try:
             changed_files = async_to_sync(provider.get_pull_request_files)(pull_id)
         except TorngitClientError:
@@ -203,7 +208,9 @@ class EmptyUploadView(CreateAPIView, GetterMixin):
             raise NotFound("Unable to get pull request's files.")
         return changed_files
 
-    def get_pull_request_id(self, commit, provider, pull_id):
+    def get_pull_request_id(
+        self, commit: Commit, provider: TorngitBaseAdapter, pull_id: Optional[int]
+    ) -> int:
         try:
             if pull_id is None:
                 pull_id = async_to_sync(provider.find_pull_request)(
