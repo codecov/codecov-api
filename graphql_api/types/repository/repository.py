@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import shared.rate_limits as rate_limits
 import yaml
@@ -9,8 +9,8 @@ from django.conf import settings
 from graphql.type.definition import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
-from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE
-from core.models import Branch, Repository
+from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE, Owner
+from core.models import Branch, Commit, Pull, Repository
 from graphql_api.actions.commits import repo_commits
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
@@ -21,6 +21,7 @@ from graphql_api.types.coverage_analytics.coverage_analytics import (
     CoverageAnalyticsProps,
 )
 from graphql_api.types.enums import OrderingDirection
+from graphql_api.types.enums.enum_types import PullRequestState
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
 from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
@@ -59,18 +60,18 @@ def resolve_branch(
 
 
 @repository_bindable.field("author")
-def resolve_author(repository: Repository, info: GraphQLResolveInfo):
+def resolve_author(repository: Repository, info: GraphQLResolveInfo) -> Owner:
     return OwnerLoader.loader(info).load(repository.author_id)
 
 
 @repository_bindable.field("commit")
-def resolve_commit(repository: Repository, info: GraphQLResolveInfo, id):
+def resolve_commit(repository: Repository, info: GraphQLResolveInfo, id: int) -> Commit:
     loader = CommitLoader.loader(info, repository.pk)
     return loader.load(id)
 
 
 @repository_bindable.field("uploadToken")
-def resolve_upload_token(repository: Repository, info: GraphQLResolveInfo):
+def resolve_upload_token(repository: Repository, info: GraphQLResolveInfo) -> str:
     should_hide_tokens = settings.HIDE_ALL_CODECOV_TOKENS
 
     current_owner = info.context["request"].current_owner
@@ -86,7 +87,7 @@ def resolve_upload_token(repository: Repository, info: GraphQLResolveInfo):
 
 
 @repository_bindable.field("pull")
-def resolve_pull(repository: Repository, info: GraphQLResolveInfo, id):
+def resolve_pull(repository: Repository, info: GraphQLResolveInfo, id: int) -> Pull:
     command = info.context["executor"].get_command("pull")
     return command.fetch_pull_request(repository, id)
 
@@ -95,10 +96,10 @@ def resolve_pull(repository: Repository, info: GraphQLResolveInfo, id):
 async def resolve_pulls(
     repository: Repository,
     info: GraphQLResolveInfo,
-    filters=None,
-    ordering_direction=OrderingDirection.DESC,
-    **kwargs,
-):
+    filters: Optional[Dict[str, List[PullRequestState]]] = None,
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.DESC,
+    **kwargs: Any,
+) -> List[Pull]:
     command = info.context["executor"].get_command("pull")
     queryset = await command.fetch_pull_requests(repository, filters)
     return await queryset_to_connection(
@@ -111,8 +112,11 @@ async def resolve_pulls(
 
 @repository_bindable.field("commits")
 async def resolve_commits(
-    repository: Repository, info: GraphQLResolveInfo, filters=None, **kwargs
-):
+    repository: Repository,
+    info: GraphQLResolveInfo,
+    filters: Optional[Dict[str, Any]] = None,
+    **kwargs: Any,
+) -> List[Commit]:
     queryset = await sync_to_async(repo_commits)(repository, filters)
     connection = await queryset_to_connection(
         queryset,
@@ -132,8 +136,11 @@ async def resolve_commits(
 
 @repository_bindable.field("branches")
 async def resolve_branches(
-    repository: Repository, info: GraphQLResolveInfo, filters=None, **kwargs
-):
+    repository: Repository,
+    info: GraphQLResolveInfo,
+    filters: Optional[Dict[str, str | bool]] = None,
+    **kwargs: Any,
+) -> List[Branch]:
     command = info.context["executor"].get_command("branch")
     queryset = await command.fetch_branches(repository, filters)
     return await queryset_to_connection(
@@ -145,18 +152,20 @@ async def resolve_branches(
 
 
 @repository_bindable.field("defaultBranch")
-def resolve_default_branch(repository: Repository, info: GraphQLResolveInfo):
+def resolve_default_branch(repository: Repository, info: GraphQLResolveInfo) -> str:
     return repository.branch
 
 
 @repository_bindable.field("profilingToken")
-def resolve_profiling_token(repository: Repository, info: GraphQLResolveInfo):
+def resolve_profiling_token(repository: Repository, info: GraphQLResolveInfo) -> str:
     command = info.context["executor"].get_command("repository")
     return command.get_repository_token(repository, token_type="profiling")
 
 
 @repository_bindable.field("staticAnalysisToken")
-def resolve_static_analysis_token(repository: Repository, info: GraphQLResolveInfo):
+def resolve_static_analysis_token(
+    repository: Repository, info: GraphQLResolveInfo
+) -> str:
     command = info.context["executor"].get_command("repository")
     return command.get_repository_token(repository, token_type="static_analysis")
 
@@ -178,12 +187,14 @@ def resolve_critical_files(
 
 
 @repository_bindable.field("graphToken")
-def resolve_graph_token(repository: Repository, info: GraphQLResolveInfo):
+def resolve_graph_token(repository: Repository, info: GraphQLResolveInfo) -> str:
     return repository.image_token
 
 
 @repository_bindable.field("yaml")
-def resolve_repo_yaml(repository: Repository, info: GraphQLResolveInfo):
+def resolve_repo_yaml(
+    repository: Repository, info: GraphQLResolveInfo
+) -> Optional[str]:
     if repository.yaml is None:
         return None
     return yaml.dump(repository.yaml)
@@ -191,7 +202,9 @@ def resolve_repo_yaml(repository: Repository, info: GraphQLResolveInfo):
 
 @repository_bindable.field("bot")
 @sync_to_async
-def resolve_repo_bot(repository: Repository, info: GraphQLResolveInfo):
+def resolve_repo_bot(
+    repository: Repository, info: GraphQLResolveInfo
+) -> Optional[Owner]:
     return repository.bot
 
 
@@ -212,7 +225,9 @@ def resolve_is_ats_configured(repository: Repository, info: GraphQLResolveInfo) 
 
 
 @repository_bindable.field("repositoryConfig")
-def resolve_repository_config(repository: Repository, info: GraphQLResolveInfo):
+def resolve_repository_config(
+    repository: Repository, info: GraphQLResolveInfo
+) -> Repository:
     return repository
 
 
@@ -251,7 +266,7 @@ repository_result_bindable = UnionType("RepositoryResult")
 
 
 @repository_result_bindable.type_resolver
-def resolve_repository_result_type(obj, *_):
+def resolve_repository_result_type(obj: Any, *_: Any) -> Optional[str]:
     if isinstance(obj, Repository):
         return "Repository"
     elif isinstance(obj, OwnerNotActivatedError):
@@ -262,7 +277,9 @@ def resolve_repository_result_type(obj, *_):
 
 @repository_bindable.field("isFirstPullRequest")
 @sync_to_async
-def resolve_is_first_pull_request(repository: Repository, info) -> bool:
+def resolve_is_first_pull_request(
+    repository: Repository, info: GraphQLResolveInfo
+) -> bool:
     has_one_pr = repository.pull_requests.count() == 1
 
     if has_one_pr:
@@ -274,7 +291,9 @@ def resolve_is_first_pull_request(repository: Repository, info) -> bool:
 
 @repository_bindable.field("isGithubRateLimited")
 @sync_to_async
-def resolve_is_github_rate_limited(repository: Repository, info) -> bool | None:
+def resolve_is_github_rate_limited(
+    repository: Repository, info: GraphQLResolveInfo
+) -> bool | None:
     if (
         repository.service != SERVICE_GITHUB
         and repository.service != SERVICE_GITHUB_ENTERPRISE

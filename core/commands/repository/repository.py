@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Awaitable, Optional
 
 from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner
@@ -38,7 +38,7 @@ class RepositoryCommands(BaseCommand):
         self,
         repo_name: str,
         owner_username: str,
-    ) -> uuid.UUID:
+    ) -> Awaitable[uuid.UUID]:
         return self.get_interactor(RegenerateRepositoryUploadTokenInteractor).execute(
             repo_name, owner_username
         )

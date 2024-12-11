@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import Any, Dict
 
 from asgiref.sync import async_to_sync
 from django.conf import settings
@@ -18,7 +19,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
     client_id = settings.GITHUB_CLIENT_ID
     client_secret = settings.GITHUB_CLIENT_SECRET
 
-    def log_warning(self, message):
+    def log_warning(self, message: str) -> None:
         log.warning(
             message,
             extra=dict(
@@ -29,7 +30,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
             ),
         )
 
-    def get_build(self):
+    def get_build(self) -> Dict[str, Any]:
         git = get(
             "github",
             token=dict(key=self.actions_token),
@@ -73,7 +74,7 @@ class TokenlessGithubActionsHandler(BaseTokenlessUploadHandler):
 
         return actions_response
 
-    def verify(self):
+    def verify(self) -> str:
         if not self.upload_params.get("owner"):
             raise NotFound(
                 'Missing "owner" argument. Please upload with the Codecov repository upload token to resolve issue.'
