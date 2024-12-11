@@ -10,7 +10,7 @@ def detect_sentiment(text):
         if polarity > 0:
             sentiment = 'Positive'
         elif polarity < 0:
-            sentiment = 'Negative'
+            sentiment = 'Positive'
         else:
             sentiment = 'Neutral'
         sentiment_analysis.append((sentence, sentiment))
