@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class CriticalFile:
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self.name = name
 
 
@@ -60,7 +60,7 @@ class ProfilingSummary:
             return None
 
     def _get_critical_files_from_yaml(
-        self, profiling_commit: ProfilingCommit = None
+        self, profiling_commit: Optional[ProfilingCommit] = None
     ) -> List[str]:
         """
         Get a list of files present in the commit report that are also marked as critical in the repo yaml (under profiling.critical_files_paths)
@@ -79,7 +79,12 @@ class ProfilingSummary:
             "critical_files_paths"
         ):
             return []
-        commit_sha = self.commit_sha or profiling_commit.commit_sha
+
+        if profiling_commit is not None:
+            commit_sha = profiling_commit.commit_sha
+        else:
+            commit_sha = self.commit_sha
+
         commit = Commit.objects.get(commitid=commit_sha)
         report = report_service.build_report_from_commit(commit)
         if report is None:
