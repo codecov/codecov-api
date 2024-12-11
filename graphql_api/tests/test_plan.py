@@ -58,6 +58,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     monthlyUploadLimit
                     pretrialUsersCount
                     planUserCount
+                    isEnterprisePlan
+                    isFreePlan
+                    isProPlan
+                    isSentryPlan
+                    isTeamPlan
+                    isTrialPlan
                 }
             }
         }
@@ -83,6 +89,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "monthlyUploadLimit": None,
             "pretrialUsersCount": 234,
             "planUserCount": 123,
+            "isEnterprisePlan": False,
+            "isFreePlan": False,
+            "isProPlan": False,
+            "isSentryPlan": False,
+            "isTeamPlan": False,
+            "isTrialPlan": True,
         }
 
     def test_owner_plan_data_with_account(self):
@@ -101,6 +113,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                         billingRate
                         baseUnitPrice
                         planUserCount
+                        isEnterprisePlan
+                        isFreePlan
+                        isProPlan
+                        isSentryPlan
+                        isTeamPlan
+                        isTrialPlan
                     }
                 }
             }
@@ -114,6 +132,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "billingRate": "annually",
             "baseUnitPrice": 10,
             "planUserCount": 25,
+            "isEnterprisePlan": False,
+            "isFreePlan": False,
+            "isProPlan": True,
+            "isSentryPlan": False,
+            "isTeamPlan": False,
+            "isTrialPlan": False,
         }
 
     def test_owner_plan_data_has_seats_left(self):
