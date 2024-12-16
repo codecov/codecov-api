@@ -197,7 +197,7 @@ class UploadHandlerHelpersTest(TestCase):
             "job": "jobID",  # not populated from "travis_job_id"
             "travis_job_id": "travis-jobID",
             "using_global_token": False,
-            "service": None,  # defaulted to None if not provided and not using global upload token
+            "service": "lao",  # defaulted to None if not provided and not using global upload token
         }
 
         parsed_params = parse_params(request_params)
