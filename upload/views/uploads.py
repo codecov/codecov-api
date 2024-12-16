@@ -50,8 +50,7 @@ def create_upload(
     archive_service = ArchiveService(repository)
     # Create upload record
     instance: ReportSession = serializer.save(
-        report_id=report.id,
-        upload_extras={"format_version": "v1"},
+        report_id=report.id, upload_extras={"format_version": "v1"}, state="started"
     )
 
     # Inserts mirror upload record into measurements table. CLI hits this endpoint
