@@ -80,10 +80,11 @@ class ProfilingSummary:
         ):
             return []
 
-        if profiling_commit is not None:
-            commit_sha = profiling_commit.commit_sha
-        else:
+        commit_sha = None
+        if self.commit_sha:
             commit_sha = self.commit_sha
+        elif profiling_commit:
+            commit_sha = profiling_commit.commit_sha
 
         commit = Commit.objects.get(commitid=commit_sha)
         report = report_service.build_report_from_commit(commit)
