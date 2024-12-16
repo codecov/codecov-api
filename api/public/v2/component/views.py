@@ -1,6 +1,9 @@
+from typing import Any
+
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from api.public.v2.component.serializers import ComponentSerializer
@@ -34,7 +37,7 @@ class ComponentViewSet(viewsets.ViewSet, RepoPropertyMixin):
     permission_classes = [RepositoryArtifactPermissions]
 
     @extend_schema(summary="Component list")
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """
         Returns a list of components for the specified repository
         """

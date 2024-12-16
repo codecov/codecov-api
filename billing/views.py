@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List
+from typing import Any, List
 
 import stripe
 from django.conf import settings
@@ -410,7 +410,7 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated([owner])
 
-    def post(self, request: HttpRequest, *args, **kwargs) -> Response:
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."

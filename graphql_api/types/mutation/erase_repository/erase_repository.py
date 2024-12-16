@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from ariadne import UnionType
+from graphql import GraphQLResolveInfo
 
 from graphql_api.helpers.mutation import (
     require_authenticated,
@@ -9,7 +12,9 @@ from graphql_api.helpers.mutation import (
 
 @wrap_error_handling_mutation
 @require_authenticated
-async def resolve_erase_repository(_, info, input) -> None:
+async def resolve_erase_repository(
+    _: Any, info: GraphQLResolveInfo, input: Dict[str, Any]
+) -> None:
     command = info.context["executor"].get_command("repository")
     current_owner = info.context["request"].current_owner
     repo_name = input.get("repo_name")

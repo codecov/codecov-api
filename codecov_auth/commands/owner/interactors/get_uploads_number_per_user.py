@@ -1,3 +1,5 @@
+from typing import Optional
+
 from shared.plan.service import PlanService
 from shared.upload.utils import query_monthly_coverage_measurements
 
@@ -11,7 +13,7 @@ redis = get_redis_connection()
 
 class GetUploadsNumberPerUserInteractor(BaseInteractor):
     @sync_to_async
-    def execute(self, owner: Owner):
+    def execute(self, owner: Owner) -> Optional[int]:
         plan_service = PlanService(current_org=owner)
         monthly_limit = plan_service.monthly_uploads_limit
         if monthly_limit is not None:
