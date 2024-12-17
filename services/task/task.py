@@ -402,8 +402,6 @@ class TaskService(object):
         from_addr: str | None = None,
         **kwargs,
     ):
-        # Disabling this while we fix HTML templates.
-        return
         # Templates can be found in worker/templates
         self._create_signature(
             "app.tasks.send_email.SendEmail",
