@@ -480,7 +480,7 @@ class Segment:
             if not (line.added or line.removed) and (base_coverage != head_coverage):
                 return True
         return False
-    
+
     def remove_unintended_changes(self):
         filtered = []
         for line in self._lines:
