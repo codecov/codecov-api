@@ -1787,50 +1787,18 @@ class ComparisonReportTest(TestCase):
 
     def test_remove_unintended_changes(self):
         lines = [
-            LineComparison(
-                {"base": 1, "head": 1},
-                {"base": 1, "head": 1},
-                "line1",
-                added=False,
-                removed=False,
-            ),
-            LineComparison(
-                {"base": 1, "head": 0},
-                {"base": 2, "head": 2},
-                "line2",
-                added=False,
-                removed=False,
-            ),
-            LineComparison(
-                {"base": 0, "head": 0},
-                {"base": None, "head": 3},
-                "+line3",
-                added=True,
-                removed=False,
-            ),
-            LineComparison(
-                {"base": 0, "head": 0},
-                {"base": 4, "head": None},
-                "-line4",
-                added=False,
-                removed=True,
-            ),
-            LineComparison(
-                {"base": 1, "head": 0},
-                {"base": 5, "head": 5},
-                "line5",
-                added=False,
-                removed=False,
-            ),
+            LineComparison(1, 1, 1, 1, "line1", False),
+            LineComparison(1, 0, 2, 2, "line2", False),
+            LineComparison(0, 0, None, 3, "+line3", True),
+            LineComparison(0, 0, 4, None, "-line4", True),
+            LineComparison(1, 0, 5, 5, "line5", False),
         ]
 
         segment = Segment(lines)
         segment.remove_unintended_changes()
 
-        # Only lines with code changes or no changes remain; coverage-only changes removed
         assert len(segment.lines) == 3
         assert [line.value for line in segment.lines] == ["line1", "+line3", "-line4"]
-
 
 class CommitComparisonTests(TestCase):
     def setUp(self):
