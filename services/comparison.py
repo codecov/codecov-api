@@ -480,6 +480,15 @@ class Segment:
             if not (line.added or line.removed) and (base_coverage != head_coverage):
                 return True
         return False
+    
+    def remove_unintended_changes(self):
+        filtered = []
+        for line in self._lines:
+            base_cov = line.coverage["base"]
+            head_cov = line.coverage["head"]
+            if (line.added or line.removed) or (base_cov == head_cov):
+                filtered.append(line)
+        self._lines = filtered
 
 
 class FileComparison:
