@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List
+from typing import Any, List
 
 import stripe
 from django.conf import settings
@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.plan.service import PlanService
 
+from billing.helpers import get_all_admins_for_owners
 from codecov_auth.models import Owner
 from services.task.task import TaskService
 
@@ -66,17 +67,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated(list(owners))
 
         # Send failed payment email to all owner admins
-
-        admin_ids = set()
-        for owner in owners:
-            if owner.admins:
-                admin_ids.update(owner.admins)
-
-            # Add the owner's email as well - for user owners, admins is empty.
-            if owner.email:
-                admin_ids.add(owner.ownerid)
-
-        admins: QuerySet[Owner] = Owner.objects.filter(pk__in=admin_ids)
+        admins = get_all_admins_for_owners(owners)
 
         task_service = TaskService()
         card = (
@@ -101,6 +92,15 @@ class StripeWebhookHandler(APIView):
                     name=admin.username,
                     **template_vars,
                 )
+
+        # temporary just making sure these look okay in the real world
+        task_service.send_email(
+            to_addr="spencer.murray@sentry.io",
+            subject="Your Codecov payment failed",
+            template_name="failed-payment",
+            name="spalmurray-codecov",
+            **template_vars,
+        )
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         log.info(
@@ -410,7 +410,7 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated([owner])
 
-    def post(self, request: HttpRequest, *args, **kwargs) -> Response:
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."

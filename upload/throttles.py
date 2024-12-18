@@ -3,8 +3,10 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.http import HttpRequest
 from rest_framework.exceptions import ValidationError
 from rest_framework.throttling import BaseThrottle
+from rest_framework.views import APIView
 from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
 from shared.upload.utils import query_monthly_coverage_measurements
@@ -19,7 +21,7 @@ redis = get_redis_connection()
 
 
 class UploadsPerCommitThrottle(BaseThrottle):
-    def allow_request(self, request, view):
+    def allow_request(self, request: HttpRequest, view: APIView) -> bool:
         try:
             repository = view.get_repo()
             commit = view.get_commit(repository)
@@ -44,7 +46,7 @@ class UploadsPerCommitThrottle(BaseThrottle):
 
 
 class UploadsPerWindowThrottle(BaseThrottle):
-    def allow_request(self, request, view):
+    def allow_request(self, request: HttpRequest, view: APIView) -> bool:
         try:
             repository = view.get_repo()
             commit = view.get_commit(repository)

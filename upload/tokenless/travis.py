@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import Any, Dict
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessTravisHandler(BaseTokenlessUploadHandler):
-    def get_build(self):
+    def get_build(self) -> Dict[str, Any]:
         travis_dot_com = False
 
         try:
@@ -88,7 +89,7 @@ class TokenlessTravisHandler(BaseTokenlessUploadHandler):
 
         return build.json()
 
-    def verify(self):
+    def verify(self) -> str:
         # find repo in travis.com
         job = self.get_build()
 

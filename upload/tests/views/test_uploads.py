@@ -237,7 +237,9 @@ def test_uploads_post(db, mocker, mock_redis):
     )
     response_json = response.json()
     upload = ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state="started",
     ).first()
     assert response.status_code == 201
     assert all(
@@ -252,7 +254,9 @@ def test_uploads_post(db, mocker, mock_redis):
     )
 
     assert ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state="started",
     ).exists()
     assert RepositoryFlag.objects.filter(
         repository_id=repository.repoid, flag_name="flag1"
@@ -348,7 +352,9 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         assert response.status_code == 201
         response_json = response.json()
         upload = ReportSession.objects.filter(
-            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+            report_id=commit_report.id,
+            upload_extras={"format_version": "v1"},
+            state="started",
         ).first()
         assert all(
             map(
@@ -362,7 +368,9 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         )
 
         assert ReportSession.objects.filter(
-            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+            report_id=commit_report.id,
+            upload_extras={"format_version": "v1"},
+            state="started",
         ).exists()
         assert RepositoryFlag.objects.filter(
             repository_id=repository.repoid, flag_name="flag1"
@@ -496,7 +504,9 @@ def test_uploads_post_token_required_auth_check(
         assert response.status_code == 201
         response_json = response.json()
         upload = ReportSession.objects.filter(
-            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+            report_id=commit_report.id,
+            upload_extras={"format_version": "v1"},
+            state="started",
         ).first()
         assert all(
             map(
@@ -510,7 +520,9 @@ def test_uploads_post_token_required_auth_check(
         )
 
         assert ReportSession.objects.filter(
-            report_id=commit_report.id, upload_extras={"format_version": "v1"}
+            report_id=commit_report.id,
+            upload_extras={"format_version": "v1"},
+            state="started",
         ).exists()
         assert RepositoryFlag.objects.filter(
             repository_id=repository.repoid, flag_name="flag1"
@@ -626,7 +638,9 @@ def test_uploads_post_github_oidc_auth(
     assert response.status_code == 201
     response_json = response.json()
     upload = ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state="started",
     ).first()
     assert all(
         map(
@@ -640,7 +654,9 @@ def test_uploads_post_github_oidc_auth(
     )
 
     assert ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state="started",
     ).exists()
     assert RepositoryFlag.objects.filter(
         repository_id=repository.repoid, flag_name="flag1"
@@ -754,7 +770,9 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
     )
 
     upload = ReportSession.objects.filter(
-        report_id=commit_report.id, upload_extras={"format_version": "v1"}
+        report_id=commit_report.id,
+        upload_extras={"format_version": "v1"},
+        state="started",
     ).first()
     assert response.status_code == 201
     ArchiveService(repository)
