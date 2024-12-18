@@ -1800,6 +1800,7 @@ class ComparisonReportTest(TestCase):
         assert len(segment.lines) == 3
         assert [line.value for line in segment.lines] == ["line1", "+line3", "-line4"]
 
+
 class CommitComparisonTests(TestCase):
     def setUp(self):
         self.base_commit = CommitFactory(updatestamp=datetime(2023, 1, 1))
