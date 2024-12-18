@@ -36,6 +36,7 @@ from services.comparison import (
     LineComparison,
     MissingComparisonReport,
     PullRequestComparison,
+    Segment,
 )
 
 # Pulled from shared.django_apps.core.tests.factories.CommitFactory files.
@@ -1783,6 +1784,52 @@ class ComparisonReportTest(TestCase):
             }
         )
         assert file.has_changes is True
+
+    def test_remove_unintended_changes(self):
+        lines = [
+            LineComparison(
+                {"base": 1, "head": 1},
+                {"base": 1, "head": 1},
+                "line1",
+                added=False,
+                removed=False,
+            ),
+            LineComparison(
+                {"base": 1, "head": 0},
+                {"base": 2, "head": 2},
+                "line2",
+                added=False,
+                removed=False,
+            ),
+            LineComparison(
+                {"base": 0, "head": 0},
+                {"base": None, "head": 3},
+                "+line3",
+                added=True,
+                removed=False,
+            ),
+            LineComparison(
+                {"base": 0, "head": 0},
+                {"base": 4, "head": None},
+                "-line4",
+                added=False,
+                removed=True,
+            ),
+            LineComparison(
+                {"base": 1, "head": 0},
+                {"base": 5, "head": 5},
+                "line5",
+                added=False,
+                removed=False,
+            ),
+        ]
+
+        segment = Segment(lines)
+        segment.remove_unintended_changes()
+
+        # Only lines with code changes or no changes remain; coverage-only changes removed
+        assert len(segment.lines) == 3
+        assert [line.value for line in segment.lines] == ["line1", "+line3", "-line4"]
 
 
 class CommitComparisonTests(TestCase):
