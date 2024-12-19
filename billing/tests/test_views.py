@@ -39,6 +39,35 @@ class MockSubscription(object):
         return getattr(self, key)
 
 
+class MockCard(object):
+    def __init__(self):
+        self.brand = "visa"
+        self.last4 = "1234"
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class MockPaymentMethod(object):
+    def __init__(self, noCard=False):
+        if noCard:
+            self.card = None
+            return
+
+        self.card = MockCard()
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class MockPaymentIntent(object):
+    def __init__(self, noCard=False):
+        self.payment_method = MockPaymentMethod(noCard)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
 class StripeWebhookHandlerTests(APITestCase):
     def setUp(self):
         self.owner = OwnerFactory(
@@ -97,6 +126,8 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "customer": self.owner.stripe_customer_id,
                         "subscription": self.owner.stripe_subscription_id,
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
                     }
                 },
             }
@@ -120,6 +151,8 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "customer": self.owner.stripe_customer_id,
                         "subscription": self.owner.stripe_subscription_id,
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
                     }
                 },
             }
@@ -131,9 +164,107 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.delinquent is False
         assert self.other_owner.delinquent is False
 
-    def test_invoice_payment_failed_sets_owner_delinquent_true(self):
+    @patch("services.task.TaskService.send_email")
+    def test_invoice_payment_succeeded_emails_only_emails_delinquents(
+        self,
+        mocked_send_email,
+    ):
+        self.add_second_owner()
         self.owner.delinquent = False
         self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "invoice.payment_succeeded",
+                "data": {
+                    "object": {
+                        "customer": self.owner.stripe_customer_id,
+                        "subscription": self.owner.stripe_subscription_id,
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        self.other_owner.refresh_from_db()
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert self.owner.delinquent is False
+
+        mocked_send_email.assert_not_called()
+
+    @patch("services.task.TaskService.send_email")
+    def test_invoice_payment_succeeded_emails_delinquents(self, mocked_send_email):
+        non_admin = OwnerFactory(email="non-admin@codecov.io")
+        admin_1 = OwnerFactory(email="admin1@codecov.io")
+        admin_2 = OwnerFactory(email="admin2@codecov.io")
+        self.owner.admins = [admin_1.ownerid, admin_2.ownerid]
+        self.owner.plan_activated_users = [non_admin.ownerid]
+        self.owner.email = "owner@codecov.io"
+        self.owner.delinquent = True
+        self.owner.save()
+        self.add_second_owner()
+        self.other_owner.delinquent = False
+        self.other_owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "invoice.payment_succeeded",
+                "data": {
+                    "object": {
+                        "customer": self.owner.stripe_customer_id,
+                        "subscription": self.owner.stripe_subscription_id,
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        self.other_owner.refresh_from_db()
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert self.owner.delinquent is False
+        assert self.other_owner.delinquent is False
+
+        expected_calls = [
+            call(
+                to_addr=self.owner.email,
+                subject="You're all set",
+                template_name="success-after-failed-payment",
+                amount=240,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
+            call(
+                to_addr=admin_1.email,
+                subject="You're all set",
+                template_name="success-after-failed-payment",
+                amount=240,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
+            call(
+                to_addr=admin_2.email,
+                subject="You're all set",
+                template_name="success-after-failed-payment",
+                amount=240,
+                cta_link="https://stripe.com",
+                date=datetime.now().strftime("%B %-d, %Y"),
+            ),
+        ]
+
+        mocked_send_email.assert_has_calls(expected_calls)
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    def test_invoice_payment_failed_sets_owner_delinquent_true(
+        self, retrieve_paymentintent_mock
+    ):
+        self.owner.delinquent = False
+        self.owner.save()
+
+        retrieve_paymentintent_mock.return_value = MockPaymentIntent()
 
         response = self._send_event(
             payload={
@@ -142,11 +273,9 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "customer": self.owner.stripe_customer_id,
                         "subscription": self.owner.stripe_subscription_id,
-                        "default_payment_method": {
-                            "card": {"brand": "visa", "last4": 1234}
-                        },
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
+                        "payment_intent": "payment_intent_asdf",
                     }
                 },
             }
@@ -156,12 +285,17 @@ class StripeWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert self.owner.delinquent is True
 
-    def test_invoice_payment_failed_sets_multiple_owners_delinquent_true(self):
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    def test_invoice_payment_failed_sets_multiple_owners_delinquent_true(
+        self, retrieve_paymentintent_mock
+    ):
         self.add_second_owner()
         self.owner.delinquent = False
         self.owner.save()
         self.other_owner.delinquent = False
         self.other_owner.save()
+
+        retrieve_paymentintent_mock.return_value = MockPaymentIntent()
 
         response = self._send_event(
             payload={
@@ -170,11 +304,9 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "customer": self.owner.stripe_customer_id,
                         "subscription": self.owner.stripe_subscription_id,
-                        "default_payment_method": {
-                            "card": {"brand": "visa", "last4": 1234}
-                        },
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
+                        "payment_intent": "payment_intent_asdf",
                     }
                 },
             }
@@ -187,7 +319,12 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.other_owner.delinquent is True
 
     @patch("services.task.TaskService.send_email")
-    def test_invoice_payment_failed_sends_email_to_admins(self, mocked_send_email):
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    def test_invoice_payment_failed_sends_email_to_admins(
+        self,
+        retrieve_paymentintent_mock,
+        mocked_send_email,
+    ):
         non_admin = OwnerFactory(email="non-admin@codecov.io")
         admin_1 = OwnerFactory(email="admin1@codecov.io")
         admin_2 = OwnerFactory(email="admin2@codecov.io")
@@ -196,6 +333,8 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.email = "owner@codecov.io"
         self.owner.save()
 
+        retrieve_paymentintent_mock.return_value = MockPaymentIntent()
+
         response = self._send_event(
             payload={
                 "type": "invoice.payment_failed",
@@ -203,11 +342,9 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "customer": self.owner.stripe_customer_id,
                         "subscription": self.owner.stripe_subscription_id,
-                        "default_payment_method": {
-                            "card": {"brand": "visa", "last4": 1234}
-                        },
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
+                        "payment_intent": "payment_intent_asdf",
                     }
                 },
             }
@@ -225,7 +362,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 name=self.owner.username,
                 amount=240,
                 card_type="visa",
-                last_four=1234,
+                last_four="1234",
                 cta_link="https://stripe.com",
                 date=datetime.now().strftime("%B %-d, %Y"),
             ),
@@ -236,7 +373,7 @@ class StripeWebhookHandlerTests(APITestCase):
                 name=admin_1.username,
                 amount=240,
                 card_type="visa",
-                last_four=1234,
+                last_four="1234",
                 cta_link="https://stripe.com",
                 date=datetime.now().strftime("%B %-d, %Y"),
             ),
@@ -247,16 +384,20 @@ class StripeWebhookHandlerTests(APITestCase):
                 name=admin_2.username,
                 amount=240,
                 card_type="visa",
-                last_four=1234,
+                last_four="1234",
                 cta_link="https://stripe.com",
                 date=datetime.now().strftime("%B %-d, %Y"),
             ),
         ]
+
         mocked_send_email.assert_has_calls(expected_calls)
 
     @patch("services.task.TaskService.send_email")
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
     def test_invoice_payment_failed_sends_email_to_admins_no_card(
-        self, mocked_send_email
+        self,
+        retrieve_paymentintent_mock,
+        mocked_send_email,
     ):
         non_admin = OwnerFactory(email="non-admin@codecov.io")
         admin_1 = OwnerFactory(email="admin1@codecov.io")
@@ -265,6 +406,8 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.plan_activated_users = [non_admin.ownerid]
         self.owner.email = "owner@codecov.io"
         self.owner.save()
+
+        retrieve_paymentintent_mock.return_value = MockPaymentIntent(noCard=True)
 
         response = self._send_event(
             payload={
@@ -276,6 +419,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "default_payment_method": None,
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
+                        "payment_intent": "payment_intent_asdf",
                     }
                 },
             }
