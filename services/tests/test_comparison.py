@@ -1787,11 +1787,11 @@ class ComparisonReportTest(TestCase):
 
     def test_remove_unintended_changes(self):
         lines = [
-            LineComparison(1, 1, 1, 1, "line1", False),
-            LineComparison(1, 0, 2, 2, "line2", False),
-            LineComparison(0, 0, None, 3, "+line3", True),
-            LineComparison(0, 0, 4, None, "-line4", True),
-            LineComparison(1, 0, 5, 5, "line5", False),
+            LineComparison([1, "", [], 0, 0], [1, "", [], 0, 0], 1, 1, "line1", False),
+            LineComparison([1, "", [], 0, 0], [0, "", [], 0, 0], 2, 2, "line2", False),
+            LineComparison(None, [0, "", [], 0, 0], None, 3, "+line3", True),
+            LineComparison([0, "", [], 0, 0], None, 4, None, "-line4", True),
+            LineComparison([1, "", [], 0, 0], [0, "", [], 0, 0], 5, 5, "line5", False),
         ]
 
         segment = Segment(lines)
