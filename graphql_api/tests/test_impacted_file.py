@@ -1,5 +1,6 @@
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Callable
 from unittest.mock import PropertyMock, patch
 
 from django.test import TransactionTestCase
@@ -211,6 +212,7 @@ mock_data_from_archive = """
 class MockSegment:
     has_diff_changes: bool = False
     has_unintended_changes: bool = False
+    remove_unintended_changes: Callable[[], None] = field(default=lambda: None)
 
 
 class MockFileComparison(object):
