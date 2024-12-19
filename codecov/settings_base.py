@@ -110,6 +110,9 @@ GRAPHQL_MAX_DEPTH = get_config("setup", "graphql", "max_depth", default=20)
 
 GRAPHQL_MAX_ALIASES = get_config("setup", "graphql", "max_aliases", default=10)
 
+# Timeseries
+TIMESERIES_ENABLED = get_config("setup", "timeseries", "enabled", default=False)
+
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
