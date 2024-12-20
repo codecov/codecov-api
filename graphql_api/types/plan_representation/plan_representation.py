@@ -17,11 +17,6 @@ def resolve_marketing_name(plan_data: PlanData, info) -> str:
     return plan_data.marketing_name
 
 
-@plan_representation_bindable.field("planName")
-def resolve_plan_name(plan_data: PlanData, info) -> str:
-    return plan_data.value
-
-
 @plan_representation_bindable.field("value")
 def resolve_plan_value(plan_data: PlanData, info) -> str:
     return plan_data.value
