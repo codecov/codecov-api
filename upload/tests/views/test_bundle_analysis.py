@@ -24,7 +24,7 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
         "upload.views.bundle_analysis.BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels"
     )
     create_presigned_put = mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
 
@@ -87,9 +87,10 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit_sha,
         repoid=repository.repoid,
-        countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+        arguments=ANY,
+        countdown=4,
     )
     mock_metrics.assert_called_with(
         **{
@@ -111,7 +112,7 @@ def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
         "upload.views.bundle_analysis.BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER.labels"
     )
     create_presigned_put = mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
 
@@ -176,9 +177,10 @@ def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit_sha,
         repoid=repository.repoid,
-        countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+        arguments=ANY,
+        countdown=4,
     )
     mock_metrics.assert_called_with(
         **{
@@ -196,7 +198,7 @@ def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
 def test_upload_bundle_analysis_org_token(db, client, mocker, mock_redis):
     mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
     mock_metrics = mocker.patch(
@@ -234,7 +236,7 @@ def test_upload_bundle_analysis_org_token(db, client, mocker, mock_redis):
 def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
     mock_metrics = mocker.patch(
@@ -260,9 +262,10 @@ def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
     upload.assert_called_with(
         commitid=commit.commitid,
         repoid=repository.repoid,
-        countdown=4,
         report_code=None,
         report_type="bundle_analysis",
+        arguments=ANY,
+        countdown=4,
     )
     mock_metrics.assert_called_with(
         **{
@@ -279,7 +282,7 @@ def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
 def test_upload_bundle_analysis_missing_args(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
     mock_metrics = mocker.patch(
@@ -328,7 +331,7 @@ def test_upload_bundle_analysis_missing_args(db, client, mocker, mock_redis):
 def test_upload_bundle_analysis_invalid_token(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
 
@@ -358,7 +361,7 @@ def test_upload_bundle_analysis_github_oidc_auth(
 ):
     mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
     mock_metrics = mocker.patch(
@@ -402,7 +405,7 @@ def test_upload_bundle_analysis_measurement_datasets_created(
 ):
     mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
     mock_metrics = mocker.patch(
@@ -463,7 +466,7 @@ def test_upload_bundle_analysis_measurement_timeseries_disabled(
 ):
     mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
     mock_metrics = mocker.patch(
@@ -522,7 +525,7 @@ def test_upload_bundle_analysis_no_repo(db, client, mocker, mock_redis):
     upload = mocker.patch.object(TaskService, "upload")
     mocker.patch.object(TaskService, "upload")
     mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
     mock_metrics = mocker.patch(
@@ -567,7 +570,7 @@ def test_upload_bundle_analysis_tokenless_success(db, client, mocker, mock_redis
     )
 
     create_presigned_put = mocker.patch(
-        "services.archive.StorageService.create_presigned_put",
+        "shared.api_archive.archive.StorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
 
@@ -611,6 +614,48 @@ def test_upload_bundle_analysis_tokenless_success(db, client, mocker, mock_redis
             "position": "end",
         },
     )
+
+
+@pytest.mark.django_db(databases={"default", "timeseries"})
+def test_upload_bundle_analysis_true_tokenless_success(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+
+    create_presigned_put = mocker.patch(
+        "shared.api_archive.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    repository = RepositoryFactory.create(
+        private=False,
+        author__upload_token_required_for_public_repos=False,
+        author__service="github",
+    )
+    client = APIClient()
+
+    res = client.post(
+        reverse("upload-bundle-analysis"),
+        {
+            "commit": "any",
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "test-service",
+            "compareSha": "6fd5b89357fc8cdf34d6197549ac7c6d7e5aaaaa",
+            "branch": "f1:main",
+            "git_service": "github",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+
+    assert res.status_code == 201
+
+    # returns presigned storage URL
+    assert res.json() == {"url": "test-presigned-put"}
+
+    assert upload.called
+    create_presigned_put.assert_called_once_with("bundle-analysis", ANY, 30)
 
 
 @pytest.mark.django_db(databases={"default", "timeseries"})
@@ -720,7 +765,10 @@ def test_upload_bundle_analysis_tokenless_mismatched_branch(
     upload = mocker.patch.object(TaskService, "upload")
 
     commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
-    repository = RepositoryFactory.create(private=False)
+    repository = RepositoryFactory.create(
+        private=False,
+        author__upload_token_required_for_public_repos=True,
+    )
     CommitFactory.create(repository=repository, commitid=commit_sha, branch="main")
 
     client = APIClient()

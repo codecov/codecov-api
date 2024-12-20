@@ -55,6 +55,17 @@ type BundleAsset {
     after: DateTime
     branch: String
   ): BundleAnalysisMeasurements
+  routes: [String!]
+}
+
+type BundleReportInfo {
+  version: String!
+  pluginName: String!
+  pluginVersion: String!
+  builtAt: String!
+  duration: Int!
+  bundlerName: String!
+  bundlerVersion: String!
 }
 
 type BundleReport {
@@ -81,6 +92,7 @@ type BundleReport {
     last: Int
     before: String
   ): AssetConnection
+  info: BundleReportInfo!
 }
 
 type BundleAnalysisMeasurements{

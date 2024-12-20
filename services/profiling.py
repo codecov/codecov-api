@@ -5,18 +5,18 @@ from typing import List, Optional
 import regex
 import shared.reports.api_report_service as report_service
 from django.utils.functional import cached_property
+from shared.api_archive.archive import ArchiveService
 from shared.profiling import ProfilingSummaryDataAnalyzer
 from shared.yaml import UserYaml
 
 from core.models import Commit, Repository
 from profiling.models import ProfilingCommit
-from services.archive import ArchiveService
 
 log = logging.getLogger(__name__)
 
 
 class CriticalFile:
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self.name = name
 
 
@@ -60,7 +60,7 @@ class ProfilingSummary:
             return None
 
     def _get_critical_files_from_yaml(
-        self, profiling_commit: ProfilingCommit = None
+        self, profiling_commit: Optional[ProfilingCommit] = None
     ) -> List[str]:
         """
         Get a list of files present in the commit report that are also marked as critical in the repo yaml (under profiling.critical_files_paths)
@@ -79,7 +79,13 @@ class ProfilingSummary:
             "critical_files_paths"
         ):
             return []
-        commit_sha = self.commit_sha or profiling_commit.commit_sha
+
+        commit_sha = None
+        if self.commit_sha:
+            commit_sha = self.commit_sha
+        elif profiling_commit:
+            commit_sha = profiling_commit.commit_sha
+
         commit = Commit.objects.get(commitid=commit_sha)
         report = report_service.build_report_from_commit(commit)
         if report is None:

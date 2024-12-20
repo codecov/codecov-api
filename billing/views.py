@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List
+from typing import Any, List
 
 import stripe
 from django.conf import settings
@@ -10,9 +10,10 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.plan.service import PlanService
 
+from billing.helpers import get_all_admins_for_owners
 from codecov_auth.models import Owner
-from plan.service import PlanService
 from services.task.task import TaskService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
@@ -45,10 +46,41 @@ class StripeWebhookHandler(APIView):
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription,
+            delinquent=True,
         )
-        owners.update(delinquent=False)
 
+        if not owners.exists():
+            return
+
+        admins = get_all_admins_for_owners(owners)
+        owners.update(delinquent=False)
         self._log_updated(list(owners))
+
+        # Send a success email to all admins
+
+        task_service = TaskService()
+        template_vars = {
+            "amount": invoice.total / 100,
+            "date": datetime.now().strftime("%B %-d, %Y"),
+            "cta_link": invoice.hosted_invoice_url,
+        }
+
+        for admin in admins:
+            if admin.email:
+                task_service.send_email(
+                    to_addr=admin.email,
+                    subject="You're all set",
+                    template_name="success-after-failed-payment",
+                    **template_vars,
+                )
+
+        # temporary just making sure these look okay in the real world
+        task_service.send_email(
+            to_addr="spencer.murray@sentry.io",
+            subject="You're all set",
+            template_name="success-after-failed-payment",
+            **template_vars,
+        )
 
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         log.info(
@@ -66,22 +98,16 @@ class StripeWebhookHandler(APIView):
         self._log_updated(list(owners))
 
         # Send failed payment email to all owner admins
-
-        admin_ids = set()
-        for owner in owners:
-            if owner.admins:
-                admin_ids.update(owner.admins)
-
-            # Add the owner's email as well - for user owners, admins is empty.
-            if owner.email:
-                admin_ids.add(owner.ownerid)
-
-        admins: QuerySet[Owner] = Owner.objects.filter(pk__in=admin_ids)
+        admins = get_all_admins_for_owners(owners)
 
         task_service = TaskService()
+        payment_intent = stripe.PaymentIntent.retrieve(
+            invoice["payment_intent"], expand=["payment_method"]
+        )
         card = (
-            invoice.default_payment_method.card
-            if invoice.default_payment_method
+            payment_intent.payment_method.card
+            if payment_intent.payment_method
+            and not isinstance(payment_intent.payment_method, str)
             else None
         )
         template_vars = {
@@ -101,6 +127,15 @@ class StripeWebhookHandler(APIView):
                     name=admin.username,
                     **template_vars,
                 )
+
+        # temporary just making sure these look okay in the real world
+        task_service.send_email(
+            to_addr="spencer.murray@sentry.io",
+            subject="Your Codecov payment failed",
+            template_name="failed-payment",
+            name="spalmurray-codecov",
+            **template_vars,
+        )
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         log.info(
@@ -410,7 +445,7 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated([owner])
 
-    def post(self, request: HttpRequest, *args, **kwargs) -> Response:
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:
             log.critical(
                 "Stripe endpoint secret improperly configured -- webhooks will not be processed."

@@ -20,6 +20,7 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
+from shared.plan.constants import PlanName, TrialStatus
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from codecov.commands.exceptions import (
@@ -28,7 +29,6 @@ from codecov.commands.exceptions import (
 )
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
-from plan.constants import PlanName, TrialStatus
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 from .helper import GraphQLTestHelper, paginate_connection
@@ -1003,7 +1003,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
 
     def test_fetch_upload_token_required(self):
-        owner = OwnerFactory(username="sample-owner", service="github")
+        owner = OwnerFactory(
+            username="sample-owner",
+            service="github",
+            upload_token_required_for_public_repos=True,
+        )
         query = """{
             owner(username: "%s") {
                 uploadTokenRequired

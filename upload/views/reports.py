@@ -1,8 +1,10 @@
 import logging
+from typing import Any, Callable
 
 from django.http import HttpRequest, HttpResponseNotAllowed
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView
+from rest_framework.response import Response
 from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -14,6 +16,7 @@ from codecov_auth.authentication.repo_auth import (
     UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
+from core.models import Commit, Repository
 from reports.models import CommitReport, ReportResults
 from services.task import TaskService
 from upload.helpers import (
@@ -28,6 +31,23 @@ from upload.views.uploads import CanDoCoverageUploadsPermission
 log = logging.getLogger(__name__)
 
 
+def create_report(
+    serializer: CommitReportSerializer, repository: Repository, commit: Commit
+) -> CommitReport:
+    code = serializer.validated_data.get("code")
+    if code == "default":
+        serializer.validated_data["code"] = None
+    instance, was_created = serializer.save(
+        commit_id=commit.id,
+        report_type=CommitReport.ReportType.COVERAGE,
+    )
+    if was_created:
+        TaskService().preprocess_upload(
+            repository.repoid, commit.commitid, instance.code
+        )
+    return instance
+
+
 class ReportViews(ListCreateAPIView, GetterMixin):
     serializer_class = CommitReportSerializer
     permission_classes = [CanDoCoverageUploadsPermission]
@@ -40,10 +60,10 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         TokenlessAuthentication,
     ]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable[[Exception, dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: CommitReportSerializer) -> CommitReport:
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
@@ -61,17 +81,7 @@ class ReportViews(ListCreateAPIView, GetterMixin):
             "Request to create new report",
             extra=dict(repo=repository.name, commit=commit.commitid),
         )
-        code = serializer.validated_data.get("code")
-        if code == "default":
-            serializer.validated_data["code"] = None
-        instance, was_created = serializer.save(
-            commit_id=commit.id,
-            report_type=CommitReport.ReportType.COVERAGE,
-        )
-        if was_created:
-            TaskService().preprocess_upload(
-                repository.repoid, commit.commitid, instance.code
-            )
+        instance = create_report(serializer, repository, commit)
 
         inc_counter(
             API_UPLOAD_COUNTER,
@@ -86,7 +96,9 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         )
         return instance
 
-    def list(self, request: HttpRequest, service: str, repo: str, commit_sha: str):
+    def list(
+        self, request: HttpRequest, service: str, repo: str, commit_sha: str
+    ) -> HttpResponseNotAllowed:
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
 
@@ -106,10 +118,10 @@ class ReportResultsView(
         TokenlessAuthentication,
     ]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable[[Exception, dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: ReportResultsSerializer) -> ReportResults:
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
@@ -149,7 +161,7 @@ class ReportResultsView(
         )
         return instance
 
-    def get_object(self):
+    def get_object(self) -> ReportResults:
         repository = self.get_repo()
         commit = self.get_commit(repository)
         report = self.get_report(commit)

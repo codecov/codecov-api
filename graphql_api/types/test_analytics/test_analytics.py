@@ -189,7 +189,12 @@ def generate_test_results(
         return TestResultConnection(
             edges=[],
             total_count=0,
-            page_info={},
+            page_info={
+                "has_next_page": False,
+                "has_previous_page": False,
+                "start_cursor": None,
+                "end_cursor": None,
+            },
         )
 
     if term:
@@ -213,7 +218,7 @@ def generate_test_results(
             table = table.filter(pl.col("total_flaky_fail_count") > 0)
         case TestResultsFilterParameter.SKIPPED_TESTS:
             table = table.filter(
-                pl.col("total_skip_count") > 0 & pl.col("total_pass_count") == 0
+                (pl.col("total_skip_count") > 0) & (pl.col("total_pass_count") == 0)
             )
         case TestResultsFilterParameter.SLOWEST_TESTS:
             table = table.filter(
@@ -280,7 +285,7 @@ def get_test_suites(
     if term:
         testsuites = testsuites.filter(pl.col("testsuite").str.starts_with(term))
 
-    return testsuites.to_series().to_list()
+    return testsuites.to_series().drop_nulls().to_list() or []
 
 
 def get_flags(repoid: int, term: str | None = None, interval: int = 30) -> list[str]:
@@ -290,12 +295,12 @@ def get_flags(repoid: int, term: str | None = None, interval: int = 30) -> list[
     if table is None:
         return []
 
-    flags = table.select(pl.col("flags")).unique()
+    flags = table.select(pl.col("flags").explode()).unique()
 
     if term:
         flags = flags.filter(pl.col("flags").str.starts_with(term))
 
-    return flags.to_series().to_list()
+    return flags.to_series().drop_nulls().to_list() or []
 
 
 class TestResultsOrdering(TypedDict):

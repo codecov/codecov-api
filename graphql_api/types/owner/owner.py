@@ -1,6 +1,6 @@
 from datetime import datetime
 from hashlib import sha1
-from typing import Any, Iterable, List, Optional
+from typing import Any, Coroutine, Iterable, List, Optional
 
 import shared.rate_limits as rate_limits
 import stripe
@@ -8,6 +8,8 @@ import yaml
 from ariadne import ObjectType
 from django.conf import settings
 from graphql import GraphQLResolveInfo
+from shared.plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
+from shared.plan.service import PlanService
 
 import services.activation as activation
 import timeseries.helpers as timeseries_helpers
@@ -37,10 +39,8 @@ from graphql_api.helpers.mutation import (
     require_shared_account_or_part_of_org,
 )
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
-from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
+from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
-from plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
-from plan.service import PlanService
 from services.billing import BillingService
 from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection
@@ -62,7 +62,7 @@ def resolve_repositories(
     ordering: Optional[RepositoryOrdering] = RepositoryOrdering.ID,
     ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
     **kwargs: Any,
-) -> Connection:
+) -> Coroutine[Any, Any, Connection]:
     current_owner = info.context["request"].current_owner
     okta_account_auths: list[int] = info.context["request"].session.get(
         OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY, []
@@ -163,16 +163,13 @@ async def resolve_repository(
 
     current_owner = info.context["request"].current_owner
     has_products_enabled = (
-        repository.bundle_analysis_enabled and repository.coverage_enabled
+        repository.bundle_analysis_enabled
+        or repository.coverage_enabled
+        or repository.test_analytics_enabled
     )
 
     if repository.private and has_products_enabled:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
-        is_owner_activated = await sync_to_async(activation.is_activated)(
-            owner, current_owner
-        )
-        if not is_owner_activated:
-            return OwnerNotActivatedError()
 
     info.context["profiling_summary"] = ProfilingSummary(repository)
     return repository

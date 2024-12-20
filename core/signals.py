@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, cast
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -16,7 +16,7 @@ def update_repository(
     sender: Type[Repository], instance: Repository, **kwargs: Dict[str, Any]
 ) -> None:
     log.info(f"Signal triggered for repository {instance.repoid}")
-    created: bool = kwargs["created"]
+    created: bool = cast(bool, kwargs["created"])
     changes: Dict[str, Any] = instance.tracker.changed()
     tracked_fields: List[str] = ["name", "upload_token", "activated", "active"]
 

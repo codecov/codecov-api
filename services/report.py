@@ -29,13 +29,13 @@ def _sessions_with_specific_flags(
 
 
 def files_in_sessions(commit_report: Report, session_ids: list[int]) -> list[str]:
-    files, session_ids = [], set(session_ids)
+    files, session_ids_set = [], set(session_ids)
     for file in commit_report:
         found = False
         for line in file:
             if line:
                 for session in line.sessions:
-                    if session.id in session_ids:
+                    if session.id in session_ids_set:
                         found = True
                         break
             if found:

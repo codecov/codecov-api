@@ -1,8 +1,10 @@
+from typing import Any, Coroutine, Optional
+
 from ariadne import ObjectType
 from graphql import GraphQLResolveInfo
 
 from codecov.db import sync_to_async
-from codecov_auth.models import Account, OktaSettings
+from codecov_auth.models import Account, OktaSettings, Owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     build_connection_graphql,
@@ -43,9 +45,9 @@ def resolve_activated_user_count(account: Account, info: GraphQLResolveInfo) -> 
 def resolve_organizations(
     account: Account,
     info: GraphQLResolveInfo,
-    ordering_direction=OrderingDirection.ASC,
-    **kwargs,
-):
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
+    **kwargs: Any,
+) -> Coroutine[Any, Any, Owner]:
     return queryset_to_connection(
         account.organizations,
         ordering=("username",),

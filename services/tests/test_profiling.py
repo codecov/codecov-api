@@ -108,7 +108,7 @@ class ProfilingSummaryTests(TestCase):
         pc = ProfilingCommitFactory(repository=self.repo)
         assert self.service.summary_data(pc) is None
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_summary_data_not_found(self, read_file):
         read_file.side_effect = [
             minio.error.S3Error(
@@ -128,7 +128,7 @@ class ProfilingSummaryTests(TestCase):
 
         assert self.service.summary_data(pc) is None
 
-    @patch("services.archive.ArchiveService.read_file")
+    @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_summary_data(self, read_file):
         read_file.return_value = test_summary
         pc = ProfilingCommitFactory(

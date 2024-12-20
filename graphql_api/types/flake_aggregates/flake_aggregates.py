@@ -42,9 +42,13 @@ def flake_aggregates_with_percentage(
     merged_results: pl.DataFrame = pl.concat([past_aggregates, curr_aggregates])
 
     merged_results = merged_results.with_columns(
-        pl.all().pct_change().name.suffix("_percent_change")
+        pl.all()
+        .pct_change()
+        .replace([float("inf"), float("-inf")], None)
+        .fill_nan(0)
+        .name.suffix("_percent_change")
     )
-    aggregates = merged_results.row(0, named=True)
+    aggregates = merged_results.row(1, named=True)
 
     return FlakeAggregates(**aggregates)
 

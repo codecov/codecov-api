@@ -1,5 +1,7 @@
 import logging
+from typing import Any, Callable, Dict
 
+from django.http import HttpRequest
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
@@ -33,10 +35,10 @@ class UploadCompletionView(CreateAPIView, GetterMixin):
         RepositoryLegacyTokenAuthentication,
     ]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable[[Exception, Dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(

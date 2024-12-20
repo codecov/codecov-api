@@ -8,9 +8,8 @@ from freezegun import freeze_time
 from shared.django_apps.codecov_auth.tests.factories import AccountFactory
 from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.license import LicenseInformation
+from shared.plan.constants import PlanName, TrialStatus
 from shared.utils.test_utils import mock_config_helper
-
-from plan.constants import PlanName, TrialStatus
 
 from .helper import GraphQLTestHelper
 
@@ -59,6 +58,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     monthlyUploadLimit
                     pretrialUsersCount
                     planUserCount
+                    isEnterprisePlan
+                    isFreePlan
+                    isProPlan
+                    isSentryPlan
+                    isTeamPlan
+                    isTrialPlan
                 }
             }
         }
@@ -84,6 +89,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "monthlyUploadLimit": None,
             "pretrialUsersCount": 234,
             "planUserCount": 123,
+            "isEnterprisePlan": False,
+            "isFreePlan": False,
+            "isProPlan": False,
+            "isSentryPlan": False,
+            "isTeamPlan": False,
+            "isTrialPlan": True,
         }
 
     def test_owner_plan_data_with_account(self):
@@ -102,6 +113,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                         billingRate
                         baseUnitPrice
                         planUserCount
+                        isEnterprisePlan
+                        isFreePlan
+                        isProPlan
+                        isSentryPlan
+                        isTeamPlan
+                        isTrialPlan
                     }
                 }
             }
@@ -115,6 +132,12 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "billingRate": "annually",
             "baseUnitPrice": 10,
             "planUserCount": 25,
+            "isEnterprisePlan": False,
+            "isFreePlan": False,
+            "isProPlan": True,
+            "isSentryPlan": False,
+            "isTeamPlan": False,
+            "isTrialPlan": False,
         }
 
     def test_owner_plan_data_has_seats_left(self):
@@ -137,7 +160,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["plan"] == {"hasSeatsLeft": True}
 
-    @patch("services.self_hosted.get_current_license")
+    @patch("shared.self_hosted.service.get_current_license")
     def test_plan_user_count_for_enterprise_org(self, mocked_license):
         """
         If an Org has an enterprise license, number_allowed_users from their license
@@ -191,10 +214,11 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 }
                 """ % (enterprise_org.username)
         data = self.gql_request(query, owner=enterprise_org)
+        print(data, "look here 1")
         assert data["owner"]["plan"]["planUserCount"] == 5
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
 
-    @patch("services.self_hosted.get_current_license")
+    @patch("shared.self_hosted.service.get_current_license")
     def test_plan_user_count_for_enterprise_org_invaild_license(self, mocked_license):
         mock_enterprise_license = LicenseInformation(
             is_valid=False,

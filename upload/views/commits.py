@@ -1,7 +1,12 @@
 import logging
+from typing import Any, Callable, Dict
 
+from django.db.models import QuerySet
+from django.http import HttpRequest
+from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.generics import ListCreateAPIView
+from rest_framework.response import Response
 from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -13,7 +18,7 @@ from codecov_auth.authentication.repo_auth import (
     UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
-from core.models import Commit
+from core.models import Commit, Repository
 from upload.helpers import (
     generate_upload_prometheus_metrics_labels,
     validate_activated_repo,
@@ -24,6 +29,14 @@ from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
+
+
+def create_commit(
+    serializer: serializers.ModelSerializer, repository: Repository
+) -> Commit:
+    validate_activated_repo(repository)
+    commit = serializer.save(repository=repository)
+    return commit
 
 
 class CommitViews(ListCreateAPIView, GetterMixin):
@@ -38,14 +51,14 @@ class CommitViews(ListCreateAPIView, GetterMixin):
         TokenlessAuthentication,
     ]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable[[Exception, Dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         repository = self.get_repo()
         return Commit.objects.filter(repository=repository)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         repository = self.get_repo()
         if repository.private and isinstance(
             self.request.auth, TokenlessAuthentication
@@ -53,10 +66,10 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             raise NotAuthenticated()
         return super().list(request, *args, **kwargs)
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         return super().create(request, *args, **kwargs)
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: CommitSerializer) -> Commit:
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
@@ -68,9 +81,7 @@ class CommitViews(ListCreateAPIView, GetterMixin):
             ),
         )
         repository = self.get_repo()
-        validate_activated_repo(repository)
-
-        commit = serializer.save(repository=repository)
+        commit = create_commit(serializer, repository)
 
         log.info(
             "Request to create new commit",

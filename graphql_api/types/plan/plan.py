@@ -2,13 +2,11 @@ from datetime import datetime
 from typing import List, Optional
 
 from ariadne import ObjectType
+from shared.plan.constants import PlanBillingRate, TrialStatus
+from shared.plan.service import PlanService
 
 from codecov.db import sync_to_async
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
-from plan.constants import (
-    TrialStatus,
-)
-from plan.service import PlanService
 
 plan = ariadne_load_local_graphql(__file__, "plan.graphql")
 plan_bindable = ObjectType("Plan")
@@ -59,7 +57,7 @@ def resolve_tier_name(plan_service: PlanService, info) -> str:
 
 @plan_bindable.field("billingRate")
 @sync_to_async
-def resolve_billing_rate(plan_service: PlanService, info) -> Optional[str]:
+def resolve_billing_rate(plan_service: PlanService, info) -> Optional[PlanBillingRate]:
     return plan_service.billing_rate
 
 
@@ -98,3 +96,39 @@ def resolve_plan_user_count(plan_service: PlanService, info) -> int:
 @sync_to_async
 def resolve_has_seats_left(plan_service: PlanService, info) -> bool:
     return plan_service.has_seats_left
+
+
+@plan_bindable.field("isEnterprisePlan")
+@sync_to_async
+def resolve_is_enterprise_plan(plan_service: PlanService, info) -> bool:
+    return plan_service.is_enterprise_plan
+
+
+@plan_bindable.field("isFreePlan")
+@sync_to_async
+def resolve_is_free_plan(plan_service: PlanService, info) -> bool:
+    return plan_service.is_free_plan
+
+
+@plan_bindable.field("isProPlan")
+@sync_to_async
+def resolve_is_pro_plan(plan_service: PlanService, info) -> bool:
+    return plan_service.is_pro_plan
+
+
+@plan_bindable.field("isSentryPlan")
+@sync_to_async
+def resolve_is_sentry_plan(plan_service: PlanService, info) -> bool:
+    return plan_service.is_sentry_plan
+
+
+@plan_bindable.field("isTeamPlan")
+@sync_to_async
+def resolve_is_team_plan(plan_service: PlanService, info) -> bool:
+    return plan_service.is_team_plan
+
+
+@plan_bindable.field("isTrialPlan")
+@sync_to_async
+def resolve_is_trial_plan(plan_service: PlanService, info) -> bool:
+    return plan_service.is_trial_plan

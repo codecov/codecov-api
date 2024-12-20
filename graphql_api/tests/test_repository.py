@@ -431,50 +431,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
 
     @patch("services.activation.is_activated")
     @patch("services.activation.try_auto_activate")
-    def test_repository_not_activated(self, try_auto_activate, is_activated):
-        repo = RepositoryFactory(
-            author=self.owner,
-            active=True,
-            private=True,
-            coverage_enabled=True,
-            bundle_analysis_enabled=True,
-        )
-
-        is_activated.return_value = False
-
-        data = self.gql_request(
-            query_repository % "name",
-            owner=self.owner,
-            variables={"name": repo.name},
-        )
-        assert data["me"]["owner"]["repository"] == {
-            "__typename": "OwnerNotActivatedError",
-            "message": "You must be activated in the org",
-        }
-
-    @override_settings(IS_ENTERPRISE=True)
-    @patch("services.activation.try_auto_activate")
-    def test_repository_not_activated_self_hosted(self, try_auto_activate):
-        repo = RepositoryFactory(
-            author=self.owner,
-            active=True,
-            private=True,
-            coverage_enabled=True,
-            bundle_analysis_enabled=True,
-        )
-
-        data = self.gql_request(
-            query_repository % "name",
-            owner=self.owner,
-            variables={"name": repo.name},
-        )
-        assert data["me"]["owner"]["repository"] == {
-            "__typename": "OwnerNotActivatedError",
-            "message": "You must be activated in the org",
-        }
-
-    @patch("services.activation.is_activated")
-    @patch("services.activation.try_auto_activate")
     def test_resolve_inactive_user_on_unconfigured_repo(
         self, try_auto_activate, is_activated
     ):
