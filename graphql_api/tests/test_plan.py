@@ -49,7 +49,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     trialStartDate
                     trialTotalDays
                     marketingName
-                    planName
                     value
                     tierName
                     billingRate
@@ -75,7 +74,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "trialStartDate": "2023-06-19T00:00:00",
             "trialTotalDays": None,
             "marketingName": "Developer",
-            "planName": "users-trial",
             "value": "users-trial",
             "tierName": "pro",
             "billingRate": None,
@@ -107,7 +105,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 owner(username: "%s") {
                     plan {
                         marketingName
-                        planName
                         value
                         tierName
                         billingRate
@@ -126,7 +123,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.current_org)
         assert data["owner"]["plan"] == {
             "marketingName": "Pro",
-            "planName": "users-pr-inappy",
             "value": "users-pr-inappy",
             "tierName": "pro",
             "billingRate": "annually",

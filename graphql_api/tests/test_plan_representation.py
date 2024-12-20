@@ -35,7 +35,6 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
             owner(username: "%s") {
                 pretrialPlan {
                     marketingName
-                    planName
                     value
                     billingRate
                     baseUnitPrice
@@ -48,7 +47,6 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["pretrialPlan"] == {
             "marketingName": "Developer",
-            "planName": "users-basic",
             "value": "users-basic",
             "billingRate": None,
             "baseUnitPrice": 0,

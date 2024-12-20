@@ -39,11 +39,6 @@ def resolve_marketing_name(plan_service: PlanService, info) -> str:
     return plan_service.marketing_name
 
 
-@plan_bindable.field("planName")
-def resolve_plan_name(plan_service: PlanService, info) -> str:
-    return plan_service.plan_name
-
-
 @plan_bindable.field("value")
 def resolve_plan_name_as_value(plan_service: PlanService, info) -> str:
     return plan_service.plan_name
