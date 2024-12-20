@@ -1078,3 +1078,68 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (other_owner.username)
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["activatedUserCount"] == 2
+
+    def test_fetch_available_plans_is_enterprise_plan(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.FREE_PLAN_NAME.value,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                availablePlans {
+                    value
+                    isEnterprisePlan
+                    isProPlan
+                    isTeamPlan
+                    isSentryPlan
+                    isTrialPlan
+                    isFreePlan
+                }
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["availablePlans"][0]["isEnterprisePlan"] is False
+        assert data["owner"]["availablePlans"][0]["isFreePlan"] is True
+        assert data["owner"]["availablePlans"][0]["isProPlan"] is False
+        assert data["owner"]["availablePlans"][0]["isTeamPlan"] is False
+        assert data["owner"]["availablePlans"][0]["isSentryPlan"] is False
+        assert data["owner"]["availablePlans"][0]["isTrialPlan"] is False
+
+    def test_fetch_available_plans_is_trial_plan(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                availablePlans {
+                    isTrialPlan
+                }
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["availablePlans"][0]["isTrialPlan"] is True
+
+    def test_fetch_available_plans_is_pro_plan(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.CODECOV_PRO_MONTHLY_LEGACY.value,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                availablePlans {
+                    isProPlan
+                }
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["availablePlans"][0]["isProPlan"] is True

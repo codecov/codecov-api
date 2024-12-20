@@ -81,3 +81,8 @@ def resolve_is_team(plan_data: PlanData, info) -> bool:
 @plan_representation_bindable.field("isSentryPlan")
 def resolve_is_sentry(plan_data: PlanData, info) -> bool:
     return plan_data["is_sentry_plan"]
+
+
+@plan_representation_bindable.field("isTrialPlan")
+def resolve_is_trial(plan_data: PlanData, info) -> bool:
+    return plan_data["is_trial_plan"]
