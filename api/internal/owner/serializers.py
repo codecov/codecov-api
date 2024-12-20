@@ -1,5 +1,4 @@
 import logging
-from dataclasses import asdict
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
@@ -127,10 +126,9 @@ class PlanSerializer(serializers.Serializer):
         current_owner = self.context["request"].current_owner
 
         plan_service = PlanService(current_org=current_org)
-        available_plans = [
-            asdict(plan) for plan in plan_service.available_plans(current_owner)
+        plan_values = [
+            plan["value"] for plan in plan_service.available_plans(current_owner)
         ]
-        plan_values = [plan["value"] for plan in available_plans]
         if value not in plan_values:
             if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
                 log.warning(

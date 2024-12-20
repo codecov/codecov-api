@@ -14,22 +14,22 @@ plan_representation_bindable = ObjectType("PlanRepresentation")
 
 @plan_representation_bindable.field("marketingName")
 def resolve_marketing_name(plan_data: PlanData, info) -> str:
-    return plan_data.marketing_name
+    return plan_data["marketing_name"]
 
 
 @plan_representation_bindable.field("value")
 def resolve_plan_value(plan_data: PlanData, info) -> str:
-    return plan_data.value
+    return plan_data["value"]
 
 
 @plan_representation_bindable.field("billingRate")
 def resolve_billing_rate(plan_data: PlanData, info) -> Optional[str]:
-    return plan_data.billing_rate
+    return plan_data["billing_rate"]
 
 
 @plan_representation_bindable.field("baseUnitPrice")
 def resolve_base_unit_price(plan_data: PlanData, info) -> int:
-    return plan_data.base_unit_price
+    return plan_data["base_unit_price"]
 
 
 @plan_representation_bindable.field("benefits")
@@ -41,13 +41,43 @@ def resolve_benefits(plan_data: PlanData, info) -> List[str]:
                 lambda benefit: benefit.replace(
                     "Up to 1 user", f"Up to {plan_service.pretrial_users_count} users"
                 ),
-                plan_data.benefits,
+                plan_data["benefits"],
             )
         )
         return benefits_with_pretrial_users
-    return plan_data.benefits
+    return plan_data["benefits"]
 
 
 @plan_representation_bindable.field("monthlyUploadLimit")
 def resolve_monthly_uploads_limit(plan_data: PlanData, info) -> Optional[int]:
-    return plan_data.monthly_uploads_limit
+    return plan_data["monthly_uploads_limit"]
+
+
+@plan_representation_bindable.field("isEnterprisePlan")
+def resolve_is_enterprise(plan_data: PlanData, info) -> bool:
+    return plan_data["is_enterprise_plan"]
+
+
+@plan_representation_bindable.field("isFreePlan")
+def resolve_is_free(plan_data: PlanData, info) -> bool:
+    return plan_data["is_free_plan"]
+
+
+@plan_representation_bindable.field("isProPlan")
+def resolve_is_pro(plan_data: PlanData, info) -> bool:
+    return plan_data["is_pro_plan"]
+
+
+@plan_representation_bindable.field("isTeamPlan")
+def resolve_is_team(plan_data: PlanData, info) -> bool:
+    return plan_data["is_team_plan"]
+
+
+@plan_representation_bindable.field("isSentryPlan")
+def resolve_is_sentry(plan_data: PlanData, info) -> bool:
+    return plan_data["is_sentry_plan"]
+
+
+@plan_representation_bindable.field("isTrialPlan")
+def resolve_is_trial(plan_data: PlanData, info) -> bool:
+    return plan_data["is_trial_plan"]
