@@ -1094,52 +1094,70 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                     isProPlan
                     isTeamPlan
                     isSentryPlan
-                    isTrialPlan
                     isFreePlan
-                }
-            }
-        }
-        """ % (current_org.username)
-        data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["availablePlans"][0]["isEnterprisePlan"] is False
-        assert data["owner"]["availablePlans"][0]["isFreePlan"] is True
-        assert data["owner"]["availablePlans"][0]["isProPlan"] is False
-        assert data["owner"]["availablePlans"][0]["isTeamPlan"] is False
-        assert data["owner"]["availablePlans"][0]["isSentryPlan"] is False
-        assert data["owner"]["availablePlans"][0]["isTrialPlan"] is False
-
-    def test_fetch_available_plans_is_trial_plan(self):
-        current_org = OwnerFactory(
-            username="random-plan-user",
-            service="github",
-            plan=PlanName.TRIAL_PLAN_NAME.value,
-        )
-
-        query = """{
-            owner(username: "%s") {
-                availablePlans {
                     isTrialPlan
                 }
             }
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["availablePlans"][0]["isTrialPlan"] is True
-
-    def test_fetch_available_plans_is_pro_plan(self):
-        current_org = OwnerFactory(
-            username="random-plan-user",
-            service="github",
-            plan=PlanName.CODECOV_PRO_MONTHLY_LEGACY.value,
-        )
-
-        query = """{
-            owner(username: "%s") {
-                availablePlans {
-                    isProPlan
-                }
+        assert data == {
+            "owner": {
+                "availablePlans": [
+                    {
+                        "value": "users-basic",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": True,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-free",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": True,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-pr-inappm",
+                        "isEnterprisePlan": False,
+                        "isProPlan": True,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-pr-inappy",
+                        "isEnterprisePlan": False,
+                        "isProPlan": True,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-teamm",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": True,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-teamy",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": True,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                ]
             }
         }
-        """ % (current_org.username)
-        data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["availablePlans"][0]["isProPlan"] is True
