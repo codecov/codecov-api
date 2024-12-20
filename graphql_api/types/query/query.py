@@ -52,8 +52,6 @@ async def resolve_owner(
         if not user or not user.is_authenticated:
             raise UnauthorizedGuestAccess()
 
-        # per product spec, if guestAccess is off for the environment, the current enterpriseUser
-        # must be "activated" in the given target owner (e.g., "codecov" org) in order to see things
         target = await get_owner(service, username)
         if user.ownerid not in target.plan_activated_users:
             raise UnauthorizedGuestAccess()
