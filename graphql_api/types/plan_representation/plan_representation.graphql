@@ -9,4 +9,9 @@ type PlanRepresentation {
   baseUnitPrice: Int!
   benefits: [String!]!
   monthlyUploadLimit: Int
+  isEnterprisePlan: Boolean!
+  isFreePlan: Boolean!
+  isProPlan: Boolean!
+  isTeamPlan: Boolean!
+  isSentryPlan: Boolean!
 }
