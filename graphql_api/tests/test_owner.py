@@ -678,18 +678,18 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = """{
             owner(username: "%s") {
                 availablePlans {
-                    planName
+                    value
                 }
             }
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["availablePlans"] == [
-            {"planName": "users-basic"},
-            {"planName": "users-pr-inappm"},
-            {"planName": "users-pr-inappy"},
-            {"planName": "users-teamm"},
-            {"planName": "users-teamy"},
+            {"value": "users-basic"},
+            {"value": "users-pr-inappm"},
+            {"value": "users-pr-inappy"},
+            {"value": "users-teamm"},
+            {"value": "users-teamy"},
         ]
 
     def test_owner_query_with_no_service(self):
