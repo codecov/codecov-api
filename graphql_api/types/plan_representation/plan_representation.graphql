@@ -2,6 +2,12 @@ type PlanRepresentation {
   baseUnitPrice: Int!
   benefits: [String!]!
   billingRate: String
+  isEnterprisePlan: Boolean!
+  isFreePlan: Boolean!
+  isProPlan: Boolean!
+  isTeamPlan: Boolean!
+  isSentryPlan: Boolean!
+  isTrialPlan: Boolean!
   marketingName: String!
   monthlyUploadLimit: Int
   value: String!
