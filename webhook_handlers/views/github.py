@@ -433,12 +433,12 @@ class GithubWebhookHandler(APIView):
             ghapp_installation.repository_service_ids = None
         else:
             repo_list_to_save = set(ghapp_installation.repository_service_ids or [])
-            repositories_added_service_ids = set(
-                map(lambda obj: obj["id"], request.data.get("repositories_added", []))
-            )
-            repositories_removed_service_ids = set(
-                map(lambda obj: obj["id"], request.data.get("repositories_removed", []))
-            )
+            repositories_added_service_ids = {
+                obj["id"] for obj in request.data.get("repositories_added", [])
+            }
+            repositories_removed_service_ids = {
+                obj["id"] for obj in request.data.get("repositories_removed", [])
+            }
             repo_list_to_save = repo_list_to_save.union(
                 repositories_added_service_ids
             ).difference(repositories_removed_service_ids)
@@ -501,9 +501,9 @@ class GithubWebhookHandler(APIView):
                 if affects_all_repositories:
                     ghapp_installation.repository_service_ids = None
                 else:
-                    repositories_service_ids = list(
-                        map(lambda obj: obj["id"], request.data.get("repositories", []))
-                    )
+                    repositories_service_ids = [
+                        obj["id"] for obj in request.data.get("repositories", [])
+                    ]
                     ghapp_installation.repository_service_ids = repositories_service_ids
 
                 if action in ["suspend", "unsuspend"]:
@@ -538,9 +538,9 @@ class GithubWebhookHandler(APIView):
                 + request.data.get("repositories_added", [])
                 + request.data.get("repositories_removed", [])
             )
-            repos_affected_clean = set(
-                map(lambda obj: (obj["id"], obj["node_id"]), repos_affected)
-            )
+            repos_affected_clean = {
+                (obj["id"], obj["node_id"]) for obj in repos_affected
+            }
 
             TaskService().refresh(
                 ownerid=owner.ownerid,

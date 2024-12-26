@@ -480,8 +480,8 @@ def test_stale_user_cleanup():
 
     # remove stale users with default > 90 days
     removed_users, affected_orgs = find_and_remove_stale_users(orgs)
-    assert removed_users == set([users[0].ownerid, users[2].ownerid, users[4].ownerid])
-    assert affected_orgs == set([orgs[0].ownerid, orgs[1].ownerid])
+    assert removed_users == {users[0].ownerid, users[2].ownerid, users[4].ownerid}
+    assert affected_orgs == {orgs[0].ownerid, orgs[1].ownerid}
 
     orgs = list(
         Owner.objects.filter(ownerid__in=[org.ownerid for org in orgs])
@@ -493,8 +493,8 @@ def test_stale_user_cleanup():
 
     # remove even more stale users
     removed_users, affected_orgs = find_and_remove_stale_users(orgs, timedelta(days=30))
-    assert removed_users == set([users[1].ownerid, users[3].ownerid])
-    assert affected_orgs == set([orgs[0].ownerid, orgs[1].ownerid])
+    assert removed_users == {users[1].ownerid, users[3].ownerid}
+    assert affected_orgs == {orgs[0].ownerid, orgs[1].ownerid}
 
     orgs = list(
         Owner.objects.filter(ownerid__in=[org.ownerid for org in orgs])

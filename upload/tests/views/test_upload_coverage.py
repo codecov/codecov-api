@@ -139,9 +139,9 @@ def test_upload_coverage_post(db, mocker):
     ).first()
     assert response.status_code == 201
     assert all(
-        map(
-            lambda x: x in response_json.keys(),
-            ["external_id", "created_at", "raw_upload_location", "url"],
+        (
+            x in response_json.keys()
+            for x in ["external_id", "created_at", "raw_upload_location", "url"]
         )
     )
     assert (
@@ -172,7 +172,7 @@ def test_upload_coverage_post(db, mocker):
     assert UploadFlagMembership.objects.filter(
         report_session_id=upload.id, flag_id=flag2.id
     ).exists()
-    assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+    assert list(upload.flags.all()) == [flag1, flag2]
 
     archive_service = ArchiveService(repository)
     assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -242,9 +242,9 @@ def test_upload_coverage_post_shelter(db, mocker):
     ).first()
     assert response.status_code == 201
     assert all(
-        map(
-            lambda x: x in response_json.keys(),
-            ["external_id", "created_at", "raw_upload_location", "url"],
+        (
+            x in response_json.keys()
+            for x in ["external_id", "created_at", "raw_upload_location", "url"]
         )
     )
     assert (
@@ -275,7 +275,7 @@ def test_upload_coverage_post_shelter(db, mocker):
     assert UploadFlagMembership.objects.filter(
         report_session_id=upload.id, flag_id=flag2.id
     ).exists()
-    assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+    assert list(upload.flags.all()) == [flag1, flag2]
 
     assert upload.storage_path == "shelter/test/path.txt"
     presigned_put_mock.assert_called_with("archive", upload.storage_path, 10)

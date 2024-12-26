@@ -36,14 +36,12 @@ def resolve_base_unit_price(plan_data: PlanData, info) -> int:
 def resolve_benefits(plan_data: PlanData, info) -> List[str]:
     plan_service: PlanService = info.context["plan_service"]
     if plan_service.is_org_trialing:
-        benefits_with_pretrial_users = list(
-            map(
-                lambda benefit: benefit.replace(
-                    "Up to 1 user", f"Up to {plan_service.pretrial_users_count} users"
-                ),
-                plan_data["benefits"],
+        benefits_with_pretrial_users = [
+            benefit.replace(
+                "Up to 1 user", f"Up to {plan_service.pretrial_users_count} users"
             )
-        )
+            for benefit in plan_data["benefits"]
+        ]
         return benefits_with_pretrial_users
     return plan_data["benefits"]
 

@@ -418,7 +418,7 @@ def owner_coverage_measurements_with_fallback(
     else:
         if settings.TIMESERIES_ENABLED:
             # we need to backfill some datasets
-            dataset_repo_ids = set(dataset.repository_id for dataset in datasets)
+            dataset_repo_ids = {dataset.repository_id for dataset in datasets}
             missing_dataset_repo_ids = set(repo_ids) - dataset_repo_ids
             created_datasets = Dataset.objects.bulk_create(
                 [
