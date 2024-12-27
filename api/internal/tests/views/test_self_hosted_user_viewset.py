@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from rest_framework.reverse import reverse
 from shared.django_apps.core.tests.factories import OwnerFactory
 
@@ -10,7 +10,7 @@ from utils.test_utils import APIClient
 
 
 @override_settings(IS_ENTERPRISE=True, ROOT_URLCONF="api.internal.enterprise_urls")
-class UserViewsetUnauthenticatedTestCase(TransactionTestCase):
+class UserViewsetUnauthenticatedTestCase(TestCase):
     def test_list_users(self):
         res = self.client.get(reverse("selfhosted-users-list"))
         # not authenticated
@@ -18,7 +18,7 @@ class UserViewsetUnauthenticatedTestCase(TransactionTestCase):
 
 
 @override_settings(IS_ENTERPRISE=True, ROOT_URLCONF="api.internal.enterprise_urls")
-class UserViewsetTestCase(TransactionTestCase):
+class UserViewsetTestCase(TestCase):
     def setUp(self):
         self.owner = OwnerFactory()
         self.current_owner = OwnerFactory(organizations=[self.owner.ownerid])

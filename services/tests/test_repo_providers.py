@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 import pytest
 from django.conf import settings
+from django.test import TransactionTestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.torngit import Bitbucket, Github, Gitlab
 
 from codecov.db import sync_to_async
-from codecov.tests.base_test import InternalAPITest
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
     GithubAppInstallation,
@@ -114,7 +114,7 @@ def test_token_refresh_callback_none_cases(should_have_owner, service, db):
     assert get_token_refresh_callback(owner, service) is None
 
 
-class TestRepoProviderService(InternalAPITest):
+class TestRepoProviderService(TransactionTestCase):
     def setUp(self):
         self.repo_gh = RepositoryFactory.create(
             author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",

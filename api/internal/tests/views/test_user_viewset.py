@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from rest_framework import status
 from rest_framework.reverse import reverse
-from rest_framework.test import APITransactionTestCase
+from rest_framework.test import APITestCase
 from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     PullFactory,
@@ -14,7 +14,7 @@ from core.models import Pull
 from utils.test_utils import APIClient
 
 
-class UserViewSetTests(APITransactionTestCase):
+class UserViewSetTests(APITestCase):
     def setUp(self):
         non_org_active_user = OwnerFactory()
         self.current_owner = OwnerFactory(

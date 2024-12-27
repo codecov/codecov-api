@@ -1,10 +1,10 @@
 import json
 
 from django.conf import settings
-from django.test import TransactionTestCase
+from django.test import TestCase
 
 
-class InternalAPITest(TransactionTestCase):
+class InternalAPITest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
