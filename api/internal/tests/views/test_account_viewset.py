@@ -960,7 +960,7 @@ class AccountViewSetTests(APITestCase):
         self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_owner.plan_user_count = 1
         self.current_owner.trial_status = TrialStatus.ONGOING.value
-        self.current_owner.plan_activated_users = [i for i in range(11)]
+        self.current_owner.plan_activated_users = list(range(11))
         self.current_owner.save()
 
         desired_plans = [

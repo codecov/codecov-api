@@ -96,9 +96,9 @@ class ProfilingSummary:
             file
             for file in report.files
             if any(
-                map(
-                    lambda regex_patt: regex.match(regex_patt, file, timeout=2),
-                    compiled_files_paths,
+                (
+                    regex.match(regex_patt, file, timeout=2)
+                    for regex_patt in compiled_files_paths
                 )
             )
         ]
@@ -133,4 +133,4 @@ class ProfilingSummary:
 
     @cached_property
     def critical_filenames(self) -> set[str]:
-        return set([file.name for file in self.critical_files])
+        return {file.name for file in self.critical_files}
