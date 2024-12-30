@@ -429,7 +429,7 @@ def test_upload_test_results_file_not_found(db, client, mocker, mock_redis):
         "build_url": "test-build-url",
         "job": "test-job",
         "service": "github-actions",
-        "url": "placeholder",
+        "url": None,
         "commit": commit_sha,
         "report_code": None,
         "flags": None,
