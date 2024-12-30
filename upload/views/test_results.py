@@ -140,7 +140,7 @@ class TestResultsView(
         url = None
         file_not_found = data.get("file_not_found", False)
         if file_not_found:
-            storage_path = "placeholder"
+            storage_path = None
         else:
             archive_service = ArchiveService(repo)
 
