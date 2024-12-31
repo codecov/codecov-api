@@ -42,7 +42,7 @@ class ComparisonLoader(BaseLoader):
 
     async def batch_load_fn(self, keys):
         # flat list of all commits involved in all comparisons
-        commitids = set(commitid for key in keys for commitid in key)
+        commitids = {commitid for key in keys for commitid in key}
 
         commit_loader = CommitLoader.loader(self.info, self.repository_id)
         commits = await commit_loader.load_many(commitids)

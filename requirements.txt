@@ -414,7 +414,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/1c4ca00e35d95d1281e0415ce1897f6dbbc6368a.tar.gz
+shared @ https://github.com/codecov/shared/archive/abc6b36feceb05c3b754050061436574111058f9.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
@@ -443,7 +443,7 @@ starlette==0.40.0
     # via
     #   -r requirements.in
     #   ariadne
-stripe==9.6.0
+stripe==11.4.1
     # via -r requirements.in
 text-unidecode==1.3
     # via faker
