@@ -83,6 +83,10 @@ class AbstractPaymentService(ABC):
     def apply_cancellation_discount(self, owner: Owner):
         pass
 
+    @abstractmethod
+    def create_setup_intent(self, owner: Owner):
+        pass
+
 
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
@@ -664,6 +668,35 @@ class StripeService(AbstractPaymentService):
                 coupon=owner.stripe_coupon_id,
             )
 
+    @_log_stripe_error
+    def create_setup_intent(self, owner: Owner):
+        """
+        Creates a SetupIntent for collecting payment details without immediate payment
+        """
+        log.info(
+            "Creating Stripe SetupIntent for owner",
+            extra=dict(owner_id=owner.ownerid)
+        )
+
+        if owner.stripe_customer_id is None:
+            log.info(
+                f"stripe_customer_id is None, cannot create SetupIntent for owner {owner.ownerid}"
+            )
+            return None
+
+        setup_intent = stripe.SetupIntent.create(
+            customer=owner.stripe_customer_id,
+            payment_method_types=["card"],
+            metadata=self._get_checkout_session_and_subscription_metadata(owner)
+        )
+
+        log.info(
+            f"Stripe SetupIntent created successfully for owner {owner.ownerid}",
+            extra=dict(setup_intent_id=setup_intent.id)
+        )
+
+        return setup_intent.client_secret
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -699,6 +732,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def apply_cancellation_discount(self, owner: Owner):
+        pass
+
+    def create_setup_intent(self, owner: Owner):
         pass
 
 
