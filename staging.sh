@@ -16,4 +16,4 @@ then
     mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
 fi
 
-$prefix gunicorn codecov.wsgi:application --reload --workers=${GUNICORN_WORKERS:-2} --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" --disable-redirect-access-to-syslog --config=gunicorn.conf.py
+$prefix gunicorn codecov.wsgi:application --reload --workers=${GUNICORN_WORKERS:-2} --threads=${GUNICORN_THREADS:-1} --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" --disable-redirect-access-to-syslog --config=gunicorn.conf.py

@@ -15,4 +15,4 @@ then
     mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
 fi
 
-$prefix gunicorn codecov.wsgi:application --workers=${GUNICORN_WORKERS} --bind 0.0.0.0:8000 --access-logfile '-' --statsd-host ${STATSD_HOST}:${STATSD_PORT} --timeout "${GUNICORN_TIMEOUT:-600}" --disable-redirect-access-to-syslog --max-requests=50000 --max-requests-jitter=300
+$prefix gunicorn codecov.wsgi:application --workers=${GUNICORN_WORKERS} --threads=${GUNICORN_THREADS:-1} --bind 0.0.0.0:8000 --access-logfile '-' --statsd-host ${STATSD_HOST}:${STATSD_PORT} --timeout "${GUNICORN_TIMEOUT:-600}" --disable-redirect-access-to-syslog --max-requests=50000 --max-requests-jitter=300
