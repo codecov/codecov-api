@@ -243,3 +243,25 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=enterprise_org)
         assert data["owner"]["plan"]["planUserCount"] == 0
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
+
+    def test_owner_plan_data_when_trial_status_is_none(self):
+        now = timezone.now()
+        later = now + timedelta(days=14)
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            trial_start_date=now,
+            trial_end_date=later,
+            trial_status=None,
+        )
+        query = """{
+            owner(username: "%s") {
+                plan {
+                    trialStatus
+                }
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["plan"]["trialStatus"] == "NOT_STARTED"

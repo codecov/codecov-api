@@ -30,6 +30,8 @@ def resolve_trial_end_date(plan_service: PlanService, info) -> Optional[datetime
 
 @plan_bindable.field("trialStatus")
 def resolve_trial_status(plan_service: PlanService, info) -> TrialStatus:
+    if plan_service.trial_status is None:
+        return TrialStatus.NOT_STARTED
     return TrialStatus(plan_service.trial_status)
 
 
