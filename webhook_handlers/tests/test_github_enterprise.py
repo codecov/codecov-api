@@ -231,8 +231,12 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
 
     @patch("redis.Redis.sismember", lambda x, y, z: False)
     def test_push_updates_commit_on_default_branch(self):
-        commit1 = CommitFactory(merged=False, repository=self.repo)
-        commit2 = CommitFactory(merged=False, repository=self.repo)
+        commit1 = CommitFactory(
+            merged=False, repository=self.repo, branch="feature-branch"
+        )
+        commit2 = CommitFactory(
+            merged=False, repository=self.repo, branch="feature-branch"
+        )
 
         merged_branch_name = "merged"
         repo_branch = self.repo.branch
