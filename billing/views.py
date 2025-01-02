@@ -20,7 +20,7 @@ from .constants import StripeHTTPHeaders, StripeWebhookEvents
 
 if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
-    stripe.api_version = "2024-04-10"
+    stripe.api_version = "2024-12-18.acacia"
 
 log = logging.getLogger(__name__)
 
@@ -46,10 +46,41 @@ class StripeWebhookHandler(APIView):
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_customer_id=invoice.customer,
             stripe_subscription_id=invoice.subscription,
+            delinquent=True,
         )
-        owners.update(delinquent=False)
 
+        if not owners.exists():
+            return
+
+        admins = get_all_admins_for_owners(owners)
+        owners.update(delinquent=False)
         self._log_updated(list(owners))
+
+        # Send a success email to all admins
+
+        task_service = TaskService()
+        template_vars = {
+            "amount": invoice.total / 100,
+            "date": datetime.now().strftime("%B %-d, %Y"),
+            "cta_link": invoice.hosted_invoice_url,
+        }
+
+        for admin in admins:
+            if admin.email:
+                task_service.send_email(
+                    to_addr=admin.email,
+                    subject="You're all set",
+                    template_name="success-after-failed-payment",
+                    **template_vars,
+                )
+
+        # temporary just making sure these look okay in the real world
+        task_service.send_email(
+            to_addr="spencer.murray@sentry.io",
+            subject="You're all set",
+            template_name="success-after-failed-payment",
+            **template_vars,
+        )
 
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         log.info(
@@ -70,9 +101,13 @@ class StripeWebhookHandler(APIView):
         admins = get_all_admins_for_owners(owners)
 
         task_service = TaskService()
+        payment_intent = stripe.PaymentIntent.retrieve(
+            invoice["payment_intent"], expand=["payment_method"]
+        )
         card = (
-            invoice.default_payment_method.card
-            if invoice.default_payment_method
+            payment_intent.payment_method.card
+            if payment_intent.payment_method
+            and not isinstance(payment_intent.payment_method, str)
             else None
         )
         template_vars = {

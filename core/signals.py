@@ -20,7 +20,7 @@ def update_repository(
     changes: Dict[str, Any] = instance.tracker.changed()
     tracked_fields: List[str] = ["name", "upload_token", "activated", "active"]
 
-    if created or any([field in changes for field in tracked_fields]):
+    if created or any(field in changes for field in tracked_fields):
         data = {
             "type": "repo",
             "sync": "one",

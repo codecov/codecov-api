@@ -49,7 +49,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                     trialStartDate
                     trialTotalDays
                     marketingName
-                    planName
                     value
                     tierName
                     billingRate
@@ -75,7 +74,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "trialStartDate": "2023-06-19T00:00:00",
             "trialTotalDays": None,
             "marketingName": "Developer",
-            "planName": "users-trial",
             "value": "users-trial",
             "tierName": "pro",
             "billingRate": None,
@@ -107,7 +105,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
                 owner(username: "%s") {
                     plan {
                         marketingName
-                        planName
                         value
                         tierName
                         billingRate
@@ -126,7 +123,6 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=self.current_org)
         assert data["owner"]["plan"] == {
             "marketingName": "Pro",
-            "planName": "users-pr-inappy",
             "value": "users-pr-inappy",
             "tierName": "pro",
             "billingRate": "annually",
@@ -247,3 +243,25 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=enterprise_org)
         assert data["owner"]["plan"]["planUserCount"] == 0
         assert data["owner"]["plan"]["hasSeatsLeft"] == False
+
+    def test_owner_plan_data_when_trial_status_is_none(self):
+        now = timezone.now()
+        later = now + timedelta(days=14)
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.TRIAL_PLAN_NAME.value,
+            trial_start_date=now,
+            trial_end_date=later,
+            trial_status=None,
+        )
+        query = """{
+            owner(username: "%s") {
+                plan {
+                    trialStatus
+                }
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["plan"]["trialStatus"] == "NOT_STARTED"

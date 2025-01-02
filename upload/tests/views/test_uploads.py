@@ -243,9 +243,9 @@ def test_uploads_post(db, mocker, mock_redis):
     ).first()
     assert response.status_code == 201
     assert all(
-        map(
-            lambda x: x in response_json.keys(),
-            ["external_id", "created_at", "raw_upload_location", "url"],
+        (
+            x in response_json.keys()
+            for x in ["external_id", "created_at", "raw_upload_location", "url"]
         )
     )
     assert (
@@ -276,7 +276,7 @@ def test_uploads_post(db, mocker, mock_redis):
     assert UploadFlagMembership.objects.filter(
         report_session_id=upload.id, flag_id=flag2.id
     ).exists()
-    assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+    assert list(upload.flags.all()) == [flag1, flag2]
 
     archive_service = ArchiveService(repository)
     assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -357,9 +357,9 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
             state="started",
         ).first()
         assert all(
-            map(
-                lambda x: x in response_json.keys(),
-                ["external_id", "created_at", "raw_upload_location", "url"],
+            (
+                x in response_json.keys()
+                for x in ["external_id", "created_at", "raw_upload_location", "url"]
             )
         )
         assert (
@@ -390,7 +390,7 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         assert UploadFlagMembership.objects.filter(
             report_session_id=upload.id, flag_id=flag2.id
         ).exists()
-        assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+        assert list(upload.flags.all()) == [flag1, flag2]
 
         archive_service = ArchiveService(repository)
         assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -509,9 +509,9 @@ def test_uploads_post_token_required_auth_check(
             state="started",
         ).first()
         assert all(
-            map(
-                lambda x: x in response_json.keys(),
-                ["external_id", "created_at", "raw_upload_location", "url"],
+            (
+                x in response_json.keys()
+                for x in ["external_id", "created_at", "raw_upload_location", "url"]
             )
         )
         assert (
@@ -542,7 +542,7 @@ def test_uploads_post_token_required_auth_check(
         assert UploadFlagMembership.objects.filter(
             report_session_id=upload.id, flag_id=flag2.id
         ).exists()
-        assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+        assert list(upload.flags.all()) == [flag1, flag2]
 
         archive_service = ArchiveService(repository)
         assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(
@@ -643,9 +643,9 @@ def test_uploads_post_github_oidc_auth(
         state="started",
     ).first()
     assert all(
-        map(
-            lambda x: x in response_json.keys(),
-            ["external_id", "created_at", "raw_upload_location", "url"],
+        (
+            x in response_json.keys()
+            for x in ["external_id", "created_at", "raw_upload_location", "url"]
         )
     )
     assert (
@@ -676,7 +676,7 @@ def test_uploads_post_github_oidc_auth(
     assert UploadFlagMembership.objects.filter(
         report_session_id=upload.id, flag_id=flag2.id
     ).exists()
-    assert [flag for flag in upload.flags.all()] == [flag1, flag2]
+    assert list(upload.flags.all()) == [flag1, flag2]
 
     archive_service = ArchiveService(repository)
     assert upload.storage_path == MinioEndpoints.raw_with_upload_id.get_path(

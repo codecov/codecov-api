@@ -41,7 +41,7 @@ class CommitWithFileLevelReportSerializer(CommitSerializer):
         for filename in report.files:
             file_report = report.get(filename)
             file_totals = CommitTotalsSerializer(
-                {key: val for key, val in zip(TOTALS_MAP, file_report.totals)}
+                dict(zip(TOTALS_MAP, file_report.totals))
             )
             files.append(
                 {

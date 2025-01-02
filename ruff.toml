@@ -39,6 +39,7 @@ target-version = "py312"
 # https://docs.astral.sh/ruff/rules/
 select = [
     "ASYNC", # flake8-async - async checks
+    "C4", # flake8-comprehensions - list/set/dict/generator comprehensions
     "E", # pycodestyle - error rules
     "F", # pyflakes - general Python errors, undefined names
     "I", # isort - import sorting
@@ -47,7 +48,7 @@ select = [
     "PLE", # pylint - error rules
     "W", # pycodestyle - warning rules
 ]
-ignore = ["F405", "F403", "E501", "E712"]
+ignore = ["F405", "F403", "E501", "E712", "C408"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 # The preferred method (for now) w.r.t. fixable rules is to manually update the makefile

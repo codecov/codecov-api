@@ -678,18 +678,18 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = """{
             owner(username: "%s") {
                 availablePlans {
-                    planName
+                    value
                 }
             }
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["availablePlans"] == [
-            {"planName": "users-basic"},
-            {"planName": "users-pr-inappm"},
-            {"planName": "users-pr-inappy"},
-            {"planName": "users-teamm"},
-            {"planName": "users-teamy"},
+            {"value": "users-basic"},
+            {"value": "users-pr-inappm"},
+            {"value": "users-pr-inappy"},
+            {"value": "users-teamm"},
+            {"value": "users-teamy"},
         ]
 
     def test_owner_query_with_no_service(self):
@@ -785,6 +785,27 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             assert e.message == UnauthorizedGuestAccess.message
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
 
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_owner_on_unauthenticated_enteprise_guest_access_not_activated(self):
+        user = OwnerFactory(username="sample-user")
+        owner = OwnerFactory(username="sample-owner", plan_activated_users=[123, 456])
+        user.organizations = [owner.ownerid]
+        user.save()
+        owner.save()
+        query = """{
+            owner(username: "%s") {
+                isCurrentUserActivated
+            }
+        }
+        """ % (owner.username)
+
+        try:
+            self.gql_request(query, owner=user)
+
+        except GraphQLError as e:
+            assert e.message == UnauthorizedGuestAccess.message
+            assert e.extensions["code"] == UnauthorizedGuestAccess.code
+
     def test_fetch_current_user_is_okta_authenticated(self):
         account = AccountFactory()
         owner = OwnerFactory(username="sample-owner", service="github", account=account)
@@ -843,7 +864,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
     @patch("shared.rate_limits.determine_entity_redis_key")
     @patch("shared.rate_limits.determine_if_entity_is_rate_limited")
-    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=True)
     def test_fetch_is_github_rate_limited(
         self, mock_determine_rate_limit, mock_determine_redis_key
     ):
@@ -1078,3 +1099,86 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (other_owner.username)
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["activatedUserCount"] == 2
+
+    def test_fetch_available_plans_is_enterprise_plan(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.FREE_PLAN_NAME.value,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                availablePlans {
+                    value
+                    isEnterprisePlan
+                    isProPlan
+                    isTeamPlan
+                    isSentryPlan
+                    isFreePlan
+                    isTrialPlan
+                }
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data == {
+            "owner": {
+                "availablePlans": [
+                    {
+                        "value": "users-basic",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": True,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-free",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": True,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-pr-inappm",
+                        "isEnterprisePlan": False,
+                        "isProPlan": True,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-pr-inappy",
+                        "isEnterprisePlan": False,
+                        "isProPlan": True,
+                        "isTeamPlan": False,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-teamm",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": True,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                    {
+                        "value": "users-teamy",
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": True,
+                        "isSentryPlan": False,
+                        "isFreePlan": False,
+                        "isTrialPlan": False,
+                    },
+                ]
+            }
+        }

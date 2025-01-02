@@ -78,6 +78,11 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
         # Build should have finished within the last 4 mins OR should have an 'inProgress' flag
         if build["status"] == "completed":
             finishTimestamp = build["finishTime"].replace("T", " ").replace("Z", "")
+            # Azure DevOps API returns nanosecond precision (7 digits), but Python only supports
+            # microsecond precision (6 digits). Truncate to 6 digits after decimal.
+            if "." in finishTimestamp:
+                base, fraction = finishTimestamp.rsplit(".", 1)
+                finishTimestamp = f"{base}.{fraction[:6]}"
             buildFinishDateObj = datetime.strptime(
                 finishTimestamp, "%Y-%m-%d %H:%M:%S.%f"
             )
