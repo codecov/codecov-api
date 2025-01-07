@@ -49,6 +49,10 @@ from .sync_with_git_provider import (
     error_sync_with_git_provider,
     resolve_sync_with_git_provider,
 )
+from .update_bundle_caching import (
+    error_update_bundle_caching,
+    resolve_update_bundle_caching,
+)
 from .update_default_organization import (
     error_update_default_organization,
     resolve_update_default_organization,
@@ -99,6 +103,7 @@ mutation_bindable.field("storeEventMetric")(resolve_store_event_metrics)
 
 mutation_bindable.field("saveOktaConfig")(resolve_save_okta_config)
 mutation_bindable.field("setUploadTokenRequired")(resolve_set_upload_token_required)
+mutation_bindable.field("updateBundleCaching")(resolve_update_bundle_caching)
 
 mutation_resolvers = [
     mutation_bindable,
@@ -128,4 +133,5 @@ mutation_resolvers = [
     error_store_event_metrics,
     error_save_okta_config,
     error_set_upload_token_required,
+    error_update_bundle_caching,
 ]

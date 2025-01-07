@@ -1,5 +1,5 @@
 import uuid
-from typing import Awaitable, Optional
+from typing import Awaitable, Dict, List, Optional
 
 from codecov.commands.base import BaseCommand
 from codecov_auth.models import Owner, RepositoryToken
@@ -16,6 +16,7 @@ from .interactors.regenerate_repository_token import RegenerateRepositoryTokenIn
 from .interactors.regenerate_repository_upload_token import (
     RegenerateRepositoryUploadTokenInteractor,
 )
+from .interactors.update_bundle_config import UploadBundleConfigInteractor
 from .interactors.update_repository import UpdateRepositoryInteractor
 
 
@@ -84,4 +85,14 @@ class RepositoryCommands(BaseCommand):
     def encode_secret_string(self, owner: Owner, repo_name: str, value: str) -> str:
         return self.get_interactor(EncodeSecretStringInteractor).execute(
             owner, repo_name, value
+        )
+
+    def update_bundle_caching(
+        self,
+        owner_username: str,
+        repo_name: str,
+        cache_config: List[Dict[str, str | bool]],
+    ) -> Awaitable[List[Dict[str, str | bool]]]:
+        return self.get_interactor(UploadBundleConfigInteractor).execute(
+            owner_username, repo_name, cache_config
         )
