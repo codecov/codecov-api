@@ -1825,6 +1825,15 @@ class StripeServiceTests(TestCase):
         assert not customer_modify_mock.called
         assert not coupon_create_mock.called
 
+    @patch("services.billing.stripe.SetupIntent.create")    
+    def test_get_setup_intent(self, setup_intent_create_mock):
+        owner = OwnerFactory(stripe_customer_id="test-customer-id")
+        setup_intent_create_mock.return_value = {"client_secret": "test-client-secret"}
+        resp = self.stripe.get_setup_intent(owner)
+        self.stripe.payment_service.get_setup_intent.assert_called_once_with(owner)
+
+        assert resp.client_secret == "test-client-secret"
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_filtered_invoices(self, owner, limit=10):
@@ -2022,3 +2031,4 @@ class BillingServiceTests(TestCase):
         owner = OwnerFactory()
         self.billing_service.get_invoice(owner, "abc")
         get_invoice_mock.assert_called_once_with(owner, "abc")
+
