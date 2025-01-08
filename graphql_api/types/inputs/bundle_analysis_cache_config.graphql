@@ -1,10 +1,10 @@
-input BundleCachingInput {
+input BundleCacheConfigInput {
   bundleName: String!
   toggleCaching: Boolean!
 }
 
-input UpdateBundleCachingInput {
+input UpdateBundleCacheConfigInput {
   owner: String!
   repoName: String!
-  bundles: [BundleCachingInput!]!
+  bundles: [BundleCacheConfigInput!]!
 }

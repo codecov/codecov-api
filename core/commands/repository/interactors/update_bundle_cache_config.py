@@ -9,7 +9,7 @@ from codecov_auth.models import Owner
 from core.models import Repository
 
 
-class UploadBundleConfigInteractor(BaseInteractor):
+class UpdateBundleCacheConfigInteractor(BaseInteractor):
     def validate(
         self, repo: Repository, cache_config: List[Dict[str, str | bool]]
     ) -> None:

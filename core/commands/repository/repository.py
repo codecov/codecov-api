@@ -16,7 +16,7 @@ from .interactors.regenerate_repository_token import RegenerateRepositoryTokenIn
 from .interactors.regenerate_repository_upload_token import (
     RegenerateRepositoryUploadTokenInteractor,
 )
-from .interactors.update_bundle_config import UploadBundleConfigInteractor
+from .interactors.update_bundle_cache_config import UpdateBundleCacheConfigInteractor
 from .interactors.update_repository import UpdateRepositoryInteractor
 
 
@@ -87,12 +87,12 @@ class RepositoryCommands(BaseCommand):
             owner, repo_name, value
         )
 
-    def update_bundle_caching(
+    def update_bundle_cache_config(
         self,
         owner_username: str,
         repo_name: str,
         cache_config: List[Dict[str, str | bool]],
     ) -> Awaitable[List[Dict[str, str | bool]]]:
-        return self.get_interactor(UploadBundleConfigInteractor).execute(
+        return self.get_interactor(UpdateBundleCacheConfigInteractor).execute(
             owner_username, repo_name, cache_config
         )

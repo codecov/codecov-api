@@ -39,5 +39,5 @@ type Mutation {
   storeEventMetric(input: StoreEventMetricsInput!): StoreEventMetricsPayload
   saveOktaConfig(input: SaveOktaConfigInput!): SaveOktaConfigPayload
   setUploadTokenRequired(input: SetUploadTokenRequiredInput!): SetUploadTokenRequiredPayload
-  updateBundleCaching(input: UpdateBundleCachingInput!): UpdateBundleCachingPayload
+  updateBundleCacheConfig(input: UpdateBundleCacheConfigInput!): UpdateBundleCacheConfigPayload
 }
