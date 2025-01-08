@@ -1,8 +1,9 @@
 import logging
 from json import dumps
+from typing import Any
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -23,14 +24,14 @@ API_VALIDATE_V2_COUNTER = Counter(
 class V1ValidateYamlHandler(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         return HttpResponse(
             f"Usage:\n\ncurl -X POST --data-binary @codecov.yml {settings.CODECOV_URL}/validate\n",
             status=status.HTTP_200_OK,
             content_type="text/plain",
         )
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not self.request.body:
             return HttpResponse(
                 "No content posted.",
@@ -82,7 +83,7 @@ class V1ValidateYamlHandler(APIView):
 class V2ValidateYamlHandler(V1ValidateYamlHandler):
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         source = self.request.query_params.get("source", "unknown")
         inc_counter(
             API_VALIDATE_V2_COUNTER,

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from django.utils import timezone
 
@@ -20,7 +20,7 @@ class TermsAgreementInput:
 class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
 
-    def validate(self, input: TermsAgreementInput):
+    def validate(self, input: TermsAgreementInput) -> None:
         valid_customer_intents = ["Business", "BUSINESS", "Personal", "PERSONAL"]
         if (
             input.customer_intent
@@ -30,7 +30,7 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
-    def update_terms_agreement(self, input: TermsAgreementInput):
+    def update_terms_agreement(self, input: TermsAgreementInput) -> None:
         self.current_user.terms_agreement = input.terms_agreement
         self.current_user.terms_agreement_at = timezone.now()
         self.current_user.customer_intent = input.customer_intent
@@ -44,14 +44,14 @@ class SaveTermsAgreementInteractor(BaseInteractor):
         if input.marketing_consent:
             self.send_data_to_marketo()
 
-    def send_data_to_marketo(self):
+    def send_data_to_marketo(self) -> None:
         event_data = {
             "email": self.current_user.email,
         }
         AnalyticsService().opt_in_email(self.current_user.id, event_data)
 
     @sync_to_async
-    def execute(self, input):
+    def execute(self, input: Any) -> None:
         typed_input = TermsAgreementInput(
             business_email=input.get("business_email"),
             terms_agreement=input.get("terms_agreement"),
