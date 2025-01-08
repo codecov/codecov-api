@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta
+from typing import Any, Dict
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessAzureHandler(BaseTokenlessUploadHandler):
-    def get_build(self):
+    def get_build(self) -> Dict[str, Any]:
         try:
             response = requests.get(
                 f"{self.server_uri}{self.project}/_apis/build/builds/{self.job}?api-version=5.0",
@@ -54,7 +55,7 @@ class TokenlessAzureHandler(BaseTokenlessUploadHandler):
             )
         return build
 
-    def verify(self):
+    def verify(self) -> None:
         if not self.upload_params.get("job"):
             raise NotFound(
                 'Missing "job" argument. Please upload with the Codecov repository upload token to resolve issue.'
