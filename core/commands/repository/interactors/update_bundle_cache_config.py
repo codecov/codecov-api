@@ -1,6 +1,9 @@
 from typing import Dict, List
 
 from shared.django_apps.bundle_analysis.models import CacheConfig
+from shared.django_apps.bundle_analysis.service.bundle_analysis import (
+    BundleAnalysisCacheConfigService,
+)
 
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import ValidationError
@@ -56,8 +59,8 @@ class UpdateBundleCacheConfigInteractor(BaseInteractor):
         for bundle in cache_config:
             bundle_name = bundle["bundle_name"]
             is_caching = bundle["toggle_caching"]
-            CacheConfig.objects.filter(repo_id=repo.pk, bundle_name=bundle_name).update(
-                is_caching=is_caching
+            BundleAnalysisCacheConfigService.update_cache_option(
+                repo.pk, bundle_name, is_caching
             )
             results.append(
                 {
