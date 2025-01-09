@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, List
 
 import shared.reports.api_report_service as report_service
 from rest_framework import serializers
@@ -32,7 +33,7 @@ class CommitSerializer(serializers.ModelSerializer):
 class CommitWithFileLevelReportSerializer(CommitSerializer):
     report = serializers.SerializerMethodField()
 
-    def get_report(self, commit: Commit):
+    def get_report(self, commit: Commit) -> Dict[str, List[Dict] | Dict] | None:
         report = report_service.build_report_from_commit(commit)
         if report is None:
             return None
