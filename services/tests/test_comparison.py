@@ -1298,7 +1298,7 @@ class SegmentTests(TestCase):
         ]
 
     def _src(self, n):
-        return [f"line{i+1}" for i in range(n)]
+        return [f"line{i + 1}" for i in range(n)]
 
     def setUp(self):
         self.file_comparison = FileComparison(

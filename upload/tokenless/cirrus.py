@@ -26,7 +26,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                 }}
             }}",
             "variables": {{
-                "buildId": {self.upload_params.get('build')}
+                "buildId": {self.upload_params.get("build")}
             }}
         }}"""
 
