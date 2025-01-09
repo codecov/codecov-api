@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from django.core.management.base import BaseCommand, CommandParser
 from django.db.models import Q
@@ -20,7 +21,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("trial_status_type", type=str)
 
-    def handle(self, *args, **options) -> None:
+    def handle(self, *args: Any, **options: Any) -> None:
         trial_status_type = options.get("trial_status_type", {})
 
         # NOT_STARTED

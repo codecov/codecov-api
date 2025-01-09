@@ -10,7 +10,7 @@ from reports.models import RepositoryFlag
 from timeseries.models import Interval, MeasurementName
 
 
-def flags_for_repo(repository: Repository, filters: Mapping = None) -> QuerySet:
+def flags_for_repo(repository: Repository, filters: Mapping = {}) -> QuerySet:
     queryset = RepositoryFlag.objects.filter(
         repository=repository,
         deleted__isnot=True,

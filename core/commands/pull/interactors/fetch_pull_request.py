@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from shared.django_apps.core.models import Pull
+from shared.django_apps.core.models import Pull, Repository
 
 from codecov.commands.base import BaseInteractor
 from codecov.db import sync_to_async
@@ -17,7 +17,7 @@ class FetchPullRequestInteractor(BaseInteractor):
         )
 
     @sync_to_async
-    def execute(self, repository, id):
+    def execute(self, repository: Repository, id: int) -> Pull:
         pull = repository.pull_requests.filter(pullid=id).first()
         if self._should_sync_pull(pull):
             TaskService().pulls_sync(repository.repoid, id)

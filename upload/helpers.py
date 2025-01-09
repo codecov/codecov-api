@@ -1,7 +1,7 @@
 import logging
 import re
 from json import dumps
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import jwt
 from asgiref.sync import async_to_sync
@@ -9,14 +9,18 @@ from cerberus import Validator
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.http import HttpRequest
 from django.utils import timezone
 from jwt import PyJWKClient, PyJWTError
+from redis import Redis
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.github import InvalidInstallationError
 from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
+from shared.torngit.base import TorngitBaseAdapter
 from shared.torngit.exceptions import TorngitClientError, TorngitObjectNotFoundError
+from shared.typings.oauth_token_types import OauthConsumerToken
 from shared.upload.utils import query_monthly_coverage_measurements
 
 from codecov_auth.models import (
@@ -51,7 +55,7 @@ log = logging.getLogger(__name__)
 redis = get_redis_connection()
 
 
-def parse_params(data):
+def parse_params(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     This function will validate the input request parameters and do some additional parsing/tranformation of the params.
     """
@@ -230,7 +234,7 @@ def parse_params(data):
     return v.document
 
 
-def get_repo_with_github_actions_oidc_token(token):
+def get_repo_with_github_actions_oidc_token(token: str) -> Repository:
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     token_issuer = str(unverified_contents.get("iss"))
     if token_issuer == "https://token.actions.githubusercontent.com":
@@ -259,7 +263,7 @@ def get_repo_with_github_actions_oidc_token(token):
     return repository
 
 
-def determine_repo_for_upload(upload_params):
+def determine_repo_for_upload(upload_params: Dict[str, Any]) -> Repository:
     token = upload_params.get("token")
     using_global_token = upload_params.get("using_global_token")
     service = upload_params.get("service")
@@ -309,7 +313,9 @@ def determine_repo_for_upload(upload_params):
     """
 
 
-def determine_upload_branch_to_use(upload_params, repo_default_branch):
+def determine_upload_branch_to_use(
+    upload_params: Dict[str, Any], repo_default_branch: str
+) -> str | None:
     """
     Do processing on the upload request parameters to determine which branch to use for the upload:
     - If no branch or PR were provided, use the default branch for the repository.
@@ -330,7 +336,7 @@ def determine_upload_branch_to_use(upload_params, repo_default_branch):
         return None
 
 
-def determine_upload_pr_to_use(upload_params):
+def determine_upload_pr_to_use(upload_params: Dict[str, Any]) -> str | None:
     """
     Do processing on the upload request parameters to determine which PR to use for the upload:
     - If a branch was provided and the branch name contains "pull" or "pr" followed by digits, extract the digits and use that as the PR number.
@@ -370,7 +376,9 @@ def ghapp_installation_id_to_use(repository: Repository) -> Optional[str]:
         return repository.author.integration_id
 
 
-def try_to_get_best_possible_bot_token(repository):
+def try_to_get_best_possible_bot_token(
+    repository: Repository,
+) -> OauthConsumerToken | Dict:
     ghapp_installation_id = ghapp_installation_id_to_use(repository)
     if ghapp_installation_id is not None:
         try:
@@ -424,11 +432,15 @@ def try_to_get_best_possible_bot_token(repository):
 
 
 @async_to_sync
-async def _get_git_commit_data(adapter, commit, token):
+async def _get_git_commit_data(
+    adapter: TorngitBaseAdapter, commit: str, token: Optional[OauthConsumerToken | Dict]
+) -> Dict[str, Any]:
     return await adapter.get_commit(commit, token)
 
 
-def determine_upload_commit_to_use(upload_params, repository):
+def determine_upload_commit_to_use(
+    upload_params: Dict[str, Any], repository: Repository
+) -> str:
     """
     Do processing on the upload request parameters to determine which commit to use for the upload:
     - If this is a merge commit on github, use the first commit SHA in the merge commit message.
@@ -441,27 +453,24 @@ def determine_upload_commit_to_use(upload_params, repository):
         "_did_change_merge_commit"
     ):
         token = try_to_get_best_possible_bot_token(repository)
+        commitid = upload_params.get("commit", "")
         if token is None:
-            return upload_params.get("commit")
+            return commitid
         # Get the commit message from the git provider and check if it's structured like a merge commit message
         try:
             adapter = RepoProviderService().get_adapter(
                 repository.author, repository, use_ssl=True, token=token
             )
-            git_commit_data = _get_git_commit_data(
-                adapter, upload_params.get("commit"), token
-            )
+            git_commit_data = _get_git_commit_data(adapter, commitid, token)
         except TorngitObjectNotFoundError:
             log.warning(
                 "Unable to fetch commit. Not found",
-                extra=dict(commit=upload_params.get("commit")),
+                extra=dict(commit=commitid),
             )
-            return upload_params.get("commit")
+            return commitid
         except TorngitClientError:
-            log.warning(
-                "Unable to fetch commit", extra=dict(commit=upload_params.get("commit"))
-            )
-            return upload_params.get("commit")
+            log.warning("Unable to fetch commit", extra=dict(commit=commitid))
+            return commitid
 
         git_commit_message = git_commit_data.get("message", "").strip()
         is_merge_commit = re.match(r"^Merge\s\w{40}\sinto\s\w{40}$", git_commit_message)
@@ -472,7 +481,7 @@ def determine_upload_commit_to_use(upload_params, repository):
             log.info(
                 "Upload is for a merge commit, updating commit id for upload",
                 extra=dict(
-                    commit=upload_params.get("commit"),
+                    commit=commitid,
                     commit_message=git_commit_message,
                     new_commit=new_commit_id,
                 ),
@@ -480,10 +489,17 @@ def determine_upload_commit_to_use(upload_params, repository):
             return new_commit_id
 
     # If it's not a merge commit we'll just use the commitid provided in the upload parameters
-    return upload_params.get("commit")
+    return commitid
 
 
-def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None):
+def insert_commit(
+    commitid: str,
+    branch: str,
+    pr: int,
+    repository: Repository,
+    owner: Owner,
+    parent_commit_id: Optional[str] = None,
+) -> Commit:
     commit, was_created = Commit.objects.defer("_report").get_or_create(
         commitid=commitid,
         repository=repository,
@@ -509,7 +525,7 @@ def insert_commit(commitid, branch, pr, repository, owner, parent_commit_id=None
     return commit
 
 
-def get_global_tokens():
+def get_global_tokens() -> Dict[str, Any]:
     """
     Enterprise only: check the config to see if global tokens were set for this organization's uploads.
 
@@ -523,7 +539,7 @@ def get_global_tokens():
     return tokens
 
 
-def check_commit_upload_constraints(commit: Commit):
+def check_commit_upload_constraints(commit: Commit) -> None:
     if settings.UPLOAD_THROTTLING_ENABLED and commit.repository.private:
         owner = _determine_responsible_owner(commit.repository)
         plan_service = PlanService(current_org=owner)
@@ -545,7 +561,9 @@ def check_commit_upload_constraints(commit: Commit):
                     raise Throttled(detail=message)
 
 
-def validate_upload(upload_params, repository, redis):
+def validate_upload(
+    upload_params: Dict[str, Any], repository: Repository, redis: Redis
+) -> None:
     """
     Make sure the upload can proceed and, if so, activate the repository if needed.
     """
@@ -645,7 +663,7 @@ def validate_upload(upload_params, repository, redis):
         )
 
 
-def _determine_responsible_owner(repository):
+def _determine_responsible_owner(repository: Repository) -> Owner:
     owner = repository.author
 
     if owner.service == "gitlab":
@@ -657,7 +675,9 @@ def _determine_responsible_owner(repository):
     return owner
 
 
-def parse_headers(headers, upload_params):
+def parse_headers(
+    headers: Dict[str, Any], upload_params: Dict[str, Any]
+) -> Dict[str, Any]:
     version = upload_params.get("version")
 
     # Content disposition header
@@ -671,8 +691,8 @@ def parse_headers(headers, upload_params):
     else:
         content_type = (
             "text/plain"
-            if headers.get("X_Content_Type") in (None, "text/html")
-            else headers.get("X_Content_Type")
+            if headers.get("X_Content_Type", "") in (None, "text/html")
+            else headers.get("X_Content_Type", "")
         )
         reduced_redundancy = (
             False
@@ -688,11 +708,11 @@ def parse_headers(headers, upload_params):
 
 
 def dispatch_upload_task(
-    task_arguments,
-    repository,
-    redis,
-    report_type=CommitReport.ReportType.COVERAGE,
-):
+    task_arguments: Dict[str, Any],
+    repository: Repository,
+    redis: Redis,
+    report_type: Optional[CommitReport.ReportType] = CommitReport.ReportType.COVERAGE,
+) -> None:
     # Store task arguments in redis
     cache_uploads_eta = get_config(("setup", "cache", "uploads"), default=86400)
     if report_type == CommitReport.ReportType.COVERAGE:
@@ -741,7 +761,7 @@ def dispatch_upload_task(
     )
 
 
-def validate_activated_repo(repository):
+def validate_activated_repo(repository: Repository) -> None:
     if repository.active and not repository.activated:
         config_url = f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/config/general"
         raise ValidationError(
@@ -750,7 +770,7 @@ def validate_activated_repo(repository):
 
 
 # headers["User-Agent"] should look something like this: codecov-cli/0.4.7 or codecov-uploader/0.7.1
-def get_agent_from_headers(headers):
+def get_agent_from_headers(headers: Dict[str, Any]) -> str:
     try:
         return headers["User-Agent"].split("/")[0].split("-")[1]
     except Exception as e:
@@ -763,7 +783,7 @@ def get_agent_from_headers(headers):
         return "unknown-user-agent"
 
 
-def get_version_from_headers(headers):
+def get_version_from_headers(headers: Dict[str, Any]) -> str:
     try:
         return headers["User-Agent"].split("/")[1]
     except Exception as e:
@@ -777,15 +797,15 @@ def get_version_from_headers(headers):
 
 
 def generate_upload_prometheus_metrics_labels(
-    action,
-    request,
-    is_shelter_request,
+    action: str,
+    request: HttpRequest,
+    is_shelter_request: bool,
     endpoint: Optional[str] = None,
     repository: Optional[Repository] = None,
     position: Optional[str] = None,
     upload_version: Optional[str] = None,
     include_empty_labels: bool = True,
-):
+) -> Dict[str, Any]:
     metrics_tags = dict(
         agent=get_agent_from_headers(request.headers),
         version=get_version_from_headers(request.headers),

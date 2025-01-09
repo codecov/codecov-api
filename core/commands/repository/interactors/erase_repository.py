@@ -11,7 +11,7 @@ from services.task.task import TaskService
 
 
 class EraseRepositoryInteractor(BaseInteractor):
-    def validate_owner(self, owner: Owner):
+    def validate_owner(self, owner: Owner) -> None:
         if not current_user_part_of_org(self.current_owner, owner):
             raise Unauthorized()
 
@@ -23,7 +23,7 @@ class EraseRepositoryInteractor(BaseInteractor):
                 raise Unauthorized()
 
     @sync_to_async
-    def execute(self, repo_name: str, owner: Owner):
+    def execute(self, repo_name: str, owner: Owner) -> None:
         self.validate_owner(owner)
         repo = Repository.objects.filter(author_id=owner.pk, name=repo_name).first()
         if not repo:
