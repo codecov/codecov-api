@@ -806,6 +806,26 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             assert e.message == UnauthorizedGuestAccess.message
             assert e.extensions["code"] == UnauthorizedGuestAccess.code
 
+    @override_settings(IS_ENTERPRISE=True, GUEST_ACCESS=False)
+    def test_fetch_owner_plan_activated_users_is_none(self):
+        """
+        This test is when Enterprise guest access is disabled, and you are
+        trying to view an org that does not track plan activated users (e.g., historic data)
+        """
+        user = OwnerFactory(username="sample-user")
+        owner = OwnerFactory(username="sample-owner", plan_activated_users=None)
+        user.save()
+        owner.save()
+        query = """{
+            owner(username: "%s") {
+                username
+            }
+        }
+        """ % (owner.username)
+
+        data = self.gql_request(query, owner=user)
+        assert data["owner"]["username"] == "sample-owner"
+
     def test_fetch_current_user_is_okta_authenticated(self):
         account = AccountFactory()
         owner = OwnerFactory(username="sample-owner", service="github", account=account)
