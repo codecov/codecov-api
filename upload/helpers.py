@@ -449,11 +449,11 @@ def determine_upload_commit_to_use(
     # Check if this is a merge commit and, if so, use the commitid of the commit being merged into per the merge commit message.
     # See https://docs.codecov.io/docs/merge-commits for more context.
     service = repository.author.service
+    commitid = upload_params.get("commit", "")
     if service.startswith("github") and not upload_params.get(
         "_did_change_merge_commit"
     ):
         token = try_to_get_best_possible_bot_token(repository)
-        commitid = upload_params.get("commit", "")
         if token is None:
             return commitid
         # Get the commit message from the git provider and check if it's structured like a merge commit message
