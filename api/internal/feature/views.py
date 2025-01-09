@@ -3,7 +3,8 @@ import pickle
 from typing import Any, Dict, List
 
 from rest_framework import status
-from rest_framework.response import Request, Response
+from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.django_apps.rollouts.models import FeatureFlag
 from shared.rollouts import Feature
