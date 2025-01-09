@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from django.utils import timezone
 
@@ -11,30 +11,28 @@ from services.analytics import AnalyticsService
 
 @dataclass
 class TermsAgreementInput:
-    business_email: Optional[str] = None
+    business_email: str
+    name: str
     terms_agreement: bool = False
     marketing_consent: bool = False
-    customer_intent: Optional[str] = None
 
 
 class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
 
     def validate(self, input: TermsAgreementInput) -> None:
-        valid_customer_intents = ["Business", "BUSINESS", "Personal", "PERSONAL"]
-        if (
-            input.customer_intent
-            and input.customer_intent not in valid_customer_intents
-        ):
-            raise ValidationError("Invalid customer intent provided")
+        if not self.current_user.business_email:
+            raise ValidationError("Business email is required")
+        if not self.current_user.name:
+            raise ValidationError("Name is required")
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
 
     def update_terms_agreement(self, input: TermsAgreementInput) -> None:
         self.current_user.terms_agreement = input.terms_agreement
         self.current_user.terms_agreement_at = timezone.now()
-        self.current_user.customer_intent = input.customer_intent
         self.current_user.email_opt_in = input.marketing_consent
+        self.current_user.name = input.name
         self.current_user.save()
 
         if input.business_email and input.business_email != "":
@@ -53,10 +51,10 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     @sync_to_async
     def execute(self, input: Any) -> None:
         typed_input = TermsAgreementInput(
-            business_email=input.get("business_email"),
-            terms_agreement=input.get("terms_agreement"),
-            marketing_consent=input.get("marketing_consent"),
-            customer_intent=input.get("customer_intent"),
+            business_email=input.get("business_email", ""),
+            terms_agreement=input.get("terms_agreement", False),
+            marketing_consent=input.get("marketing_consent", False),
+            name=input.get("name", ""),
         )
-        self.validate(typed_input)
+        self.validate(input)
         return self.update_terms_agreement(typed_input)

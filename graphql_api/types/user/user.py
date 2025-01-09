@@ -41,6 +41,7 @@ def resolve_student_updated_at(user: Owner, info) -> Optional[datetime]:
     return user.student_updated_at
 
 
+# this will no longer be updated from the UI
 @user_bindable.field("customerIntent")
 def resolve_customer_intent(user: Owner, info) -> str:
     owner = user

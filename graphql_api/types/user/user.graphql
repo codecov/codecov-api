@@ -5,5 +5,6 @@ type User {
   student: Boolean!
   studentCreatedAt: DateTime
   studentUpdatedAt: DateTime
+  # this will no longer be updated from the UI with Appless
   customerIntent: String
 }
