@@ -42,7 +42,9 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         except yaml.scanner.ScannerError as e:
             line = e.problem_mark.line
             column = e.problem_mark.column
-            message = f"Syntax error at line {line+1}, column {column+1}: {e.problem}"
+            message = (
+                f"Syntax error at line {line + 1}, column {column + 1}: {e.problem}"
+            )
             raise ValidationError(message)
         if not yaml_dict:
             return None

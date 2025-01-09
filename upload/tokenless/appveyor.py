@@ -49,7 +49,7 @@ class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
             self.upload_params.get("job")
             if "/" in self.upload_params.get("job")
             else (
-                f'{self.upload_params.get("owner")}/{self.upload_params.get("repo")}/{self.upload_params.get("job")}'
+                f"{self.upload_params.get('owner')}/{self.upload_params.get('repo')}/{self.upload_params.get('job')}"
             )
         )
 

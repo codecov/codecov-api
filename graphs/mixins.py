@@ -2,7 +2,8 @@ from typing import Any
 
 from django.http import HttpResponse
 from rest_framework import status
-from rest_framework.response import Request, Response
+from rest_framework.request import Request
+from rest_framework.response import Response
 
 
 class GraphBadgeAPIMixin(object):

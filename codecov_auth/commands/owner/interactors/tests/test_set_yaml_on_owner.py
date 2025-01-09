@@ -96,7 +96,7 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             "codecov": {
                 "require_ci_to_pass": True,
             },
-            "to_string": "\n" "codecov:\n" "  require_ci_to_pass: yes\n",
+            "to_string": "\ncodecov:\n  require_ci_to_pass: yes\n",
         }
 
     async def test_user_is_part_of_org_and_yaml_has_quotes(self):
@@ -109,7 +109,7 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             "codecov": {
                 "bot": "codecov",
             },
-            "to_string": "\n" "codecov:\n" "  bot: 'codecov'\n",
+            "to_string": "\ncodecov:\n  bot: 'codecov'\n",
         }
 
     async def test_user_is_part_of_org_and_yaml_is_empty(self):
