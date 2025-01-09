@@ -267,8 +267,6 @@ class GithubWebhookHandler(APIView):
                     commits=[commit.get("id") for commit in commits],
                 ),
             )
-        else:
-            commits_queryset.update(branch=pushed_to_branch_name)
 
         log.info(
             f"Branch name updated for commits to {pushed_to_branch_name}",

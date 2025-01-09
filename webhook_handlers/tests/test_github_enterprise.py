@@ -222,8 +222,6 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         commit2.refresh_from_db()
         merged_commit.refresh_from_db()
 
-        assert commit1.branch == unmerged_branch_name
-        assert commit2.branch == unmerged_branch_name
         assert not commit1.merged
         assert not commit2.merged
 
