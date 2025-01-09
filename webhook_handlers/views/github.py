@@ -250,32 +250,22 @@ class GithubWebhookHandler(APIView):
             )
             return Response()
 
-        commits_queryset = Commit.objects.filter(
-            ~Q(branch=pushed_to_branch_name),
-            repository=repo,
-            commitid__in=[commit.get("id") for commit in commits],
-            merged=False,
-        )
-
         if pushed_to_branch_name == repo.branch:
+            commits_queryset = Commit.objects.filter(
+                ~Q(branch=pushed_to_branch_name),
+                repository=repo,
+                commitid__in=[commit.get("id") for commit in commits],
+                merged=False,
+            )
             commits_queryset.update(branch=pushed_to_branch_name, merged=True)
             log.info(
-                "Pushed commits to default branch; setting merged to True",
+                f"Branch name updated for commits to {pushed_to_branch_name}; setting merged to True",
                 extra=dict(
                     repoid=repo.repoid,
                     github_webhook_event=self.event,
                     commits=[commit.get("id") for commit in commits],
                 ),
             )
-
-        log.info(
-            f"Branch name updated for commits to {pushed_to_branch_name}",
-            extra=dict(
-                repoid=repo.repoid,
-                github_webhook_event=self.event,
-                commits=[commit.get("id") for commit in commits],
-            ),
-        )
 
         most_recent_commit = commits[-1]
 
