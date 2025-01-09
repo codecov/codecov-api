@@ -5,6 +5,7 @@ from contextlib import suppress
 from hashlib import sha1, sha256
 from typing import Optional
 
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 from rest_framework import status
@@ -239,41 +240,32 @@ class GithubWebhookHandler(APIView):
             )
             return Response(data=WebhookHandlerErrorMessages.SKIP_WEBHOOK_IGNORED)
 
-        branch_name = self.request.data.get("ref")[11:]
+        pushed_to_branch_name = self.request.data.get("ref")[11:]
         commits = self.request.data.get("commits", [])
 
         if not commits:
             log.debug(
-                f"No commits in webhook payload for branch {branch_name}",
+                f"No commits in webhook payload for branch {pushed_to_branch_name}",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
             return Response()
 
-        commits_queryset = Commit.objects.filter(
-            repository=repo,
-            commitid__in=[commit.get("id") for commit in commits],
-            merged=False,
-        )
-        commits_queryset.update(branch=branch_name)
-        if branch_name == repo.branch:
-            commits_queryset.update(merged=True)
+        if pushed_to_branch_name == repo.branch:
+            commits_queryset = Commit.objects.filter(
+                ~Q(branch=pushed_to_branch_name),
+                repository=repo,
+                commitid__in=[commit.get("id") for commit in commits],
+                merged=False,
+            )
+            commits_queryset.update(branch=pushed_to_branch_name, merged=True)
             log.info(
-                "Pushed commits to default branch; setting merged to True",
+                f"Branch name updated for commits to {pushed_to_branch_name}; setting merged to True",
                 extra=dict(
                     repoid=repo.repoid,
                     github_webhook_event=self.event,
                     commits=[commit.get("id") for commit in commits],
                 ),
             )
-
-        log.info(
-            f"Branch name updated for commits to {branch_name}",
-            extra=dict(
-                repoid=repo.repoid,
-                github_webhook_event=self.event,
-                commits=[commit.get("id") for commit in commits],
-            ),
-        )
 
         most_recent_commit = commits[-1]
 
@@ -300,7 +292,7 @@ class GithubWebhookHandler(APIView):
             TaskService().status_set_pending(
                 repoid=repo.repoid,
                 commitid=most_recent_commit.get("id"),
-                branch=branch_name,
+                branch=pushed_to_branch_name,
                 on_a_pull_request=False,
             )
 

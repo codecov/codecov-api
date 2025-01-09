@@ -136,7 +136,7 @@ class PlanSerializer(serializers.Serializer):
                     extra=dict(owner_id=current_owner.pk, plan=value),
                 )
             raise serializers.ValidationError(
-                f"Invalid value for plan: {value}; " f"must be one of {plan_values}"
+                f"Invalid value for plan: {value}; must be one of {plan_values}"
             )
         return value
 
