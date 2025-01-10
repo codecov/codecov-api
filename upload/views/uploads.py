@@ -1,10 +1,13 @@
 import logging
+from typing import Any, Callable, Dict
 
 from django.http import HttpRequest, HttpResponseNotAllowed
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import BasePermission
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
 from shared.metrics import inc_counter
 from shared.upload.utils import UploaderType, insert_coverage_measurement
@@ -40,8 +43,13 @@ log = logging.getLogger(__name__)
 
 
 def create_upload(
-    serializer, repository, commit, report, is_shelter_request, analytics_token
-):
+    serializer: UploadSerializer,
+    repository: Repository,
+    commit: Commit,
+    report: CommitReport,
+    is_shelter_request: bool,
+    analytics_token: str,
+) -> ReportSession:
     version = (
         serializer.validated_data["version"]
         if "version" in serializer.validated_data
@@ -82,7 +90,9 @@ def create_upload(
     return instance
 
 
-def trigger_upload_task(repository, commit_sha, upload, report):
+def trigger_upload_task(
+    repository: Repository, commit_sha: str, upload: ReportSession, report: CommitReport
+) -> None:
     log.info(
         "Triggering upload task",
         extra=dict(
@@ -103,7 +113,7 @@ def trigger_upload_task(repository, commit_sha, upload, report):
     dispatch_upload_task(task_arguments, repository, redis)
 
 
-def activate_repo(repository):
+def activate_repo(repository: Repository) -> None:
     # Only update the fields if needed
     if (
         repository.activated
@@ -128,8 +138,8 @@ def activate_repo(repository):
 
 
 def send_analytics_data(
-    commit: Commit, upload: ReportSession, version, analytics_token
-):
+    commit: Commit, upload: ReportSession, version: str, analytics_token: str
+) -> None:
     analytics_upload_data = {
         "commit": commit.commitid,
         "branch": commit.branch,
@@ -154,7 +164,7 @@ def send_analytics_data(
     )
 
 
-def get_token_for_analytics(commit: Commit, request):
+def get_token_for_analytics(commit: Commit, request: HttpRequest) -> str:
     repo = commit.repository
     if isinstance(request.auth, TokenlessAuth):
         analytics_token = "tokenless_upload"
@@ -170,7 +180,7 @@ def get_token_for_analytics(commit: Commit, request):
 
 
 class CanDoCoverageUploadsPermission(BasePermission):
-    def has_permission(self, request, view):
+    def has_permission(self, request: HttpRequest, view: APIView) -> bool:
         repository = view.get_repo()
         return (
             request.auth is not None
@@ -194,10 +204,10 @@ class UploadViews(ListCreateAPIView, GetterMixin):
     ]
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
-    def get_exception_handler(self):
+    def get_exception_handler(self) -> Callable[[Exception, Dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def perform_create(self, serializer: UploadSerializer):
+    def perform_create(self, serializer: UploadSerializer) -> ReportSession:
         inc_counter(
             API_UPLOAD_COUNTER,
             labels=generate_upload_prometheus_metrics_labels(
@@ -253,7 +263,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         repo: str,
         commit_sha: str,
         report_code: str,
-    ):
+    ) -> HttpResponseNotAllowed:
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
     def get_repo(self) -> Repository:
@@ -270,7 +280,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         except ValidationError as excpetion:
             raise excpetion
 
-    def get_report(self, commit: Commit) -> CommitReport:
+    def get_report(self, commit: Commit, _: Any = None) -> CommitReport:
         try:
             report = super().get_report(commit)
             return report

@@ -9,7 +9,9 @@ from shared.django_apps.core.models import Repository
 log = logging.getLogger(__name__)
 
 
-def apply_filters_to_queryset(queryset, filters: dict[str, Any]) -> QuerySet:
+def apply_filters_to_queryset(
+    queryset: QuerySet, filters: dict[str, Any] | None
+) -> QuerySet:
     filters = filters or {}
     term = filters.get("term")
     active = filters.get("active")

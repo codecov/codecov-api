@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, cast
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -38,7 +38,7 @@ def update_owner(
     """
     Shelter tracks a limited set of Owner fields - only update if those fields have changed.
     """
-    created: bool = kwargs["created"]
+    created: bool = cast(bool, kwargs["created"])
     tracked_fields = [
         "upload_token_required_for_public_repos",
         "username",

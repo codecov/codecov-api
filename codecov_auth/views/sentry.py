@@ -123,7 +123,7 @@ class SentryLoginView(LoginMixin, StateMixin, View):
             # user has not connected any owners yet
             return redirect(f"{settings.CODECOV_DASHBOARD_URL}/sync")
 
-    def _login_user(self, request: HttpRequest, user_data: dict):
+    def _login_user(self, request: HttpRequest, user_data: dict) -> User:
         sentry_id = user_data["user"]["id"]
         user_name = user_data["user"].get("name")
         user_email = user_data["user"].get("email")
@@ -177,7 +177,7 @@ class SentryLoginView(LoginMixin, StateMixin, View):
         login(request, current_user)
         return current_user
 
-    def get(self, request):
+    def get(self, request: HttpRequest) -> HttpResponse:
         if request.GET.get("code"):
             return self._perform_login(request)
         else:

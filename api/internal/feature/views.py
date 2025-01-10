@@ -1,7 +1,9 @@
 import logging
 import pickle
+from typing import Any, Dict, List
 
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.django_apps.rollouts.models import FeatureFlag
@@ -20,15 +22,15 @@ class FeaturesView(APIView):
     skip_feature_cache = get_config("setup", "skip_feature_cache", default=False)
     timeout = 300
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.redis = get_redis_connection()
         super().__init__(*args, **kwargs)
 
-    def get_many_from_redis(self, keys):
+    def get_many_from_redis(self, keys: List) -> Dict[str, Any]:
         ret = self.redis.mget(keys)
         return {k: pickle.loads(v) for k, v in zip(keys, ret) if v is not None}
 
-    def set_many_to_redis(self, data):
+    def set_many_to_redis(self, data: Dict[str, Any]) -> None:
         pipeline = self.redis.pipeline()
         pipeline.mset({k: pickle.dumps(v) for k, v in data.items()})
 
@@ -38,7 +40,7 @@ class FeaturesView(APIView):
             pipeline.expire(key, self.timeout)
         pipeline.execute()
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = FeatureRequestSerializer(data=request.data)
         if serializer.is_valid():
             flag_evaluations = {}

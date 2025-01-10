@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import Any, Dict
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -11,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
-    def get_build(self):
+    def get_build(self) -> Dict[str, Any]:
         query = f"""{{
             "query": "query ($buildId: ID!) {{
                 build(id: $buildId) {{
@@ -26,7 +27,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
                 }}
             }}",
             "variables": {{
-                "buildId": {self.upload_params.get('build')}
+                "buildId": {self.upload_params.get("build")}
             }}
         }}"""
 
@@ -74,7 +75,7 @@ class TokenlessCirrusHandler(BaseTokenlessUploadHandler):
 
         return build
 
-    def verify(self):
+    def verify(self) -> str:
         if not self.upload_params.get("owner"):
             raise NotFound(
                 'Missing "owner" argument. Please upload with the Codecov repository upload token to resolve this issue.'

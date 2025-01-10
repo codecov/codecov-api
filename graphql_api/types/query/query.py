@@ -52,8 +52,17 @@ async def resolve_owner(
         if not user or not user.is_authenticated:
             raise UnauthorizedGuestAccess()
 
-        target = await get_owner(service, username)
-        if user.ownerid not in target.plan_activated_users:
+        # if the owner tracks plan activated users, check if the user is in the list
+        target_owner = await get_owner(service, username)
+        has_plan_activated_users = (
+            target_owner
+            and target_owner.plan_activated_users is not None
+            and len(target_owner.plan_activated_users) > 0
+        )
+        if (
+            has_plan_activated_users
+            and user.ownerid not in target_owner.plan_activated_users
+        ):
             raise UnauthorizedGuestAccess()
 
     return await get_owner(service, username)
