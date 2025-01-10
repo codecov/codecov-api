@@ -691,7 +691,7 @@ def parse_headers(
     else:
         content_type = (
             "text/plain"
-            if headers.get("X_Content_Type", "") in (None, "text/html")
+            if headers.get("X_Content_Type", "") in ("", "text/html")
             else headers.get("X_Content_Type", "")
         )
         reduced_redundancy = (
