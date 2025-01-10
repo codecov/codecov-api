@@ -51,9 +51,13 @@ async def resolve_owner(
     if settings.IS_ENTERPRISE and settings.GUEST_ACCESS is False:
         if not user or not user.is_authenticated:
             raise UnauthorizedGuestAccess()
+
+        # if the owner tracks plan activated users, check if the user is in the list
         target_owner = await get_owner(service, username)
         has_plan_activated_users = (
-            target_owner and target_owner.plan_activated_users is not None
+            target_owner
+            and target_owner.plan_activated_users is not None
+            and len(target_owner.plan_activated_users) > 0
         )
         if (
             has_plan_activated_users
