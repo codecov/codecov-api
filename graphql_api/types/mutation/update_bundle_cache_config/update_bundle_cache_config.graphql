@@ -1,0 +1,11 @@
+union UpdateBundleCacheConfigError = UnauthenticatedError | ValidationError
+
+type UpdateBundleCacheConfigResult {
+  bundleName: String
+  isCached: Boolean
+}
+
+type UpdateBundleCacheConfigPayload {
+  results: [UpdateBundleCacheConfigResult!]
+  error: UpdateBundleCacheConfigError
+}
