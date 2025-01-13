@@ -23,6 +23,9 @@ class ShelterPubsub:
         return cls._instance
 
     def __init__(self) -> None:
+        if not settings.SHELTER_ENABLED:
+            return
+
         if not self.pubsub_publisher:
             self.pubsub_publisher = pubsub_v1.PublisherClient()
         pubsub_project_id: str = settings.SHELTER_PUBSUB_PROJECT_ID
@@ -32,6 +35,9 @@ class ShelterPubsub:
         self.topic_path = self.pubsub_publisher.topic_path(pubsub_project_id, topic_id)
 
     def publish(self, data: Dict[str, Any]) -> None:
+        if not settings.SHELTER_ENABLED:
+            return
+
         try:
             self.pubsub_publisher.publish(
                 self.topic_path,

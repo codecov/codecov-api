@@ -72,3 +72,5 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 GUEST_ACCESS = get_config("setup", "guest_access", default=True)
+
+SHELTER_ENABLED = get_config("setup", "shelter_enabled", default=False)
