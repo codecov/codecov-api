@@ -8,7 +8,7 @@ from django.contrib import admin, messages
 from django.contrib.admin.models import LogEntry
 from django.db.models import OuterRef, Subquery
 from django.db.models.fields import BLANK_CHOICE_DASH
-from django.forms import CheckboxInput, Select
+from django.forms import CheckboxInput, Select, Textarea
 from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -18,6 +18,8 @@ from shared.django_apps.codecov_auth.models import (
     AccountsUsers,
     InvoiceBilling,
     StripeBilling,
+    Plans,
+    Tiers,
 )
 from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from shared.plan.service import PlanService
@@ -708,3 +710,82 @@ class AccountsUsersAdmin(AdminMixin, admin.ModelAdmin):
     ]
 
     fields = readonly_fields + ["account", "user"]
+
+class PlansInline(admin.TabularInline):
+    model = Plans
+    extra = 1
+    verbose_name_plural = "Plans (click save to commit changes)"
+    verbose_name = "Plan"
+    readonly_fields = ["name"]
+    fields = [
+        "name",
+        "marketing_name",
+        "base_unit_price",
+        "billing_rate",
+        "max_seats",
+        "monthly_uploads_limit",
+        "paid_plan",
+        "is_active",
+    ]
+    formfield_overrides = {
+        Plans._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
+    }
+
+
+@admin.register(Tiers)
+class TiersAdmin(admin.ModelAdmin):
+    list_display = (
+        "tier_name",
+        "bundle_analysis",
+        "test_analytics",
+        "flaky_test_detection",
+        "project_coverage",
+        "private_repo_support",
+    )
+    list_editable = (
+        "bundle_analysis",
+        "test_analytics",
+        "flaky_test_detection",
+        "project_coverage",
+        "private_repo_support",
+    )
+    search_fields = ("tier_name__iregex",)
+    inlines = [PlansInline]
+    fields = [
+        "tier_name",
+        "bundle_analysis",
+        "test_analytics",
+        "flaky_test_detection",
+        "project_coverage",
+        "private_repo_support",
+    ]
+
+
+@admin.register(Plans)
+class PlansAdmin(admin.ModelAdmin):
+    list_display = ("name", "marketing_name", "base_unit_price", "is_active", "paid_plan")
+    list_filter = ("is_active", "paid_plan", "billing_rate")
+    search_fields = ("name__iregex", "marketing_name__iregex")
+    fields = [
+        "tier",
+        "name",
+        "marketing_name",
+        "base_unit_price",
+        "benefits",
+        "billing_rate",
+        "is_active",
+        "max_seats",
+        "monthly_uploads_limit",
+        "paid_plan",
+    ]
+    formfield_overrides = {
+        Plans._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
+    }
+    autocomplete_fields = ["tier"]  # a dropdown for selecting related Tiers
+
+    def save_model(self, request, obj, form, change):
+        if obj.base_unit_price < 0:
+            raise forms.ValidationError("Base unit price cannot be negative.")
+        if obj.max_seats is not None and obj.max_seats < 0:
+            raise forms.ValidationError("Max seats cannot be negative.")
+        super().save_model(request, obj, form, change)
