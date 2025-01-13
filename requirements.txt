@@ -16,8 +16,6 @@ anyio==3.6.1
     # via
     #   httpcore
     #   starlette
-appdirs==1.4.4
-    # via virtualenv
 ariadne==0.23.0
     # via
     #   -r requirements.in
@@ -104,7 +102,7 @@ ddtrace==2.7.6
     # via -r requirements.in
 deprecated==1.2.12
     # via opentelemetry-api
-distlib==0.3.1
+distlib==0.3.9
     # via virtualenv
 django==4.2.16
     # via
@@ -166,7 +164,7 @@ faker==4.1.3
     # via factory-boy
 fakeredis==2.10.3
     # via -r requirements.in
-filelock==3.0.12
+filelock==3.16.1
     # via virtualenv
 freezegun==1.1.0
     # via -r requirements.in
@@ -202,6 +200,8 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 graphql-core==3.2.3
     # via ariadne
+greenlet==3.1.1
+    # via sqlalchemy
 grpc-google-iam-v1==0.12.6
     # via google-cloud-pubsub
 grpcio==1.62.1
@@ -300,6 +300,8 @@ packaging==24.1
     # via
     #   gunicorn
     #   pytest
+platformdirs==4.3.6
+    # via virtualenv
 pluggy==1.5.0
     # via pytest
 polars==1.12.0
@@ -427,7 +429,6 @@ six==1.16.0
     #   ddtrace
     #   django-dynamic-fixture
     #   python-dateutil
-    #   virtualenv
 sniffio==1.2.0
     # via
     #   anyio
@@ -479,7 +480,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==20.4.3
+virtualenv==20.26.6
     # via pre-commit
 wcwidth==0.2.5
     # via prompt-toolkit
