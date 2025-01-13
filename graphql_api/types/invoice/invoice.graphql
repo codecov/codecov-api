@@ -43,6 +43,14 @@ type Card {
   last4: String
 }
 
+type BankAccount {
+  accountHolderType: String
+  accountType: String
+  bankName: String
+  last4: String
+  routingNumber: String
+}
+
 type BillingDetails {
   address: Address
   email: String

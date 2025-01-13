@@ -312,6 +312,7 @@ class StripeWebhookHandler(APIView):
         self._log_updated([owner])
 
     def customer_subscription_updated(self, subscription: stripe.Subscription) -> None:
+        print("CUSTOMER SUBSCRIPTION UPDATED", subscription)
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -408,6 +409,8 @@ class StripeWebhookHandler(APIView):
         )
 
     def customer_updated(self, customer: stripe.Customer) -> None:
+        print("CUSTOMER UPDATED", customer)
+
         new_default_payment_method = customer["invoice_settings"][
             "default_payment_method"
         ]

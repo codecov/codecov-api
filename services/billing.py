@@ -516,8 +516,8 @@ class StripeService(AbstractPaymentService):
         )
 
         session = stripe.checkout.Session.create(
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
             billing_address_collection="required",
-            payment_method_types=["card"],
             payment_method_collection="if_required",
             client_reference_id=str(owner.ownerid),
             success_url=success_url,
@@ -601,7 +601,7 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def update_email_address(self, owner: Owner, email_address: str):
+    def update_email_address(self, owner: Owner, email_address: str, should_propagate_to_payment_methods: bool = False):
         if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
             return None
 
@@ -615,6 +615,27 @@ class StripeService(AbstractPaymentService):
         log.info(
             f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
+
+        if should_propagate_to_payment_methods:
+            try:
+                default_payment_method = stripe.Customer.retrieve(
+                    owner.stripe_customer_id
+                ).invoice_settings.default_payment_method
+
+                stripe.PaymentMethod.modify(
+                    default_payment_method,
+                    billing_details={"email": email_address},
+                )
+                log.info(
+                    f"Stripe successfully updated billing email for payment method {default_payment_method}"
+                )
+            except Exception:
+                log.error(
+                    "Unable to update billing email for payment method",
+                    extra=dict(
+                        payment_method=default_payment_method,
+                    ),
+                )
 
     @_log_stripe_error
     def update_billing_address(self, owner: Owner, name, billing_address):
@@ -786,14 +807,14 @@ class BillingService:
         """
         return self.payment_service.update_payment_method(owner, payment_method)
 
-    def update_email_address(self, owner: Owner, email_address: str):
+    def update_email_address(self, owner: Owner, email_address: str, should_propagate_to_payment_methods: bool = False):
         """
         Takes an owner and a new email. Email is a string coming directly from
         the front-end. If the owner has a payment id and if it's a valid email,
         the payment service will update the email address in the upstream service.
         Otherwise returns None.
         """
-        return self.payment_service.update_email_address(owner, email_address)
+        return self.payment_service.update_email_address(owner, email_address, should_propagate_to_payment_methods)
 
     def update_billing_address(self, owner: Owner, name: str, billing_address):
         """

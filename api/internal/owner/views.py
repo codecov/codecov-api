@@ -85,7 +85,8 @@ class AccountDetailsViewSet(
             raise ValidationError(detail="No new_email sent")
         owner = self.get_object()
         billing = BillingService(requesting_user=request.current_owner)
-        billing.update_email_address(owner, new_email)
+        should_propagate = request.data.get("should_propagate_to_payment_methods", False)
+        billing.update_email_address(owner, new_email, should_propagate_to_payment_methods=should_propagate)
         return Response(self.get_serializer(owner).data)
 
     @action(detail=False, methods=["patch"])
