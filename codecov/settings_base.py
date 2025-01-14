@@ -436,9 +436,13 @@ STRIPE_PAYMENT_METHOD_CONFIGURATION_ID = get_config(
 # Allows to do migrations from another module
 MIGRATION_MODULES = {
     "codecov_auth": "shared.django_apps.codecov_auth.migrations",
+    "compare": "shared.django_apps.compare.migrations",
     "core": "shared.django_apps.core.migrations",
-    "reports": "shared.django_apps.reports.migrations",
+    "labelanalysis": "shared.django_apps.labelanalysis.migrations",
     "legacy_migrations": "shared.django_apps.legacy_migrations.migrations",
+    "profiling": "shared.django_apps.profiling.migrations",
+    "reports": "shared.django_apps.reports.migrations",
+    "staticanalysis": "shared.django_apps.staticanalysis.migrations",
 }
 
 # to aid in debugging, print out this info on startup. If no license, prints nothing
