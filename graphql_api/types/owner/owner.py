@@ -373,8 +373,8 @@ def resolve_ai_enabled_repos(
         app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).first()
 
-    if not ai_features_app_install:
-        return None
+    # if not ai_features_app_install:
+    #     return None
 
     current_owner = info.context["request"].current_owner
     queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
