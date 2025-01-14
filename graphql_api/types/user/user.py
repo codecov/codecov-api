@@ -12,38 +12,38 @@ user_bindable = ObjectType("User")
 
 
 @user_bindable.field("username")
-def resolve_username(user: Owner, info) -> str:
+def resolve_username(user: Owner) -> str:
     return user.username
 
 
 @user_bindable.field("name")
-def resolve_name(user: Owner, info) -> Optional[str]:
+def resolve_name(user: Owner) -> Optional[str]:
     return user.name
 
 
 @user_bindable.field("avatarUrl")
-def resolve_avatar_url(user: Owner, info) -> str:
+def resolve_avatar_url(user: Owner) -> str:
     return user.avatar_url
 
 
 @user_bindable.field("student")
-def resolve_student(user: Owner, info) -> bool:
+def resolve_student(user: Owner) -> bool:
     return user.student
 
 
 @user_bindable.field("studentCreatedAt")
-def resolve_student_created_at(user: Owner, info) -> Optional[datetime]:
+def resolve_student_created_at(user: Owner) -> Optional[datetime]:
     return user.student_created_at
 
 
 @user_bindable.field("studentUpdatedAt")
-def resolve_student_updated_at(user: Owner, info) -> Optional[datetime]:
+def resolve_student_updated_at(user: Owner) -> Optional[datetime]:
     return user.student_updated_at
 
 
 # this will no longer be updated from the UI
 @user_bindable.field("customerIntent")
-def resolve_customer_intent(user: Owner, info) -> str:
+def resolve_customer_intent(user: Owner) -> Optional[str]:
     owner = user
     if not owner.user:
         return None
