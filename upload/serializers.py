@@ -1,4 +1,7 @@
+from typing import Any, Dict, List
+
 from django.conf import settings
+from django.db.models import QuerySet
 from rest_framework import serializers
 from shared.api_archive.archive import ArchiveService
 
@@ -11,7 +14,7 @@ from services.task import TaskService
 class FlagListField(serializers.ListField):
     child = serializers.CharField()
 
-    def to_representation(self, data):
+    def to_representation(self, data: QuerySet) -> List[str | None]:
         return [item.flag_name if item is not None else None for item in data.all()]
 
 
@@ -47,12 +50,12 @@ class UploadSerializer(serializers.ModelSerializer):
 
     raw_upload_location = serializers.SerializerMethodField()
 
-    def get_raw_upload_location(self, obj: ReportSession):
+    def get_raw_upload_location(self, obj: ReportSession) -> str:
         repo = obj.report.commit.repository
         archive_service = ArchiveService(repo)
         return archive_service.create_presigned_put(obj.storage_path)
 
-    def get_url(self, obj: ReportSession):
+    def get_url(self, obj: ReportSession) -> str:
         repository = obj.report.commit.repository
         commit = obj.report.commit
         return f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
@@ -64,7 +67,7 @@ class UploadSerializer(serializers.ModelSerializer):
             existing_flags_map[flag_obj.flag_name] = flag_obj
         return existing_flags_map
 
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> ReportSession | None:
         flag_names = (
             validated_data.pop("flags") if "flags" in validated_data.keys() else []
         )
@@ -134,7 +137,7 @@ class CommitSerializer(serializers.ModelSerializer):
             "branch",
         )
 
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> Commit:
         repo = validated_data.pop("repository", None)
         commitid = validated_data.pop("commitid", None)
         commit, created = Commit.objects.get_or_create(
@@ -161,7 +164,7 @@ class CommitReportSerializer(serializers.ModelSerializer):
         )
         fields = read_only_fields + ("code",)
 
-    def create(self, validated_data) -> tuple[CommitReport, bool]:
+    def create(self, validated_data: Dict[str, Any]) -> tuple[CommitReport, bool]:
         report = (
             CommitReport.objects.coverage_reports()
             .filter(

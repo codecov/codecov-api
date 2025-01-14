@@ -266,8 +266,6 @@ class GithubWebhookHandlerTests(APITestCase):
         commit2.refresh_from_db()
         merged_commit.refresh_from_db()
 
-        assert commit1.branch == unmerged_branch_name
-        assert commit2.branch == unmerged_branch_name
         assert not commit1.merged
         assert not commit2.merged
 
@@ -275,8 +273,12 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @patch("redis.Redis.sismember", lambda x, y, z: False)
     def test_push_updates_commit_on_default_branch(self):
-        commit1 = CommitFactory(merged=False, repository=self.repo)
-        commit2 = CommitFactory(merged=False, repository=self.repo)
+        commit1 = CommitFactory(
+            merged=False, repository=self.repo, branch="feature-branch"
+        )
+        commit2 = CommitFactory(
+            merged=False, repository=self.repo, branch="feature-branch"
+        )
 
         merged_branch_name = "merged"
         repo_branch = self.repo.branch

@@ -1,10 +1,13 @@
+from typing import Any
+
 from django.http import HttpResponse
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 
 class GraphBadgeAPIMixin(object):
-    def get(self, request, *args, **kwargs):
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         ext = self.kwargs.get("ext")
         if ext not in self.extensions:
             return Response(

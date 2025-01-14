@@ -202,8 +202,6 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 graphql-core==3.2.3
     # via ariadne
-greenlet==3.1.1
-    # via sqlalchemy
 grpc-google-iam-v1==0.12.6
     # via google-cloud-pubsub
 grpcio==1.62.1
@@ -314,7 +312,7 @@ prometheus-client==0.17.1
     #   shared
 prompt-toolkit==3.0.28
     # via click-repl
-proto-plus==1.22.3
+proto-plus==1.25.0
     # via
     #   google-api-core
     #   google-cloud-pubsub
@@ -337,9 +335,11 @@ pyasn1-modules==0.2.8
     # via google-auth
 pycparser==2.20
     # via cffi
-pydantic==2.8.2
-    # via -r requirements.in
-pydantic-core==2.20.1
+pydantic==2.10.5
+    # via
+    #   -r requirements.in
+    #   shared
+pydantic-core==2.27.2
     # via pydantic
 pyjwt==2.8.0
     # via
@@ -416,7 +416,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/9a61a94a70722971e56437defe5c31a2399928b0.tar.gz
+shared @ https://github.com/codecov/shared/archive/a03c2f987b1f317f0372aa844cebd6b8d207a1f9.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
@@ -451,7 +451,7 @@ text-unidecode==1.3
     # via faker
 toml==0.10.2
     # via pre-commit
-typing-extensions==4.6.2
+typing-extensions==4.12.2
     # via
     #   aiodataloader
     #   ariadne

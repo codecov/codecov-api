@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.apps import apps
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
@@ -13,17 +15,17 @@ class BaseTestCase(object):
 
 
 class ClientMixin:
-    def force_login_owner(self, owner: Owner):
+    def force_login_owner(self, owner: Owner) -> None:
         self.force_login(user=owner.user)
         session = self.session
         session["current_owner_id"] = owner.pk
         session.save()
 
-    def logout(self):
+    def logout(self) -> None:
         session = self.session
         session["current_owner_id"] = None
         session.save()
-        super().logout()
+        super().logout()  # type: ignore
 
 
 class Client(ClientMixin, DjangoClient):
@@ -36,17 +38,17 @@ class APIClient(ClientMixin, DjangoAPIClient):
 
 class TestMigrations(TestCase):
     @property
-    def app(self):
+    def app(self) -> str:
         return apps.get_containing_app_config(type(self).__module__).name
 
     migrate_from = None
     migrate_to = None
 
-    def setUp(self):
-        assert (
-            self.migrate_from and self.migrate_to
-        ), "TestCase '{}' must define migrate_from and migrate_to properties".format(
-            type(self).__name__
+    def setUp(self) -> None:
+        assert self.migrate_from and self.migrate_to, (
+            "TestCase '{}' must define migrate_from and migrate_to properties".format(
+                type(self).__name__
+            )
         )
         self.migrate_from = [(self.app, self.migrate_from)]
         self.migrate_to = [(self.app, self.migrate_to)]
@@ -65,5 +67,5 @@ class TestMigrations(TestCase):
 
         self.apps = executor.loader.project_state(self.migrate_to).apps
 
-    def setUpBeforeMigration(self, apps):
+    def setUpBeforeMigration(self, apps: Any) -> None:
         pass

@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict
 
 import requests
 from requests.exceptions import ConnectionError, HTTPError
@@ -10,7 +11,7 @@ log = logging.getLogger(__name__)
 
 
 class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
-    def get_build(self):
+    def get_build(self) -> Dict[str, Any]:
         try:
             build = requests.get(
                 "https://ci.appveyor.com/api/projects/{}/{}/build/{}".format(
@@ -39,7 +40,7 @@ class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
 
         return build.json()
 
-    def verify(self):
+    def verify(self) -> str:
         if not self.upload_params.get("job"):
             raise NotFound(
                 'Missing "job" argument. Please upload with the Codecov repository upload token to resolve issue.'
@@ -49,7 +50,7 @@ class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
             self.upload_params.get("job")
             if "/" in self.upload_params.get("job")
             else (
-                f'{self.upload_params.get("owner")}/{self.upload_params.get("repo")}/{self.upload_params.get("job")}'
+                f"{self.upload_params.get('owner')}/{self.upload_params.get('repo')}/{self.upload_params.get('job')}"
             )
         )
 
@@ -60,7 +61,7 @@ class TokenlessAppveyorHandler(BaseTokenlessUploadHandler):
         # validate build
         if not any(
             filter(
-                lambda j: j["jobId"] == self.upload_params.get("build")
+                lambda j: j["jobId"] == self.upload_params.get("build", "")  # type: ignore
                 and j.get("finished") is None,
                 build["build"]["jobs"],
             )

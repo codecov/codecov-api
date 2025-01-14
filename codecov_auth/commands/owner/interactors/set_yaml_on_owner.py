@@ -42,7 +42,9 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         except yaml.scanner.ScannerError as e:
             line = e.problem_mark.line
             column = e.problem_mark.column
-            message = f"Syntax error at line {line+1}, column {column+1}: {e.problem}"
+            message = (
+                f"Syntax error at line {line + 1}, column {column + 1}: {e.problem}"
+            )
             raise ValidationError(message)
         if not yaml_dict:
             return None
@@ -52,7 +54,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
             message = f"Error at {str(e.error_location)}: {e.error_message}"
             raise ValidationError(message)
 
-    def yaml_side_effects(self, old_yaml: dict, new_yaml: dict):
+    def yaml_side_effects(self, old_yaml: dict | None, new_yaml: dict | None) -> None:
         old_yaml_branch = old_yaml and old_yaml.get("codecov", {}).get("branch")
         new_yaml_branch = new_yaml and new_yaml.get("codecov", {}).get("branch")
 

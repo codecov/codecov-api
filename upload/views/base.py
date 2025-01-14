@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
@@ -60,7 +61,11 @@ class GetterMixin(ShelterMixin):
             raise ValidationError("Commit SHA not found")
 
     def get_report(
-        self, commit: Commit, report_type=CommitReport.ReportType.COVERAGE
+        self,
+        commit: Commit,
+        report_type: Optional[
+            CommitReport.ReportType
+        ] = CommitReport.ReportType.COVERAGE,
     ) -> CommitReport:
         report_code = self.kwargs.get("report_code")
         if report_code == "default":
