@@ -395,6 +395,7 @@ DISABLE_GIT_BASED_LOGIN = IS_ENTERPRISE and get_config(
 )
 
 SHELTER_SHARED_SECRET = get_config("setup", "shelter_shared_secret", default=None)
+SHELTER_ENABLED = get_config("setup", "shelter_enabled", default=True)
 
 SENTRY_ENV = os.environ.get("CODECOV_ENV", False)
 SENTRY_DSN = os.environ.get("SERVICES__SENTRY__SERVER_DSN", None)

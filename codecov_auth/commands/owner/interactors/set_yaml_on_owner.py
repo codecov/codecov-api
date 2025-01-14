@@ -54,7 +54,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
             message = f"Error at {str(e.error_location)}: {e.error_message}"
             raise ValidationError(message)
 
-    def yaml_side_effects(self, old_yaml: dict, new_yaml: dict):
+    def yaml_side_effects(self, old_yaml: dict | None, new_yaml: dict | None) -> None:
         old_yaml_branch = old_yaml and old_yaml.get("codecov", {}).get("branch")
         new_yaml_branch = new_yaml and new_yaml.get("codecov", {}).get("branch")
 

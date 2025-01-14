@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from typing import Any, Dict
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -37,7 +38,7 @@ class OwnerSerializer(serializers.ModelSerializer):
 
         read_only_fields = fields
 
-    def get_stats(self, obj):
+    def get_stats(self, obj: Owner) -> str | None:
         if obj.cache and "stats" in obj.cache:
             return obj.cache["stats"]
 
@@ -50,7 +51,7 @@ class StripeLineItemSerializer(serializers.Serializer):
     plan_name = serializers.SerializerMethodField()
     quantity = serializers.IntegerField()
 
-    def get_plan_name(self, line_item):
+    def get_plan_name(self, line_item: Dict[str, str]) -> str | None:
         plan = line_item.get("plan")
         if plan:
             return plan.get("name")
@@ -85,7 +86,7 @@ class StripeDiscountSerializer(serializers.Serializer):
     duration_in_months = serializers.IntegerField(source="coupon.duration_in_months")
     expires = serializers.SerializerMethodField()
 
-    def get_expires(self, customer):
+    def get_expires(self, customer: Dict[str, Dict]) -> int | None:
         coupon = customer.get("coupon")
         if coupon:
             months = coupon.get("duration_in_months")
@@ -121,7 +122,7 @@ class PlanSerializer(serializers.Serializer):
     benefits = serializers.JSONField(read_only=True)
     quantity = serializers.IntegerField(required=False)
 
-    def validate_value(self, value):
+    def validate_value(self, value: str) -> str:
         current_org = self.context["view"].owner
         current_owner = self.context["request"].current_owner
 
@@ -140,7 +141,7 @@ class PlanSerializer(serializers.Serializer):
             )
         return value
 
-    def validate(self, plan):
+    def validate(self, plan: Dict[str, Any]) -> Dict[str, Any]:
         current_org = self.context["view"].owner
         if current_org.account:
             raise serializers.ValidationError(
@@ -206,7 +207,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
     plan = serializers.SerializerMethodField()
     quantity = serializers.SerializerMethodField()
 
-    def get_plan(self, phase):
+    def get_plan(self, phase: Dict[str, Any]) -> str:
         plan_id = phase["items"][0]["plan"]
         stripe_plan_dict = settings.STRIPE_PLAN_IDS
         plan_name = list(stripe_plan_dict.keys())[
@@ -215,7 +216,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         marketing_plan_name = PAID_PLANS[plan_name].billing_rate
         return marketing_plan_name
 
-    def get_quantity(self, phase):
+    def get_quantity(self, phase: Dict[str, Any]) -> int:
         return phase["items"][0]["quantity"]
 
 
@@ -223,7 +224,7 @@ class ScheduleDetailSerializer(serializers.Serializer):
     id = serializers.CharField()
     scheduled_phase = serializers.SerializerMethodField()
 
-    def get_scheduled_phase(self, schedule):
+    def get_scheduled_phase(self, schedule: Dict[str, Any]) -> Dict[str, Any] | None:
         if len(schedule["phases"]) > 1:
             return StripeScheduledPhaseSerializer(schedule["phases"][-1]).data
         else:
@@ -291,44 +292,44 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             "uses_invoice",
         )
 
-    def _get_billing(self):
+    def _get_billing(self) -> BillingService:
         current_owner = self.context["request"].current_owner
         return BillingService(requesting_user=current_owner)
 
-    def get_subscription_detail(self, owner):
+    def get_subscription_detail(self, owner: Owner) -> Dict[str, Any] | None:
         subscription_detail = self._get_billing().get_subscription(owner)
         if subscription_detail:
             return SubscriptionDetailSerializer(subscription_detail).data
 
-    def get_schedule_detail(self, owner):
+    def get_schedule_detail(self, owner: Owner) -> Dict[str, Any] | None:
         schedule_detail = self._get_billing().get_schedule(owner)
         if schedule_detail:
             return ScheduleDetailSerializer(schedule_detail).data
 
-    def get_checkout_session_id(self, _):
+    def get_checkout_session_id(self, _: Any) -> str:
         return self.context.get("checkout_session_id")
 
-    def get_activated_student_count(self, owner):
+    def get_activated_student_count(self, owner: Owner) -> int:
         if owner.account:
             return owner.account.activated_student_count
         return owner.activated_student_count
 
-    def get_activated_user_count(self, owner):
+    def get_activated_user_count(self, owner: Owner) -> int:
         if owner.account:
             return owner.account.activated_user_count
         return owner.activated_user_count
 
-    def get_delinquent(self, owner):
+    def get_delinquent(self, owner: Owner) -> bool:
         if owner.account:
             return owner.account.is_delinquent
         return owner.delinquent
 
-    def get_uses_invoice(self, owner):
+    def get_uses_invoice(self, owner: Owner) -> bool:
         if owner.account:
             return owner.account.invoice_billing.filter(is_active=True).exists()
         return owner.uses_invoice
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Owner, validated_data: Dict[str, Any]) -> object:
         if "pretty_plan" in validated_data:
             desired_plan = validated_data.pop("pretty_plan")
             checkout_session_id_or_none = self._get_billing().update_plan(
@@ -367,7 +368,7 @@ class UserSerializer(serializers.ModelSerializer):
             "last_pull_timestamp",
         )
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Owner, validated_data: Dict[str, Any]) -> object:
         owner = self.context["view"].owner
 
         if "activated" in validated_data:
@@ -391,7 +392,7 @@ class UserSerializer(serializers.ModelSerializer):
         # Re-fetch from DB to set activated and admin fields
         return self.context["view"].get_object()
 
-    def get_last_pull_timestamp(self, obj):
+    def get_last_pull_timestamp(self, obj: Owner) -> str | None:
         # this field comes from an annotation that may not always be applied to the queryset
         if hasattr(obj, "last_pull_timestamp"):
             return obj.last_pull_timestamp
