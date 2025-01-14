@@ -21,9 +21,10 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
 
     def validate(self, input: TermsAgreementInput) -> None:
-        if not self.current_user.business_email:
-            raise ValidationError("Business email is required")
-        if not self.current_user.name:
+        print("qwerty input: ", input)
+        if not input.business_email:
+            raise ValidationError("Email is required")
+        if not input.name:
             raise ValidationError("Name is required")
         if not self.current_user.is_authenticated:
             raise Unauthenticated()
@@ -56,5 +57,5 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             marketing_consent=input.get("marketing_consent", False),
             name=input.get("name", ""),
         )
-        self.validate(input)
+        self.validate(typed_input)
         return self.update_terms_agreement(typed_input)
