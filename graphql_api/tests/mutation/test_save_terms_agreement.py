@@ -21,14 +21,13 @@ class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
     def _request(self, owner=None):
         return self.gql_request(
             query,
-            variables={"input": {"termsAgreement": True, "customerIntent": "Business"}},
-            owner=owner,
-        )
-
-    def _request_invalid_customer_intent(self, owner=None):
-        return self.gql_request(
-            query,
-            variables={"input": {"termsAgreement": True, "customerIntent": "invalid"}},
+            variables={
+                "input": {
+                    "termsAgreement": True,
+                    "businessEmail": "something@email.com",
+                    "name": "codecov-user",
+                }
+            },
             owner=owner,
         )
 
@@ -45,14 +44,3 @@ class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
     def test_authenticated(self):
         owner = OwnerFactory()
         assert self._request(owner=owner) == {"saveTermsAgreement": None}
-
-    def test_invalid_customer_intent(self):
-        owner = OwnerFactory()
-        assert self._request_invalid_customer_intent(owner=owner) == {
-            "saveTermsAgreement": {
-                "error": {
-                    "__typename": "ValidationError",
-                    "message": "Invalid customer intent provided",
-                }
-            }
-        }
