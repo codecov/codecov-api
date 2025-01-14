@@ -80,13 +80,31 @@ class AccountDetailsViewSet(
     @action(detail=False, methods=["patch"])
     @stripe_safe
     def update_email(self, request, *args, **kwargs):
+        """
+        Update the email address associated with the owner's billing account.
+
+        Args:
+            request: The HTTP request object containing:
+                - new_email: The new email address to update to
+                - should_propagate_to_payment_methods: Optional boolean flag to update email on payment methods (default False)
+
+        Returns:
+            Response with serialized owner data
+
+        Raises:
+            ValidationError: If no new_email is provided in the request
+        """
         new_email = request.data.get("new_email")
         if not new_email:
             raise ValidationError(detail="No new_email sent")
         owner = self.get_object()
         billing = BillingService(requesting_user=request.current_owner)
-        should_propagate = request.data.get("should_propagate_to_payment_methods", False)
-        billing.update_email_address(owner, new_email, should_propagate_to_payment_methods=should_propagate)
+        should_propagate = request.data.get(
+            "should_propagate_to_payment_methods", False
+        )
+        billing.update_email_address(
+            owner, new_email, should_propagate_to_payment_methods=should_propagate
+        )
         return Response(self.get_serializer(owner).data)
 
     @action(detail=False, methods=["patch"])
@@ -113,16 +131,21 @@ class AccountDetailsViewSet(
         billing.update_billing_address(owner, name, billing_address=formatted_address)
         return Response(self.get_serializer(owner).data)
 
-
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["post"])
     @stripe_safe
     def setup_intent(self, request, *args, **kwargs):
         """
-        GET a Stripe setupIntent clientSecret for updating payment method
+        Create a Stripe SetupIntent to securely collect payment details.
+
+        Returns:
+            Response with SetupIntent client_secret for frontend payment method setup.
+
+        Raises:
+            ValidationError: If SetupIntent creation fails
         """
         try:
             billing = BillingService(requesting_user=request.current_owner)
-            client_secret = billing.get_setup_intent(self.owner)
+            client_secret = billing.create_setup_intent(self.owner)
             return Response({"client_secret": client_secret})
         except Exception as e:
             log.error(
@@ -130,6 +153,7 @@ class AccountDetailsViewSet(
                 extra={"error": str(e)},
             )
             raise ValidationError(detail="Unable to create setup intent")
+
 
 class UsersOrderingFilter(filters.OrderingFilter):
     def get_valid_fields(self, queryset, view, context=None):

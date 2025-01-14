@@ -98,7 +98,9 @@ GRAPHQL_QUERY_COST_THRESHOLD = get_config(
     "setup", "graphql", "query_cost_threshold", default=10000
 )
 
-GRAPHQL_RATE_LIMIT_ENABLED = get_config("setup", "graphql", "rate_limit_enabled", default=True)
+GRAPHQL_RATE_LIMIT_ENABLED = get_config(
+    "setup", "graphql", "rate_limit_enabled", default=True
+)
 
 GRAPHQL_RATE_LIMIT_RPM = get_config("setup", "graphql", "rate_limit_rpm", default=300)
 
@@ -426,7 +428,9 @@ elif IS_DEV:
 SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
 SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
 
-STRIPE_PAYMENT_METHOD_CONFIGURATION_ID = get_config("setup", "stripe", "payment_method_configuration", default=None)
+STRIPE_PAYMENT_METHOD_CONFIGURATION_ID = get_config(
+    "setup", "stripe", "payment_method_configuration", default=None
+)
 
 # Allows to do migrations from another module
 MIGRATION_MODULES = {

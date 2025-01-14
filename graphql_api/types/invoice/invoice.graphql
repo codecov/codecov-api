@@ -34,6 +34,7 @@ type Period {
 type PaymentMethod {
   billingDetails: BillingDetails
   card: Card
+  usBankAccount: USBankAccount
 }
 
 type Card {
@@ -43,12 +44,9 @@ type Card {
   last4: String
 }
 
-type BankAccount {
-  accountHolderType: String
-  accountType: String
+type USBankAccount {
   bankName: String
   last4: String
-  routingNumber: String
 }
 
 type BillingDetails {
