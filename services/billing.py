@@ -588,7 +588,7 @@ class StripeService(AbstractPaymentService):
         self,
         owner: Owner,
         email_address: str,
-        should_propagate_to_payment_methods: bool = False,
+        apply_to_default_payment_method: bool = False,
     ):
         if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
             return None
@@ -604,7 +604,7 @@ class StripeService(AbstractPaymentService):
             f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
 
-        if should_propagate_to_payment_methods:
+        if apply_to_default_payment_method:
             try:
                 default_payment_method = stripe.Customer.retrieve(
                     owner.stripe_customer_id
@@ -617,11 +617,12 @@ class StripeService(AbstractPaymentService):
                 log.info(
                     f"Stripe successfully updated billing email for payment method {default_payment_method}"
                 )
-            except Exception:
+            except Exception as e:
                 log.error(
                     "Unable to update billing email for payment method",
                     extra=dict(
                         payment_method=default_payment_method,
+                        error=str(e),
                     ),
                 )
 
@@ -700,7 +701,7 @@ class StripeService(AbstractPaymentService):
             "Stripe create setup intent for owner",
             extra=dict(
                 owner_id=owner.ownerid,
-                user_id=self.requesting_user.ownerid,
+                requesting_user_id=self.requesting_user.ownerid,
                 subscription_id=owner.stripe_subscription_id,
                 customer_id=owner.stripe_customer_id,
             ),
@@ -815,7 +816,7 @@ class BillingService:
         self,
         owner: Owner,
         email_address: str,
-        should_propagate_to_payment_methods: bool = False,
+        apply_to_default_payment_method: bool = False,
     ):
         """
         Takes an owner and a new email. Email is a string coming directly from
@@ -824,7 +825,7 @@ class BillingService:
         Otherwise returns None.
         """
         return self.payment_service.update_email_address(
-            owner, email_address, should_propagate_to_payment_methods
+            owner, email_address, apply_to_default_payment_method
         )
 
     def update_billing_address(self, owner: Owner, name: str, billing_address):
@@ -841,5 +842,6 @@ class BillingService:
     def create_setup_intent(self, owner: Owner):
         """
         Creates a SetupIntent for the given owner to securely collect payment details
+        See https://docs.stripe.com/api/setup_intents/create
         """
         return self.payment_service.create_setup_intent(owner)

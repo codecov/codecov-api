@@ -86,7 +86,7 @@ class AccountDetailsViewSet(
         Args:
             request: The HTTP request object containing:
                 - new_email: The new email address to update to
-                - should_propagate_to_payment_methods: Optional boolean flag to update email on payment methods (default False)
+                - apply_to_default_payment_method: Boolean flag to update email on the default payment method (default False)
 
         Returns:
             Response with serialized owner data
@@ -99,11 +99,13 @@ class AccountDetailsViewSet(
             raise ValidationError(detail="No new_email sent")
         owner = self.get_object()
         billing = BillingService(requesting_user=request.current_owner)
-        should_propagate = request.data.get(
-            "should_propagate_to_payment_methods", False
+        apply_to_default_payment_method = request.data.get(
+            "apply_to_default_payment_method", False
         )
         billing.update_email_address(
-            owner, new_email, should_propagate_to_payment_methods=should_propagate
+            owner,
+            new_email,
+            apply_to_default_payment_method=apply_to_default_payment_method,
         )
         return Response(self.get_serializer(owner).data)
 

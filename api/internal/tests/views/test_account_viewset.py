@@ -1253,7 +1253,7 @@ class AccountViewSetTests(APITestCase):
             "service": self.current_owner.service,
             "owner_username": self.current_owner.username,
         }
-        data = {"new_email": new_email, "should_propagate_to_payment_methods": True}
+        data = {"new_email": new_email, "apply_to_default_payment_method": True}
         url = reverse("account_details-update-email", kwargs=kwargs)
         response = self.client.patch(url, data=data, format="json")
         assert response.status_code == status.HTTP_200_OK

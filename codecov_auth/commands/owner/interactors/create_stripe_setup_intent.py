@@ -27,8 +27,11 @@ class CreateStripeSetupIntentInteractor(BaseInteractor):
             return billing.create_setup_intent(owner_obj)
         except Exception as e:
             log.error(
-                f"Error getting setup intent for owner {owner_obj.ownerid}",
-                extra={"error": str(e)},
+                "Error getting setup intent",
+                extra={
+                    "ownerid": owner_obj.ownerid,
+                    "error": str(e),
+                },
             )
             raise ValidationError("Unable to create setup intent")
 
