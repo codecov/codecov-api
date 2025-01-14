@@ -363,8 +363,12 @@ def resolve_ai_features_enabled(owner: Owner, info: GraphQLResolveInfo) -> bool:
 @sync_to_async
 @require_part_of_org
 def resolve_ai_enabled_repos(
-    owner: Owner, info: GraphQLResolveInfo
-) -> List[str] | None:
+    owner: Owner,
+    info: GraphQLResolveInfo,
+    ordering: Optional[RepositoryOrdering] = RepositoryOrdering.ID,
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
+    **kwargs: Any,
+) -> Coroutine[Any, Any, Connection]:
     ai_features_app_install = GithubAppInstallation.objects.filter(
         app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).first()
@@ -375,12 +379,17 @@ def resolve_ai_enabled_repos(
     current_owner = info.context["request"].current_owner
     queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
 
-    if ai_features_app_install.repository_service_ids:
-        queryset = queryset.filter(
-            service_id__in=ai_features_app_install.repository_service_ids
-        )
+    # if ai_features_app_install.repository_service_ids:
+    #     queryset = queryset.filter(
+    #         service_id__in=ai_features_app_install.repository_service_ids
+    #     )
 
-    return list(queryset.values_list("name", flat=True))
+    return queryset_to_connection(
+        queryset,
+        ordering=(ordering, RepositoryOrdering.ID),
+        ordering_direction=ordering_direction,
+        **kwargs,
+    )
 
 
 @owner_bindable.field("uploadTokenRequired")
