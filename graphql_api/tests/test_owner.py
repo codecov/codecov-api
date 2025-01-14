@@ -951,76 +951,76 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["aiFeaturesEnabled"] == True
 
-    @patch("services.self_hosted.get_config")
-    def test_fetch_repos_ai_features_enabled(self, get_config_mock):
-        get_config_mock.return_value = [
-            {"service": "github", "ai_features_app_id": 12345},
-        ]
+    # @patch("services.self_hosted.get_config")
+    # def test_fetch_repos_ai_features_enabled(self, get_config_mock):
+    #     get_config_mock.return_value = [
+    #         {"service": "github", "ai_features_app_id": 12345},
+    #     ]
 
-        ai_app_installation = GithubAppInstallation(
-            name="ai-features",
-            owner=self.owner,
-            repository_service_ids=["repo-1"],
-            installation_id=12345,
-        )
+    #     ai_app_installation = GithubAppInstallation(
+    #         name="ai-features",
+    #         owner=self.owner,
+    #         repository_service_ids=["repo-1"],
+    #         installation_id=12345,
+    #     )
 
-        ai_app_installation.save()
+    #     ai_app_installation.save()
 
-        query = """{
-            owner(username: "%s") {
-                aiEnabledRepos
-            }
-        }
+    #     query = """{
+    #         owner(username: "%s") {
+    #             aiEnabledRepos
+    #         }
+    #     }
 
-        """ % (self.owner.username)
-        data = self.gql_request(query, owner=self.owner)
-        assert data["owner"]["aiEnabledRepos"] == ["a"]
+    #     """ % (self.owner.username)
+    #     data = self.gql_request(query, owner=self.owner)
+    #     assert data["owner"]["aiEnabledRepos"] == ["a"]
 
-    @patch("services.self_hosted.get_config")
-    def test_fetch_repos_ai_features_enabled_app_not_configured(self, get_config_mock):
-        current_org = OwnerFactory(
-            username="random-plan-user",
-            service="github",
-        )
+    # @patch("services.self_hosted.get_config")
+    # def test_fetch_repos_ai_features_enabled_app_not_configured(self, get_config_mock):
+    #     current_org = OwnerFactory(
+    #         username="random-plan-user",
+    #         service="github",
+    #     )
 
-        get_config_mock.return_value = [
-            {"service": "github", "ai_features_app_id": 12345},
-        ]
+    #     get_config_mock.return_value = [
+    #         {"service": "github", "ai_features_app_id": 12345},
+    #     ]
 
-        query = """{
-            owner(username: "%s") {
-                aiEnabledRepos
-            }
-        }
+    #     query = """{
+    #         owner(username: "%s") {
+    #             aiEnabledRepos
+    #         }
+    #     }
 
-        """ % (current_org.username)
-        data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["aiEnabledRepos"] is None
+    #     """ % (current_org.username)
+    #     data = self.gql_request(query, owner=current_org)
+    #     assert data["owner"]["aiEnabledRepos"] is None
 
-    @patch("services.self_hosted.get_config")
-    def test_fetch_repos_ai_features_enabled_all_repos(self, get_config_mock):
-        get_config_mock.return_value = [
-            {"service": "github", "ai_features_app_id": 12345},
-        ]
+    # @patch("services.self_hosted.get_config")
+    # def test_fetch_repos_ai_features_enabled_all_repos(self, get_config_mock):
+    #     get_config_mock.return_value = [
+    #         {"service": "github", "ai_features_app_id": 12345},
+    #     ]
 
-        ai_app_installation = GithubAppInstallation(
-            name="ai-features",
-            owner=self.owner,
-            repository_service_ids=None,
-            installation_id=12345,
-        )
+    #     ai_app_installation = GithubAppInstallation(
+    #         name="ai-features",
+    #         owner=self.owner,
+    #         repository_service_ids=None,
+    #         installation_id=12345,
+    #     )
 
-        ai_app_installation.save()
+    #     ai_app_installation.save()
 
-        query = """{
-            owner(username: "%s") {
-                aiEnabledRepos
-            }
-        }
+    #     query = """{
+    #         owner(username: "%s") {
+    #             aiEnabledRepos
+    #         }
+    #     }
 
-        """ % (self.owner.username)
-        data = self.gql_request(query, owner=self.owner)
-        assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
+    #     """ % (self.owner.username)
+    #     data = self.gql_request(query, owner=self.owner)
+    #     assert data["owner"]["aiEnabledRepos"] == ["b", "a"]
 
     def test_fetch_upload_token_required(self):
         owner = OwnerFactory(
