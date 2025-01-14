@@ -584,7 +584,12 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def update_email_address(self, owner: Owner, email_address: str, should_propagate_to_payment_methods: bool = False):
+    def update_email_address(
+        self,
+        owner: Owner,
+        email_address: str,
+        should_propagate_to_payment_methods: bool = False,
+    ):
         if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
             return None
 
@@ -603,7 +608,7 @@ class StripeService(AbstractPaymentService):
             try:
                 default_payment_method = stripe.Customer.retrieve(
                     owner.stripe_customer_id
-                ).invoice_settings.default_payment_method
+                )["invoice_settings"]["default_payment_method"]
 
                 stripe.PaymentMethod.modify(
                     default_payment_method,
@@ -701,9 +706,10 @@ class StripeService(AbstractPaymentService):
             ),
         )
         return stripe.SetupIntent.create(
-            payment_method_types=['card', 'us_bank_account'],
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
             customer=owner.stripe_customer_id,
         )
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -805,14 +811,21 @@ class BillingService:
         """
         return self.payment_service.update_payment_method(owner, payment_method)
 
-    def update_email_address(self, owner: Owner, email_address: str, should_propagate_to_payment_methods: bool = False):
+    def update_email_address(
+        self,
+        owner: Owner,
+        email_address: str,
+        should_propagate_to_payment_methods: bool = False,
+    ):
         """
         Takes an owner and a new email. Email is a string coming directly from
         the front-end. If the owner has a payment id and if it's a valid email,
         the payment service will update the email address in the upstream service.
         Otherwise returns None.
         """
-        return self.payment_service.update_email_address(owner, email_address, should_propagate_to_payment_methods)
+        return self.payment_service.update_email_address(
+            owner, email_address, should_propagate_to_payment_methods
+        )
 
     def update_billing_address(self, owner: Owner, name: str, billing_address):
         """

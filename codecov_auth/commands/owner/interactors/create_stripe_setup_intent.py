@@ -11,6 +11,7 @@ from services.billing import BillingService
 
 log = logging.getLogger(__name__)
 
+
 class CreateStripeSetupIntentInteractor(BaseInteractor):
     def validate(self, owner_obj: Owner) -> None:
         if not self.current_user.is_authenticated:

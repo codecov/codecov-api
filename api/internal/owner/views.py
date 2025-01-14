@@ -131,29 +131,6 @@ class AccountDetailsViewSet(
         billing.update_billing_address(owner, name, billing_address=formatted_address)
         return Response(self.get_serializer(owner).data)
 
-    @action(detail=False, methods=["post"])
-    @stripe_safe
-    def setup_intent(self, request, *args, **kwargs):
-        """
-        Create a Stripe SetupIntent to securely collect payment details.
-
-        Returns:
-            Response with SetupIntent client_secret for frontend payment method setup.
-
-        Raises:
-            ValidationError: If SetupIntent creation fails
-        """
-        try:
-            billing = BillingService(requesting_user=request.current_owner)
-            client_secret = billing.create_setup_intent(self.owner)
-            return Response({"client_secret": client_secret})
-        except Exception as e:
-            log.error(
-                f"Error getting setup intent for owner {self.owner.ownerid}",
-                extra={"error": str(e)},
-            )
-            raise ValidationError(detail="Unable to create setup intent")
-
 
 class UsersOrderingFilter(filters.OrderingFilter):
     def get_valid_fields(self, queryset, view, context=None):

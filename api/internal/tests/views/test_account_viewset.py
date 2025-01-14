@@ -1228,6 +1228,46 @@ class AccountViewSetTests(APITestCase):
             self.current_owner.stripe_customer_id, email=new_email
         )
 
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.PaymentMethod.modify")
+    @patch("services.billing.stripe.Customer.retrieve")
+    def test_update_email_address_with_propagate(
+        self,
+        customer_retrieve_mock,
+        payment_method_mock,
+        modify_customer_mock,
+        retrieve_mock,
+    ):
+        self.current_owner.stripe_customer_id = "flsoe"
+        self.current_owner.stripe_subscription_id = "djfos"
+        self.current_owner.save()
+
+        payment_method_id = "pm_123"
+        customer_retrieve_mock.return_value = {
+            "invoice_settings": {"default_payment_method": payment_method_id}
+        }
+
+        new_email = "test@gmail.com"
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        data = {"new_email": new_email, "should_propagate_to_payment_methods": True}
+        url = reverse("account_details-update-email", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == status.HTTP_200_OK
+
+        modify_customer_mock.assert_called_once_with(
+            self.current_owner.stripe_customer_id, email=new_email
+        )
+        customer_retrieve_mock.assert_called_once_with(
+            self.current_owner.stripe_customer_id
+        )
+        payment_method_mock.assert_called_once_with(
+            payment_method_id, billing_details={"email": new_email}
+        )
+
     def test_update_billing_address_without_body(self):
         kwargs = {
             "service": self.current_owner.service,

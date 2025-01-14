@@ -1,4 +1,4 @@
-union CreateStripeSetupIntentError = UnauthenticatedError | ValidationError
+union CreateStripeSetupIntentError = UnauthenticatedError | UnauthorizedError | ValidationError
 
 type CreateStripeSetupIntentPayload {
     error: CreateStripeSetupIntentError

@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 from ariadne import UnionType
 from ariadne.types import GraphQLResolveInfo
@@ -11,8 +11,8 @@ from graphql_api.helpers.mutation import (
 
 @wrap_error_handling_mutation
 async def resolve_create_stripe_setup_intent(
-    _, info: GraphQLResolveInfo, input: Dict[str, any]
-) -> Dict[str, any]:
+    _: Any, info: GraphQLResolveInfo, input: Dict[str, str]
+) -> Dict[str, str]:
     command = info.context["executor"].get_command("owner")
     resp = await command.create_stripe_setup_intent(input.get("owner"))
     return {

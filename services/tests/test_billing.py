@@ -1538,6 +1538,7 @@ class StripeServiceTests(TestCase):
             tax_id_collection={"enabled": True},
             customer_update=None,
         )
+
     @patch("services.billing.stripe.checkout.Session.create")
     def test_create_checkout_session_with_stripe_customer_id(
         self, create_checkout_session_mock
@@ -2031,4 +2032,3 @@ class BillingServiceTests(TestCase):
         owner = OwnerFactory()
         self.billing_service.get_invoice(owner, "abc")
         get_invoice_mock.assert_called_once_with(owner, "abc")
-
