@@ -22,7 +22,6 @@ class GenAIAuthViewTests(APITestCase):
 
     def test_no_owner_id(self):
         url = reverse("gen-ai-consent")
-        self.client.force_login_owner(self.owner)
         response = self.client.get(url)
         assert response.status_code == 200
         assert response.data["is_valid"] is False
@@ -32,14 +31,12 @@ class GenAIAuthViewTests(APITestCase):
         self.ai_install.delete()
 
         url = reverse("gen-ai-consent")
-        self.client.force_login_owner(self.owner)
         response = self.client.get(url, data={"owner_id": self.owner.id})
         assert response.status_code == 200
         assert response.data["is_valid"] is False
 
     def test_valid_owner_with_install(self):
         url = reverse("gen-ai-consent")
-        self.client.force_login_owner(self.owner)
         response = self.client.get(url, data={"owner_id": self.owner.id})
         assert response.status_code == 200
         assert response.data["is_valid"] is True
