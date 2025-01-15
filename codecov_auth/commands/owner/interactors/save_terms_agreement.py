@@ -21,7 +21,6 @@ class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
 
     def validate(self, input: TermsAgreementInput) -> None:
-        print("qwerty input: ", input)
         if not input.business_email:
             raise ValidationError("Email is required")
         if not input.name:
