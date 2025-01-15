@@ -17,9 +17,9 @@ from shared.django_apps.codecov_auth.models import (
     Account,
     AccountsUsers,
     InvoiceBilling,
+    Plan,
     StripeBilling,
-    Plans,
-    Tiers,
+    Tier,
 )
 from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from shared.plan.service import PlanService
@@ -711,12 +711,12 @@ class AccountsUsersAdmin(AdminMixin, admin.ModelAdmin):
 
     fields = readonly_fields + ["account", "user"]
 
+
 class PlansInline(admin.TabularInline):
-    model = Plans
+    model = Plan
     extra = 1
     verbose_name_plural = "Plans (click save to commit changes)"
     verbose_name = "Plan"
-    readonly_fields = ["name"]
     fields = [
         "name",
         "marketing_name",
@@ -728,12 +728,12 @@ class PlansInline(admin.TabularInline):
         "is_active",
     ]
     formfield_overrides = {
-        Plans._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
+        Plan._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
     }
 
 
-@admin.register(Tiers)
-class TiersAdmin(admin.ModelAdmin):
+@admin.register(Tier)
+class TierAdmin(admin.ModelAdmin):
     list_display = (
         "tier_name",
         "bundle_analysis",
@@ -761,9 +761,40 @@ class TiersAdmin(admin.ModelAdmin):
     ]
 
 
-@admin.register(Plans)
-class PlansAdmin(admin.ModelAdmin):
-    list_display = ("name", "marketing_name", "base_unit_price", "is_active", "paid_plan")
+class PlanAdminForm(forms.ModelForm):
+    class Meta:
+        model = Plan
+        fields = "__all__"
+
+    def clean_base_unit_price(self):
+        base_unit_price = self.cleaned_data.get("base_unit_price")
+        if base_unit_price is not None and base_unit_price < 0:
+            raise forms.ValidationError("Base unit price cannot be negative.")
+        return base_unit_price
+
+    def clean_max_seats(self):
+        max_seats = self.cleaned_data.get("max_seats")
+        if max_seats is not None and max_seats < 0:
+            raise forms.ValidationError("Max seats cannot be negative.")
+        return max_seats
+
+    def clean_monthly_uploads_limit(self):
+        monthly_uploads_limit = self.cleaned_data.get("monthly_uploads_limit")
+        if monthly_uploads_limit is not None and monthly_uploads_limit < 0:
+            raise forms.ValidationError("Monthly uploads limit cannot be negative.")
+        return monthly_uploads_limit
+
+
+@admin.register(Plan)
+class PlanAdmin(admin.ModelAdmin):
+    form = PlanAdminForm
+    list_display = (
+        "name",
+        "marketing_name",
+        "base_unit_price",
+        "is_active",
+        "paid_plan",
+    )
     list_filter = ("is_active", "paid_plan", "billing_rate")
     search_fields = ("name__iregex", "marketing_name__iregex")
     fields = [
@@ -779,13 +810,6 @@ class PlansAdmin(admin.ModelAdmin):
         "paid_plan",
     ]
     formfield_overrides = {
-        Plans._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
+        Plan._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
     }
     autocomplete_fields = ["tier"]  # a dropdown for selecting related Tiers
-
-    def save_model(self, request, obj, form, change):
-        if obj.base_unit_price < 0:
-            raise forms.ValidationError("Base unit price cannot be negative.")
-        if obj.max_seats is not None and obj.max_seats < 0:
-            raise forms.ValidationError("Max seats cannot be negative.")
-        super().save_model(request, obj, form, change)
