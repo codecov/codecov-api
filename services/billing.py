@@ -10,7 +10,6 @@ from shared.plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PAID_PLANS,
     TEAM_PLANS,
-    USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
 )
 from shared.plan.service import PlanService
@@ -454,8 +453,8 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if switching from monthly to yearly plan.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+        current_plan_info = Plan.objects.get(name=owner.plan)
+        desired_plan_info = Plan.objects.get(name=desired_plan["value"])
 
         return bool(
             current_plan_info
@@ -468,8 +467,8 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if switching to a plan with similar term and seats.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+        current_plan_info = Plan.objects.get(name=owner.plan)
+        desired_plan_info = Plan.objects.get(name=desired_plan["value"])
 
         is_same_term = (
             current_plan_info
