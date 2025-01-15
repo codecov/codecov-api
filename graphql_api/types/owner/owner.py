@@ -383,8 +383,6 @@ def resolve_ai_enabled_repos(
     return list(queryset.values_list("name", flat=True))
 
 @owner_bindable.field("aiEnabledRepos2")
-@sync_to_async
-@require_part_of_org
 def resolve_ai_enabled_repos2(
     owner: Owner,
     info: GraphQLResolveInfo,
