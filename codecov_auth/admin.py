@@ -608,7 +608,10 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
 
     def get_form(self, request, obj=None, change=False, **kwargs):
         form = super().get_form(request, obj, change, **kwargs)
-        PLANS_CHOICES = [(x, x) for x in Plan.objects.values_list("name", flat=True)]
+        PLANS_CHOICES = [
+            (x, x)
+            for x in Plan.objects.filter(is_active=True).values_list("name", flat=True)
+        ]
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )

@@ -337,7 +337,9 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
                 instance, desired_plan
             )
 
-            sentry_plans = Plan.objects.filter(tier=TierName.Sentry.value)
+            sentry_plans = Plan.objects.filter(
+                tier=TierName.SENTRY.value, is_active=True
+            )
 
             if desired_plan["value"] in sentry_plans:
                 current_owner = self.context["view"].request.current_owner
