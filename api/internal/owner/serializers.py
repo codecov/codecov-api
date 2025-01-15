@@ -8,9 +8,9 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from shared.plan.constants import (
     PAID_PLANS,
-    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     TEAM_PLAN_MAX_USERS,
     TEAM_PLAN_REPRESENTATIONS,
+    TierName,
 )
 from shared.plan.service import PlanService
 
@@ -137,11 +137,6 @@ class PlanSerializer(serializers.Serializer):
             plan["value"] for plan in plan_service.available_plans(current_owner)
         ]
         if value not in plan_values:
-            if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
-                log.warning(
-                    "Non-Sentry user attempted to transition to Sentry plan",
-                    extra=dict(owner_id=current_owner.pk, plan=value),
-                )
             raise serializers.ValidationError(
                 f"Invalid value for plan: {value}; must be one of {plan_values}"
             )
@@ -342,7 +337,9 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
                 instance, desired_plan
             )
 
-            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+            sentry_plans = Plan.objects.filter(tier=TierName.Sentry.value)
+
+            if desired_plan["value"] in sentry_plans:
                 current_owner = self.context["view"].request.current_owner
                 send_sentry_webhook(current_owner, instance)
 
