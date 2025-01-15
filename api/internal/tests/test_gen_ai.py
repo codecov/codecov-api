@@ -1,9 +1,10 @@
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
-from utils.test_utils import Client
+
 from codecov_auth.models import GithubAppInstallation
 from graphql_api.types.owner.owner import AI_FEATURES_GH_APP_ID
+from utils.test_utils import Client
 
 
 class GenAIAuthViewTests(APITestCase):

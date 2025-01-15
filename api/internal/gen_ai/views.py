@@ -1,15 +1,15 @@
-from graphql_api.types.owner.owner import AI_FEATURES_GH_APP_ID
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.license import get_current_license
-
-from .serializers import GenAIAuthSerializer, LicenseSerializer
 
 from codecov_auth.models import (
     GithubAppInstallation,
     Owner,
 )
+from graphql_api.types.owner.owner import AI_FEATURES_GH_APP_ID
+
+from .serializers import GenAIAuthSerializer
+
 
 class GenAIAuthView(APIView):
     permission_classes = [IsAuthenticated]
@@ -27,7 +27,7 @@ class GenAIAuthView(APIView):
             ).first()
 
         if ai_features_app_install and ai_features_app_install.repository_service_ids:
-                repos = ai_features_app_install.repository_service_ids
+            repos = ai_features_app_install.repository_service_ids
 
         data = {
             "is_valid": bool(ai_features_app_install),
