@@ -14,7 +14,7 @@ from .serializers import GenAIAuthSerializer
 class GenAIAuthView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> Response:
         owner_id = request.query_params.get("owner_id")
         owner = Owner.objects.filter(pk=owner_id, service="github").first()
 
