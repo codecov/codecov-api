@@ -51,6 +51,7 @@ class UploadSerializer(serializers.Serializer):
     pr = serializers.CharField(required=False)
     branch = serializers.CharField(required=False, allow_null=True)
     storage_path = serializers.CharField(required=False)
+    file_not_found = serializers.BooleanField(required=False)
 
 
 class TestResultsView(
@@ -136,18 +137,23 @@ class TestResultsView(
 
         upload_external_id = str(uuid.uuid4())
 
-        archive_service = ArchiveService(repo)
+        url = None
+        file_not_found = data.get("file_not_found", False)
+        if file_not_found:
+            storage_path = None
+        else:
+            archive_service = ArchiveService(repo)
 
-        storage_path = data.get("storage_path", None)
-        if storage_path is None or not self.is_shelter_request():
-            storage_path = MinioEndpoints.test_results.get_path(
-                date=timezone.now().strftime("%Y-%m-%d"),
-                repo_hash=archive_service.get_archive_hash(repo),
-                commit_sha=data["commit"],
-                uploadid=upload_external_id,
-            )
+            storage_path = data.get("storage_path", None)
+            if storage_path is None or not self.is_shelter_request():
+                storage_path = MinioEndpoints.test_results.get_path(
+                    date=timezone.now().strftime("%Y-%m-%d"),
+                    repo_hash=archive_service.get_archive_hash(repo),
+                    commit_sha=data["commit"],
+                    uploadid=upload_external_id,
+                )
 
-        url = archive_service.create_presigned_put(storage_path)
+            url = archive_service.create_presigned_put(storage_path)
 
         task_arguments = {
             # these are used in the upload task when saving an upload record
@@ -181,4 +187,7 @@ class TestResultsView(
             report_type=CommitReport.ReportType.TEST_RESULTS,
         )
 
-        return Response({"raw_upload_location": url}, status=201)
+        if url is None:
+            return Response(status=201)
+        else:
+            return Response({"raw_upload_location": url}, status=201)
