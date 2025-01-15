@@ -392,9 +392,9 @@ def resolve_ai_enabled_repos2(
     ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
     **kwargs: Any,
 ) -> Coroutine[Any, Any, Connection]:
-    ai_features_app_install = GithubAppInstallation.objects.filter(
-        app_id=AI_FEATURES_GH_APP_ID, owner=owner
-    ).first()
+    # ai_features_app_install = GithubAppInstallation.objects.filter(
+    #     app_id=AI_FEATURES_GH_APP_ID, owner=owner
+    # ).first()
 
     # if not ai_features_app_install:
     #     return None

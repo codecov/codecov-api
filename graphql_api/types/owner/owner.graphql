@@ -40,7 +40,6 @@ type Owner {
   aiFeaturesEnabled: Boolean!
   aiEnabledRepos: [String]
   aiEnabledRepos2(
-    filters: RepositorySetFilters
     ordering: RepositoryOrdering
     orderingDirection: OrderingDirection
     first: Int
