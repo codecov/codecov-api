@@ -34,12 +34,18 @@ type Period {
 type PaymentMethod {
   billingDetails: BillingDetails
   card: Card
+  usBankAccount: USBankAccount
 }
 
 type Card {
   brand: String
   expMonth: Int
   expYear: Int
+  last4: String
+}
+
+type USBankAccount {
+  bankName: String
   last4: String
 }
 

@@ -2,6 +2,7 @@ from codecov.commands.base import BaseCommand
 
 from .interactors.cancel_trial import CancelTrialInteractor
 from .interactors.create_api_token import CreateApiTokenInteractor
+from .interactors.create_stripe_setup_intent import CreateStripeSetupIntentInteractor
 from .interactors.create_user_token import CreateUserTokenInteractor
 from .interactors.delete_session import DeleteSessionInteractor
 from .interactors.fetch_owner import FetchOwnerInteractor
@@ -27,6 +28,9 @@ from .interactors.update_self_hosted_settings import UpdateSelfHostedSettingsInt
 class OwnerCommands(BaseCommand):
     def create_api_token(self, name):
         return self.get_interactor(CreateApiTokenInteractor).execute(name)
+
+    def create_stripe_setup_intent(self, owner):
+        return self.get_interactor(CreateStripeSetupIntentInteractor).execute(owner)
 
     def delete_session(self, sessionid: int):
         return self.get_interactor(DeleteSessionInteractor).execute(sessionid)

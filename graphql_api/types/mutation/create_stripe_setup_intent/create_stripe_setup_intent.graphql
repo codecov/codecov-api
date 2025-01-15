@@ -1,0 +1,6 @@
+union CreateStripeSetupIntentError = UnauthenticatedError | UnauthorizedError | ValidationError
+
+type CreateStripeSetupIntentPayload {
+    error: CreateStripeSetupIntentError
+    clientSecret: String
+}
