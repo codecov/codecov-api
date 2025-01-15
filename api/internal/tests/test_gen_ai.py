@@ -15,11 +15,12 @@ class GenAIAuthViewTests(APITestCase):
         self.repo1 = RepositoryFactory(author=self.owner, name="Repo1")
         self.repo2 = RepositoryFactory(author=self.owner, name="Repo2")
 
-        self.ai_install = GithubAppInstallation.objects.create(
+        self.ai_install = GithubAppInstallation(
             app_id=AI_FEATURES_GH_APP_ID,
             owner=self.owner,
             repository_service_ids=[self.repo1.service_id, self.repo2.service_id],
         )
+        self.ai_install.save()
 
     def test_no_owner_id(self):
         url = reverse("gen-ai-consent")
@@ -29,7 +30,7 @@ class GenAIAuthViewTests(APITestCase):
 
     def test_owner_without_install(self):
         # Remove the AI installation so it doesn't exist
-        self.ai_install.delete()
+        self.ai_install = None
 
         url = reverse("gen-ai-consent")
         response = self.client.get(url, data={"owner_id": self.owner.id})
