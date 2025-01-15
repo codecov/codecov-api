@@ -50,6 +50,7 @@ class TestMigrations(TestCase):
                 type(self).__name__
             )
         )
+
         self.migrate_from = [(self.app, self.migrate_from)]
         self.migrate_to = [(self.app, self.migrate_to)]
         executor = MigrationExecutor(connection)
