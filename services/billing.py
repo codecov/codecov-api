@@ -615,14 +615,21 @@ class StripeService(AbstractPaymentService):
                     billing_details={"email": email_address},
                 )
                 log.info(
-                    f"Stripe successfully updated billing email for payment method {default_payment_method}"
+                    f"Stripe successfully updated billing email for payment method",
+                    extra=dict(
+                        payment_method=default_payment_method,
+                        stripe_customer_id=owner.stripe_customer_id,
+                        ownerid=owner.ownerid,
+                    ),
                 )
             except Exception as e:
                 log.error(
                     "Unable to update billing email for payment method",
                     extra=dict(
                         payment_method=default_payment_method,
+                        stripe_customer_id=owner.stripe_customer_id,
                         error=str(e),
+                        ownerid=owner.ownerid,
                     ),
                 )
 
