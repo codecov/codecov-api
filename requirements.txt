@@ -312,7 +312,7 @@ prometheus-client==0.17.1
     #   shared
 prompt-toolkit==3.0.28
     # via click-repl
-proto-plus==1.22.3
+proto-plus==1.25.0
     # via
     #   google-api-core
     #   google-cloud-pubsub
