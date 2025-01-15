@@ -7,7 +7,6 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from shared.plan.constants import (
-    PAID_PLANS,
     TEAM_PLAN_MAX_USERS,
     TierName,
 )
@@ -149,7 +148,9 @@ class PlanSerializer(serializers.Serializer):
             )
 
         # Validate quantity here because we need access to whole plan object
-        if plan["value"] in PAID_PLANS:
+        if plan["value"] in Plan.objects.filter(
+            paid_plan=True, is_active=True
+        ).values_list("name", flat=True):
             if "quantity" not in plan:
                 raise serializers.ValidationError(
                     "Field 'quantity' required for updating to paid plans"
@@ -214,7 +215,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         plan_name = list(stripe_plan_dict.keys())[
             list(stripe_plan_dict.values()).index(plan_id)
         ]
-        marketing_plan_name = PAID_PLANS[plan_name].billing_rate
+        marketing_plan_name = Plan.objects.get(name=plan_name).marketing_name
         return marketing_plan_name
 
     def get_quantity(self, phase: Dict[str, Any]) -> int:

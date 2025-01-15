@@ -7,8 +7,6 @@ import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from shared.plan.constants import (
-    PAID_PLANS,
-    TEAM_PLANS,
     PlanBillingRate,
 )
 from shared.plan.service import PlanService
@@ -479,11 +477,15 @@ class StripeService(AbstractPaymentService):
             owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
         )
 
+        team_plans = Plan.objects.filter(
+            tier=TierName.TEAM.value, is_active=True
+        ).values_list("name", flat=True)
+
         # If from PRO to TEAM, then not a similar plan
-        if owner.plan not in TEAM_PLANS and desired_plan["value"] in TEAM_PLANS:
+        if owner.plan not in team_plans and desired_plan["value"] in team_plans:
             return False
         # If from TEAM to PRO, then considered a similar plan but really is an upgrade
-        elif owner.plan in TEAM_PLANS and desired_plan["value"] not in TEAM_PLANS:
+        elif owner.plan in team_plans and desired_plan["value"] not in team_plans:
             return True
 
         return bool(is_same_term and is_same_seats)
@@ -800,7 +802,9 @@ class BillingService:
             else:
                 plan_service = PlanService(current_org=owner)
                 plan_service.set_default_plan_data()
-        elif desired_plan["value"] in PAID_PLANS:
+        elif desired_plan["value"] in Plan.objects.filter(
+            paid_plan=True, is_active=True
+        ).values_list("name", flat=True):
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
