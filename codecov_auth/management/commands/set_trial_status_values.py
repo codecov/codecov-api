@@ -2,11 +2,13 @@ from datetime import datetime
 from typing import Any
 
 from django.core.management.base import BaseCommand, CommandParser
-from django.db.models import Q, Subquery
+from django.db.models import Q
 from shared.plan.constants import (
     FREE_PLAN_REPRESENTATIONS,
     PLANS_THAT_CAN_TRIAL,
-    TierName,
+    PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS,
+    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
+    PlanName,
     TrialStatus,
 )
 
@@ -30,12 +32,10 @@ class Command(BaseCommand):
                 stripe_customer_id=None,
             ).update(trial_status=TrialStatus.NOT_STARTED.value)
 
-        sentry_plans = Plan.objects.filter(tier=TierName.SENTRY.value)
-        pro_plans = Plan.objects.filter(tier=TierName.PRO.value, paid_plan=True)
         # ONGOING
         if trial_status_type == "all" or trial_status_type == "ongoing":
             Owner.objects.filter(
-                plan__in=Subquery(sentry_plans.values_list("name", flat=True)),
+                plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
                 trial_end_date__gt=datetime.now(),
             ).update(trial_status=TrialStatus.ONGOING.value)
 
@@ -44,14 +44,14 @@ class Command(BaseCommand):
             Owner.objects.filter(
                 # Currently paying sentry customer with trial_end_date
                 Q(
-                    plan__in=Subquery(sentry_plans.values_list("name", flat=True)),
+                    plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
                     stripe_customer_id__isnull=False,
                     stripe_subscription_id__isnull=False,
                     trial_end_date__lte=datetime.now(),
                 )
                 # Currently paying sentry customer without trial_end_date
                 | Q(
-                    plan__in=Subquery(sentry_plans.values_list("name", flat=True)),
+                    plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
                     stripe_customer_id__isnull=False,
                     stripe_subscription_id__isnull=False,
                     trial_start_date__isnull=True,
@@ -59,7 +59,7 @@ class Command(BaseCommand):
                 )
                 # Previously paid but now back to basic with trial start/end dates
                 | Q(
-                    plan="users-basic",
+                    plan=PlanName.BASIC_PLAN_NAME.value,
                     stripe_customer_id__isnull=False,
                     trial_start_date__isnull=False,
                     trial_end_date__isnull=False,
@@ -73,20 +73,20 @@ class Command(BaseCommand):
                 ~Q(plan__in=PLANS_THAT_CAN_TRIAL)
                 # Previously paid but now back to basic without trial start/end dates
                 | Q(
-                    plan="users-basic",
+                    plan=PlanName.BASIC_PLAN_NAME.value,
                     stripe_customer_id__isnull=False,
                     trial_start_date__isnull=True,
                     trial_end_date__isnull=True,
                 )
                 # Currently paying customer that isn't a sentry plan (they would be expired)
                 | Q(
-                    ~Q(plan__in=Subquery(sentry_plans.values_list("name", flat=True))),
+                    ~Q(plan__in=SENTRY_PAID_USER_PLAN_REPRESENTATIONS),
                     stripe_subscription_id__isnull=False,
                     stripe_customer_id__isnull=False,
                 )
                 # Invoiced customers without stripe info
                 | Q(
-                    Q(plan__in=Subquery(pro_plans.values_list("name", flat=True))),
+                    Q(plan__in=PR_AUTHOR_PAID_USER_PLAN_REPRESENTATIONS),
                     stripe_subscription_id__isnull=True,
                     stripe_customer_id__isnull=True,
                 )

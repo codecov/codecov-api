@@ -9,7 +9,6 @@ from rest_framework.exceptions import PermissionDenied
 from shared.plan.constants import (
     PAID_PLANS,
     TEAM_PLAN_MAX_USERS,
-    TEAM_PLAN_REPRESENTATIONS,
     TierName,
 )
 from shared.plan.service import PlanService
@@ -179,7 +178,8 @@ class PlanSerializer(serializers.Serializer):
                     "Quantity or plan for paid plan must be different from the existing one"
                 )
             if (
-                plan["value"] in TEAM_PLAN_REPRESENTATIONS
+                plan["value"]
+                in Plan.objects.filter(tier=TierName.TEAM.value, is_active=True)
                 and plan["quantity"] > TEAM_PLAN_MAX_USERS
             ):
                 raise serializers.ValidationError(

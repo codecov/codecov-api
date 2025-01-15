@@ -7,7 +7,6 @@ import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from shared.plan.constants import (
-    FREE_PLAN_REPRESENTATIONS,
     PAID_PLANS,
     TEAM_PLANS,
     PlanBillingRate,
@@ -793,7 +792,9 @@ class BillingService:
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        if desired_plan["value"] in FREE_PLAN_REPRESENTATIONS:
+        if desired_plan["value"] in Plan.objects.filter(paid_plan=False).values_list(
+            "name", flat=True
+        ):
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
