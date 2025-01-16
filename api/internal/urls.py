@@ -76,5 +76,4 @@ urlpatterns += [
         include(compare_router.urls),
     ),
     path("features", FeaturesView.as_view(), name="features"),
-    path("internal/gen-ai-consent/", include("api.internal.gen_ai.urls")),
 ]
