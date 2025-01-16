@@ -109,8 +109,14 @@ class StripeCardSerializer(serializers.Serializer):
     last4 = serializers.CharField()
 
 
+class StripeUSBankAccountSerializer(serializers.Serializer):
+    bank_name = serializers.CharField()
+    last4 = serializers.CharField()
+
+
 class StripePaymentMethodSerializer(serializers.Serializer):
     card = StripeCardSerializer(read_only=True)
+    us_bank_account = StripeUSBankAccountSerializer(read_only=True)
     billing_details = serializers.JSONField(read_only=True)
 
 
