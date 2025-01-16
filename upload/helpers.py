@@ -637,7 +637,7 @@ def validate_upload(
 
         # If author is on per repo billing, check their repo credits
         if (
-            owner.plan not in Plan.object.values_list("name", flat=True)
+            owner.plan not in Plan.objects.values_list("name", flat=True)
             and owner.repo_credits <= 0
         ):
             raise ValidationError(
