@@ -429,6 +429,10 @@ elif IS_DEV:
 SHELTER_PUBSUB_PROJECT_ID = get_config("setup", "shelter", "pubsub_project_id")
 SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = get_config("setup", "shelter", "sync_repo_topic_id")
 
+STRIPE_PAYMENT_METHOD_CONFIGURATION_ID = get_config(
+    "setup", "stripe", "payment_method_configuration_id", default=None
+)
+
 # Allows to do migrations from another module
 MIGRATION_MODULES = {
     "codecov_auth": "shared.django_apps.codecov_auth.migrations",

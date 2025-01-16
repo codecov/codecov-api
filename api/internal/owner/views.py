@@ -80,12 +80,33 @@ class AccountDetailsViewSet(
     @action(detail=False, methods=["patch"])
     @stripe_safe
     def update_email(self, request, *args, **kwargs):
+        """
+        Update the email address associated with the owner's billing account.
+
+        Args:
+            request: The HTTP request object containing:
+                - new_email: The new email address to update to
+                - apply_to_default_payment_method: Boolean flag to update email on the default payment method (default False)
+
+        Returns:
+            Response with serialized owner data
+
+        Raises:
+            ValidationError: If no new_email is provided in the request
+        """
         new_email = request.data.get("new_email")
         if not new_email:
             raise ValidationError(detail="No new_email sent")
         owner = self.get_object()
         billing = BillingService(requesting_user=request.current_owner)
-        billing.update_email_address(owner, new_email)
+        apply_to_default_payment_method = request.data.get(
+            "apply_to_default_payment_method", False
+        )
+        billing.update_email_address(
+            owner,
+            new_email,
+            apply_to_default_payment_method=apply_to_default_payment_method,
+        )
         return Response(self.get_serializer(owner).data)
 
     @action(detail=False, methods=["patch"])
