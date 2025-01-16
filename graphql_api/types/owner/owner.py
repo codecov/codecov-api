@@ -8,7 +8,7 @@ import yaml
 from ariadne import ObjectType
 from django.conf import settings
 from graphql import GraphQLResolveInfo
-from shared.plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
+from shared.plan.constants import PlanData, PlanName
 from shared.plan.service import PlanService
 
 import services.activation as activation
@@ -112,7 +112,7 @@ def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
 @require_part_of_org
 def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
-    free_plan = FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
+    free_plan = Plan.objects.get(name=PlanName.BASIC_PLAN_NAME.value)
     return free_plan.convert_to_DTO()
 
 

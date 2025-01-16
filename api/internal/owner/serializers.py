@@ -7,10 +7,8 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from shared.plan.constants import (
-    PAID_PLANS,
-    SENTRY_PAID_USER_PLAN_REPRESENTATIONS,
     TEAM_PLAN_MAX_USERS,
-    TEAM_PLAN_REPRESENTATIONS,
+    TierName,
 )
 from shared.plan.service import PlanService
 
@@ -137,11 +135,6 @@ class PlanSerializer(serializers.Serializer):
             plan["value"] for plan in plan_service.available_plans(current_owner)
         ]
         if value not in plan_values:
-            if value in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
-                log.warning(
-                    "Non-Sentry user attempted to transition to Sentry plan",
-                    extra=dict(owner_id=current_owner.pk, plan=value),
-                )
             raise serializers.ValidationError(
                 f"Invalid value for plan: {value}; must be one of {plan_values}"
             )
@@ -155,7 +148,9 @@ class PlanSerializer(serializers.Serializer):
             )
 
         # Validate quantity here because we need access to whole plan object
-        if plan["value"] in PAID_PLANS:
+        if plan["value"] in Plan.objects.filter(
+            paid_plan=True, is_active=True
+        ).values_list("name", flat=True):
             if "quantity" not in plan:
                 raise serializers.ValidationError(
                     "Field 'quantity' required for updating to paid plans"
@@ -184,7 +179,8 @@ class PlanSerializer(serializers.Serializer):
                     "Quantity or plan for paid plan must be different from the existing one"
                 )
             if (
-                plan["value"] in TEAM_PLAN_REPRESENTATIONS
+                plan["value"]
+                in Plan.objects.filter(tier=TierName.TEAM.value, is_active=True)
                 and plan["quantity"] > TEAM_PLAN_MAX_USERS
             ):
                 raise serializers.ValidationError(
@@ -219,7 +215,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
         plan_name = list(stripe_plan_dict.keys())[
             list(stripe_plan_dict.values()).index(plan_id)
         ]
-        marketing_plan_name = PAID_PLANS[plan_name].billing_rate
+        marketing_plan_name = Plan.objects.get(name=plan_name).marketing_name
         return marketing_plan_name
 
     def get_quantity(self, phase: Dict[str, Any]) -> int:
@@ -342,7 +338,11 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
                 instance, desired_plan
             )
 
-            if desired_plan["value"] in SENTRY_PAID_USER_PLAN_REPRESENTATIONS:
+            sentry_plans = Plan.objects.filter(
+                tier=TierName.SENTRY.value, is_active=True
+            )
+
+            if desired_plan["value"] in sentry_plans:
                 current_owner = self.context["view"].request.current_owner
                 send_sentry_webhook(current_owner, instance)
 
