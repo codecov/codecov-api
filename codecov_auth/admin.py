@@ -726,6 +726,7 @@ class PlansInline(admin.TabularInline):
         "monthly_uploads_limit",
         "paid_plan",
         "is_active",
+        "stripe_id",
     ]
     formfield_overrides = {
         Plan._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
@@ -791,12 +792,13 @@ class PlanAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "marketing_name",
-        "base_unit_price",
         "is_active",
+        "tier",
         "paid_plan",
+        "billing_rate",
+        "base_unit_price",
         "max_seats",
         "monthly_uploads_limit",
-        "billing_rate",
     )
     list_filter = ("is_active", "paid_plan", "billing_rate", "tier")
     search_fields = ("name__iregex", "marketing_name__iregex")
@@ -811,6 +813,7 @@ class PlanAdmin(admin.ModelAdmin):
         "max_seats",
         "monthly_uploads_limit",
         "paid_plan",
+        "stripe_id",
     ]
     formfield_overrides = {
         Plan._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
