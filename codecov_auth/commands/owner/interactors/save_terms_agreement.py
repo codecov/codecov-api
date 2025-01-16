@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 from django.utils import timezone
 
@@ -11,14 +11,25 @@ from services.analytics import AnalyticsService
 
 @dataclass
 class TermsAgreementInput:
-    business_email: str
-    name: str
+    business_email: Optional[str] = None
+    name: Optional[str] = None
     terms_agreement: bool = False
     marketing_consent: bool = False
+    customer_intent: Optional[str] = None
 
 
 class SaveTermsAgreementInteractor(BaseInteractor):
     requires_service = False
+
+    def validate_deprecated(self, input: TermsAgreementInput) -> None:
+        valid_customer_intents = ["Business", "BUSINESS", "Personal", "PERSONAL"]
+        if (
+            input.customer_intent
+            and input.customer_intent not in valid_customer_intents
+        ):
+            raise ValidationError("Invalid customer intent provided")
+        if not self.current_user.is_authenticated:
+            raise Unauthenticated()
 
     def validate(self, input: TermsAgreementInput) -> None:
         if not input.business_email:
@@ -54,7 +65,11 @@ class SaveTermsAgreementInteractor(BaseInteractor):
             business_email=input.get("business_email", ""),
             terms_agreement=input.get("terms_agreement", False),
             marketing_consent=input.get("marketing_consent", False),
+            customer_intent=input.get("customer_intent"),
             name=input.get("name", ""),
         )
-        self.validate(typed_input)
+        if input.get("customer_intent"):
+            self.validate_deprecated(typed_input)
+        else:
+            self.validate(typed_input)
         return self.update_terms_agreement(typed_input)
