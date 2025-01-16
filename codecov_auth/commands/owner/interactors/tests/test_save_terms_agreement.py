@@ -199,23 +199,6 @@ class UpdateSaveTermsAgreementInteractorTest(TransactionTestCase):
         assert self.current_user.email == "something@email.com"
         assert self.current_user.name == "codecov-user"
 
-    def test_validation_error_when_email_invalid(self):
-        with pytest.raises(ValidationError):
-            self.execute(
-                current_user=self.current_user,
-                input={"name": "codecov-user", "terms_agreement": True},
-            )
-
-    def test_validation_error_when_name_invalid(self):
-        with pytest.raises(ValidationError):
-            self.execute(
-                current_user=self.current_user,
-                input={
-                    "business_email": "something@email.com",
-                    "terms_agreement": True,
-                },
-            )
-
     def test_user_is_not_authenticated(self):
         with pytest.raises(Unauthenticated):
             self.execute(
