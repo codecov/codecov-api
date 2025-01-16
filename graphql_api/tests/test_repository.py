@@ -51,6 +51,7 @@ query Repositories($repoNames: [String!]!) {
 """
 
 default_fields = """
+    repoid
     name
     active
     private
@@ -103,6 +104,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @freeze_time("2021-01-01")
     def test_when_repository_has_no_coverage(self):
         repo = RepositoryFactory(
+            repoid=1,
             author=self.owner,
             active=True,
             private=True,
@@ -122,6 +124,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             + "coverageAnalytics { percentCovered commitSha hits misses lines },",
         ) == {
             "__typename": "Repository",
+            "repoid": 1,
             "name": "a",
             "active": True,
             "private": True,
@@ -154,6 +157,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
     @freeze_time("2021-01-01")
     def test_when_repository_has_coverage(self):
         repo = RepositoryFactory(
+            repoid=1,
             author=self.owner,
             active=True,
             private=True,
@@ -186,6 +190,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             + "coverageAnalytics { percentCovered commitSha hits misses lines },",
         ) == {
             "__typename": "Repository",
+            "repoid": 1,
             "name": "b",
             "active": True,
             "latestCommitAt": None,

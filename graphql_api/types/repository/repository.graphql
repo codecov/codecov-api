@@ -3,6 +3,7 @@ Repository is a named collection of files uploaded
 """
 type Repository {
   isFirstPullRequest: Boolean!
+  repoid: Int!
   name: String!
   active: Boolean!
   activated: Boolean!
