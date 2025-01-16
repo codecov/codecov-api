@@ -396,3 +396,33 @@ def resolve_upload_token_required(
 @require_shared_account_or_part_of_org
 def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count
+
+@owner_bindable.field("aiEnabledRepositories")
+def resolve_ai_enabled_repositories(
+    owner: Owner,
+    info: GraphQLResolveInfo,
+    ordering: Optional[RepositoryOrdering] = RepositoryOrdering.ID,
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
+    **kwargs: Any,
+) -> Coroutine[Any, Any, Connection]:
+    ai_features_app_install = GithubAppInstallation.objects.filter(
+        app_id=AI_FEATURES_GH_APP_ID, owner=owner
+    ).first()
+
+    if not ai_features_app_install:
+        return None
+
+    current_owner = info.context["request"].current_owner
+    queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
+
+    if ai_features_app_install.repository_service_ids:
+        queryset = queryset.filter(
+            service_id__in=ai_features_app_install.repository_service_ids
+        )
+
+    return queryset_to_connection(
+        queryset,
+        ordering=(ordering, RepositoryOrdering.ID),
+        ordering_direction=ordering_direction,
+        **kwargs,
+    )

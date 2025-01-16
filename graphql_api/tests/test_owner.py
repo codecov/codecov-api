@@ -1202,3 +1202,46 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 ]
             }
         }
+
+    @patch("services.self_hosted.get_config")
+    def test_ai_enabled_repositories(self, get_config_mock):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+
+        get_config_mock.return_value = [
+            {"service": "github", "ai_features_app_id": 12345},
+        ]
+
+        query = """{
+            owner(username: "%s") {
+                aiEnabledRepos
+            }
+        }
+
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["aiEnabledRepos"] is None
+
+
+    @patch("services.self_hosted.get_config")
+    def test_ai_enabled_repositories_app_not_configured(self, get_config_mock):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+
+        get_config_mock.return_value = [
+            {"service": "github", "ai_features_app_id": 12345},
+        ]
+
+        query = """{
+            owner(username: "%s") {
+                aiEnabledRepos
+            }
+        }
+
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["aiEnabledRepos"] is None
