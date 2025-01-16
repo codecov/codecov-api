@@ -49,16 +49,13 @@ class GenAIAuthView(APIView):
         ).first()
 
         if not app_install:
-            print("FAILED")
             is_authorized = False
 
         else:
             repo_ids = app_install.repository_service_ids
             if repo_ids and repo_service_id not in repo_ids:
-                print("HERE")
                 is_authorized = False
 
         return Response({"is_valid": is_authorized})
 
 
-# api/gen_ai/tests/test_gen_ai.py
