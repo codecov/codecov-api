@@ -766,19 +766,19 @@ class PlanAdminForm(forms.ModelForm):
         model = Plan
         fields = "__all__"
 
-    def clean_base_unit_price(self):
+    def clean_base_unit_price(self) -> int | None:
         base_unit_price = self.cleaned_data.get("base_unit_price")
         if base_unit_price is not None and base_unit_price < 0:
             raise forms.ValidationError("Base unit price cannot be negative.")
         return base_unit_price
 
-    def clean_max_seats(self):
+    def clean_max_seats(self) -> int | None:
         max_seats = self.cleaned_data.get("max_seats")
         if max_seats is not None and max_seats < 0:
             raise forms.ValidationError("Max seats cannot be negative.")
         return max_seats
 
-    def clean_monthly_uploads_limit(self):
+    def clean_monthly_uploads_limit(self) -> int | None:
         monthly_uploads_limit = self.cleaned_data.get("monthly_uploads_limit")
         if monthly_uploads_limit is not None and monthly_uploads_limit < 0:
             raise forms.ValidationError("Monthly uploads limit cannot be negative.")
@@ -794,8 +794,11 @@ class PlanAdmin(admin.ModelAdmin):
         "base_unit_price",
         "is_active",
         "paid_plan",
+        "max_seats",
+        "monthly_uploads_limit",
+        "billing_rate",
     )
-    list_filter = ("is_active", "paid_plan", "billing_rate")
+    list_filter = ("is_active", "paid_plan", "billing_rate", "tier")
     search_fields = ("name__iregex", "marketing_name__iregex")
     fields = [
         "tier",
