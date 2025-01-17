@@ -3,12 +3,12 @@ import logging
 from hashlib import sha256
 
 from django.utils.crypto import constant_time_compare
-from api.gen_ai.serializers import GenAIAuthSerializer
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api.gen_ai.serializers import GenAIAuthSerializer
 from codecov_auth.models import GithubAppInstallation, Owner
 from graphql_api.types.owner.owner import AI_FEATURES_GH_APP_ID
 from utils.config import get_config
