@@ -3,6 +3,7 @@ import logging
 from hashlib import sha256
 
 from django.utils.crypto import constant_time_compare
+from api.gen_ai.serializers import GenAIAuthSerializer
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -17,6 +18,7 @@ log = logging.getLogger(__name__)
 
 class GenAIAuthView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = GenAIAuthSerializer
 
     def validate_signature(self, request):
         key = get_config(

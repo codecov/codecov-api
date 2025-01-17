@@ -4,9 +4,7 @@ from .settings_base import *
 
 DEBUG = False
 THIS_POD_IP = os.environ.get("THIS_POD_IP")
-ALLOWED_HOSTS = get_config(
-    "setup", "api_allowed_hosts", default=["stage-api.codecov.dev"]
-)
+ALLOWED_HOSTS = ["*"]
 if THIS_POD_IP:
     ALLOWED_HOSTS.append(THIS_POD_IP)
 
