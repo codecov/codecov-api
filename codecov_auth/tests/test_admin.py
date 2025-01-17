@@ -18,9 +18,11 @@ from shared.django_apps.codecov_auth.tests.factories import (
     InvoiceBillingFactory,
     OrganizationLevelTokenFactory,
     OwnerFactory,
+    PlanFactory,
     SentryUserFactory,
     SessionFactory,
     StripeBillingFactory,
+    TierFactory,
     UserFactory,
 )
 from shared.django_apps.core.tests.factories import PullFactory, RepositoryFactory
@@ -39,7 +41,14 @@ from codecov_auth.admin import (
     UserAdmin,
     find_and_remove_stale_users,
 )
-from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, User
+from codecov_auth.models import (
+    OrganizationLevelToken,
+    Owner,
+    Plan,
+    SentryUser,
+    Tier,
+    User,
+)
 from core.models import Pull
 
 
@@ -881,3 +890,157 @@ class InvoiceBillingAdminTest(TestCase):
         self.assertFalse(form.base_fields["account"].widget.can_add_related)
         self.assertFalse(form.base_fields["account"].widget.can_change_related)
         self.assertFalse(form.base_fields["account"].widget.can_delete_related)
+
+
+class PlanAdminTest(TestCase):
+    def setUp(self):
+        self.staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.staff_user)
+        admin_site = AdminSite()
+        admin_site.register(Plan)
+
+    def test_plan_admin_modal_display(self):
+        plan = PlanFactory()
+        response = self.client.get(
+            reverse("admin:codecov_auth_plan_change", args=[plan.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, plan.name)
+
+    def test_plan_modal_tiers_display(self):
+        tier = TierFactory()
+        plan = PlanFactory(tier=tier)
+        response = self.client.get(
+            reverse("admin:codecov_auth_plan_change", args=[plan.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, tier.tier_name)
+
+    def test_add_plans_modal_action(self):
+        plan = PlanFactory(base_unit_price=10, max_seats=5)
+        tier = TierFactory()
+        data = {
+            "action": "add_plans",
+            ACTION_CHECKBOX_NAME: [plan.pk],
+            "tier_id": tier.pk,
+        }
+        response = self.client.post(
+            reverse("admin:codecov_auth_plan_changelist"), data=data
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/admin/codecov_auth/plan/")
+
+    def test_plan_change_form(self):
+        plan = PlanFactory()
+        response = self.client.get(
+            reverse("admin:codecov_auth_plan_change", args=[plan.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        for field in [
+            "tier",
+            "name",
+            "marketing_name",
+            "base_unit_price",
+            "benefits",
+            "billing_rate",
+            "is_active",
+            "max_seats",
+            "monthly_uploads_limit",
+            "paid_plan",
+        ]:
+            self.assertContains(response, f"id_{field}")
+
+    def test_plan_change_form_validation(self):
+        plan = PlanFactory(base_unit_price=-10)
+
+        response = self.client.post(
+            reverse("admin:codecov_auth_plan_change", args=[plan.pk]),
+            {
+                "tier": plan.tier_id,
+                "name": plan.name,
+                "marketing_name": plan.marketing_name,
+                "base_unit_price": -10,
+                "benefits": plan.benefits,
+                "is_active": plan.is_active,
+                "paid_plan": plan.paid_plan,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Base unit price cannot be negative.")
+
+        response = self.client.post(
+            reverse("admin:codecov_auth_plan_change", args=[plan.pk]),
+            {
+                "tier": plan.tier_id,
+                "name": plan.name,
+                "marketing_name": plan.marketing_name,
+                "base_unit_price": plan.base_unit_price,
+                "benefits": plan.benefits,
+                "is_active": plan.is_active,
+                "max_seats": -5,
+                "paid_plan": plan.paid_plan,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Max seats cannot be negative.")
+
+        response = self.client.post(
+            reverse("admin:codecov_auth_plan_change", args=[plan.pk]),
+            {
+                "tier": plan.tier_id,
+                "name": plan.name,
+                "marketing_name": plan.marketing_name,
+                "benefits": plan.benefits,
+                "is_active": plan.is_active,
+                "monthly_uploads_limit": -5,
+                "paid_plan": plan.paid_plan,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Monthly uploads limit cannot be negative.")
+
+
+class TierAdminTest(TestCase):
+    def setUp(self):
+        self.staff_user = UserFactory(is_staff=True)
+        self.client.force_login(user=self.staff_user)
+        admin_site = AdminSite()
+        admin_site.register(Tier)
+
+    def test_tier_modal_plans_display(self):
+        tier = TierFactory()
+        response = self.client.get(
+            reverse("admin:codecov_auth_tier_change", args=[tier.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, tier.tier_name)
+
+    def test_add_plans_modal_action(self):
+        tier = TierFactory()
+        plan = PlanFactory()
+        data = {
+            "action": "add_plans",
+            ACTION_CHECKBOX_NAME: [plan.pk],
+            "tier_id": tier.pk,
+        }
+        response = self.client.post(
+            reverse("admin:codecov_auth_tier_changelist"), data=data
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/admin/codecov_auth/tier/")
+
+    def test_tier_change_form(self):
+        tier = TierFactory()
+        response = self.client.get(
+            reverse("admin:codecov_auth_tier_change", args=[tier.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        for field in [
+            "tier_name",
+            "bundle_analysis",
+            "test_analytics",
+            "flaky_test_detection",
+            "project_coverage",
+            "private_repo_support",
+        ]:
+            self.assertContains(response, f"id_{field}")
