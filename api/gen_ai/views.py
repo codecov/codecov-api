@@ -57,5 +57,3 @@ class GenAIAuthView(APIView):
                 is_authorized = False
 
         return Response({"is_valid": is_authorized})
-
-
