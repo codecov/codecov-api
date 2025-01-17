@@ -24,6 +24,9 @@ class GenAIAuthView(APIView):
         key = get_config(
             "gen_ai", "auth_secret", default=b"testixik8qdauiab1yiffydimvi72ekq"
         )
+        if not key:
+            raise PermissionDenied("Invalid signature")
+
         if isinstance(key, str):
             key = key.encode("utf-8")
         expected_sig = request.headers.get("HTTP-X-GEN-AI-AUTH-SIGNATURE")
@@ -31,7 +34,7 @@ class GenAIAuthView(APIView):
         computed_sig = (
             "sha256=" + hmac.new(key, request.body, digestmod=sha256).hexdigest()
         )
-        if not (expected_sig and constant_time_compare(computed_sig, expected_sig)):
+        if not hmac.compare_digest(computed_sig, expected_sig):
             raise PermissionDenied("Invalid signature")
 
     def post(self, request, *args, **kwargs):
