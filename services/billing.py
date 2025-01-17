@@ -83,6 +83,10 @@ class AbstractPaymentService(ABC):
     def apply_cancellation_discount(self, owner: Owner):
         pass
 
+    @abstractmethod
+    def create_setup_intent(self, owner):
+        pass
+
 
 class StripeService(AbstractPaymentService):
     def __init__(self, requesting_user):
@@ -512,8 +516,8 @@ class StripeService(AbstractPaymentService):
         )
 
         session = stripe.checkout.Session.create(
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
             billing_address_collection="required",
-            payment_method_types=["card"],
             payment_method_collection="if_required",
             client_reference_id=str(owner.ownerid),
             success_url=success_url,
@@ -580,7 +584,12 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def update_email_address(self, owner: Owner, email_address: str):
+    def update_email_address(
+        self,
+        owner: Owner,
+        email_address: str,
+        apply_to_default_payment_method: bool = False,
+    ):
         if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
             return None
 
@@ -594,6 +603,35 @@ class StripeService(AbstractPaymentService):
         log.info(
             f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
+
+        if apply_to_default_payment_method:
+            try:
+                default_payment_method = stripe.Customer.retrieve(
+                    owner.stripe_customer_id
+                )["invoice_settings"]["default_payment_method"]
+
+                stripe.PaymentMethod.modify(
+                    default_payment_method,
+                    billing_details={"email": email_address},
+                )
+                log.info(
+                    "Stripe successfully updated billing email for payment method",
+                    extra=dict(
+                        payment_method=default_payment_method,
+                        stripe_customer_id=owner.stripe_customer_id,
+                        ownerid=owner.ownerid,
+                    ),
+                )
+            except Exception as e:
+                log.error(
+                    "Unable to update billing email for payment method",
+                    extra=dict(
+                        payment_method=default_payment_method,
+                        stripe_customer_id=owner.stripe_customer_id,
+                        error=str(e),
+                        ownerid=owner.ownerid,
+                    ),
+                )
 
     @_log_stripe_error
     def update_billing_address(self, owner: Owner, name, billing_address):
@@ -664,6 +702,22 @@ class StripeService(AbstractPaymentService):
                 coupon=owner.stripe_coupon_id,
             )
 
+    @_log_stripe_error
+    def create_setup_intent(self, owner: Owner) -> stripe.SetupIntent:
+        log.info(
+            "Stripe create setup intent for owner",
+            extra=dict(
+                owner_id=owner.ownerid,
+                requesting_user_id=self.requesting_user.ownerid,
+                subscription_id=owner.stripe_subscription_id,
+                customer_id=owner.stripe_customer_id,
+            ),
+        )
+        return stripe.SetupIntent.create(
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
+            customer=owner.stripe_customer_id,
+        )
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -699,6 +753,9 @@ class EnterprisePaymentService(AbstractPaymentService):
         pass
 
     def apply_cancellation_discount(self, owner: Owner):
+        pass
+
+    def create_setup_intent(self, owner):
         pass
 
 
@@ -762,14 +819,21 @@ class BillingService:
         """
         return self.payment_service.update_payment_method(owner, payment_method)
 
-    def update_email_address(self, owner: Owner, email_address: str):
+    def update_email_address(
+        self,
+        owner: Owner,
+        email_address: str,
+        apply_to_default_payment_method: bool = False,
+    ):
         """
         Takes an owner and a new email. Email is a string coming directly from
         the front-end. If the owner has a payment id and if it's a valid email,
         the payment service will update the email address in the upstream service.
         Otherwise returns None.
         """
-        return self.payment_service.update_email_address(owner, email_address)
+        return self.payment_service.update_email_address(
+            owner, email_address, apply_to_default_payment_method
+        )
 
     def update_billing_address(self, owner: Owner, name: str, billing_address):
         """
@@ -781,3 +845,10 @@ class BillingService:
 
     def apply_cancellation_discount(self, owner: Owner):
         return self.payment_service.apply_cancellation_discount(owner)
+
+    def create_setup_intent(self, owner: Owner):
+        """
+        Creates a SetupIntent for the given owner to securely collect payment details
+        See https://docs.stripe.com/api/setup_intents/create
+        """
+        return self.payment_service.create_setup_intent(owner)

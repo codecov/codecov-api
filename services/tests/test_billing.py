@@ -1512,7 +1512,7 @@ class StripeServiceTests(TestCase):
 
         create_checkout_session_mock.assert_called_once_with(
             billing_address_collection="required",
-            payment_method_types=["card"],
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
             payment_method_collection="if_required",
             client_reference_id=str(owner.ownerid),
             customer=None,
@@ -1560,7 +1560,7 @@ class StripeServiceTests(TestCase):
 
         create_checkout_session_mock.assert_called_once_with(
             billing_address_collection="required",
-            payment_method_types=["card"],
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
             payment_method_collection="if_required",
             client_reference_id=str(owner.ownerid),
             customer=owner.stripe_customer_id,
@@ -1825,6 +1825,13 @@ class StripeServiceTests(TestCase):
         assert not customer_modify_mock.called
         assert not coupon_create_mock.called
 
+    @patch("services.billing.stripe.SetupIntent.create")
+    def test_create_setup_intent(self, setup_intent_create_mock):
+        owner = OwnerFactory(stripe_customer_id="test-customer-id")
+        setup_intent_create_mock.return_value = {"client_secret": "test-client-secret"}
+        resp = self.stripe.create_setup_intent(owner)
+        assert resp["client_secret"] == "test-client-secret"
+
 
 class MockPaymentService(AbstractPaymentService):
     def list_filtered_invoices(self, owner, limit=10):
@@ -1858,6 +1865,9 @@ class MockPaymentService(AbstractPaymentService):
         pass
 
     def apply_cancellation_discount(self, owner):
+        pass
+
+    def create_setup_intent(self, owner):
         pass
 
 
@@ -2014,8 +2024,8 @@ class BillingServiceTests(TestCase):
     @patch("services.tests.test_billing.MockPaymentService.update_email_address")
     def test_email_address(self, get_subscription_mock):
         owner = OwnerFactory()
-        self.billing_service.update_email_address(owner, "test@gmail.com")
-        get_subscription_mock.assert_called_once_with(owner, "test@gmail.com")
+        self.billing_service.update_email_address(owner, "test@gmail.com", False)
+        get_subscription_mock.assert_called_once_with(owner, "test@gmail.com", False)
 
     @patch("services.tests.test_billing.MockPaymentService.get_invoice")
     def test_get_invoice(self, get_invoice_mock):
