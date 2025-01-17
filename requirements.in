@@ -26,7 +26,7 @@ freezegun
 google-cloud-pubsub
 gunicorn>=22.0.0
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/b38e7f3813d4fc795d0e7cf852eced4660daa4ac.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/fe16480b3646a616ff412d5c0a28cafd2c7104c1.tar.gz#egg=shared
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 idna>=3.7
 minio
