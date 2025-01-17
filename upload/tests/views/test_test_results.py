@@ -13,7 +13,6 @@ from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     RepositoryFactory,
 )
-from shared.django_apps.reports.models import ReportSession
 
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService
