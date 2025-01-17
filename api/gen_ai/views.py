@@ -26,7 +26,7 @@ class GenAIAuthView(APIView):
         )
         if isinstance(key, str):
             key = key.encode("utf-8")
-        expected_sig = request.META.get("HTTP_X_GEN_AI_AUTH_SIGNATURE")
+        expected_sig = request.headers.get("HTTP-X-GEN-AI-AUTH-SIGNATURE")
         computed_sig = (
             "sha256=" + hmac.new(key, request.body, digestmod=sha256).hexdigest()
         )
