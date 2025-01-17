@@ -29,7 +29,7 @@ class GenAIAuthViewTests(APITestCase):
             VIEW_URL,
             data=payload,
             content_type="application/json",
-            HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
+            HTTP_HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("Missing required parameters", response.data)
@@ -45,7 +45,7 @@ class GenAIAuthViewTests(APITestCase):
             VIEW_URL,
             data=payload,
             content_type="application/json",
-            HTTP_X_GEN_AI_AUTH_SIGNATURE=wrong_sig,
+            HTTP_HTTP_X_GEN_AI_AUTH_SIGNATURE=wrong_sig,
         )
         self.assertEqual(response.status_code, 403)
 
@@ -55,7 +55,7 @@ class GenAIAuthViewTests(APITestCase):
         sig, serialized_data = sign_payload(payload)
         response = self.client.post(
             VIEW_URL,
-            HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
+            HTTP_HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
             data=serialized_data,
             content_type="application/json",
         )
@@ -70,7 +70,7 @@ class GenAIAuthViewTests(APITestCase):
             VIEW_URL,
             data=data,
             content_type="application/json",
-            HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
+            HTTP_HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
         )
 
         self.assertEqual(response.status_code, 200)
@@ -92,7 +92,7 @@ class GenAIAuthViewTests(APITestCase):
             VIEW_URL,
             data=data,
             content_type="application/json",
-            HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
+            HTTP_HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"is_valid": True})
@@ -114,7 +114,7 @@ class GenAIAuthViewTests(APITestCase):
             VIEW_URL,
             data=data,
             content_type="application/json",
-            HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
+            HTTP_HTTP_X_GEN_AI_AUTH_SIGNATURE=sig,
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, {"is_valid": False})
