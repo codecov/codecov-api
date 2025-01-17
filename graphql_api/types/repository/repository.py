@@ -41,6 +41,16 @@ repository_bindable.set_alias("updatedAt", "updatestamp")
 repository_bindable.set_alias("latestCommitAt", "true_latest_commit_at")
 
 
+@repository_bindable.field("repoid")
+def resolve_repoid(repository: Repository, info: GraphQLResolveInfo) -> int:
+    return repository.repoid
+
+
+@repository_bindable.field("name")
+def resolve_name(repository: Repository, info: GraphQLResolveInfo) -> str:
+    return repository.name
+
+
 @repository_bindable.field("oldestCommitAt")
 def resolve_oldest_commit_at(
     repository: Repository, info: GraphQLResolveInfo
