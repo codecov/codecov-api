@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db.models import QuerySet
 from shared.plan.constants import TierName
 
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Plan
 
 
 def on_enterprise_plan(owner: Owner) -> bool:

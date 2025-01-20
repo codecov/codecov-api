@@ -12,7 +12,7 @@ from shared.plan.constants import (
 )
 from shared.plan.service import PlanService
 
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Plan
 from services.billing import BillingService
 from services.sentry import send_user_webhook as send_sentry_webhook
 
@@ -147,10 +147,18 @@ class PlanSerializer(serializers.Serializer):
                 detail="You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
             )
 
+        active_plans = list(
+            Plan.objects.filter(paid_plan=True, is_active=True).values_list(
+                "name", "tier"
+            )
+        )
+        active_plan_names = {name for name, _ in active_plans}
+        team_tier_plans = {
+            name for name, tier in active_plans if tier == TierName.TEAM.value
+        }
+
         # Validate quantity here because we need access to whole plan object
-        if plan["value"] in Plan.objects.filter(
-            paid_plan=True, is_active=True
-        ).values_list("name", flat=True):
+        if plan["value"] in active_plan_names:
             if "quantity" not in plan:
                 raise serializers.ValidationError(
                     "Field 'quantity' required for updating to paid plans"
@@ -179,8 +187,7 @@ class PlanSerializer(serializers.Serializer):
                     "Quantity or plan for paid plan must be different from the existing one"
                 )
             if (
-                plan["value"]
-                in Plan.objects.filter(tier=TierName.TEAM.value, is_active=True)
+                plan["value"] in team_tier_plans
                 and plan["quantity"] > TEAM_PLAN_MAX_USERS
             ):
                 raise serializers.ValidationError(

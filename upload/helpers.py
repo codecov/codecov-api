@@ -28,6 +28,7 @@ from codecov_auth.models import (
     SERVICE_GITHUB_ENTERPRISE,
     GithubAppInstallation,
     Owner,
+    Plan,
 )
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportSession

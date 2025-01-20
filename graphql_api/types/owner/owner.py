@@ -22,6 +22,7 @@ from codecov_auth.models import (
     Account,
     GithubAppInstallation,
     Owner,
+    Plan,
 )
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository

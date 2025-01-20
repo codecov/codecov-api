@@ -12,9 +12,11 @@ from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     InvoiceBillingFactory,
     OwnerFactory,
+    PlanFactory,
+    TierFactory,
     UserFactory,
 )
-from shared.plan.constants import PlanName, TrialStatus
+from shared.plan.constants import PlanName, TierName, TrialStatus
 from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
@@ -187,6 +189,13 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_gets_account_fields_when_there_are_scheduled_details(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
+        tier = TierFactory(tier_name=TierName.BASIC.value)
+
+        PlanFactory(
+            name="users-basic",
+            tier=tier,
+            is_active=True,
+        )
         owner = OwnerFactory(
             admins=[self.current_owner.ownerid], stripe_subscription_id="sub_123"
         )
