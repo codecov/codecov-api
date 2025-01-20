@@ -189,12 +189,14 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_gets_account_fields_when_there_are_scheduled_details(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
-        tier = TierFactory(tier_name=TierName.BASIC.value)
+        pro_tier = TierFactory(tier_name=TierName.PRO.value)
 
         PlanFactory(
-            name="users-basic",
-            tier=tier,
+            name="users-pr-inappm",
+            tier=pro_tier,
             is_active=True,
+            billing_rate="monthly",
+            marketing_name="Pro",
         )
         owner = OwnerFactory(
             admins=[self.current_owner.ownerid], stripe_subscription_id="sub_123"
@@ -238,15 +240,22 @@ class AccountViewSetTests(APITestCase):
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_200_OK
+        print(response.data)
         assert response.data == {
-            "activated_user_count": 0,
-            "root_organization": None,
             "integration_id": owner.integration_id,
-            "plan_auto_activate": owner.plan_auto_activate,
+            "activated_student_count": 0,
+            "activated_user_count": 0,
+            "checkout_session_id": None,
+            "delinquent": None,
+            "email": owner.email,
             "inactive_user_count": 1,
+            "name": owner.name,
+            "nb_active_private_repos": 0,
+            "plan_auto_activate": True,
+            "plan_provider": owner.plan_provider,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": "users-basic",
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -256,6 +265,17 @@ class AccountViewSetTests(APITestCase):
                 ],
                 "quantity": 1,
             },
+            "repo_total_credits": 99999999,
+            "root_organization": None,
+            "schedule_detail": {
+                "id": "123",
+                "scheduled_phase": {
+                    "start_date": schedule_params["start_date"],
+                    "plan": "Pro",
+                    "quantity": schedule_params["quantity"],
+                },
+            },
+            "student_count": 0,
             "subscription_detail": {
                 "latest_invoice": None,
                 "default_payment_method": None,
@@ -263,27 +283,10 @@ class AccountViewSetTests(APITestCase):
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
-                "trial_end": None,
                 "tax_ids": None,
-            },
-            "checkout_session_id": None,
-            "name": owner.name,
-            "email": owner.email,
-            "nb_active_private_repos": 0,
-            "repo_total_credits": 99999999,
-            "plan_provider": owner.plan_provider,
-            "activated_student_count": 0,
-            "student_count": 0,
-            "schedule_detail": {
-                "id": "123",
-                "scheduled_phase": {
-                    "plan": "monthly",
-                    "quantity": schedule_params["quantity"],
-                    "start_date": schedule_params["start_date"],
-                },
+                "trial_end": None,
             },
             "uses_invoice": False,
-            "delinquent": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -291,6 +294,16 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_returns_last_phase_when_more_than_one_scheduled_phases(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
+        pro_tier = TierFactory(tier_name=TierName.PRO.value)
+
+        PlanFactory(
+            name="users-pr-inappm",
+            tier=pro_tier,
+            is_active=True,
+            billing_rate="monthly",
+            marketing_name="Pro",
+        )
+
         owner = OwnerFactory(
             admins=[self.current_owner.ownerid], stripe_subscription_id="sub_2345687"
         )
@@ -380,7 +393,7 @@ class AccountViewSetTests(APITestCase):
             "schedule_detail": {
                 "id": "123",
                 "scheduled_phase": {
-                    "plan": "monthly",
+                    "plan": "Pro",
                     "quantity": schedule_params["quantity"],
                     "start_date": schedule_params["start_date"],
                 },
