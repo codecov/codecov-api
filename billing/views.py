@@ -107,20 +107,27 @@ class StripeWebhookHandler(APIView):
         card = (
             payment_intent.payment_method.card
             if payment_intent.payment_method
-            and not isinstance(payment_intent.payment_method, str)
+            and hasattr(payment_intent.payment_method, 'card')
+            else None
+        )
+        us_bank_account = (
+            payment_intent.payment_method.us_bank_account
+            if payment_intent.payment_method
+            and hasattr(payment_intent.payment_method, 'us_bank_account')
             else None
         )
         template_vars = {
             "amount": invoice.total / 100,
-            "last_four": card.last4 if card else None,
             "cta_link": invoice.hosted_invoice_url,
             "date": datetime.now().strftime("%B %-d, %Y"),
             # card params
             "is_credit_card": True if card else False,
             "card_type": card.brand if card else None,
+            "last_four": card.last4 if card else None,
             # us bank params
-            "is_us_bank": True if payment_intent.payment_method and hasattr(payment_intent.payment_method, 'us_bank_account') else False,
-            "bank_name": payment_intent.payment_method.us_bank_account.bank_name if payment_intent.payment_method and hasattr(payment_intent.payment_method, 'us_bank_account') else None,
+            "is_us_bank": True if us_bank_account else False,
+            "bank_name": us_bank_account.bank_name if us_bank_account else None,
+            "bank_last_four": us_bank_account.last4 if us_bank_account else None,
         }
 
         for admin in admins:
