@@ -29,6 +29,7 @@ from shared.django_apps.core.tests.factories import PullFactory, RepositoryFacto
 from shared.plan.constants import (
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
+    TierName,
 )
 
 from codecov.commands.exceptions import ValidationError
@@ -60,6 +61,17 @@ class OwnerAdminTest(TestCase):
         admin_site.register(OrganizationLevelToken)
         self.owner_admin = OwnerAdmin(Owner, admin_site)
 
+        self.basic_tier = TierFactory(tier_name=TierName.BASIC.value)
+        self.basic_plan = PlanFactory(
+            tier=self.basic_tier, name=PlanName.BASIC_PLAN_NAME.value
+        )
+
+        self.enterprise_tier = TierFactory(tier_name=TierName.ENTERPRISE.value)
+        self.enterprise_plan = PlanFactory(
+            tier=self.enterprise_tier,
+            name=PlanName.ENTERPRISE_CLOUD_YEARLY.value,
+        )
+
     def test_owner_admin_detail_page(self):
         owner = OwnerFactory()
         response = self.client.get(
@@ -68,8 +80,10 @@ class OwnerAdminTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_owner_admin_impersonate_owner(self):
-        owner_to_impersonate = OwnerFactory(service="bitbucket")
-        other_owner = OwnerFactory()
+        owner_to_impersonate = OwnerFactory(
+            service="bitbucket", plan=self.basic_plan.name
+        )
+        other_owner = OwnerFactory(plan=self.basic_plan.name)
 
         with self.subTest("more than one user selected"):
             response = self.client.post(
@@ -103,7 +117,7 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_queryset(self, delete_mock):
-        user_to_delete = OwnerFactory()
+        user_to_delete = OwnerFactory(plan=self.basic_plan.name)
         ownerid = user_to_delete.ownerid
         queryset = MagicMock()
         queryset.__iter__.return_value = [user_to_delete]
@@ -114,14 +128,14 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_model(self, delete_mock):
-        user_to_delete = OwnerFactory()
+        user_to_delete = OwnerFactory(plan=self.basic_plan.name)
         ownerid = user_to_delete.ownerid
         self.owner_admin.delete_model(MagicMock(), user_to_delete)
         delete_mock.assert_called_once_with(ownerid=ownerid)
 
     @patch("codecov_auth.admin.admin.ModelAdmin.get_deleted_objects")
     def test_confirmation_deleted_objects(self, mocked_deleted_objs):
-        user_to_delete = OwnerFactory()
+        user_to_delete = OwnerFactory(plan=self.basic_plan.name)
         deleted_objs = [
             'Owner: <a href="/admin/codecov_auth/owner/{}/change/">{};</a>'.format(
                 user_to_delete.ownerid, user_to_delete
@@ -141,7 +155,7 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.admin.ModelAdmin.log_change")
     def test_prev_and_new_values_in_log_entry(self, mocked_super_log_change):
-        owner = OwnerFactory(staff=True)
+        owner = OwnerFactory(staff=True, plan=self.basic_plan.name)
         owner.save()
         owner.staff = False
         form = MagicMock()
@@ -161,7 +175,7 @@ class OwnerAdminTest(TestCase):
         ]
 
     def test_inline_orgwide_tokens_display(self):
-        owner = OwnerFactory()
+        owner = OwnerFactory(plan=self.basic_plan.name)
         request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
@@ -170,7 +184,7 @@ class OwnerAdminTest(TestCase):
         assert isinstance(inlines[0], OrgUploadTokenInline)
 
     def test_inline_orgwide_permissions(self):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=self.enterprise_plan.name)
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
@@ -194,7 +208,7 @@ class OwnerAdminTest(TestCase):
     def test_inline_orgwide_add_token_permission_no_token_and_user_in_enterprise_cloud_plan(
         self,
     ):
-        owner = OwnerFactory()
+        owner = OwnerFactory(plan=self.basic_plan.name)
         assert owner.plan not in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
         request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
@@ -207,7 +221,7 @@ class OwnerAdminTest(TestCase):
     def test_inline_orgwide_add_token_permission_no_token_user_not_in_enterprise_cloud_plan(
         self,
     ):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=self.enterprise_plan.name)
         assert (
             OrganizationLevelToken.objects.filter(owner=owner_in_cloud_plan).count()
             == 0
@@ -227,7 +241,7 @@ class OwnerAdminTest(TestCase):
     def test_org_token_refresh_request_calls_service_to_refresh_token(
         self, mock_refresh
     ):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=self.enterprise_plan.name)
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
@@ -264,7 +278,7 @@ class OwnerAdminTest(TestCase):
         "codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token"
     )
     def test_org_token_request_doesnt_call_service_to_refresh_token(self, mock_refresh):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=self.enterprise_plan.name)
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
@@ -297,7 +311,7 @@ class OwnerAdminTest(TestCase):
         mock_refresh.assert_not_called()
 
     def test_start_trial_ui_display(self):
-        owner = OwnerFactory()
+        owner = OwnerFactory(plan=self.basic_plan.name)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -312,7 +326,7 @@ class OwnerAdminTest(TestCase):
     @patch("shared.plan.service.PlanService.start_trial_manually")
     def test_start_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
-        org_to_be_trialed = OwnerFactory()
+        org_to_be_trialed = OwnerFactory(plan=self.basic_plan.name)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -329,7 +343,7 @@ class OwnerAdminTest(TestCase):
     @patch("shared.plan.service.PlanService._start_trial_helper")
     def test_extend_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
-        org_to_be_trialed = OwnerFactory()
+        org_to_be_trialed = OwnerFactory(plan=self.basic_plan.name)
         org_to_be_trialed.plan = PlanName.TRIAL_PLAN_NAME.value
         org_to_be_trialed.save()
 
@@ -352,7 +366,7 @@ class OwnerAdminTest(TestCase):
             "Cannot trial from a paid plan"
         )
 
-        org_to_be_trialed = OwnerFactory()
+        org_to_be_trialed = OwnerFactory(plan=self.basic_plan.name)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -367,7 +381,7 @@ class OwnerAdminTest(TestCase):
         assert mock_start_trial_service.called
 
     def test_account_widget(self):
-        owner = OwnerFactory(user=UserFactory(), plan="users-enterprisey")
+        owner = OwnerFactory(user=UserFactory(), plan=self.enterprise_plan.name)
         rf = RequestFactory()
         get_request = rf.get(f"/admin/codecov_auth/owner/{owner.ownerid}/change/")
         get_request.user = self.staff_user
