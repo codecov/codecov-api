@@ -346,7 +346,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             )
 
             sentry_plans = Plan.objects.filter(
-                tier=TierName.SENTRY.value, is_active=True
+                tier__tier_name=TierName.SENTRY.value, is_active=True
             )
 
             if desired_plan["value"] in sentry_plans:

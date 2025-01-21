@@ -8,7 +8,7 @@ from codecov_auth.models import Owner, Plan
 def on_enterprise_plan(owner: Owner) -> bool:
     return settings.IS_ENTERPRISE or (
         owner.plan
-        in Plan.objects.filter(tier=TierName.ENTERPRISE.value).values_list(
+        in Plan.objects.filter(tier__tier_name=TierName.ENTERPRISE.value).values_list(
             "name", flat=True
         )
     )

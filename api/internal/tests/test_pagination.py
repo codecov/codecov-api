@@ -1,6 +1,8 @@
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import TierName
 
 from utils.test_utils import Client
 
@@ -8,7 +10,9 @@ from utils.test_utils import Client
 class PageNumberPaginationTests(APITestCase):
     def setUp(self):
         self.client = Client()
-        self.owner = OwnerFactory(plan="users-free", plan_user_count=5)
+        tier = TierFactory(tier_name=TierName.BASIC.value)
+        plan = PlanFactory(tier=tier, is_active=True)
+        self.owner = OwnerFactory(plan=plan.name, plan_user_count=5)
         self.users = [
             OwnerFactory(organizations=[self.owner.ownerid]),
             OwnerFactory(organizations=[self.owner.ownerid]),
