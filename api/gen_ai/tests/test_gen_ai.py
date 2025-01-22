@@ -19,7 +19,7 @@ def sign_payload(data: bytes, secret=PAYLOAD_SECRET):
 
 
 class GenAIAuthViewTests(APITestCase):
-    @patch("utils.config.get_config", return_value=PAYLOAD_SECRET)
+    @patch("api.gen_ai.views.get_config", return_value=PAYLOAD_SECRET)
     def test_missing_parameters(self, mock_config):
         payload = b"{}"
         sig, data = sign_payload(payload)
@@ -32,7 +32,7 @@ class GenAIAuthViewTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Missing required parameters", response.data)
 
-    @patch("utils.config.get_config", return_value=PAYLOAD_SECRET)
+    @patch("api.gen_ai.views.get_config", return_value=PAYLOAD_SECRET)
     def test_invalid_signature(self, mock_config):
         # Correct payload
         payload = b'{"external_owner_id":"owner1","repo_service_id":"101"}'
@@ -46,7 +46,7 @@ class GenAIAuthViewTests(APITestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    @patch("utils.config.get_config", return_value=PAYLOAD_SECRET)
+    @patch("api.gen_ai.views.get_config", return_value=PAYLOAD_SECRET)
     def test_owner_not_found(self, mock_config):
         payload = b'{"external_owner_id":"nonexistent_owner","repo_service_id":"101"}'
         sig, data = sign_payload(payload)
@@ -58,7 +58,7 @@ class GenAIAuthViewTests(APITestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    @patch("utils.config.get_config", return_value=PAYLOAD_SECRET)
+    @patch("api.gen_ai.views.get_config", return_value=PAYLOAD_SECRET)
     def test_no_installation(self, mock_config):
         # Create a valid owner but no installation
         OwnerFactory(service="github", service_id="owner1", username="test1")
@@ -73,7 +73,7 @@ class GenAIAuthViewTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, {"is_valid": False})
 
-    @patch("utils.config.get_config", return_value=PAYLOAD_SECRET)
+    @patch("api.gen_ai.views.get_config", return_value=PAYLOAD_SECRET)
     def test_authorized(self, mock_config):
         owner = OwnerFactory(service="github", service_id="owner2", username="test2")
         GithubAppInstallation.objects.create(
@@ -93,7 +93,7 @@ class GenAIAuthViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"is_valid": True})
 
-    @patch("utils.config.get_config", return_value=PAYLOAD_SECRET)
+    @patch("api.gen_ai.views.get_config", return_value=PAYLOAD_SECRET)
     def test_unauthorized(self, mock_config):
         owner = OwnerFactory(service="github", service_id="owner3", username="test3")
         GithubAppInstallation.objects.create(

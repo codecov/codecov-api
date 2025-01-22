@@ -21,7 +21,7 @@ class GenAIAuthView(APIView):
 
     def validate_signature(self, request):
         key = get_config(
-            "gen_ai", "auth_secret", default=b"testixik8qdauiab1yiffydimvi72ekq"
+            "gen_ai", "auth_secret"
         )
         if not key:
             raise PermissionDenied("Invalid signature")
