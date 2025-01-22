@@ -20,9 +20,7 @@ class GenAIAuthView(APIView):
     serializer_class = GenAIAuthSerializer
 
     def validate_signature(self, request):
-        key = get_config(
-            "gen_ai", "auth_secret"
-        )
+        key = get_config("gen_ai", "auth_secret")
         if not key:
             raise PermissionDenied("Invalid signature")
 
