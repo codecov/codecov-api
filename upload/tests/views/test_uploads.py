@@ -7,13 +7,16 @@ from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient, APITestCase
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
+from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
     RepositoryFactory,
 )
+from shared.plan.constants import PlanName, TierName
 from shared.utils.test_utils import mock_config_helper
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.authentication.repo_auth import OrgLevelTokenRepositoryAuth
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from reports.models import (
@@ -40,7 +43,9 @@ def test_upload_permission_class_pass(db, mocker):
 
 
 def test_upload_permission_orglevel_token(db, mocker):
-    owner = OwnerFactory(plan="users-enterprisem")
+    tier = TierFactory(tier_name=TierName.ENTERPRISE.value)
+    plan = PlanFactory(name=PlanName.ENTERPRISE_CLOUD_MONTHLY.value, tier=tier)
+    owner = OwnerFactory(plan=plan.name)
     owner.save()
     repo = RepositoryFactory(author=owner)
     repo.save()
@@ -63,7 +68,9 @@ def test_upload_permission_class_fail(db, mocker):
 
 
 def test_upload_permission_orglevel_fail(db, mocker):
-    owner = OwnerFactory(plan="users-enterprisem")
+    tier = TierFactory(tier_name=TierName.ENTERPRISE.value)
+    plan = PlanFactory(name=PlanName.ENTERPRISE_CLOUD_MONTHLY.value, tier=tier)
+    owner = OwnerFactory(plan=plan.name)
     owner.save()
     repo = RepositoryFactory()  # Not the same owner of the token
     repo.save()
@@ -78,6 +85,7 @@ def test_upload_permission_orglevel_fail(db, mocker):
 
 
 def test_uploads_get_not_allowed(client, db, mocker):
+    mock_all_plans_and_tiers()
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -193,6 +201,7 @@ def test_get_report_error(db):
 
 
 def test_uploads_post(db, mocker, mock_redis):
+    mock_all_plans_and_tiers()
     # TODO remove the mock object and test the flow with the permissions
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
@@ -712,6 +721,7 @@ def test_uploads_post_github_oidc_auth(
 
 @override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
 def test_uploads_post_shelter(db, mocker, mock_redis):
+    mock_all_plans_and_tiers()
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -781,6 +791,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
 
 
 def test_deactivated_repo(db, mocker, mock_redis):
+    mock_all_plans_and_tiers()
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )

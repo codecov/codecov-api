@@ -1,7 +1,12 @@
 from django.test import TestCase, override_settings
-from shared.django_apps.core.tests.factories import OwnerFactory
-from shared.plan.constants import ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS, TierName, PlanName
 from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
+from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import (
+    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
+    PlanName,
+    TierName,
+)
+
 from billing.helpers import on_enterprise_plan
 
 

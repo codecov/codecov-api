@@ -1,7 +1,8 @@
 from django.test import TransactionTestCase
 from prometheus_client import REGISTRY
+from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import OwnerFactory
-from shared.plan.constants import PlanName, TrialStatus
+from shared.plan.constants import PlanName, TierName, TrialStatus
 
 from graphql_api.tests.helper import GraphQLTestHelper
 from graphql_api.views import GQL_ERROR_COUNTER, GQL_HIT_COUNTER, GQL_REQUEST_LATENCIES
@@ -61,9 +62,9 @@ class CancelTrialMutationTest(GraphQLTestHelper, TransactionTestCase):
             labels={"operation_type": "mutation", "operation_name": "CancelTrialInput"},
         )
         trial_status = TrialStatus.ONGOING.value
-        owner = OwnerFactory(
-            trial_status=trial_status, plan=PlanName.TRIAL_PLAN_NAME.value
-        )
+        tier = TierFactory(tier_name=TierName.TRIAL.value)
+        plan = PlanFactory(name=PlanName.TRIAL_PLAN_NAME.value, tier=tier)
+        owner = OwnerFactory(trial_status=trial_status, plan=plan.name)
         owner.save()
         assert self._request(owner=owner, org_username=owner.username) == {
             "cancelTrial": None

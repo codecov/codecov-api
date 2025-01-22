@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.db.models import QuerySet
-from shared.plan.constants import TierName, PlanName, PlanPrice
-from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.codecov_auth.models import BillingRate
+from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
+from shared.plan.constants import PlanName, PlanPrice, TierName
 
 from codecov_auth.models import Owner, Plan
 
@@ -28,7 +28,6 @@ def get_all_admins_for_owners(owners: QuerySet[Owner]):
 
     admins: QuerySet[Owner] = Owner.objects.filter(pk__in=admin_ids)
     return admins
-
 
 
 def mock_all_plans_and_tiers():

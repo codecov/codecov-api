@@ -9,6 +9,7 @@ from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.plan.constants import PlanName
 from stripe import InvalidRequestError
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import Service
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
@@ -177,6 +178,7 @@ class MockFailedSubscriptionUpgrade(object):
 
 class StripeServiceTests(TestCase):
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.user = OwnerFactory()
         self.stripe = StripeService(requesting_user=self.user)
 
@@ -1873,6 +1875,7 @@ class MockPaymentService(AbstractPaymentService):
 
 class BillingServiceTests(TestCase):
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.mock_payment_service = MockPaymentService()
         self.billing_service = BillingService(payment_service=self.mock_payment_service)
 

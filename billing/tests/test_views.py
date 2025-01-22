@@ -11,6 +11,8 @@ from rest_framework.test import APIRequestFactory, APITestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.plan.constants import PlanName
 
+from billing.helpers import mock_all_plans_and_tiers
+
 from ..constants import StripeHTTPHeaders
 
 
@@ -70,8 +72,10 @@ class MockPaymentIntent(object):
 
 class StripeWebhookHandlerTests(APITestCase):
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.owner = OwnerFactory(
-            stripe_customer_id="cus_123", stripe_subscription_id="sub_123"
+            stripe_customer_id="cus_123",
+            stripe_subscription_id="sub_123",
         )
 
     # Creates a second owner that shares billing details with self.owner.
@@ -79,7 +83,8 @@ class StripeWebhookHandlerTests(APITestCase):
     # subscription in Stripe.
     def add_second_owner(self):
         self.other_owner = OwnerFactory(
-            stripe_customer_id="cus_123", stripe_subscription_id="sub_123"
+            stripe_customer_id="cus_123",
+            stripe_subscription_id="sub_123",
         )
 
     def _send_event(self, payload, errorSig=None):
@@ -467,7 +472,7 @@ class StripeWebhookHandlerTests(APITestCase):
         mocked_send_email.assert_has_calls(expected_calls)
 
     def test_customer_subscription_deleted_sets_plan_to_free(self):
-        self.owner.plan = "users-inappy"
+        self.owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.owner.plan_user_count = 20
         self.owner.save()
 
@@ -492,10 +497,10 @@ class StripeWebhookHandlerTests(APITestCase):
 
     def test_customer_subscription_deleted_sets_plan_to_free_mutliple_owner(self):
         self.add_second_owner()
-        self.owner.plan = "users-inappy"
+        self.owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.owner.plan_user_count = 20
         self.owner.save()
-        self.other_owner.plan = "users-inappy"
+        self.other_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.other_owner.plan_user_count = 20
         self.other_owner.save()
 
@@ -540,7 +545,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"name": "users-inappm"},
+                        "plan": {"name": PlanName.CODECOV_PRO_MONTHLY.value},
                     }
                 },
             }
@@ -577,7 +582,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"name": "users-inappm"},
+                        "plan": {"name": PlanName.CODECOV_PRO_MONTHLY.value},
                     }
                 },
             }
@@ -598,7 +603,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
     @patch("logging.Logger.info")
     def test_customer_subscription_deleted_no_customer(self, log_info_mock):
-        self.owner.plan = "users-inappy"
+        self.owner.plan = PlanName.CODECOV_PRO_MONTHLY.value
         self.owner.plan_user_count = 20
         self.owner.save()
 
@@ -688,7 +693,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
         stripe_subscription_id = "FOEKDCDEQ"
         stripe_customer_id = "sdo050493"
-        plan_name = "users-pr-inappy"
+        plan_name = PlanName.CODECOV_PRO_YEARLY.value
         quantity = 20
 
         self._send_event(

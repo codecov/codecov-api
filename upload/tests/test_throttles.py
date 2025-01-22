@@ -11,6 +11,7 @@ from shared.django_apps.reports.models import ReportType
 from shared.plan.constants import PlanName
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
+from billing.helpers import mock_all_plans_and_tiers
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.redis_configuration import get_redis_connection
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
@@ -18,6 +19,7 @@ from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 class ThrottlesUnitTests(APITestCase):
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.owner = OwnerFactory(
             plan=PlanName.BASIC_PLAN_NAME.value, max_upload_limit=150
         )

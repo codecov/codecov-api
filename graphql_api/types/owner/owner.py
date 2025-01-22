@@ -105,6 +105,7 @@ def resolve_yaml(owner: Owner, info: GraphQLResolveInfo) -> Optional[str]:
 
 @owner_bindable.field("plan")
 @require_part_of_org
+@sync_to_async
 def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
     return PlanService(current_org=owner)
 

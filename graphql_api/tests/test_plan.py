@@ -11,6 +11,8 @@ from shared.license import LicenseInformation
 from shared.plan.constants import PlanName, TrialStatus
 from shared.utils.test_utils import mock_config_helper
 
+from billing.helpers import mock_all_plans_and_tiers
+
 from .helper import GraphQLTestHelper
 
 
@@ -20,6 +22,7 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
         request.mocker = mocker
 
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
@@ -72,10 +75,10 @@ class TestPlanType(GraphQLTestHelper, TransactionTestCase):
             "trialStatus": "ONGOING",
             "trialEndDate": "2023-07-03T00:00:00",
             "trialStartDate": "2023-06-19T00:00:00",
-            "trialTotalDays": None,
+            "trialTotalDays": 14,
             "marketingName": "Developer",
             "value": "users-trial",
-            "tierName": "pro",
+            "tierName": "trial",
             "billingRate": None,
             "baseUnitPrice": 0,
             "benefits": [

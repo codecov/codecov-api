@@ -479,7 +479,7 @@ class StripeService(AbstractPaymentService):
         )
 
         team_plans = Plan.objects.filter(
-            tier=TierName.TEAM.value, is_active=True
+            tier__tier_name=TierName.TEAM.value, is_active=True
         ).values_list("name", flat=True)
 
         # If from PRO to TEAM, then not a similar plan

@@ -23,6 +23,7 @@ from shared.django_apps.reports.models import ReportType
 from shared.plan.constants import PlanName, TrialStatus
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov.commands.exceptions import (
     MissingService,
     UnauthorizedGuestAccess,
@@ -59,6 +60,7 @@ query_repositories = """{
 
 class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.account = AccountFactory()
         self.owner = OwnerFactory(
             username="codecov-user", service="github", account=self.account
