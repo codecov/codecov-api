@@ -59,12 +59,8 @@ query_repositories = """{
 
 
 class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        mock_all_plans_and_tiers()
-
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.account = AccountFactory()
         self.owner = OwnerFactory(
             username="codecov-user", service="github", account=self.account
@@ -1130,7 +1126,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
-            plan=PlanName.FREE_PLAN_NAME.value,
+            plan=PlanName.BASIC_PLAN_NAME.value,
         )
 
         query = """{
@@ -1153,15 +1149,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 "availablePlans": [
                     {
                         "value": "users-basic",
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": False,
-                        "isSentryPlan": False,
-                        "isFreePlan": True,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": "users-free",
                         "isEnterprisePlan": False,
                         "isProPlan": False,
                         "isTeamPlan": False,
