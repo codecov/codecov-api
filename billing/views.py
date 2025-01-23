@@ -14,6 +14,7 @@ from shared.plan.service import PlanService
 
 from billing.helpers import get_all_admins_for_owners
 from codecov_auth.models import Owner
+from services.billing import BillingService
 from services.task.task import TaskService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
@@ -36,6 +37,11 @@ class StripeWebhookHandler(APIView):
             )
 
     def invoice_payment_succeeded(self, invoice: stripe.Invoice) -> None:
+        """
+        Stripe invoice.payment_succeeded is called when an invoice is paid. This happens
+        when an initial checkout session is completed (first upgrade from free to paid) or
+        upon a recurring schedule for the subscription (e.g., monthly or annually)
+        """
         log.info(
             "Invoice Payment Succeeded - Setting delinquency status False",
             extra=dict(
@@ -82,7 +88,39 @@ class StripeWebhookHandler(APIView):
             **template_vars,
         )
 
+    # handler for Stripe event invoice.payment_failed
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
+        """
+        Stripe invoice.payment_failed is called when an invoice is not paid. This happens
+        when a recurring schedule for the subscription (e.g., monthly or annually) fails to pay.
+        Or when the initial checkout session fails to pay.
+        """
+        if invoice.status == "open":
+            if invoice.default_payment_method is None:
+                # check if customer has any pending payment methods
+                unverified_payment_methods = get_unverified_payment_methods(
+                    self, invoice.customer
+                )
+                if unverified_payment_methods:
+                    log.info(
+                        "Invoice payment failed but customer has pending payment methods",
+                        extra=dict(
+                            stripe_customer_id=invoice.customer,
+                            stripe_subscription_id=invoice.subscription,
+                            pending_payment_methods=len(unverified_payment_methods),
+                        ),
+                    )
+                    return
+                # reach here because ach is still pending
+                log.info(
+                    "Invoice payment failed but requires action - skipping delinquency",
+                    extra=dict(
+                        stripe_customer_id=invoice.customer,
+                        stripe_subscription_id=invoice.subscription,
+                    ),
+                )
+            return
+
         log.info(
             "Invoice Payment Failed - Setting Delinquency status True",
             extra=dict(
@@ -137,6 +175,7 @@ class StripeWebhookHandler(APIView):
             **template_vars,
         )
 
+    # handler for Stripe event customer.subscription.deleted
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         log.info(
             "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
@@ -183,6 +222,7 @@ class StripeWebhookHandler(APIView):
             ),
         )
 
+    # handler for Stripe event subscription_schedule.updated
     def subscription_schedule_updated(
         self, schedule: stripe.SubscriptionSchedule
     ) -> None:
@@ -207,6 +247,7 @@ class StripeWebhookHandler(APIView):
                 ),
             )
 
+    # handler for Stripe event subscription_schedule.released
     def subscription_schedule_released(
         self, schedule: stripe.SubscriptionSchedule
     ) -> None:
@@ -245,6 +286,7 @@ class StripeWebhookHandler(APIView):
             ),
         )
 
+    # handler for Stripe event customer.created
     def customer_created(self, customer: stripe.Customer) -> None:
         # Based on what stripe doesn't gives us (an ownerid!)
         # in this event we cannot reliably create a customer,
@@ -252,6 +294,7 @@ class StripeWebhookHandler(APIView):
         # relying on customer.subscription.created to handle sub creation
         log.info("Customer created", extra=dict(stripe_customer_id=customer.id))
 
+    # handler for Stripe event customer.subscription.created
     def customer_subscription_created(self, subscription: stripe.Subscription) -> None:
         sub_item_plan_id = subscription.plan.id
 
@@ -311,6 +354,7 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated([owner])
 
+    # handler for Stripe event customer.subscription.updated
     def customer_subscription_updated(self, subscription: stripe.Subscription) -> None:
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
@@ -341,7 +385,6 @@ class StripeWebhookHandler(APIView):
                 ),
             )
             return
-
         # Properly attach the payment method on the customer
         # This hook will be called after a checkout session completes,
         # updating the subscription created with it
@@ -407,6 +450,7 @@ class StripeWebhookHandler(APIView):
             ),
         )
 
+    # handler for Stripe event customer.updated
     def customer_updated(self, customer: stripe.Customer) -> None:
         new_default_payment_method = customer["invoice_settings"][
             "default_payment_method"
@@ -428,6 +472,7 @@ class StripeWebhookHandler(APIView):
                 subscription["id"], default_payment_method=new_default_payment_method
             )
 
+    # handler for Stripe event checkout.session.completed
     def checkout_session_completed(
         self, checkout_session: stripe.checkout.Session
     ) -> None:
@@ -444,6 +489,58 @@ class StripeWebhookHandler(APIView):
         owner.save()
 
         self._log_updated([owner])
+
+    def _check_and_handle_delayed_notification_payment_methods(
+        self, customer_id: str, payment_method_id: str
+    ):
+        owner = Owner.objects.get(stripe_customer_id=customer_id)
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+
+        if payment_method.type == "us_bank_account" and hasattr(
+            payment_method, "us_bank_account"
+        ):
+            # attach the payment method + set as default on the invoice and subscription
+            stripe.PaymentMethod.attach(
+                payment_method, customer=owner.stripe_customer_id
+            )
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                invoice_settings={"default_payment_method": payment_method},
+            )
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id, default_payment_method=payment_method
+            )
+
+    # handler for Stripe event payment_intent.succeeded
+    def payment_intent_succeeded(self, payment_intent: stripe.PaymentIntent) -> None:
+        """
+        Stripe payment intent is used for the initial checkout session
+        """
+        log.info(
+            "Payment intent succeeded",
+            extra=dict(
+                payment_method_id=payment_intent.id,
+            ),
+        )
+
+        self._check_and_handle_delayed_notification_payment_methods(
+            payment_intent.customer, payment_intent.payment_method
+        )
+
+    # handler for Stripe event setup_intent.succeeded
+    def setup_intent_succeeded(self, setup_intent: stripe.SetupIntent) -> None:
+        """
+        Stripe setup intent is used for subsequent edits to payment methods.
+        See our createSetupIntent api which is called from the UI Stripe Payment Element
+        """
+        log.info(
+            "Setup intent succeeded",
+            extra=dict(setup_intent_id=setup_intent.id),
+        )
+
+        self._check_and_handle_delayed_notification_payment_methods(
+            setup_intent.customer, setup_intent.payment_method
+        )
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:
@@ -476,3 +573,41 @@ class StripeWebhookHandler(APIView):
         getattr(self, self.event.type.replace(".", "_"))(self.event.data.object)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# TODO - move this
+def get_unverified_payment_methods(self, stripe_customer_id: str):
+
+    unverified_payment_methods = []
+
+    # Check payment intents
+    payment_intents = stripe.PaymentIntent.list(customer=stripe_customer_id, limit=100)
+    for intent in payment_intents.data:
+        if (
+            hasattr(intent, "next_action")
+            and intent.next_action
+            and intent.next_action.type == "verify_with_microdeposits"
+        ):
+            unverified_payment_methods.append(
+                {
+                    "payment_method_id": intent.payment_method,
+                    "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                }
+            )
+
+    # Check setup intents
+    setup_intents = stripe.SetupIntent.list(customer=stripe_customer_id, limit=100)
+    for intent in setup_intents.data:
+        if (
+            hasattr(intent, "next_action")
+            and intent.next_action
+            and intent.next_action.type == "verify_with_microdeposits"
+        ):
+            unverified_payment_methods.append(
+                {
+                    "payment_method_id": intent.payment_method,
+                    "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                }
+            )
+
+    return unverified_payment_methods

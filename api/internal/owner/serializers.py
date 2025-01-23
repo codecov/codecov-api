@@ -271,6 +271,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     activated_user_count = serializers.SerializerMethodField()
     delinquent = serializers.SerializerMethodField()
     uses_invoice = serializers.SerializerMethodField()
+    unverified_payment_methods = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -296,6 +297,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             "student_count",
             "subscription_detail",
             "uses_invoice",
+            "unverified_payment_methods",
         )
 
     def _get_billing(self) -> BillingService:
@@ -334,6 +336,9 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
         if owner.account:
             return owner.account.invoice_billing.filter(is_active=True).exists()
         return owner.uses_invoice
+
+    def get_unverified_payment_methods(self, owner: Owner) -> list[Dict[str, Any]]:
+        return self._get_billing().get_unverified_payment_methods(owner)
 
     def update(self, instance: Owner, validated_data: Dict[str, Any]) -> object:
         if "pretty_plan" in validated_data:

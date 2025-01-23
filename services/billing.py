@@ -534,17 +534,40 @@ class StripeService(AbstractPaymentService):
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
             tax_id_collection={"enabled": True},
-            customer_update={"name": "auto", "address": "auto"}
-            if owner.stripe_customer_id
-            else None,
+            customer_update=(
+                {"name": "auto", "address": "auto"}
+                if owner.stripe_customer_id
+                else None
+            ),
         )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
         return session["id"]
 
+    def _should_set_as_default_payment_method(self, payment_method_id: str) -> bool:
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+        if (
+            hasattr(payment_method, "us_bank_account")
+            and getattr(payment_method.us_bank_account.status_details, "status", None)
+            != "verified"
+        ):
+            return False
+        return True
+
+    def _can_attach_payment_method(self, payment_method_id: str) -> bool:
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+        print("HERE I am", payment_method)
+        if (
+            hasattr(payment_method, "us_bank_account")
+            and getattr(payment_method.us_bank_account.status_details, "status", None)
+            != "verified"
+        ):
+            return False
+        return True
+
     @_log_stripe_error
-    def update_payment_method(self, owner: Owner, payment_method):
+    def update_payment_method(self, owner: Owner, payment_method: str) -> None:
         log.info(
             "Stripe update payment method for owner",
             extra=dict(
@@ -564,15 +587,26 @@ class StripeService(AbstractPaymentService):
                 ),
             )
             return None
+
+        # skip setting as default payment method on invoice and subscription if ACH is not verified
+
         # attach the payment method + set as default on the invoice and subscription
-        stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
-        stripe.Customer.modify(
-            owner.stripe_customer_id,
-            invoice_settings={"default_payment_method": payment_method},
-        )
-        stripe.Subscription.modify(
-            owner.stripe_subscription_id, default_payment_method=payment_method
-        )
+
+        # can only attach to the customer if it's verified (otherwise error
+        # "PaymentMethods of type us_bank_account must be verified before they can be attached to a customer."")
+        if self._can_attach_payment_method(payment_method):
+            stripe.PaymentMethod.attach(
+                payment_method, customer=owner.stripe_customer_id
+            )
+
+        if self._should_set_as_default_payment_method(payment_method):
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                invoice_settings={"default_payment_method": payment_method},
+            )
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id, default_payment_method=payment_method
+            )
         log.info(
             f"Successfully updated payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
             extra=dict(
@@ -718,6 +752,51 @@ class StripeService(AbstractPaymentService):
             customer=owner.stripe_customer_id,
         )
 
+    def get_unverified_payment_methods(self, owner):
+        log.info(
+            "Getting unverified payment methods", extra=dict(owner_id=owner.ownerid)
+        )
+        if not owner.stripe_customer_id:
+            return []
+
+        unverified_payment_methods = []
+
+        # Check payment intents
+        payment_intents = stripe.PaymentIntent.list(
+            customer=owner.stripe_customer_id, limit=100
+        )
+        for intent in payment_intents.data:
+            if (
+                hasattr(intent, "next_action")
+                and intent.next_action
+                and intent.next_action.type == "verify_with_microdeposits"
+            ):
+                unverified_payment_methods.append(
+                    {
+                        "payment_method_id": intent.payment_method,
+                        "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                    }
+                )
+
+        # Check setup intents
+        setup_intents = stripe.SetupIntent.list(
+            customer=owner.stripe_customer_id, limit=100
+        )
+        for intent in setup_intents.data:
+            if (
+                hasattr(intent, "next_action")
+                and intent.next_action
+                and intent.next_action.type == "verify_with_microdeposits"
+            ):
+                unverified_payment_methods.append(
+                    {
+                        "payment_method_id": intent.payment_method,
+                        "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                    }
+                )
+
+        return unverified_payment_methods
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -758,6 +837,9 @@ class EnterprisePaymentService(AbstractPaymentService):
     def create_setup_intent(self, owner):
         pass
 
+    def get_unverified_payment_methods(self, owner):
+        return []
+
 
 class BillingService:
     payment_service = None
@@ -787,6 +869,9 @@ class BillingService:
 
     def list_filtered_invoices(self, owner, limit=10):
         return self.payment_service.list_filtered_invoices(owner, limit)
+
+    def get_unverified_payment_methods(self, owner):
+        return self.payment_service.get_unverified_payment_methods(owner)
 
     def update_plan(self, owner, desired_plan):
         """
