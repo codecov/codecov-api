@@ -12,14 +12,13 @@ from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     InvoiceBillingFactory,
     OwnerFactory,
-    PlanFactory,
-    TierFactory,
     UserFactory,
 )
-from shared.plan.constants import PlanName, TierName, TrialStatus
+from shared.plan.constants import PlanName, TrialStatus
 from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import Service
 from utils.test_utils import APIClient
 
@@ -92,6 +91,11 @@ class AccountViewSetTests(APITestCase):
 
     def _destroy(self, kwargs):
         return self.client.delete(reverse("account_details-detail", kwargs=kwargs))
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        mock_all_plans_and_tiers()
 
     def setUp(self):
         self.service = "gitlab"
@@ -189,15 +193,6 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_gets_account_fields_when_there_are_scheduled_details(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
-        pro_tier = TierFactory(tier_name=TierName.PRO.value)
-
-        PlanFactory(
-            name="users-pr-inappm",
-            tier=pro_tier,
-            is_active=True,
-            billing_rate="monthly",
-            marketing_name="Pro",
-        )
         owner = OwnerFactory(
             admins=[self.current_owner.ownerid], stripe_subscription_id="sub_123"
         )
@@ -294,16 +289,6 @@ class AccountViewSetTests(APITestCase):
     def test_retrieve_account_returns_last_phase_when_more_than_one_scheduled_phases(
         self, mock_retrieve_subscription, mock_retrieve_schedule
     ):
-        pro_tier = TierFactory(tier_name=TierName.PRO.value)
-
-        PlanFactory(
-            name="users-pr-inappm",
-            tier=pro_tier,
-            is_active=True,
-            billing_rate="monthly",
-            marketing_name="Pro",
-        )
-
         owner = OwnerFactory(
             admins=[self.current_owner.ownerid], stripe_subscription_id="sub_2345687"
         )
@@ -541,13 +526,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_paid_user_plan_billed_annually(self):
-        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY_LEGACY.value
+        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Pro",
-            "value": PlanName.CODECOV_PRO_YEARLY_LEGACY.value,
+            "value": PlanName.CODECOV_PRO_YEARLY.value,
             "billing_rate": "annually",
             "base_unit_price": 10,
             "benefits": [
@@ -707,7 +692,7 @@ class AccountViewSetTests(APITestCase):
         assert response.data["plan_auto_activate"] is False
 
     def test_update_can_set_plan_to_users_basic(self):
-        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY_LEGACY.value
+        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.save()
 
         response = self._update(
@@ -1518,7 +1503,7 @@ class AccountViewSetTests(APITestCase):
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
     def test_update_sentry_plan_annual(self, modify_sub_mock, send_sentry_webhook):
-        desired_plan = {"value": "users-sentryy", "quantity": 12}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 12}
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.sentry_user_id = "sentry-user-id"
@@ -1540,7 +1525,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_sentry_plan_annual_with_users_org(
         self, modify_sub_mock, send_sentry_webhook
     ):
-        desired_plan = {"value": "users-sentryy", "quantity": 12}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 12}
         org = OwnerFactory(
             service=Service.GITHUB.value,
             service_id="923836740",
@@ -1648,7 +1633,7 @@ class AccountViewSetTests(APITestCase):
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
-        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY_LEGACY.value
+        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
@@ -1701,7 +1686,7 @@ class AccountViewSetTests(APITestCase):
             name="Hello World",
             plan_seat_count=5,
             free_seat_count=3,
-            plan="users-enterprisey",
+            plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value,
             is_delinquent=False,
         )
         InvoiceBillingFactory(is_active=True, account=account)

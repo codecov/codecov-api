@@ -18,9 +18,11 @@ from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 
 class ThrottlesUnitTests(APITestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         mock_all_plans_and_tiers()
-        self.owner = OwnerFactory(
+        cls.owner = OwnerFactory(
             plan=PlanName.BASIC_PLAN_NAME.value, max_upload_limit=150
         )
 

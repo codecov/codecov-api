@@ -8,12 +8,8 @@ from codecov_auth.models import Owner, Plan
 
 
 def on_enterprise_plan(owner: Owner) -> bool:
-    return settings.IS_ENTERPRISE or (
-        owner.plan
-        in Plan.objects.filter(tier__tier_name=TierName.ENTERPRISE.value).values_list(
-            "name", flat=True
-        )
-    )
+    plan = Plan.objects.select_related("tier").get(name=owner.plan)
+    return settings.IS_ENTERPRISE or (plan.tier.tier_name == TierName.ENTERPRISE.value)
 
 
 def get_all_admins_for_owners(owners: QuerySet[Owner]):
@@ -166,16 +162,28 @@ def mock_all_plans_and_tiers():
     PlanFactory(
         name=PlanName.ENTERPRISE_CLOUD_MONTHLY.value,
         tier=enterprise_tier,
-        marketing_name="Enterprise",
+        marketing_name="Enterprise Cloud",
         billing_rate=BillingRate.MONTHLY.value,
         base_unit_price=PlanPrice.MONTHLY.value,
         paid_plan=True,
+        benefits=[
+            "Configurable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
     )
     PlanFactory(
         name=PlanName.ENTERPRISE_CLOUD_YEARLY.value,
         tier=enterprise_tier,
-        marketing_name="Enterprise",
+        marketing_name="Enterprise Cloud",
         billing_rate=BillingRate.ANNUALLY.value,
         base_unit_price=PlanPrice.YEARLY.value,
         paid_plan=True,
+        benefits=[
+            "Configurable # of users",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+            "Priority Support",
+        ],
     )

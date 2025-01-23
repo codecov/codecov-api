@@ -177,8 +177,12 @@ class MockFailedSubscriptionUpgrade(object):
 
 
 class StripeServiceTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         mock_all_plans_and_tiers()
+
+    def setUp(self):
         self.user = OwnerFactory()
         self.stripe = StripeService(requesting_user=self.user)
 
@@ -1874,8 +1878,12 @@ class MockPaymentService(AbstractPaymentService):
 
 
 class BillingServiceTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         mock_all_plans_and_tiers()
+
+    def setUp(self):
         self.mock_payment_service = MockPaymentService()
         self.billing_service = BillingService(payment_service=self.mock_payment_service)
 

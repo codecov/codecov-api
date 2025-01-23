@@ -115,7 +115,9 @@ def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
 @sync_to_async
 def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
-    free_plan = Plan.objects.get(name=PlanName.BASIC_PLAN_NAME.value)
+    free_plan = Plan.objects.select_related("tier").get(
+        name=PlanName.BASIC_PLAN_NAME.value
+    )
     return convert_to_DTO(free_plan)
 
 

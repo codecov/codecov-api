@@ -148,13 +148,13 @@ class PlanSerializer(serializers.Serializer):
             )
 
         active_plans = list(
-            Plan.objects.filter(paid_plan=True, is_active=True).values_list(
-                "name", "tier"
-            )
+            Plan.objects.select_related("tier").filter(paid_plan=True, is_active=True)
         )
-        active_plan_names = {name for name, _ in active_plans}
+        active_plan_names = {plan.name for plan in active_plans}
         team_tier_plans = {
-            name for name, tier in active_plans if tier == TierName.TEAM.value
+            plan.name
+            for plan in active_plans
+            if plan.tier.tier_name == TierName.TEAM.value
         }
 
         # Validate quantity here because we need access to whole plan object
@@ -347,7 +347,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
 
             sentry_plans = Plan.objects.filter(
                 tier__tier_name=TierName.SENTRY.value, is_active=True
-            )
+            ).values_list("name", flat=True)
 
             if desired_plan["value"] in sentry_plans:
                 current_owner = self.context["view"].request.current_owner

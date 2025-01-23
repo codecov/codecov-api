@@ -71,8 +71,12 @@ class MockPaymentIntent(object):
 
 
 class StripeWebhookHandlerTests(APITestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         mock_all_plans_and_tiers()
+
+    def setUp(self):
         self.owner = OwnerFactory(
             stripe_customer_id="cus_123",
             stripe_subscription_id="sub_123",

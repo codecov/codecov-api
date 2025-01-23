@@ -59,8 +59,12 @@ query_repositories = """{
 
 
 class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         mock_all_plans_and_tiers()
+
+    def setUp(self):
         self.account = AccountFactory()
         self.owner = OwnerFactory(
             username="codecov-user", service="github", account=self.account

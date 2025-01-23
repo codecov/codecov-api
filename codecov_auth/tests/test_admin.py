@@ -54,8 +54,12 @@ from core.models import Pull
 
 
 class OwnerAdminTest(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
         mock_all_plans_and_tiers()
+
+    def setUp(self):
         self.staff_user = UserFactory(is_staff=True)
         self.client.force_login(user=self.staff_user)
         admin_site = AdminSite()
