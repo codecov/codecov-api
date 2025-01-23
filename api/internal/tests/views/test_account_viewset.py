@@ -126,7 +126,7 @@ class AccountViewSetTests(APITestCase):
                     "description": "(10) users-pr-inappm",
                     "amount": 120,
                     "currency": "usd",
-                    "plan_name": "users-pr-inappm",
+                    "plan_name": PlanName.CODECOV_PRO_MONTHLY.value,
                     "quantity": 1,
                     "period": {"end": 1521326190, "start": 1518906990},
                 }
@@ -235,7 +235,6 @@ class AccountViewSetTests(APITestCase):
             kwargs={"service": owner.service, "owner_username": owner.username}
         )
         assert response.status_code == status.HTTP_200_OK
-        print(response.data)
         assert response.data == {
             "integration_id": owner.integration_id,
             "activated_student_count": 0,
@@ -250,7 +249,7 @@ class AccountViewSetTests(APITestCase):
             "plan_provider": owner.plan_provider,
             "plan": {
                 "marketing_name": "Developer",
-                "value": "users-basic",
+                "value": PlanName.BASIC_PLAN_NAME.value,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -489,13 +488,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_free_user_plan(self):
-        self.current_owner.plan = "users-free"
+        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Developer",
-            "value": "users-free",
+            "value": PlanName.BASIC_PLAN_NAME.value,
             "billing_rate": None,
             "base_unit_price": 0,
             "benefits": [
@@ -507,13 +506,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_paid_user_plan_billed_monthly(self):
-        self.current_owner.plan = "users-pr-inappm"
+        self.current_owner.plan = PlanName.CODECOV_PRO_MONTHLY.value
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Pro",
-            "value": "users-pr-inappm",
+            "value": PlanName.CODECOV_PRO_MONTHLY.value,
             "billing_rate": "monthly",
             "base_unit_price": 12,
             "benefits": [
@@ -1581,7 +1580,7 @@ class AccountViewSetTests(APITestCase):
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
-        self.current_owner.plan = "users-pr-inappm"
+        self.current_owner.plan = PlanName.CODECOV_PRO_MONTHLY.value
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()

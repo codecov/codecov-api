@@ -795,26 +795,32 @@ class BillingService:
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        if desired_plan["value"] in Plan.objects.filter(paid_plan=False).values_list(
-            "name", flat=True
-        ):
+        try:
+            plan = Plan.objects.get(name=desired_plan["value"])
+        except Plan.DoesNotExist:
+            log.warning(
+                f"Unable to find plan {desired_plan['value']} for owner {owner.ownerid}"
+            )
+            return None
+
+        if not plan.is_active:
+            log.warning(
+                f"Attempted to transition to non-existent or legacy plan: "
+                f"owner {owner.ownerid}, plan: {desired_plan}"
+            )
+            return None
+
+        if plan.paid_plan is False:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
                 plan_service = PlanService(current_org=owner)
                 plan_service.set_default_plan_data()
-        elif desired_plan["value"] in Plan.objects.filter(
-            paid_plan=True, is_active=True
-        ).values_list("name", flat=True):
+        else:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
-        else:
-            log.warning(
-                f"Attempted to transition to non-existent or legacy plan: "
-                f"owner {owner.ownerid}, plan: {desired_plan}"
-            )
 
     def update_payment_method(self, owner, payment_method):
         """
