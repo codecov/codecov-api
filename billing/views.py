@@ -296,6 +296,12 @@ class StripeWebhookHandler(APIView):
 
     # handler for Stripe event customer.subscription.created
     def customer_subscription_created(self, subscription: stripe.Subscription) -> None:
+        log.info(
+            "Customer subscription created",
+            extra=dict(
+                customer_id=subscription["customer"], subscription_id=subscription["id"]
+            ),
+        )
         sub_item_plan_id = subscription.plan.id
 
         if not sub_item_plan_id:
@@ -332,10 +338,30 @@ class StripeWebhookHandler(APIView):
                 quantity=subscription.quantity,
             ),
         )
+        # add the subscription_id and customer_id to the owner
         owner = Owner.objects.get(ownerid=subscription.metadata.get("obo_organization"))
         owner.stripe_subscription_id = subscription.id
         owner.stripe_customer_id = subscription.customer
         owner.save()
+
+        # check if the subscription has a pending_update attribute, if so, don't upgrade the plan yet
+        print("subscription what are you", subscription)
+        # Check if subscription has a default payment method
+        has_default_payment = subscription.default_payment_method is not None
+
+        # If no default payment, check for any pending verification methods
+        if not has_default_payment:
+            payment_methods = get_unverified_payment_methods(subscription.customer)
+            if payment_methods:
+                log.info(
+                    "Subscription has pending payment verification",
+                    extra=dict(
+                        subscription_id=subscription.id,
+                        customer_id=subscription.customer,
+                        payment_methods=payment_methods,
+                    ),
+                )
+                return
 
         plan_service = PlanService(current_org=owner)
         plan_service.expire_trial_when_upgrading()
@@ -356,6 +382,13 @@ class StripeWebhookHandler(APIView):
 
     # handler for Stripe event customer.subscription.updated
     def customer_subscription_updated(self, subscription: stripe.Subscription) -> None:
+        log.info(
+            "Customer subscription updated",
+            extra=dict(
+                customer_id=subscription["customer"], subscription_id=subscription["id"]
+            ),
+        )
+
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -370,6 +403,25 @@ class StripeWebhookHandler(APIView):
                 ),
             )
             return
+
+        # check if the subscription has a pending_update attribute, if so, don't upgrade the plan yet
+        print("subscription what are you", subscription)
+        # Check if subscription has a default payment method
+        has_default_payment = subscription.default_payment_method is not None
+
+        # If no default payment, check for any pending verification methods
+        if not has_default_payment:
+            payment_methods = get_unverified_payment_methods(subscription.customer)
+            if payment_methods:
+                log.info(
+                    "Subscription has pending payment verification",
+                    extra=dict(
+                        subscription_id=subscription.id,
+                        customer_id=subscription.customer,
+                        payment_methods=payment_methods,
+                    ),
+                )
+                return
 
         indication_of_payment_failure = getattr(subscription, "pending_update", None)
         if indication_of_payment_failure:

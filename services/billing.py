@@ -887,6 +887,51 @@ class BillingService:
                 plan_service.set_default_plan_data()
         elif desired_plan["value"] in PAID_PLANS:
             if owner.stripe_subscription_id is not None:
+                # If there's already a pending subscription, return its checkout session
+                subscription = self.payment_service.get_subscription(owner)
+                if subscription and subscription.status == "incomplete":
+                    # Get the latest invoice and payment intent for this subscription
+                    latest_invoice = subscription.latest_invoice
+                    if latest_invoice and latest_invoice.payment_intent:
+                        payment_intent = stripe.PaymentIntent.retrieve(
+                            latest_invoice.payment_intent
+                        )
+                        # Check if payment intent requires verification
+                        if payment_intent.status == "requires_action":
+                            log.info(
+                                "Subscription has pending payment verification",
+                                extra=dict(
+                                    subscription_id=subscription.id,
+                                    payment_intent_id=payment_intent.id,
+                                    payment_intent_status=payment_intent.status,
+                                ),
+                            )
+
+                            # Delete the existing subscription and payment intent
+                            try:
+                                stripe.PaymentIntent.cancel(payment_intent.id)
+                                stripe.Subscription.delete(subscription.id)
+                                log.info(
+                                    "Deleted incomplete subscription and payment intent",
+                                    extra=dict(
+                                        subscription_id=subscription.id,
+                                        payment_intent_id=payment_intent.id,
+                                    ),
+                                )
+                            except Exception as e:
+                                log.error(
+                                    "Failed to delete subscription and payment intent",
+                                    extra=dict(
+                                        subscription_id=subscription.id,
+                                        payment_intent_id=payment_intent.id,
+                                        error=str(e),
+                                    ),
+                                )
+
+                            return self.payment_service.create_checkout_session(
+                                owner, desired_plan
+                            )
+
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
