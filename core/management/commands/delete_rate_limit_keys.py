@@ -21,8 +21,8 @@ class Command(BaseCommand):
             for key in redis.scan_iter(path):
                 # -1 means the key has no expiry
                 if redis.ttl(key) == -1:
-                    print(f"Deleting key: {key.decode('utf-8')}")
+                    print(f"Deleting key: {key.decode('utf-8')}")  # noqa: T201
                     redis.delete(key)
         except Exception as e:
-            print("Error occurred when deleting redis keys")
-            print(e)
+            print("Error occurred when deleting redis keys")  # noqa: T201
+            print(e)  # noqa: T201

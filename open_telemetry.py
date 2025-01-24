@@ -141,15 +141,15 @@ class CodecovExporter(SpanExporter):
             logging.exception("failed to export all spans")
             return SpanExportResult.FAILURE
         except requests.HTTPError as e:
-            print(e)
-            logging.exception("HTTP server returned erroneous response")
+            logging.exception(
+                "HTTP server returned erroneous response", extra=dict(error=e)
+            )
             return SpanExportResult.FAILURE
         except requests.Timeout:
             logging.exception("request timed out")
             return SpanExportResult.FAILURE
         except Exception as e:
-            print(e)
-            logging.exception("request failed")
+            logging.exception("request failed", extra=dict(error=e))
             return SpanExportResult.FAILURE
 
         return SpanExportResult.SUCCESS
