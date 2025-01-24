@@ -22,12 +22,11 @@ class Command(BaseCommand):
                 for prefix, grouped_migrations in migrations_by_prefix.items():
                     if len(grouped_migrations) > 1:
                         conflicts_found = True
-                        print(
+                        print(  # noqa: T201
                             f"Conflict found in migrations for {app.name} with prefix {prefix}:"
                         )
                         for grouped_migration in grouped_migrations:
-                            print(grouped_migration)
-                        print()
+                            print(grouped_migration)  # noqa: T201
             # It's expected to not find migration folders for Django/3rd party apps
             except FileNotFoundError:
                 pass
@@ -35,4 +34,4 @@ class Command(BaseCommand):
         if conflicts_found:
             raise Exception("Found conflicts in migrations.")
         else:
-            print("No conflicts found!")
+            print("No conflicts found!")  # noqa: T201
