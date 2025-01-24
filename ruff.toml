@@ -46,6 +46,7 @@ select = [
     "PERF", # perflint - performance anti-pattern rules
     "PLC", # pylint - convention rules
     "PLE", # pylint - error rules
+    "T20", # flake8-print - print statements
     "W", # pycodestyle - warning rules
 ]
 ignore = ["F405", "F403", "E501", "E712", "C408"]
