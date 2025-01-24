@@ -88,7 +88,6 @@ class StripeWebhookHandler(APIView):
             **template_vars,
         )
 
-    # handler for Stripe event invoice.payment_failed
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         """
         Stripe invoice.payment_failed is called when an invoice is not paid. This happens
@@ -177,6 +176,10 @@ class StripeWebhookHandler(APIView):
 
     # handler for Stripe event customer.subscription.deleted
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
+        """
+        Stripe customer.subscription.deleted is called when a subscription is deleted.
+        This happens when an org goes from paid to free.
+        """
         log.info(
             "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
             extra=dict(
@@ -286,8 +289,11 @@ class StripeWebhookHandler(APIView):
             ),
         )
 
-    # handler for Stripe event customer.created
     def customer_created(self, customer: stripe.Customer) -> None:
+        """
+        Stripe customer.created is called when a customer is created.
+        This happens when an owner completes a CheckoutSession for the first time.
+        """
         # Based on what stripe doesn't gives us (an ownerid!)
         # in this event we cannot reliably create a customer,
         # so we're just logging that we created the event and
@@ -563,10 +569,10 @@ class StripeWebhookHandler(APIView):
                 owner.stripe_subscription_id, default_payment_method=payment_method
             )
 
-    # handler for Stripe event payment_intent.succeeded
     def payment_intent_succeeded(self, payment_intent: stripe.PaymentIntent) -> None:
         """
-        Stripe payment intent is used for the initial checkout session
+        Stripe payment intent is used for the initial checkout session. 
+        Success is emitted when the payment intent goes to a success state.
         """
         log.info(
             "Payment intent succeeded",
@@ -579,7 +585,6 @@ class StripeWebhookHandler(APIView):
             payment_intent.customer, payment_intent.payment_method
         )
 
-    # handler for Stripe event setup_intent.succeeded
     def setup_intent_succeeded(self, setup_intent: stripe.SetupIntent) -> None:
         """
         Stripe setup intent is used for subsequent edits to payment methods.
