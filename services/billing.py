@@ -907,26 +907,29 @@ class BillingService:
                                 ),
                             )
 
-                            # Delete the existing subscription and payment intent
                             try:
-                                stripe.PaymentIntent.cancel(payment_intent.id)
+                                # Note that when the subscription is deleted,
+                                # the pending payment method / unverified payment intent are deleted
                                 stripe.Subscription.delete(subscription.id)
                                 log.info(
-                                    "Deleted incomplete subscription and payment intent",
+                                    "Deleted incomplete subscription",
                                     extra=dict(
                                         subscription_id=subscription.id,
                                         payment_intent_id=payment_intent.id,
                                     ),
                                 )
+                                owner.stripe_subscription_id = None
+                                owner.save()
                             except Exception as e:
                                 log.error(
-                                    "Failed to delete subscription and payment intent",
+                                    "Failed to delete subscription",
                                     extra=dict(
                                         subscription_id=subscription.id,
                                         payment_intent_id=payment_intent.id,
                                         error=str(e),
                                     ),
                                 )
+                                return None
 
                             return self.payment_service.create_checkout_session(
                                 owner, desired_plan

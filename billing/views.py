@@ -174,7 +174,6 @@ class StripeWebhookHandler(APIView):
             **template_vars,
         )
 
-    # handler for Stripe event customer.subscription.deleted
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         """
         Stripe customer.subscription.deleted is called when a subscription is deleted.
