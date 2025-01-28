@@ -77,6 +77,8 @@ def resolve_repositories(
         current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
     )
 
+    queryset = queryset.order_by("-coverage_enabled", "id")
+
     return queryset_to_connection(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
