@@ -308,8 +308,8 @@ class PullViewsetTests(InternalAPITest):
             "patch": None,
         }
 
-    @patch("services.comparison.ComparisonReport")
-    @patch("compare.models.CommitComparison.objects.filter")
+    @patch("api.public.v2.pull.serializers.ComparisonReport")
+    @patch("api.public.v2.pull.serializers.CommitComparison.objects.filter")
     def test_retrieve_with_patch_coverage(self, mock_cc_filter, mock_comparison_report):
         mock_cc_instance = MagicMock(is_processed=True)
         mock_cc_filter.return_value.select_related.return_value.first.return_value = (
