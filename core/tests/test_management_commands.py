@@ -148,13 +148,14 @@ def test_insert_data_to_db_from_csv_for_plans():
     # Check the output
     assert "Successfully inserted all data into plans from CSV" in out.getvalue()
 
+    print(Plan.objects.all())
+    print(Tier.objects.all())
+    print(Plan.objects.filter(name="Plan A").exists())
+    print(Plan.objects.filter(name="Plan B").exists())
+
     # Verify the data was inserted correctly
-    assert Plan.objects.filter(
-        name="Plan A",
-    ).exists()
-    assert Plan.objects.filter(
-        name="Plan B",
-    ).exists()
+    assert Plan.objects.filter(name="Plan A").exists()
+    assert Plan.objects.filter(name="Plan B").exists()
 
     # Clean up the temporary file
     os.remove(csv_path)
