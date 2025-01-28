@@ -70,5 +70,5 @@ class PullSerializer(serializers.ModelSerializer):
             hits=hits,
             misses=misses,
             partials=partials,
-            coverage=100 * hits / total_branches,
+            coverage=round(100 * hits / total_branches, 2),
         )
