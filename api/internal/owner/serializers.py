@@ -271,6 +271,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
     activated_user_count = serializers.SerializerMethodField()
     delinquent = serializers.SerializerMethodField()
     uses_invoice = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
 
     class Meta:
         model = Owner
@@ -296,7 +297,12 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             "student_count",
             "subscription_detail",
             "uses_invoice",
+            "is_admin",
         )
+
+    def get_is_admin(self, owner: Owner) -> bool:
+        current_owner = self.context["request"].current_owner
+        return owner.is_admin(current_owner)
 
     def _get_billing(self) -> BillingService:
         current_owner = self.context["request"].current_owner
