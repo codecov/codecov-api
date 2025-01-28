@@ -33,7 +33,6 @@ class Command(BaseCommand):
         with open(csv_file_path, newline="") as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                # Create a dictionary of field names and values, converting '' to None
                 model_data = {
                     field: self.convert_value(value)
                     for field, value in row.items()
@@ -52,7 +51,6 @@ class Command(BaseCommand):
                         )
                         continue
 
-                # Create the model instance
                 Model.objects.create(**model_data)
                 self.stdout.write(self.style.SUCCESS(f"Inserted row: {row}"))
 
