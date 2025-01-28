@@ -341,3 +341,34 @@ class PullViewsetTests(InternalAPITest):
             "partials": 2,
             "coverage": 58.82,
         }
+
+    @patch("api.public.v2.pull.serializers.ComparisonReport")
+    @patch("api.public.v2.pull.serializers.CommitComparison.objects.filter")
+    def test_retrieve_with_patch_coverag_no_branches(
+        self, mock_cc_filter, mock_comparison_report
+    ):
+        mock_cc_instance = MagicMock(is_processed=True)
+        mock_cc_filter.return_value.select_related.return_value.first.return_value = (
+            mock_cc_instance
+        )
+
+        mock_file = MagicMock()
+        mock_file.patch_coverage.hits = 0
+        mock_file.patch_coverage.misses = 0
+        mock_file.patch_coverage.partials = 0
+        mock_comparison_report.return_value.impacted_files = [mock_file]
+
+        res = self.client.get(
+            reverse(
+                "api-v2-pulls-detail",
+                kwargs={
+                    "service": self.org.service,
+                    "owner_username": self.org.username,
+                    "repo_name": self.repo.name,
+                    "pullid": self.pulls[0].pullid,
+                },
+            )
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["patch"] is None
