@@ -1,4 +1,5 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
@@ -7,9 +8,11 @@ from shared.django_apps.core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
+
 from codecov.tests.base_test import InternalAPITest
 from core.models import Pull
 from utils.test_utils import APIClient
+
 
 @freeze_time("2022-01-01T00:00:00")
 class PullViewsetTests(InternalAPITest):
@@ -24,7 +27,9 @@ class PullViewsetTests(InternalAPITest):
             PullFactory(repository=self.repo),
             PullFactory(repository=self.repo),
         ]
-        Pull.objects.filter(pk=self.pulls[1].pk).update(updatestamp="2023-01-01T00:00:00")
+        Pull.objects.filter(pk=self.pulls[1].pk).update(
+            updatestamp="2023-01-01T00:00:00"
+        )
         self.client = APIClient()
         self.client.force_login_owner(self.current_owner)
 
@@ -228,7 +233,9 @@ class PullViewsetTests(InternalAPITest):
             )
         )
         assert res.status_code == 403
-        assert res.data["detail"] == "You do not have permission to perform this action."
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
 
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
@@ -270,7 +277,9 @@ class PullViewsetTests(InternalAPITest):
             HTTP_AUTHORIZATION="Bearer testaxs3o76rdcdpfzexuccx3uatui2nw73r",
         )
         assert res.status_code == 403
-        assert res.data["detail"] == "You do not have permission to perform this action."
+        assert (
+            res.data["detail"] == "You do not have permission to perform this action."
+        )
 
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
     def test_pull_with_valid_super_token(self):
@@ -303,7 +312,9 @@ class PullViewsetTests(InternalAPITest):
     @patch("compare.models.CommitComparison.objects.filter")
     def test_retrieve_with_patch_coverage(self, mock_cc_filter, mock_comparison_report):
         mock_cc_instance = MagicMock(is_processed=True)
-        mock_cc_filter.return_value.select_related.return_value.first.return_value = mock_cc_instance
+        mock_cc_filter.return_value.select_related.return_value.first.return_value = (
+            mock_cc_instance
+        )
 
         mock_file = MagicMock()
         mock_file.patch_coverage.hits = 10
