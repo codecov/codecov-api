@@ -470,10 +470,10 @@ class LoginMixin(object):
 
             # Delete the rows in the Session table using sessionid
             Session.objects.filter(
-                sessionid__in=expired_sessions.values_list("sessionid", flat=True)
+                sessionid__in=[es.sessionid for es in expired_sessions]
             ).delete()
 
             # Delete the rows in the DjangoSession table using the extracted keys
             DjangoSession.objects.filter(
-                pk__in=expired_sessions.values_list("login_session_id", flat=True)
+                session_key__in=[es.login_session for es in expired_sessions]
             ).delete()
