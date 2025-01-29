@@ -128,47 +128,12 @@ def test_delete_rate_limit_keys_ip_option():
 
 
 @pytest.mark.django_db
-def test_insert_data_to_db_from_csv_for_plans():
-    # Create a temporary CSV file
+def test_insert_data_to_db_from_csv_for_plans_and_tiers():
     with tempfile.NamedTemporaryFile(mode="w", delete=False, newline="") as temp_csv:
         writer = csv.writer(temp_csv)
-        writer.writerow(
-            ["name", "marketing_name", "base_unit_price", "tier_id", "is_active"]
-        )
-        writer.writerow(["Plan A", "Marketing A", "100", "1", "true"])
-        writer.writerow(["Plan B", "Marketing B", "200", "2", "false"])
-        csv_path = temp_csv.name
-
-    Tier.objects.create(tier_name="Tier 1")
-    Tier.objects.create(tier_name="Tier 2")
-
-    out = StringIO()
-    call_command("insert_data_to_db_from_csv", csv_path, "--model", "plans", stdout=out)
-
-    # Check the output
-    assert "Successfully inserted all data into plans from CSV" in out.getvalue()
-
-    print(Plan.objects.all())
-    print(Tier.objects.all())
-    print(Plan.objects.filter(name="Plan A").exists())
-    print(Plan.objects.filter(name="Plan B").exists())
-
-    # Verify the data was inserted correctly
-    assert Plan.objects.filter(name="Plan A").exists()
-    assert Plan.objects.filter(name="Plan B").exists()
-
-    # Clean up the temporary file
-    os.remove(csv_path)
-
-
-@pytest.mark.django_db
-def test_insert_data_to_db_from_csv_for_tiers():
-    # Create a temporary CSV file
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, newline="") as temp_csv:
-        writer = csv.writer(temp_csv)
-        writer.writerow(["tier_name"])
-        writer.writerow(["Tier 1"])
-        writer.writerow(["Tier 2"])
+        writer.writerow(["id", "tier_name"])
+        writer.writerow([1, "Tier 1"])
+        writer.writerow([2, "Tier 2"])
         csv_path = temp_csv.name
 
     out = StringIO()
@@ -180,6 +145,26 @@ def test_insert_data_to_db_from_csv_for_tiers():
     # Verify the data was inserted correctly
     assert Tier.objects.filter(tier_name="Tier 1").exists()
     assert Tier.objects.filter(tier_name="Tier 2").exists()
+
+    # Create a temporary CSV file
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, newline="") as temp_csv:
+        writer = csv.writer(temp_csv)
+        writer.writerow(
+            ["name", "marketing_name", "base_unit_price", "tier_id", "is_active"]
+        )
+        writer.writerow(["Plan A", "Marketing A", 100, 1, "true"])
+        writer.writerow(["Plan B", "Marketing B", 200, 2, "false"])
+        csv_path = temp_csv.name
+
+    out = StringIO()
+    call_command("insert_data_to_db_from_csv", csv_path, "--model", "plans", stdout=out)
+
+    # Check the output
+    assert "Successfully inserted all data into plans from CSV" in out.getvalue()
+
+    # Verify the data was inserted correctly
+    assert Plan.objects.filter(name="Plan A").exists()
+    assert Plan.objects.filter(name="Plan B").exists()
 
     # Clean up the temporary file
     os.remove(csv_path)
