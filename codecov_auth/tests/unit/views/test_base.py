@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -8,10 +8,15 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
 from freezegun import freeze_time
-from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, UserFactory
+from shared.django_apps.codecov_auth.tests.factories import (
+    OwnerFactory,
+    SessionFactory,
+    UserFactory,
+)
 from shared.license import LicenseInformation
 
-from codecov_auth.models import Owner, OwnerProfile
+from codecov_auth.models import DjangoSession, Owner, OwnerProfile, Session
+from codecov_auth.tests.factories import DjangoSessionFactory
 from codecov_auth.views.base import LoginMixin, StateMixin
 
 
@@ -729,3 +734,118 @@ class LoginMixinTests(TestCase):
         # does not re-claim owner
         assert owner.user is not None
         assert owner.user != user
+
+    @patch("services.refresh.RefreshService.trigger_refresh", lambda *args: None)
+    def test_login_owner_with_expired_login_session(self):
+        user = UserFactory()
+        owner = OwnerFactory(service="github", user=user)
+
+        another_user = UserFactory()
+        another_owner = OwnerFactory(service="github", user=another_user)
+
+        now = datetime.now(timezone.utc)
+
+        # Create a session that will be deleted
+        to_be_deleted_1 = SessionFactory(
+            owner=owner,
+            type="login",
+            name="to_be_deleted",
+            lastseen="2021-01-01T00:00:00+00:00",
+            login_session=DjangoSessionFactory(expire_date=now - timedelta(days=1)),
+        )
+        to_be_deleted_1_session_key = to_be_deleted_1.login_session.session_key
+
+        # Create a session that will not be deleted because its not a login session
+        to_be_kept_1 = SessionFactory(
+            owner=owner,
+            type="api",
+            name="to_be_kept",
+            lastseen="2021-01-01T00:00:00+00:00",
+            login_session=DjangoSessionFactory(expire_date=now + timedelta(days=1)),
+        )
+
+        # Create a session that will not be deleted because it's not expired
+        to_be_kept_2 = SessionFactory(
+            owner=owner,
+            type="login",
+            name="to_be_kept",
+            lastseen="2021-01-01T00:00:00+00:00",
+            login_session=DjangoSessionFactory(expire_date=now + timedelta(days=1)),
+        )
+
+        # Create a session that will not be deleted because it's not the owner's session
+        to_be_kept_3 = SessionFactory(
+            owner=another_owner,
+            type="login",
+            name="to_be_kept",
+            lastseen="2021-01-01T00:00:00+00:00",
+            login_session=DjangoSessionFactory(expire_date=now - timedelta(seconds=1)),
+        )
+
+        assert (
+            len(DjangoSession.objects.filter(session_key=to_be_deleted_1_session_key))
+            == 1
+        )
+        assert (
+            len(
+                DjangoSession.objects.filter(
+                    session_key=to_be_kept_1.login_session.session_key
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                DjangoSession.objects.filter(
+                    session_key=to_be_kept_2.login_session.session_key
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                DjangoSession.objects.filter(
+                    session_key=to_be_kept_3.login_session.session_key
+                )
+            )
+            == 1
+        )
+
+        self.request.user = user
+        self.mixin_instance.login_owner(owner, self.request, HttpResponse())
+        owner.refresh_from_db()
+
+        new_login_session = Session.objects.filter(name=None)
+
+        assert len(new_login_session) == 1
+        assert len(Session.objects.filter(name="to_be_deleted").all()) == 0
+        assert len(Session.objects.filter(name="to_be_kept").all()) == 3
+
+        assert (
+            len(DjangoSession.objects.filter(session_key=to_be_deleted_1_session_key))
+            == 0
+        )
+        assert (
+            len(
+                DjangoSession.objects.filter(
+                    session_key=to_be_kept_1.login_session.session_key
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                DjangoSession.objects.filter(
+                    session_key=to_be_kept_2.login_session.session_key
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                DjangoSession.objects.filter(
+                    session_key=to_be_kept_3.login_session.session_key
+                )
+            )
+            == 1
+        )
