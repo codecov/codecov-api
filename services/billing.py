@@ -545,32 +545,6 @@ class StripeService(AbstractPaymentService):
         )
         return session["id"]
 
-    def _is_unverified_payment_method(self, payment_method_id: str) -> bool:
-        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
-
-        is_us_bank_account = payment_method.type == "us_bank_account" and hasattr(
-            payment_method, "us_bank_account"
-        )
-        if is_us_bank_account:
-            setup_intents = stripe.SetupIntent.list(
-                payment_method=payment_method_id, limit=1
-            )
-            if (
-                setup_intents
-                and hasattr(setup_intents, "data")
-                and isinstance(setup_intents.data, list)
-                and len(setup_intents.data) > 0
-            ):
-                latest_intent = setup_intents.data[0]
-                if (
-                    latest_intent.status == "requires_action"
-                    and latest_intent.next_action
-                    and latest_intent.next_action.type == "verify_with_microdeposits"
-                ):
-                    return True
-
-        return False
-
     @_log_stripe_error
     def update_payment_method(self, owner: Owner, payment_method):
         log.info(
@@ -746,7 +720,8 @@ class StripeService(AbstractPaymentService):
             customer=owner.stripe_customer_id,
         )
 
-    def _get_unverified_payment_methods(self, owner):
+    @_log_stripe_error
+    def get_unverified_payment_methods(self, owner):
         log.info(
             "Getting unverified payment methods",
             extra=dict(
@@ -768,11 +743,13 @@ class StripeService(AbstractPaymentService):
                 and intent.next_action
                 and intent.next_action.get("type") == "verify_with_microdeposits"
             ):
-                unverified_payment_methods.append(
-                    {
-                        "payment_method_id": intent.payment_method,
-                        "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
-                    }
+                unverified_payment_methods.extend(
+                    [
+                        {
+                            "payment_method_id": intent.payment_method,
+                            "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                        }
+                    ]
                 )
 
         # Check setup intents
@@ -785,11 +762,13 @@ class StripeService(AbstractPaymentService):
                 and intent.next_action
                 and intent.next_action.get("type") == "verify_with_microdeposits"
             ):
-                unverified_payment_methods.append(
-                    {
-                        "payment_method_id": intent.payment_method,
-                        "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
-                    }
+                unverified_payment_methods.extend(
+                    [
+                        {
+                            "payment_method_id": intent.payment_method,
+                            "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                        }
+                    ]
                 )
 
         return unverified_payment_methods
@@ -868,7 +847,7 @@ class BillingService:
         return self.payment_service.list_filtered_invoices(owner, limit)
 
     def get_unverified_payment_methods(self, owner):
-        return self.payment_service._get_unverified_payment_methods(owner)
+        return self.payment_service.get_unverified_payment_methods(owner)
 
     def update_plan(self, owner, desired_plan):
         """

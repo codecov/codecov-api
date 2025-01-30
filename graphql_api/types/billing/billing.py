@@ -11,4 +11,4 @@ billing_bindable = ObjectType("Billing")
 def resolve_unverified_payment_methods(
     owner: Owner, info: GraphQLResolveInfo
 ) -> list[dict]:
-    return BillingService(requesting_user=owner).get_unverified_payment_methods()
+    return BillingService(requesting_user=owner).get_unverified_payment_methods(owner)

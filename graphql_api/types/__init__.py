@@ -3,7 +3,7 @@ from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .account import account, account_bindable
-from .billing import billing_bindable
+from .billing import billing, billing_bindable
 from .branch import branch, branch_bindable
 from .bundle_analysis import (
     bundle_analysis,
@@ -30,10 +30,7 @@ from .comparison import comparison, comparison_bindable, comparison_result_binda
 from .component import component, component_bindable
 from .component_comparison import component_comparison, component_comparison_bindable
 from .config import config, config_bindable
-from .coverage_analytics import (
-    coverage_analytics,
-    coverage_analytics_bindable,
-)
+from .coverage_analytics import coverage_analytics, coverage_analytics_bindable
 from .coverage_totals import coverage_totals, coverage_totals_bindable
 from .enums import enum_types
 from .file import commit_file, file_bindable

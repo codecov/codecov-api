@@ -1,5 +1,5 @@
 type Billing {
-  unVerifiedPaymentMethods: [UnverifiedPaymentMethod!]!
+  unverifiedPaymentMethods: [UnverifiedPaymentMethod]
 }
 
 type UnverifiedPaymentMethod {

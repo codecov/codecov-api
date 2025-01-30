@@ -25,9 +25,7 @@ from codecov_auth.models import (
 )
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
-from graphql_api.actions.repository import (
-    list_repository_for_owner,
-)
+from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     Connection,
@@ -398,8 +396,8 @@ def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count
 
 
-
 @owner_bindable.field("billing")
 @sync_to_async
 @require_part_of_org
 def resolve_billing(owner: Owner, info: GraphQLResolveInfo) -> dict | None:
+    return owner
