@@ -58,7 +58,9 @@ class BillingTestCase(GraphQLTestHelper, TransactionTestCase):
             patch("services.billing.stripe.SetupIntent.list") as setup_intent_list_mock,
         ):
             payment_intent_list_mock.return_value.data = [payment_intent]
+            payment_intent_list_mock.return_value.has_more = False
             setup_intent_list_mock.return_value.data = [setup_intent]
+            setup_intent_list_mock.return_value.has_more = False
 
             result = self.gql_request(query, owner=self.owner)
 
