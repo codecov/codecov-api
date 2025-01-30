@@ -15,14 +15,12 @@ class UpdateRepositoryInteractorTest(TransactionTestCase):
 
     def execute_unauthorized_owner(self):
         return EraseRepositoryInteractor(self.owner, "github").execute(
-            repo_name="repo-1",
-            owner=self.random_user,
+            self.random_user.username, "repo-1"
         )
 
     def execute_user_not_admin(self):
         return EraseRepositoryInteractor(self.non_admin_user, "github").execute(
-            repo_name="repo-1",
-            owner=self.owner,
+            self.owner.username, "repo-1"
         )
 
     async def test_when_validation_error_unauthorized_owner_not_part_of_org(self):

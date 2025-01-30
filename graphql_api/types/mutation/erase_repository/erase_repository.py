@@ -18,7 +18,9 @@ async def resolve_erase_repository(
     command = info.context["executor"].get_command("repository")
     current_owner = info.context["request"].current_owner
     repo_name = input.get("repo_name")
-    await command.erase_repository(repo_name=repo_name, owner=current_owner)
+    # TODO: change the graphql mutation to allow working on other owners
+    owner_username = current_owner.username
+    await command.erase_repository(owner_username, repo_name)
     return None
 
 

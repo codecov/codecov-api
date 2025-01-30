@@ -5,10 +5,12 @@ from asgiref.sync import async_to_sync
 from django.test import TransactionTestCase
 from freezegun import freeze_time
 from shared.django_apps.codecov.commands.exceptions import ValidationError
+from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.plan.constants import (
     TRIAL_PLAN_SEATS,
     PlanName,
+    TierName,
     TrialDaysAmount,
     TrialStatus,
 )
@@ -21,6 +23,10 @@ from ..start_trial import StartTrialInteractor
 
 
 class StartTrialInteractorTest(TransactionTestCase):
+    def setUp(self):
+        self.tier = TierFactory(tier_name=TierName.BASIC.value)
+        self.plan = PlanFactory(tier=self.tier, is_active=True)
+
     @async_to_sync
     def execute(self, current_user, org_username=None):
         current_user = current_user
@@ -32,6 +38,7 @@ class StartTrialInteractorTest(TransactionTestCase):
         current_user = OwnerFactory(
             username="random-user-123",
             service="github",
+            plan=self.plan.name,
         )
         with pytest.raises(CodecovValidationError):
             self.execute(current_user=current_user, org_username="some-other-username")
@@ -40,10 +47,12 @@ class StartTrialInteractorTest(TransactionTestCase):
         current_user = OwnerFactory(
             username="random-user-123",
             service="github",
+            plan=self.plan.name,
         )
         OwnerFactory(
             username="random-user-456",
             service="github",
+            plan=self.plan.name,
         )
         with pytest.raises(Unauthorized):
             self.execute(current_user=current_user, org_username="random-user-456")
@@ -59,6 +68,7 @@ class StartTrialInteractorTest(TransactionTestCase):
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
             trial_status=TrialStatus.ONGOING.value,
+            plan=self.plan.name,
         )
         with pytest.raises(ValidationError):
             self.execute(current_user=current_user, org_username=current_user.username)
@@ -74,6 +84,7 @@ class StartTrialInteractorTest(TransactionTestCase):
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
             trial_status=TrialStatus.EXPIRED.value,
+            plan=self.plan.name,
         )
         with pytest.raises(ValidationError):
             self.execute(current_user=current_user, org_username=current_user.username)
@@ -91,6 +102,7 @@ class StartTrialInteractorTest(TransactionTestCase):
             trial_start_date=trial_start_date,
             trial_end_date=trial_end_date,
             trial_status=TrialStatus.CANNOT_TRIAL.value,
+            plan=self.plan.name,
         )
         with pytest.raises(ValidationError):
             self.execute(current_user=current_user, org_username=current_user.username)
@@ -105,6 +117,7 @@ class StartTrialInteractorTest(TransactionTestCase):
             trial_start_date=None,
             trial_end_date=None,
             trial_status=TrialStatus.NOT_STARTED.value,
+            plan=self.plan.name,
         )
         self.execute(current_user=current_user, org_username=current_user.username)
         current_user.refresh_from_db()

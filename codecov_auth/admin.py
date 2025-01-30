@@ -21,7 +21,6 @@ from shared.django_apps.codecov_auth.models import (
     StripeBilling,
     Tier,
 )
-from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from shared.plan.service import PlanService
 
 from codecov.admin import AdminMixin
@@ -609,7 +608,10 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
 
     def get_form(self, request, obj=None, change=False, **kwargs):
         form = super().get_form(request, obj, change, **kwargs)
-        PLANS_CHOICES = [(x, x) for x in USER_PLAN_REPRESENTATIONS.keys()]
+        PLANS_CHOICES = [
+            (x, x)
+            for x in Plan.objects.filter(is_active=True).values_list("name", flat=True)
+        ]
         form.base_fields["plan"].widget = Select(
             choices=BLANK_CHOICE_DASH + PLANS_CHOICES
         )
