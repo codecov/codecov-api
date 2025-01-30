@@ -725,7 +725,7 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def get_unverified_payment_methods(self, owner):
+    def get_unverified_payment_methods(self, owner: Owner):
         log.info(
             "Getting unverified payment methods",
             extra=dict(
@@ -738,42 +738,58 @@ class StripeService(AbstractPaymentService):
         unverified_payment_methods = []
 
         # Check payment intents
-        payment_intents = stripe.PaymentIntent.list(
-            customer=owner.stripe_customer_id, limit=100
-        )
-        for intent in payment_intents.data or []:
-            if (
-                intent.get("next_action")
-                and intent.next_action
-                and intent.next_action.get("type") == "verify_with_microdeposits"
-            ):
-                unverified_payment_methods.extend(
-                    [
-                        {
-                            "payment_method_id": intent.payment_method,
-                            "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
-                        }
-                    ]
-                )
+        has_more = True
+        starting_after = None
+        while has_more:
+            payment_intents = stripe.PaymentIntent.list(
+                customer=owner.stripe_customer_id,
+                limit=20,
+                starting_after=starting_after
+            )
+            for intent in payment_intents.data or []:
+                if (
+                    intent.get("next_action")
+                    and intent.next_action
+                    and intent.next_action.get("type") == "verify_with_microdeposits"
+                ):
+                    unverified_payment_methods.extend(
+                        [
+                            {
+                                "payment_method_id": intent.payment_method,
+                                "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                            }
+                        ]
+                    )
+            has_more = payment_intents.has_more
+            if has_more and payment_intents.data:
+                starting_after = payment_intents.data[-1].id
 
         # Check setup intents
-        setup_intents = stripe.SetupIntent.list(
-            customer=owner.stripe_customer_id, limit=100
-        )
-        for intent in setup_intents.data:
-            if (
-                intent.get("next_action")
-                and intent.next_action
-                and intent.next_action.get("type") == "verify_with_microdeposits"
-            ):
-                unverified_payment_methods.extend(
-                    [
-                        {
-                            "payment_method_id": intent.payment_method,
-                            "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
-                        }
-                    ]
-                )
+        has_more = True
+        starting_after = None
+        while has_more:
+            setup_intents = stripe.SetupIntent.list(
+                customer=owner.stripe_customer_id,
+                limit=20,
+                starting_after=starting_after
+            )
+            for intent in setup_intents.data:
+                if (
+                    intent.get("next_action")
+                    and intent.next_action
+                    and intent.next_action.get("type") == "verify_with_microdeposits"
+                ):
+                    unverified_payment_methods.extend(
+                        [
+                            {
+                                "payment_method_id": intent.payment_method,
+                                "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                            }
+                        ]
+                    )
+            has_more = setup_intents.has_more
+            if has_more and setup_intents.data:
+                starting_after = setup_intents.data[-1].id
 
         return unverified_payment_methods
 
@@ -817,7 +833,7 @@ class EnterprisePaymentService(AbstractPaymentService):
     def create_setup_intent(self, owner):
         pass
 
-    def get_unverified_payment_methods(self, owner):
+    def get_unverified_payment_methods(self, owner: Owner):
         pass
 
 
@@ -850,7 +866,7 @@ class BillingService:
     def list_filtered_invoices(self, owner, limit=10):
         return self.payment_service.list_filtered_invoices(owner, limit)
 
-    def get_unverified_payment_methods(self, owner):
+    def get_unverified_payment_methods(self, owner: Owner):
         return self.payment_service.get_unverified_payment_methods(owner)
 
     def update_plan(self, owner, desired_plan):
