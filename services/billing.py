@@ -534,14 +534,42 @@ class StripeService(AbstractPaymentService):
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
             tax_id_collection={"enabled": True},
-            customer_update={"name": "auto", "address": "auto"}
-            if owner.stripe_customer_id
-            else None,
+            customer_update=(
+                {"name": "auto", "address": "auto"}
+                if owner.stripe_customer_id
+                else None
+            ),
         )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
         return session["id"]
+
+    def _is_unverified_payment_method(self, payment_method_id: str) -> bool:
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+
+        is_us_bank_account = payment_method.type == "us_bank_account" and hasattr(
+            payment_method, "us_bank_account"
+        )
+        if is_us_bank_account:
+            setup_intents = stripe.SetupIntent.list(
+                payment_method=payment_method_id, limit=1
+            )
+            if (
+                setup_intents
+                and hasattr(setup_intents, "data")
+                and isinstance(setup_intents.data, list)
+                and len(setup_intents.data) > 0
+            ):
+                latest_intent = setup_intents.data[0]
+                if (
+                    latest_intent.status == "requires_action"
+                    and latest_intent.next_action
+                    and latest_intent.next_action.type == "verify_with_microdeposits"
+                ):
+                    return True
+
+        return False
 
     @_log_stripe_error
     def update_payment_method(self, owner: Owner, payment_method):
@@ -718,6 +746,54 @@ class StripeService(AbstractPaymentService):
             customer=owner.stripe_customer_id,
         )
 
+    def _get_unverified_payment_methods(self, owner):
+        log.info(
+            "Getting unverified payment methods",
+            extra=dict(
+                owner_id=owner.ownerid, stripe_customer_id=owner.stripe_customer_id
+            ),
+        )
+        if not owner.stripe_customer_id:
+            return []
+
+        unverified_payment_methods = []
+
+        # Check payment intents
+        payment_intents = stripe.PaymentIntent.list(
+            customer=owner.stripe_customer_id, limit=100
+        )
+        for intent in payment_intents.data or []:
+            if (
+                intent.get("next_action")
+                and intent.next_action
+                and intent.next_action.get("type") == "verify_with_microdeposits"
+            ):
+                unverified_payment_methods.append(
+                    {
+                        "payment_method_id": intent.payment_method,
+                        "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                    }
+                )
+
+        # Check setup intents
+        setup_intents = stripe.SetupIntent.list(
+            customer=owner.stripe_customer_id, limit=100
+        )
+        for intent in setup_intents.data:
+            if (
+                intent.get("next_action")
+                and intent.next_action
+                and intent.next_action.get("type") == "verify_with_microdeposits"
+            ):
+                unverified_payment_methods.append(
+                    {
+                        "payment_method_id": intent.payment_method,
+                        "hosted_verification_link": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                    }
+                )
+
+        return unverified_payment_methods
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -758,6 +834,9 @@ class EnterprisePaymentService(AbstractPaymentService):
     def create_setup_intent(self, owner):
         pass
 
+    def get_unverified_payment_methods(self, owner):
+        pass
+
 
 class BillingService:
     payment_service = None
@@ -787,6 +866,9 @@ class BillingService:
 
     def list_filtered_invoices(self, owner, limit=10):
         return self.payment_service.list_filtered_invoices(owner, limit)
+
+    def get_unverified_payment_methods(self, owner):
+        return self.payment_service._get_unverified_payment_methods(owner)
 
     def update_plan(self, owner, desired_plan):
         """
