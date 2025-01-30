@@ -17,6 +17,7 @@ class ComponentCommandsTest(TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="test-user")
         self.org = OwnerFactory(username="test-org", admins=[self.owner.pk])
+        self.owner.organizations = [self.org.pk]
         self.repo = RepositoryFactory(author=self.org)
         self.command = ComponentCommands(self.owner, "github")
 
