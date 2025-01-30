@@ -3,6 +3,7 @@ from ariadne_django.scalars import datetime_scalar
 
 from ..helpers.ariadne import ariadne_load_local_graphql
 from .account import account, account_bindable
+from .billing import billing_bindable
 from .branch import branch, branch_bindable
 from .bundle_analysis import (
     bundle_analysis,
@@ -90,6 +91,7 @@ inputs = ariadne_load_local_graphql(__file__, "./inputs")
 enums = ariadne_load_local_graphql(__file__, "./enums")
 errors = ariadne_load_local_graphql(__file__, "./errors")
 types = [
+    billing,
     branch,
     bundle_analysis_comparison,
     bundle_analysis_report,
@@ -140,6 +142,7 @@ types = [
 bindables = [
     *enum_types.enum_types,
     *mutation_resolvers,
+    billing_bindable,
     branch_bindable,
     bundle_analysis_comparison_bindable,
     bundle_analysis_comparison_result_bindable,

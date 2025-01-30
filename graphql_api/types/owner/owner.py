@@ -396,3 +396,10 @@ def resolve_upload_token_required(
 @require_shared_account_or_part_of_org
 def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count
+
+
+
+@owner_bindable.field("billing")
+@sync_to_async
+@require_part_of_org
+def resolve_billing(owner: Owner, info: GraphQLResolveInfo) -> dict | None:
