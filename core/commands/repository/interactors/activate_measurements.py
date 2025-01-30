@@ -11,13 +11,13 @@ class ActivateMeasurementsInteractor(BaseInteractor):
     @sync_to_async
     def execute(
         self, repo_name: str, owner_name: str, measurement_type: MeasurementName
-    ):
+    ) -> Dataset:
+        if not settings.TIMESERIES_ENABLED:
+            raise ValidationError("Timeseries storage not enabled")
+
         _owner, repo = self.resolve_owner_and_repo(
             owner_name, repo_name, only_viewable=True, only_active=True
         )
-
-        if not settings.TIMESERIES_ENABLED:
-            raise ValidationError("Timeseries storage not enabled")
 
         dataset, created = Dataset.objects.get_or_create(
             name=measurement_type.value,
