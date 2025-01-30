@@ -15,10 +15,8 @@ class Command(BaseCommand):
 
         path = "rl-user:*"
         if options["ip"]:
+            path = "rl-id:*"
             path = "rl-ip:*"
-
-        if options["blah"]:
-            path = "blahbloo"
 
         try:
             for key in redis.scan_iter(path):
