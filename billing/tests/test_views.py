@@ -65,6 +65,7 @@ class MockPaymentMethod(object):
 class MockPaymentIntent(object):
     def __init__(self, noCard=False):
         self.payment_method = MockPaymentMethod(noCard)
+        self.status = "succeeded"
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -285,6 +286,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
                         "payment_intent": "payment_intent_asdf",
+                        "default_payment_method": {},
                     }
                 },
             }
@@ -316,6 +318,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
                         "payment_intent": "payment_intent_asdf",
+                        "default_payment_method": {},
                     }
                 },
             }
@@ -354,6 +357,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
                         "payment_intent": "payment_intent_asdf",
+                        "default_payment_method": {},
                     }
                 },
             }
@@ -428,7 +432,10 @@ class StripeWebhookHandlerTests(APITestCase):
                         "default_payment_method": None,
                         "total": 24000,
                         "hosted_invoice_url": "https://stripe.com",
-                        "payment_intent": "payment_intent_asdf",
+                        "payment_intent": {
+                            "id": "payment_intent_asdf",
+                            "status": "succeeded",
+                        },
                     }
                 },
             }
@@ -488,6 +495,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
                         "plan": {"name": self.owner.plan},
+                        "status": "active",
                     }
                 },
             }
@@ -516,6 +524,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
                         "plan": {"name": self.owner.plan},
+                        "status": "active",
                     }
                 },
             }
@@ -550,6 +559,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
                         "plan": {"name": PlanName.CODECOV_PRO_MONTHLY.value},
+                        "status": "active",
                     }
                 },
             }
@@ -587,6 +597,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
                         "plan": {"name": PlanName.CODECOV_PRO_MONTHLY.value},
+                        "status": "active",
                     }
                 },
             }
@@ -619,6 +630,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "id": "HUH",
                         "customer": "nah",
                         "plan": {"name": self.owner.plan},
+                        "status": "active",
                     }
                 },
             }
@@ -690,7 +702,11 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.stripe_subscription_id is None
         assert self.owner.stripe_customer_id is None
 
-    def test_customer_subscription_created_sets_plan_info(self):
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
+    def test_customer_subscription_created_sets_plan_info(
+        self, has_unverified_initial_payment_method_mock
+    ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.owner.stripe_subscription_id = None
         self.owner.stripe_customer_id = None
         self.owner.save()
@@ -724,12 +740,18 @@ class StripeWebhookHandlerTests(APITestCase):
         assert self.owner.plan == plan_name
 
     @freeze_time("2023-06-19")
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("shared.plan.service.PlanService.expire_trial_when_upgrading")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_created_can_trigger_trial_expiration(
-        self, c_mock, pm_mock, expire_trial_when_upgrading_mock
+        self,
+        c_mock,
+        pm_mock,
+        expire_trial_when_upgrading_mock,
+        has_unverified_initial_payment_method_mock,
     ):
+        has_unverified_initial_payment_method_mock.return_value = False
         stripe_subscription_id = "FOEKDCDEQ"
         stripe_customer_id = "sdo050493"
         quantity = 20
@@ -752,11 +774,16 @@ class StripeWebhookHandlerTests(APITestCase):
 
         expire_trial_when_upgrading_mock.assert_called_once()
 
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_does_not_change_subscription_if_not_paid_user_plan(
-        self, c_mock, pm_mock
+        self,
+        c_mock,
+        pm_mock,
+        has_unverified_initial_payment_method_mock,
     ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.owner.plan = PlanName.BASIC_PLAN_NAME.value
         self.owner.plan_user_count = 0
         self.owner.plan_auto_activate = False
@@ -792,12 +819,18 @@ class StripeWebhookHandlerTests(APITestCase):
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
         )
 
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("logging.Logger.info")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_does_not_change_subscription_if_there_is_a_schedule(
-        self, c_mock, pm_mock, log_info_mock
+        self,
+        c_mock,
+        pm_mock,
+        log_info_mock,
+        has_unverified_initial_payment_method_mock,
     ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
         self.owner.plan_auto_activate = False
@@ -838,11 +871,16 @@ class StripeWebhookHandlerTests(APITestCase):
             extra={"stripe_webhook_event": "customer.subscription.updated"},
         )
 
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_sets_free_and_deactivates_all_repos_if_incomplete_expired(
-        self, c_mock, pm_mock
+        self,
+        c_mock,
+        pm_mock,
+        has_unverified_initial_payment_method_mock,
     ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
         self.owner.plan_auto_activate = False
@@ -889,7 +927,11 @@ class StripeWebhookHandlerTests(APITestCase):
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
         )
 
-    def test_customer_subscription_updated_payment_failed(self):
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
+    def test_customer_subscription_updated_payment_failed(
+        self, has_unverified_initial_payment_method_mock
+    ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.owner.delinquent = False
         self.owner.save()
 
@@ -923,11 +965,16 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         assert self.owner.delinquent == True
 
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_sets_free_and_deactivates_all_repos_if_incomplete_expired_multiple_owner(
-        self, c_mock, pm_mock
+        self,
+        c_mock,
+        pm_mock,
+        has_unverified_initial_payment_method_mock,
     ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.add_second_owner()
         self.owner.plan = "users-pr-inappy"
         self.owner.plan_user_count = 10
@@ -992,11 +1039,16 @@ class StripeWebhookHandlerTests(APITestCase):
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
         )
 
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_sets_fields_on_success(
-        self, c_mock, pm_mock
+        self,
+        c_mock,
+        pm_mock,
+        has_unverified_initial_payment_method_mock,
     ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.owner.plan = "users-free"
         self.owner.plan_user_count = 5
         self.owner.plan_auto_activate = False
@@ -1034,11 +1086,16 @@ class StripeWebhookHandlerTests(APITestCase):
             invoice_settings={"default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV"},
         )
 
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_sets_fields_on_success_multiple_owner(
-        self, c_mock, pm_mock
+        self,
+        c_mock,
+        pm_mock,
+        has_unverified_initial_payment_method_mock,
     ):
+        has_unverified_initial_payment_method_mock.return_value = False
         self.add_second_owner()
         self.owner.plan = "users-free"
         self.owner.plan_user_count = 5
