@@ -44,22 +44,52 @@ class TestCodecovAuthSignals(TestCase):
         owner = OwnerFactory(ownerid=12345, upload_token_required_for_public_repos=True)
         owner.upload_token_required_for_public_repos = False
         owner.save()
-        mock_publish.assert_not_called()
+        mock_publish.assert_has_calls(
+            [
+                call(
+                    "projects/test-project-id/topics/test-topic-id",
+                    b'{"type": "owner", "sync": "one", "id": 12345}',
+                ),
+                call(
+                    "projects/test-project-id/topics/test-topic-id",
+                    b'{"type": "owner", "sync": "one", "id": 12345}',
+                ),
+            ]
+        )
 
     def test_sync_on_update_username(self, mock_publish):
         owner = OwnerFactory(ownerid=12345, username="hello")
         owner.username = "world"
         owner.save()
-        mock_publish.assert_called_once_with(
-            "projects/test-project-id/topics/test-topic-id",
-            b'{"type": "owner", "sync": "one", "id": 12345}',
+        mock_publish.assert_has_calls(
+            [
+                call(
+                    "projects/test-project-id/topics/test-topic-id",
+                    b'{"type": "owner", "sync": "one", "id": 12345}',
+                ),
+                call(
+                    "projects/test-project-id/topics/test-topic-id",
+                    b'{"type": "owner", "sync": "one", "id": 12345}',
+                ),
+            ]
         )
 
     def test_sync_on_update_service(self, mock_publish):
         owner = OwnerFactory(ownerid=12345, service=Service.GITHUB.value)
         owner.service = Service.BITBUCKET.value
         owner.save()
-        mock_publish.assert_not_called()
+        mock_publish.assert_has_calls(
+            [
+                call(
+                    "projects/test-project-id/topics/test-topic-id",
+                    b'{"type": "owner", "sync": "one", "id": 12345}',
+                ),
+                call(
+                    "projects/test-project-id/topics/test-topic-id",
+                    b'{"type": "owner", "sync": "one", "id": 12345}',
+                ),
+            ]
+        )
 
     def test_no_sync_on_update_other_fields(self, mock_publish):
         owner = OwnerFactory(ownerid=12345, name="hello")

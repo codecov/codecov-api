@@ -17,6 +17,9 @@ class Command(BaseCommand):
         if options["ip"]:
             path = "rl-ip:*"
 
+        if options["blah"]:
+            path = "blahbloo"
+
         try:
             for key in redis.scan_iter(path):
                 # -1 means the key has no expiry
