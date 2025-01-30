@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import requests
 from django.conf import settings
@@ -8,6 +8,7 @@ from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
 from shared.plan.constants import PlanName
 from stripe import InvalidRequestError
+from stripe.api_resources import PaymentIntent, SetupIntent
 
 from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import Service
@@ -1837,6 +1838,174 @@ class StripeServiceTests(TestCase):
         setup_intent_create_mock.return_value = {"client_secret": "test-client-secret"}
         resp = self.stripe.create_setup_intent(owner)
         assert resp["client_secret"] == "test-client-secret"
+
+    @patch("services.billing.stripe.PaymentIntent.list")
+    @patch("services.billing.stripe.SetupIntent.list")
+    def test_get_unverified_payment_methods(
+        self, setup_intent_list_mock, payment_intent_list_mock
+    ):
+        owner = OwnerFactory(stripe_customer_id="test-customer-id")
+        payment_intent = PaymentIntent.construct_from(
+            {
+                "id": "pi_123",
+                "payment_method": "pm_123",
+                "next_action": {
+                    "type": "verify_with_microdeposits",
+                    "verify_with_microdeposits": {
+                        "hosted_verification_url": "https://verify.stripe.com/1"
+                    },
+                },
+            },
+            "fake_api_key",
+        )
+
+        setup_intent = SetupIntent.construct_from(
+            {
+                "id": "si_123",
+                "payment_method": "pm_456",
+                "next_action": {
+                    "type": "verify_with_microdeposits",
+                    "verify_with_microdeposits": {
+                        "hosted_verification_url": "https://verify.stripe.com/2"
+                    },
+                },
+            },
+            "fake_api_key",
+        )
+
+        payment_intent_list_mock.return_value.data = [payment_intent]
+        payment_intent_list_mock.return_value.has_more = False
+        setup_intent_list_mock.return_value.data = [setup_intent]
+        setup_intent_list_mock.return_value.has_more = False
+
+        expected = [
+            {
+                "payment_method_id": "pm_123",
+                "hosted_verification_url": "https://verify.stripe.com/1",
+            },
+            {
+                "payment_method_id": "pm_456",
+                "hosted_verification_url": "https://verify.stripe.com/2",
+            },
+        ]
+        assert self.stripe.get_unverified_payment_methods(owner) == expected
+
+    @patch("services.billing.stripe.PaymentIntent.list")
+    @patch("services.billing.stripe.SetupIntent.list")
+    def test_get_unverified_payment_methods_pagination(
+        self, setup_intent_list_mock, payment_intent_list_mock
+    ):
+        owner = OwnerFactory(stripe_customer_id="test-customer-id")
+
+        # Create 42 payment intents with only 2 having microdeposits verification
+        payment_intents = []
+        for i in range(42):
+            next_action = None
+            if i in [0, 41]:  # First and last have verification
+                next_action = {
+                    "type": "verify_with_microdeposits",
+                    "verify_with_microdeposits": {
+                        "hosted_verification_url": f"https://verify.stripe.com/pi_{i}"
+                    },
+                }
+            payment_intents.append(
+                PaymentIntent.construct_from(
+                    {
+                        "id": f"pi_{i}",
+                        "payment_method": f"pm_pi_{i}",
+                        "next_action": next_action,
+                    },
+                    "fake_api_key",
+                )
+            )
+
+        # Create 42 setup intents with only 2 having microdeposits verification
+        setup_intents = []
+        for i in range(42):
+            next_action = None
+            if i in [0, 41]:  # First and last have verification
+                next_action = {
+                    "type": "verify_with_microdeposits",
+                    "verify_with_microdeposits": {
+                        "hosted_verification_url": f"https://verify.stripe.com/si_{i}"
+                    },
+                }
+            setup_intents.append(
+                SetupIntent.construct_from(
+                    {
+                        "id": f"si_{i}",
+                        "payment_method": f"pm_si_{i}",
+                        "next_action": next_action,
+                    },
+                    "fake_api_key",
+                )
+            )
+
+        # Split into pages of 20
+        payment_intent_pages = [
+            type(
+                "obj",
+                (object,),
+                {
+                    "data": payment_intents[i : i + 20],
+                    "has_more": i + 20 < len(payment_intents),
+                },
+            )
+            for i in range(0, len(payment_intents), 20)
+        ]
+
+        setup_intent_pages = [
+            type(
+                "obj",
+                (object,),
+                {
+                    "data": setup_intents[i : i + 20],
+                    "has_more": i + 20 < len(setup_intents),
+                },
+            )
+            for i in range(0, len(setup_intents), 20)
+        ]
+
+        payment_intent_list_mock.side_effect = payment_intent_pages
+        setup_intent_list_mock.side_effect = setup_intent_pages
+
+        expected = [
+            {
+                "payment_method_id": "pm_pi_0",
+                "hosted_verification_url": "https://verify.stripe.com/pi_0",
+            },
+            {
+                "payment_method_id": "pm_pi_41",
+                "hosted_verification_url": "https://verify.stripe.com/pi_41",
+            },
+            {
+                "payment_method_id": "pm_si_0",
+                "hosted_verification_url": "https://verify.stripe.com/si_0",
+            },
+            {
+                "payment_method_id": "pm_si_41",
+                "hosted_verification_url": "https://verify.stripe.com/si_41",
+            },
+        ]
+
+        result = self.stripe.get_unverified_payment_methods(owner)
+        assert result == expected
+        assert len(result) == 4  # Verify we got exactly 4 results
+
+        # Verify pagination calls
+        payment_intent_calls = [
+            call(customer="test-customer-id", limit=20, starting_after=None),
+            call(customer="test-customer-id", limit=20, starting_after="pi_19"),
+            call(customer="test-customer-id", limit=20, starting_after="pi_39"),
+        ]
+        setup_intent_calls = [
+            call(customer="test-customer-id", limit=20, starting_after=None),
+            call(customer="test-customer-id", limit=20, starting_after="si_19"),
+            call(customer="test-customer-id", limit=20, starting_after="si_39"),
+        ]
+
+        payment_intent_list_mock.assert_has_calls(payment_intent_calls)
+        setup_intent_list_mock.assert_has_calls(setup_intent_calls)
 
 
 class MockPaymentService(AbstractPaymentService):
