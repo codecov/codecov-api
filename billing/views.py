@@ -14,7 +14,6 @@ from shared.plan.service import PlanService
 
 from billing.helpers import get_all_admins_for_owners
 from codecov_auth.models import Owner
-from services.billing import BillingService
 from services.task.task import TaskService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents

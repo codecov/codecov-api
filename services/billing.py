@@ -911,7 +911,9 @@ class BillingService:
         """
         return self.payment_service.create_setup_intent(owner)
 
-    def _cleanup_incomplete_subscription(self, subscription, owner):
+    def _cleanup_incomplete_subscription(
+        self, subscription: stripe.Subscription, owner: Owner
+    ):
         latest_invoice = subscription.get("latest_invoice")
         if not latest_invoice:
             return None
@@ -932,7 +934,7 @@ class BillingService:
             try:
                 # Delete the subscription, which also removes the
                 # pending payment method and unverified payment intent
-                stripe.Subscription.delete(subscription.id)
+                stripe.Subscription.delete(subscription)
                 log.info(
                     "Deleted incomplete subscription",
                     extra=dict(
