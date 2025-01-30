@@ -6,10 +6,7 @@ from datetime import datetime, timezone
 import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from shared.plan.constants import (
-    PlanBillingRate,
-    TierName,
-)
+from shared.plan.constants import PlanBillingRate, TierName
 from shared.plan.service import PlanService
 
 from billing.constants import REMOVED_INVOICE_STATUSES
@@ -744,7 +741,7 @@ class StripeService(AbstractPaymentService):
             payment_intents = stripe.PaymentIntent.list(
                 customer=owner.stripe_customer_id,
                 limit=20,
-                starting_after=starting_after
+                starting_after=starting_after,
             )
             for intent in payment_intents.data or []:
                 if (
@@ -771,7 +768,7 @@ class StripeService(AbstractPaymentService):
             setup_intents = stripe.SetupIntent.list(
                 customer=owner.stripe_customer_id,
                 limit=20,
-                starting_after=starting_after
+                starting_after=starting_after,
             )
             for intent in setup_intents.data:
                 if (
