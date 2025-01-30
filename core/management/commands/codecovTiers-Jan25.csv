@@ -1,0 +1,7 @@
+"id","created_at","updated_at","tier_name","bundle_analysis","test_analytics","flaky_test_detection","project_coverage","private_repo_support"
+2,2025-01-16 04:22:06.838 -0800,2025-01-16 04:22:06.838 -0800,team,true,true,false,false,true
+3,2025-01-16 04:22:47.221 -0800,2025-01-16 04:22:47.221 -0800,pro,true,true,true,true,true
+4,2025-01-16 04:22:59.652 -0800,2025-01-16 04:22:59.652 -0800,enterprise,true,true,true,true,true
+5,2025-01-16 04:23:08.585 -0800,2025-01-16 04:23:08.585 -0800,sentry,true,true,true,true,true
+1,2025-01-16 04:21:40.374 -0800,2025-01-16 07:34:49.139 -0800,basic,true,true,false,true,true
+6,2025-01-23 14:23:21.504 -0800,2025-01-23 14:23:21.504 -0800,trial,true,true,true,true,true

@@ -37,4 +37,5 @@ urlpatterns = [
     # /monitoring/metrics will be a public route unless you take steps at a
     # higher level to null-route or redirect it.
     path("monitoring/", include("django_prometheus.urls")),
+    path("gen_ai/", include("api.gen_ai.urls")),
 ]
