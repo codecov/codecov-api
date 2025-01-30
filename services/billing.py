@@ -465,8 +465,10 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if switching to a plan with similar term and seats.
         """
-        current_plan_info = Plan.objects.get(name=owner.plan)
-        desired_plan_info = Plan.objects.get(name=desired_plan["value"])
+        current_plan_info = Plan.objects.select_related("tier").get(name=owner.plan)
+        desired_plan_info = Plan.objects.select_related("tier").get(
+            name=desired_plan["value"]
+        )
 
         is_same_term = (
             current_plan_info
@@ -477,16 +479,17 @@ class StripeService(AbstractPaymentService):
         is_same_seats = (
             owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
         )
-
-        team_plans = Plan.objects.filter(
-            tier__tier_name=TierName.TEAM.value, is_active=True
-        ).values_list("name", flat=True)
-
         # If from PRO to TEAM, then not a similar plan
-        if owner.plan not in team_plans and desired_plan["value"] in team_plans:
+        if (
+            current_plan_info.tier.tier_name != TierName.TEAM.value
+            and desired_plan_info.tier.tier_name == TierName.TEAM.value
+        ):
             return False
         # If from TEAM to PRO, then considered a similar plan but really is an upgrade
-        elif owner.plan in team_plans and desired_plan["value"] not in team_plans:
+        elif (
+            current_plan_info.tier.tier_name == TierName.TEAM.value
+            and desired_plan_info.tier.tier_name != TierName.TEAM.value
+        ):
             return True
 
         return bool(is_same_term and is_same_seats)

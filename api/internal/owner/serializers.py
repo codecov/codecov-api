@@ -147,15 +147,14 @@ class PlanSerializer(serializers.Serializer):
                 detail="You cannot update your plan manually, for help or changes to plan, connect with sales@codecov.io"
             )
 
-        active_plans = list(
-            Plan.objects.select_related("tier").filter(paid_plan=True, is_active=True)
+        active_plans = Plan.objects.select_related("tier").filter(
+            paid_plan=True, is_active=True
         )
-        active_plan_names = {plan.name for plan in active_plans}
-        team_tier_plans = {
-            plan.name
-            for plan in active_plans
-            if plan.tier.tier_name == TierName.TEAM.value
-        }
+
+        active_plan_names = set(active_plans.values_list("name", flat=True))
+        team_tier_plans = active_plans.filter(
+            tier__tier_name=TierName.TEAM.value
+        ).values_list("name", flat=True)
 
         # Validate quantity here because we need access to whole plan object
         if plan["value"] in active_plan_names:
