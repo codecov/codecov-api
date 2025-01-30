@@ -7,16 +7,13 @@ import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from shared.plan.constants import (
-    FREE_PLAN_REPRESENTATIONS,
-    PAID_PLANS,
-    TEAM_PLANS,
-    USER_PLAN_REPRESENTATIONS,
     PlanBillingRate,
+    TierName,
 )
 from shared.plan.service import PlanService
 
 from billing.constants import REMOVED_INVOICE_STATUSES
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Plan
 
 log = logging.getLogger(__name__)
 
@@ -454,8 +451,8 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if switching from monthly to yearly plan.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+        current_plan_info = Plan.objects.get(name=owner.plan)
+        desired_plan_info = Plan.objects.get(name=desired_plan["value"])
 
         return bool(
             current_plan_info
@@ -468,8 +465,10 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if switching to a plan with similar term and seats.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+        current_plan_info = Plan.objects.select_related("tier").get(name=owner.plan)
+        desired_plan_info = Plan.objects.select_related("tier").get(
+            name=desired_plan["value"]
+        )
 
         is_same_term = (
             current_plan_info
@@ -480,12 +479,17 @@ class StripeService(AbstractPaymentService):
         is_same_seats = (
             owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
         )
-
         # If from PRO to TEAM, then not a similar plan
-        if owner.plan not in TEAM_PLANS and desired_plan["value"] in TEAM_PLANS:
+        if (
+            current_plan_info.tier.tier_name != TierName.TEAM.value
+            and desired_plan_info.tier.tier_name == TierName.TEAM.value
+        ):
             return False
         # If from TEAM to PRO, then considered a similar plan but really is an upgrade
-        elif owner.plan in TEAM_PLANS and desired_plan["value"] not in TEAM_PLANS:
+        elif (
+            current_plan_info.tier.tier_name == TierName.TEAM.value
+            and desired_plan_info.tier.tier_name != TierName.TEAM.value
+        ):
             return True
 
         return bool(is_same_term and is_same_seats)
@@ -794,22 +798,32 @@ class BillingService:
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        if desired_plan["value"] in FREE_PLAN_REPRESENTATIONS:
+        try:
+            plan = Plan.objects.get(name=desired_plan["value"])
+        except Plan.DoesNotExist:
+            log.warning(
+                f"Unable to find plan {desired_plan['value']} for owner {owner.ownerid}"
+            )
+            return None
+
+        if not plan.is_active:
+            log.warning(
+                f"Attempted to transition to non-existent or legacy plan: "
+                f"owner {owner.ownerid}, plan: {desired_plan}"
+            )
+            return None
+
+        if plan.paid_plan is False:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
                 plan_service = PlanService(current_org=owner)
                 plan_service.set_default_plan_data()
-        elif desired_plan["value"] in PAID_PLANS:
+        else:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
-        else:
-            log.warning(
-                f"Attempted to transition to non-existent or legacy plan: "
-                f"owner {owner.ownerid}, plan: {desired_plan}"
-            )
 
     def update_payment_method(self, owner, payment_method):
         """

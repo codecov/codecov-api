@@ -15,7 +15,6 @@ from jwt import PyJWKClient, PyJWTError
 from redis import Redis
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.github import InvalidInstallationError
-from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
 from shared.torngit.base import TorngitBaseAdapter
@@ -29,6 +28,7 @@ from codecov_auth.models import (
     SERVICE_GITHUB_ENTERPRISE,
     GithubAppInstallation,
     Owner,
+    Plan,
 )
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportSession
@@ -637,7 +637,10 @@ def validate_upload(
         owner = _determine_responsible_owner(repository)
 
         # If author is on per repo billing, check their repo credits
-        if owner.plan not in USER_PLAN_REPRESENTATIONS and owner.repo_credits <= 0:
+        if (
+            owner.plan not in Plan.objects.values_list("name", flat=True)
+            and owner.repo_credits <= 0
+        ):
             raise ValidationError(
                 "Sorry, but this team has no private repository credits left."
             )
