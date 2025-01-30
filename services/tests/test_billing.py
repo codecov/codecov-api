@@ -10,6 +10,7 @@ from shared.plan.constants import PlanName
 from stripe import InvalidRequestError
 from stripe.api_resources import PaymentIntent, SetupIntent
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import Service
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
@@ -177,6 +178,11 @@ class MockFailedSubscriptionUpgrade(object):
 
 
 class StripeServiceTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        mock_all_plans_and_tiers()
+
     def setUp(self):
         self.user = OwnerFactory()
         self.stripe = StripeService(requesting_user=self.user)
@@ -1920,6 +1926,11 @@ class MockPaymentService(AbstractPaymentService):
 
 
 class BillingServiceTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        mock_all_plans_and_tiers()
+
     def setUp(self):
         self.mock_payment_service = MockPaymentService()
         self.billing_service = BillingService(payment_service=self.mock_payment_service)

@@ -1,0 +1,95 @@
+interactions:
+- request:
+    body: billing_address_collection=required&payment_method_collection=if_required&client_reference_id=93&success_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fjocelyn62%3Fsuccess&cancel_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fjocelyn62%3Fcancel&customer=1000&mode=subscription&line_items[0][price]=price_1OCM0gGlVGuVgOrkWDYEBtSL&line_items[0][quantity]=11&subscription_data[metadata][service]=github&subscription_data[metadata][obo_organization]=93&subscription_data[metadata][username]=jocelyn62&subscription_data[metadata][obo_name]=Crystal+Schmitt&subscription_data[metadata][obo_email]=smithamanda%40flowers.biz&subscription_data[metadata][obo]=93&tax_id_collection[enabled]=True&customer_update[name]=auto&customer_update[address]=auto
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '742'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Idempotency-Key:
+      - 26000f5a-feb8-4647-ac57-32a5e5ff8729
+      Stripe-Version:
+      - 2024-12-18.acacia
+      User-Agent:
+      - Stripe/v1 PythonBindings/11.4.1
+      X-Stripe-Client-Telemetry:
+      - '{"last_request_metrics": {"request_id": "req_AaY8IvHbbSDcvz", "request_duration_ms":
+        2}}'
+      X-Stripe-Client-User-Agent:
+      - '{"bindings_version": "11.4.1", "lang": "python", "publisher": "stripe", "httplib":
+        "requests", "lang_version": "3.12.8", "platform": "Linux-6.10.14-linuxkit-aarch64-with-glibc2.36",
+        "uname": "Linux 35c9e7c77efc 6.10.14-linuxkit #1 SMP Fri Nov 29 17:22:03 UTC
+        2024 aarch64 "}'
+    method: POST
+    uri: https://api.stripe.com/v1/checkout/sessions
+  response:
+    body:
+      string: "{\n  \"error\": {\n    \"code\": \"resource_missing\",\n    \"doc_url\":
+        \"https://stripe.com/docs/error-codes/resource-missing\",\n    \"message\":
+        \"No such customer: '1000'\",\n    \"param\": \"customer\",\n    \"request_log_url\":
+        \"https://dashboard.stripe.com/test/logs/req_k8lY68XdxWIFHo?t=1737668619\",\n
+        \   \"type\": \"invalid_request_error\"\n  }\n}\n"
+    headers:
+      Access-Control-Allow-Credentials:
+      - 'true'
+      Access-Control-Allow-Methods:
+      - GET, HEAD, PUT, PATCH, POST, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required,
+        X-Stripe-Privileged-Session-Required
+      Access-Control-Max-Age:
+      - '300'
+      Cache-Control:
+      - no-cache, no-store
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '325'
+      Content-Security-Policy:
+      - base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none';
+        img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; upgrade-insecure-requests;
+        report-uri https://q.stripe.com/csp-violation?q=1vgSiZ6UPd0qoBXo1Mjsk02GXFGP3M7PXsjua2jiowWQKm8jByxTHbhTeRirsQsrZ7jscQLjXtdCc_sh
+      Content-Type:
+      - application/json
+      Cross-Origin-Opener-Policy-Report-Only:
+      - same-origin; report-to="coop"
+      Date:
+      - Thu, 23 Jan 2025 21:43:39 GMT
+      Idempotency-Key:
+      - 26000f5a-feb8-4647-ac57-32a5e5ff8729
+      Original-Request:
+      - req_k8lY68XdxWIFHo
+      Report-To:
+      - '{"group":"coop","max_age":8640,"endpoints":[{"url":"https://q.stripe.com/coop-report"}],"include_subdomains":true}'
+      Reporting-Endpoints:
+      - coop="https://q.stripe.com/coop-report"
+      Request-Id:
+      - req_k8lY68XdxWIFHo
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains; preload
+      Stripe-Version:
+      - 2024-12-18.acacia
+      Vary:
+      - Origin
+      X-Content-Type-Options:
+      - nosniff
+      X-Stripe-Priority-Routing-Enabled:
+      - 'true'
+      X-Stripe-Routing-Context-Priority-Tier:
+      - api-testmode
+      X-Wc:
+      - AB
+    status:
+      code: 400
+      message: Bad Request
+version: 1

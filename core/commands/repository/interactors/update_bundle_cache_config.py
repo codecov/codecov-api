@@ -8,7 +8,6 @@ from shared.django_apps.bundle_analysis.service.bundle_analysis import (
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import ValidationError
 from codecov.db import sync_to_async
-from codecov_auth.models import Owner
 from core.models import Repository
 
 
@@ -16,9 +15,6 @@ class UpdateBundleCacheConfigInteractor(BaseInteractor):
     def validate(
         self, repo: Repository, cache_config: List[Dict[str, str | bool]]
     ) -> None:
-        if not repo:
-            raise ValidationError("Repo not found")
-
         # Find any missing bundle names
         bundle_names = [
             bundle["bundle_name"]
@@ -44,13 +40,8 @@ class UpdateBundleCacheConfigInteractor(BaseInteractor):
         repo_name: str,
         cache_config: List[Dict[str, str | bool]],
     ) -> List[Dict[str, str | bool]]:
-        author = Owner.objects.filter(
-            username=owner_username, service=self.service
-        ).first()
-        repo = (
-            Repository.objects.viewable_repos(self.current_owner)
-            .filter(author=author, name=repo_name)
-            .first()
+        _owner, repo = self.resolve_owner_and_repo(
+            owner_username, repo_name, only_viewable=True
         )
 
         self.validate(repo, cache_config)
