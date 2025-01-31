@@ -91,14 +91,19 @@ class StripeWebhookHandler(APIView):
         if invoice.default_payment_method is None:
             if invoice.payment_intent:
                 payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
-                if payment_intent.status == "requires_action":
+                if (
+                    payment_intent is not None
+                    and payment_intent.get("status") == "requires_action"
+                    and payment_intent.get("next_action", {}).get("type")
+                    == "verify_with_microdeposits"
+                ):
                     log.info(
                         "Invoice payment failed but still awaiting known customer action, skipping Delinquency actions",
                         extra=dict(
                             stripe_customer_id=invoice.customer,
                             stripe_subscription_id=invoice.subscription,
+                            payment_intent_id=invoice.payment_intent,
                             payment_intent_status=payment_intent.status,
-                            next_action=payment_intent.next_action,
                         ),
                     )
                     return
@@ -360,7 +365,8 @@ class StripeWebhookHandler(APIView):
     ) -> bool:
         """
         Helper method to check if a subscription's latest invoice has a payment intent
-        that requires verification (e.g. ACH microdeposits)
+        that requires verification (e.g. ACH microdeposits). This indicates that
+        there is an unverified payment method from the initial CheckoutSession.
         """
         latest_invoice = stripe.Invoice.retrieve(subscription.latest_invoice)
         if latest_invoice and latest_invoice.payment_intent:
