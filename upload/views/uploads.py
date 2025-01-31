@@ -58,8 +58,9 @@ def create_upload(
     )
     archive_service = ArchiveService(repository)
     # only Shelter requests are allowed to set their own `storage_path`
-    serializer.validated_data["external_id"] = uuid.uuid4()
+    
     if serializer.validated_data["storage_path"] is None or not is_shelter_request:
+        serializer.validated_data["external_id"] = uuid.uuid4()
         path = MinioEndpoints.raw_with_upload_id.get_path(
             version="v4",
             date=timezone.now().strftime("%Y-%m-%d"),
