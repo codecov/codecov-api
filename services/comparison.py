@@ -1248,7 +1248,7 @@ class CommitComparisonService:
         )
 
     @staticmethod
-    def get_commit_comparison_for_pull(obj: Pull):
+    def get_commit_comparison_for_pull(obj: Pull) -> Optional[CommitComparison]:
         comparison_qs = CommitComparison.objects.filter(
             base_commit__commitid=obj.compared_to,
             compare_commit__commitid=obj.head,

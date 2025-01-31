@@ -54,7 +54,7 @@ class PullSerializer(serializers.ModelSerializer):
                 misses += pc.misses
                 partials += pc.partials
         total_branches = hits + misses + partials
-        coverage = 0
+        coverage = 0.0
         if total_branches != 0:
             coverage = round(100 * hits / total_branches, 2)
         data = dict(
