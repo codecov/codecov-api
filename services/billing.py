@@ -929,6 +929,7 @@ class BillingService:
             if owner.stripe_subscription_id is not None:
                 # if the existing subscription is incomplete, clean it up and create a new checkout session
                 subscription = self.payment_service.get_subscription(owner)
+
                 if subscription and subscription.status == "incomplete":
                     self._cleanup_incomplete_subscription(subscription, owner)
                     return self.payment_service.create_checkout_session(
@@ -1023,4 +1024,3 @@ class BillingService:
                         error=str(e),
                     ),
                 )
-                return None

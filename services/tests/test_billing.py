@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock, call, patch
 
 import requests
+import stripe
 from django.conf import settings
 from django.test import TestCase
 from freezegun import freeze_time
@@ -106,7 +107,7 @@ expected_invoices = [
         "next_payment_attempt": None,
         "number": "EF0A41E-0001",
         "paid": True,
-        "payment_intent": None,
+        "payment_intent": {"id": "pi_3P4567890123456789012345", "status": "completed"},
         "period_end": 1489789420,
         "period_start": 1487370220,
         "post_payment_credit_notes_amount": 0,
@@ -1622,8 +1623,13 @@ class StripeServiceTests(TestCase):
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.StripeService._is_unverified_payment_method")
     def test_update_payment_method(
-        self, modify_sub_mock, modify_customer_mock, attach_payment_mock
+        self,
+        is_unverified_mock,
+        modify_sub_mock,
+        modify_customer_mock,
+        attach_payment_mock,
     ):
         payment_method_id = "pm_1234567"
         subscription_id = "sub_abc"
@@ -1631,6 +1637,7 @@ class StripeServiceTests(TestCase):
         owner = OwnerFactory(
             stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
         )
+        is_unverified_mock.return_value = False
         self.stripe.update_payment_method(owner, payment_method_id)
         attach_payment_mock.assert_called_once_with(
             payment_method_id, customer=customer_id
@@ -2166,8 +2173,10 @@ class BillingServiceTests(TestCase):
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
+    @patch("services.tests.test_billing.MockPaymentService.get_subscription")
     def test_update_plan_modifies_subscription_if_user_plan_and_subscription_exists(
         self,
+        get_subscription_mock,
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
@@ -2175,8 +2184,20 @@ class BillingServiceTests(TestCase):
     ):
         owner = OwnerFactory(stripe_subscription_id=10)
         desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 10}
-        self.billing_service.update_plan(owner, desired_plan)
 
+        get_subscription_mock.return_value = stripe.util.convert_to_stripe_object(
+            {
+                "schedule": None,
+                "current_period_start": 1489799420,
+                "current_period_end": 1492477820,
+                "quantity": 10,
+                "name": PlanName.CODECOV_PRO_YEARLY.value,
+                "id": 215,
+                "status": "active",
+            }
+        )
+
+        self.billing_service.update_plan(owner, desired_plan)
         modify_subscription_mock.assert_called_once_with(owner, desired_plan)
 
         set_default_plan_data.assert_not_called()
