@@ -50,6 +50,9 @@ class MockCard(object):
     def __getitem__(self, key):
         return getattr(self, key)
 
+    def get(self, key, default=None):
+        return getattr(self, key, default)
+
 
 class MockPaymentMethod(object):
     def __init__(self, noCard=False):
@@ -62,6 +65,9 @@ class MockPaymentMethod(object):
     def __getitem__(self, key):
         return getattr(self, key)
 
+    def get(self, key, default=None):
+        return getattr(self, key, default)
+
 
 class MockPaymentIntent(object):
     def __init__(self, noCard=False):
@@ -70,6 +76,9 @@ class MockPaymentIntent(object):
 
     def __getitem__(self, key):
         return getattr(self, key)
+
+    def get(self, key, default=None):
+        return getattr(self, key, default)
 
 
 class StripeWebhookHandlerTests(APITestCase):
@@ -275,11 +284,13 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.delinquent = False
         self.owner.save()
 
-        class MockPaymentIntentRequiresAction:
-            status = "requires_action"
-            next_action = {"type": "verify_with_microdeposits"}
-
-        retrieve_paymentintent_mock.return_value = MockPaymentIntentRequiresAction()
+        retrieve_paymentintent_mock.return_value = stripe.PaymentIntent.construct_from(
+            {
+                "status": "requires_action",
+                "next_action": {"type": "verify_with_microdeposits"},
+            },
+            "payment_intent_asdf",
+        )
 
         response = self._send_event(
             payload={
@@ -309,7 +320,13 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.delinquent = False
         self.owner.save()
 
-        retrieve_paymentintent_mock.return_value = MockPaymentIntent()
+        retrieve_paymentintent_mock.return_value = stripe.PaymentIntent.construct_from(
+            {
+                "status": "requires_action",
+                "next_action": {"type": "verify_with_microdeposits"},
+            },
+            "payment_intent_asdf",
+        )
 
         response = self._send_event(
             payload={
@@ -1530,7 +1547,13 @@ class StripeWebhookHandlerTests(APITestCase):
             status = "requires_action"
 
         invoice_retrieve_mock.return_value = Mock(payment_intent="pi_123")
-        payment_intent_retrieve_mock.return_value = MockPaymentIntent()
+        payment_intent_retrieve_mock.return_value = stripe.PaymentIntent.construct_from(
+            {
+                "status": "requires_action",
+                "next_action": {"type": "verify_with_microdeposits"},
+            },
+            "payment_intent_asdf",
+        )
 
         handler = StripeWebhookHandler()
         result = handler._has_unverified_initial_payment_method(subscription)

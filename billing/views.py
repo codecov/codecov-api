@@ -130,9 +130,9 @@ class StripeWebhookHandler(APIView):
             invoice["payment_intent"], expand=["payment_method"]
         )
         card = (
-            payment_intent.payment_method.card
-            if payment_intent.payment_method
-            and not isinstance(payment_intent.payment_method, str)
+            payment_intent.get("payment_method", {}).get("card")
+            if payment_intent.get("payment_method")
+            and not isinstance(payment_intent.get("payment_method"), str)
             else None
         )
         template_vars = {
@@ -376,6 +376,9 @@ class StripeWebhookHandler(APIView):
             return (
                 payment_intent is not None
                 and payment_intent.status == "requires_action"
+                and payment_intent.next_action is not None
+                and payment_intent.next_action.get("type")
+                == "verify_with_microdeposits"
             )
         return False
 
