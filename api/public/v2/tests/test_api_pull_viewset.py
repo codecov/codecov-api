@@ -32,9 +32,11 @@ class PullViewsetTests(InternalAPITest):
         )
         self.client = APIClient()
         self.client.force_login_owner(self.current_owner)
-        self.no_patch_response = dict(hits=0, misses=0, partials=0, coverage=0)
+        self.no_patch_response = dict(hits=0, misses=0, partials=0, coverage=0.0)
 
-    def test_list(self):
+    @patch("api.public.v2.pull.serializers.PullSerializer.get_patch")
+    def test_list(self, mock_patch):
+        mock_patch.return_value = self.no_patch_response
         res = self.client.get(
             reverse(
                 "api-v2-pulls-list",
@@ -60,7 +62,7 @@ class PullViewsetTests(InternalAPITest):
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
-                    "patch": self.no_patch_response,
+                    "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
                 },
                 {
                     "pullid": self.pulls[0].pullid,
@@ -71,13 +73,15 @@ class PullViewsetTests(InternalAPITest):
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
-                    "patch": self.no_patch_response,
+                    "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
                 },
             ],
             "total_pages": 1,
         }
 
-    def test_list_state(self):
+    @patch("api.public.v2.pull.serializers.PullSerializer.get_patch")
+    def test_list_state(self, mock_patch):
+        mock_patch.return_value = self.no_patch_response
         pull = PullFactory(repository=self.repo, state="closed")
         url = reverse(
             "api-v2-pulls-list",
@@ -103,13 +107,15 @@ class PullViewsetTests(InternalAPITest):
                     "state": "closed",
                     "ci_passed": None,
                     "author": None,
-                    "patch": self.no_patch_response,
+                    "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
                 }
             ],
             "total_pages": 1,
         }
 
-    def test_list_start_date(self):
+    @patch("api.public.v2.pull.serializers.PullSerializer.get_patch")
+    def test_list_start_date(self, mock_patch):
+        mock_patch.return_value = self.no_patch_response
         url = reverse(
             "api-v2-pulls-list",
             kwargs={
@@ -134,13 +140,15 @@ class PullViewsetTests(InternalAPITest):
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
-                    "patch": self.no_patch_response,
+                    "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
                 }
             ],
             "total_pages": 1,
         }
 
-    def test_list_cursor_pagination(self):
+    @patch("api.public.v2.pull.serializers.PullSerializer.get_patch")
+    def test_list_cursor_pagination(self, mock_patch):
+        mock_patch.return_value = self.no_patch_response
         url = reverse(
             "api-v2-pulls-list",
             kwargs={
@@ -162,7 +170,7 @@ class PullViewsetTests(InternalAPITest):
                 "state": "open",
                 "ci_passed": None,
                 "author": None,
-                "patch": self.no_patch_response,
+                "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
             }
         ]
         assert data["previous"] is None
@@ -180,14 +188,16 @@ class PullViewsetTests(InternalAPITest):
                 "state": "open",
                 "ci_passed": None,
                 "author": None,
-                "patch": self.no_patch_response,
+                "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
             }
         ]
         assert data["previous"] is not None
         assert data["next"] is None
 
+    @patch("api.public.v2.pull.serializers.PullSerializer.get_patch")
     @patch("api.shared.repo.repository_accessors.RepoAccessors.get_repo_permissions")
-    def test_retrieve(self, get_repo_permissions):
+    def test_retrieve(self, get_repo_permissions, mock_patch):
+        mock_patch.return_value = self.no_patch_response
         get_repo_permissions.return_value = (True, True)
         res = self.client.get(
             reverse(
@@ -210,7 +220,7 @@ class PullViewsetTests(InternalAPITest):
             "state": "open",
             "ci_passed": None,
             "author": None,
-            "patch": self.no_patch_response,
+            "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
         }
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
@@ -283,7 +293,9 @@ class PullViewsetTests(InternalAPITest):
         )
 
     @override_settings(SUPER_API_TOKEN="testaxs3o76rdcdpfzexuccx3uatui2nw73r")
-    def test_pull_with_valid_super_token(self):
+    @patch("api.public.v2.pull.serializers.PullSerializer.get_patch")
+    def test_pull_with_valid_super_token(self, mock_patch):
+        mock_patch.return_value = self.no_patch_response
         res = self.client.get(
             reverse(
                 "api-v2-pulls-detail",
@@ -306,11 +318,11 @@ class PullViewsetTests(InternalAPITest):
             "state": "open",
             "ci_passed": None,
             "author": None,
-            "patch": self.no_patch_response,
+            "patch": {"hits": 0, "misses": 0, "partials": 0, "coverage": 0.0},
         }
 
     @patch("api.public.v2.pull.serializers.ComparisonReport")
-    @patch("api.public.v2.pull.serializers.CommitComparison.objects.filter")
+    @patch("services.comparison.CommitComparison.objects.filter")
     def test_retrieve_with_patch_coverage(self, mock_cc_filter, mock_comparison_report):
         mock_cc_instance = MagicMock(is_processed=True)
         mock_cc_filter.return_value.select_related.return_value.first.return_value = (
@@ -344,8 +356,8 @@ class PullViewsetTests(InternalAPITest):
         }
 
     @patch("api.public.v2.pull.serializers.ComparisonReport")
-    @patch("api.public.v2.pull.serializers.CommitComparison.objects.filter")
-    def test_retrieve_with_patch_coverag_no_branches(
+    @patch("services.comparison.CommitComparison.objects.filter")
+    def test_retrieve_with_patch_coverage_no_branches(
         self, mock_cc_filter, mock_comparison_report
     ):
         mock_cc_instance = MagicMock(is_processed=True)
@@ -372,4 +384,4 @@ class PullViewsetTests(InternalAPITest):
         )
         assert res.status_code == 200
         data = res.json()
-        assert data["patch"] is self.no_patch_response
+        assert data["patch"] == self.no_patch_response
