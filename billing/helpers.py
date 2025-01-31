@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db.models import QuerySet
 from shared.django_apps.codecov_auth.models import BillingRate
 from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
-from shared.plan.constants import PlanName, PlanPrice, TierName
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, PlanPrice, TierName
 
 from codecov_auth.models import Owner, Plan
 
@@ -185,5 +185,20 @@ def mock_all_plans_and_tiers():
             "Unlimited public repositories",
             "Unlimited private repositories",
             "Priority Support",
+        ],
+    )
+
+    PlanFactory(
+        name=DEFAULT_FREE_PLAN,
+        tier=team_tier,
+        marketing_name="Developer",
+        billing_rate=None,
+        base_unit_price=0,
+        paid_plan=False,
+        monthly_uploads_limit=250,
+        benefits=[
+            "Up to 1 user",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
         ],
     )
