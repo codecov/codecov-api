@@ -1,10 +1,14 @@
+from typing import Dict, Optional
+
 from rest_framework import serializers
 
 from api.public.v2.owner.serializers import OwnerSerializer
-from api.shared.commit.serializers import CommitTotalsSerializer
-from compare.models import CommitComparison
+from api.shared.commit.serializers import (
+    CommitTotalsSerializer,
+    PatchCoverageSerializer,
+)
 from core.models import Pull, PullStates
-from services.comparison import ComparisonReport
+from services.comparison import CommitComparisonService, ComparisonReport
 
 
 class PullSerializer(serializers.ModelSerializer):
@@ -37,23 +41,11 @@ class PullSerializer(serializers.ModelSerializer):
         )
         fields = read_only_fields
 
-    def get_patch(self, obj: Pull):
-        # 1) Fetch the CommitComparison for (compared_to, head)
-        comparison_qs = CommitComparison.objects.filter(
-            base_commit__commitid=obj.compared_to,
-            compare_commit__commitid=obj.head,
-            base_commit__repository_id=obj.repository_id,
-            compare_commit__repository_id=obj.repository_id,
-        ).select_related("compare_commit", "base_commit")
-
-        commit_comparison = comparison_qs.first()
+    def get_patch(self, obj: Pull) -> Optional[Dict[str, float]]:
+        commit_comparison = CommitComparisonService.get_commit_comparison_for_pull(obj)
         if not commit_comparison or not commit_comparison.is_processed:
             return None
-
-        # 2) Wrap it in ComparisonReport
         cr = ComparisonReport(commit_comparison)
-
-        # 3) Summation of patch coverage across impacted files
         hits = misses = partials = 0
         for f in cr.impacted_files:
             pc = f.patch_coverage
@@ -61,14 +53,14 @@ class PullSerializer(serializers.ModelSerializer):
                 hits += pc.hits
                 misses += pc.misses
                 partials += pc.partials
-
         total_branches = hits + misses + partials
-        if total_branches == 0:
-            return None
-
-        return dict(
+        coverage = 0
+        if total_branches != 0:
+            coverage = round(100 * hits / total_branches, 2)
+        data = dict(
             hits=hits,
             misses=misses,
             partials=partials,
-            coverage=round(100 * hits / total_branches, 2),
+            coverage=coverage,
         )
+        return PatchCoverageSerializer(data).data

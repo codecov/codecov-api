@@ -32,6 +32,7 @@ class PullViewsetTests(InternalAPITest):
         )
         self.client = APIClient()
         self.client.force_login_owner(self.current_owner)
+        self.no_patch_response = dict(hits=0, misses=0, partials=0, coverage=0)
 
     def test_list(self):
         res = self.client.get(
@@ -59,7 +60,7 @@ class PullViewsetTests(InternalAPITest):
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
-                    "patch": None,
+                    "patch": self.no_patch_response,
                 },
                 {
                     "pullid": self.pulls[0].pullid,
@@ -70,7 +71,7 @@ class PullViewsetTests(InternalAPITest):
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
-                    "patch": None,
+                    "patch": self.no_patch_response,
                 },
             ],
             "total_pages": 1,
@@ -102,7 +103,7 @@ class PullViewsetTests(InternalAPITest):
                     "state": "closed",
                     "ci_passed": None,
                     "author": None,
-                    "patch": None,
+                    "patch": self.no_patch_response,
                 }
             ],
             "total_pages": 1,
@@ -133,7 +134,7 @@ class PullViewsetTests(InternalAPITest):
                     "state": "open",
                     "ci_passed": None,
                     "author": None,
-                    "patch": None,
+                    "patch": self.no_patch_response,
                 }
             ],
             "total_pages": 1,
@@ -161,7 +162,7 @@ class PullViewsetTests(InternalAPITest):
                 "state": "open",
                 "ci_passed": None,
                 "author": None,
-                "patch": None,
+                "patch": self.no_patch_response,
             }
         ]
         assert data["previous"] is None
@@ -179,7 +180,7 @@ class PullViewsetTests(InternalAPITest):
                 "state": "open",
                 "ci_passed": None,
                 "author": None,
-                "patch": None,
+                "patch": self.no_patch_response,
             }
         ]
         assert data["previous"] is not None
@@ -209,7 +210,7 @@ class PullViewsetTests(InternalAPITest):
             "state": "open",
             "ci_passed": None,
             "author": None,
-            "patch": None,
+            "patch": self.no_patch_response,
         }
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
@@ -305,7 +306,7 @@ class PullViewsetTests(InternalAPITest):
             "state": "open",
             "ci_passed": None,
             "author": None,
-            "patch": None,
+            "patch": self.no_patch_response,
         }
 
     @patch("api.public.v2.pull.serializers.ComparisonReport")
@@ -371,4 +372,4 @@ class PullViewsetTests(InternalAPITest):
         )
         assert res.status_code == 200
         data = res.json()
-        assert data["patch"] is None
+        assert data["patch"] is self.no_patch_response

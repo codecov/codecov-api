@@ -21,6 +21,13 @@ class BaseTotalsSerializer(serializers.Serializer):
         return 0
 
 
+class PatchCoverageSerializer(serializers.Serializer):
+    hits = serializers.IntegerField()
+    misses = serializers.IntegerField()
+    partials = serializers.IntegerField()
+    coverage = serializers.FloatField()
+
+
 class CommitTotalsSerializer(BaseTotalsSerializer):
     files = serializers.IntegerField(source="f")
     lines = serializers.IntegerField(source="n")
