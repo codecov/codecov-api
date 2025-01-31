@@ -51,8 +51,14 @@ class Command(BaseCommand):
                         )
                         continue
 
-                Model.objects.create(**model_data)
-                self.stdout.write(self.style.SUCCESS(f"Inserted row: {row}"))
+                # Use update_or_create
+                Model.objects.update_or_create(
+                    defaults=model_data,
+                    # Specify the fields to identify the record
+                    # For example, if 'id' is the unique field:
+                    id=row.get("id"),
+                )
+                self.stdout.write(self.style.SUCCESS(f"Processed row: {row}"))
 
         self.stdout.write(
             self.style.SUCCESS(
