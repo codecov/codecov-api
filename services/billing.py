@@ -1014,8 +1014,6 @@ class BillingService:
                         payment_intent_id=payment_intent.id,
                     ),
                 )
-                owner.stripe_subscription_id = None
-                owner.save()
             except Exception as e:
                 log.error(
                     "Failed to delete subscription",

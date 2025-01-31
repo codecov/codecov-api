@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import stripe
 from django.conf import settings
@@ -12,6 +12,7 @@ from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFact
 from shared.plan.constants import PlanName
 
 from billing.helpers import mock_all_plans_and_tiers
+from billing.views import StripeWebhookHandler
 
 from ..constants import StripeHTTPHeaders
 
@@ -266,6 +267,40 @@ class StripeWebhookHandlerTests(APITestCase):
         ]
 
         mocked_send_email.assert_has_calls(expected_calls)
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    def test_invoice_payment_failed_skips_delinquency_if_payment_intent_requires_action(
+        self, retrieve_paymentintent_mock
+    ):
+        self.owner.delinquent = False
+        self.owner.save()
+
+        class MockPaymentIntentRequiresAction:
+            status = "requires_action"
+            next_action = {"type": "verify_with_microdeposits"}
+
+        retrieve_paymentintent_mock.return_value = MockPaymentIntentRequiresAction()
+
+        response = self._send_event(
+            payload={
+                "type": "invoice.payment_failed",
+                "data": {
+                    "object": {
+                        "customer": self.owner.stripe_customer_id,
+                        "subscription": self.owner.stripe_subscription_id,
+                        "total": 24000,
+                        "hosted_invoice_url": "https://stripe.com",
+                        "payment_intent": "payment_intent_asdf",
+                        "default_payment_method": None,
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert self.owner.delinquent is False
+        retrieve_paymentintent_mock.assert_called_once_with("payment_intent_asdf")
 
     @patch("services.billing.stripe.PaymentIntent.retrieve")
     def test_invoice_payment_failed_sets_owner_delinquent_true(
@@ -651,6 +686,40 @@ class StripeWebhookHandlerTests(APITestCase):
                 "data": {"object": {"id": "FOEKDCDEQ", "email": "test@email.com"}},
             }
         )
+
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
+    def test_customer_subscription_created_early_returns_if_unverified_payment(
+        self, mock_has_unverified
+    ):
+        mock_has_unverified.return_value = True
+        self.owner.stripe_subscription_id = None
+        self.owner.stripe_customer_id = None
+        self.owner.plan = "users-basic"
+        self.owner.save()
+
+        response = self._send_event(
+            payload={
+                "type": "customer.subscription.created",
+                "data": {
+                    "object": {
+                        "id": "sub_123",
+                        "customer": "cus_123",
+                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "metadata": {"obo_organization": self.owner.ownerid},
+                        "quantity": 20,
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        # Subscription and customer IDs should be set
+        assert self.owner.stripe_subscription_id == "sub_123"
+        assert self.owner.stripe_customer_id == "cus_123"
+        # But plan should not be updated since payment is unverified
+        assert self.owner.plan == "users-basic"
+        mock_has_unverified.assert_called_once()
 
     def test_customer_subscription_created_does_nothing_if_no_plan_id(self):
         self.owner.stripe_subscription_id = None
@@ -1447,4 +1516,158 @@ class StripeWebhookHandlerTests(APITestCase):
 
         subscription_modify_mock.assert_called_once_with(
             "sub_123", default_payment_method=payment_method
+        )
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    @patch("services.billing.stripe.Invoice.retrieve")
+    def test_has_unverified_initial_payment_method(
+        self, invoice_retrieve_mock, payment_intent_retrieve_mock
+    ):
+        subscription = Mock()
+        subscription.latest_invoice = "inv_123"
+
+        class MockPaymentIntent:
+            status = "requires_action"
+
+        invoice_retrieve_mock.return_value = Mock(payment_intent="pi_123")
+        payment_intent_retrieve_mock.return_value = MockPaymentIntent()
+
+        handler = StripeWebhookHandler()
+        result = handler._has_unverified_initial_payment_method(subscription)
+
+        assert result is True
+        invoice_retrieve_mock.assert_called_once_with("inv_123")
+        payment_intent_retrieve_mock.assert_called_once_with("pi_123")
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    @patch("services.billing.stripe.Invoice.retrieve")
+    def test_has_unverified_initial_payment_method_no_payment_intent(
+        self, invoice_retrieve_mock, payment_intent_retrieve_mock
+    ):
+        subscription = Mock()
+        subscription.latest_invoice = "inv_123"
+
+        invoice_retrieve_mock.return_value = Mock(payment_intent=None)
+
+        handler = StripeWebhookHandler()
+        result = handler._has_unverified_initial_payment_method(subscription)
+
+        assert result is False
+        invoice_retrieve_mock.assert_called_once_with("inv_123")
+        payment_intent_retrieve_mock.assert_not_called()
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    @patch("services.billing.stripe.Invoice.retrieve")
+    def test_has_unverified_initial_payment_method_payment_intent_succeeded(
+        self, invoice_retrieve_mock, payment_intent_retrieve_mock
+    ):
+        subscription = Mock()
+        subscription.latest_invoice = "inv_123"
+
+        class MockPaymentIntent:
+            status = "succeeded"
+
+        invoice_retrieve_mock.return_value = Mock(payment_intent="pi_123")
+        payment_intent_retrieve_mock.return_value = MockPaymentIntent()
+
+        handler = StripeWebhookHandler()
+        result = handler._has_unverified_initial_payment_method(subscription)
+
+        assert result is False
+        invoice_retrieve_mock.assert_called_once_with("inv_123")
+        payment_intent_retrieve_mock.assert_called_once_with("pi_123")
+
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.PaymentMethod.retrieve")
+    def test_check_and_handle_delayed_notification_payment_methods(
+        self,
+        payment_method_retrieve_mock,
+        subscription_modify_mock,
+        customer_modify_mock,
+        payment_method_attach_mock,
+    ):
+        class MockPaymentMethod:
+            type = "us_bank_account"
+            us_bank_account = {}
+            id = "pm_123"
+
+        payment_method_retrieve_mock.return_value = MockPaymentMethod()
+
+        self.owner.stripe_subscription_id = "sub_123"
+        self.owner.stripe_customer_id = "cus_123"
+        self.owner.save()
+
+        handler = StripeWebhookHandler()
+        handler._check_and_handle_delayed_notification_payment_methods(
+            "cus_123", "pm_123"
+        )
+
+        payment_method_retrieve_mock.assert_called_once_with("pm_123")
+        payment_method_attach_mock.assert_called_once_with(
+            payment_method_retrieve_mock.return_value, customer="cus_123"
+        )
+        customer_modify_mock.assert_called_once_with(
+            "cus_123",
+            invoice_settings={
+                "default_payment_method": payment_method_retrieve_mock.return_value
+            },
+        )
+        subscription_modify_mock.assert_called_once_with(
+            "sub_123", default_payment_method=payment_method_retrieve_mock.return_value
+        )
+
+    @patch(
+        "billing.views.StripeWebhookHandler._check_and_handle_delayed_notification_payment_methods"
+    )
+    @patch("logging.Logger.info")
+    def test_payment_intent_succeeded(
+        self, log_info_mock, check_and_handle_delayed_notification_mock
+    ):
+        class MockPaymentIntent:
+            id = "pi_123"
+            customer = "cus_123"
+            payment_method = "pm_123"
+
+        handler = StripeWebhookHandler()
+        handler.payment_intent_succeeded(MockPaymentIntent())
+
+        check_and_handle_delayed_notification_mock.assert_called_once_with(
+            "cus_123", "pm_123"
+        )
+        log_info_mock.assert_called_once_with(
+            "Payment intent succeeded",
+            extra=dict(
+                stripe_customer_id="cus_123",
+                payment_intent_id="pi_123",
+                payment_method_type="pm_123",
+            ),
+        )
+
+    @patch(
+        "billing.views.StripeWebhookHandler._check_and_handle_delayed_notification_payment_methods"
+    )
+    @patch("logging.Logger.info")
+    def test_setup_intent_succeeded(
+        self, log_info_mock, check_and_handle_delayed_notification_mock
+    ):
+        class MockSetupIntent:
+            id = "seti_123"
+            customer = "cus_123"
+            payment_method = "pm_123"
+
+        handler = StripeWebhookHandler()
+        handler.setup_intent_succeeded(MockSetupIntent())
+
+        check_and_handle_delayed_notification_mock.assert_called_once_with(
+            "cus_123", "pm_123"
+        )
+        log_info_mock.assert_called_once_with(
+            "Setup intent succeeded",
+            extra=dict(
+                stripe_customer_id="cus_123",
+                setup_intent_id="seti_123",
+                payment_method_type="pm_123",
+            ),
         )

@@ -164,21 +164,12 @@ class StripeWebhookHandler(APIView):
         or when cleaning up an incomplete subscription that never activated (e.g., abandoned async
         ACH microdeposits verification).
         """
-        if subscription.status == "incomplete":
-            log.info(
-                "Customer Subscription Deleted - Ignoring incomplete subscription",
-                extra=dict(
-                    stripe_subscription_id=subscription.id,
-                    stripe_customer_id=subscription.customer,
-                ),
-            )
-            return
-
         log.info(
             "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
             extra=dict(
                 stripe_subscription_id=subscription.id,
                 stripe_customer_id=subscription.customer,
+                previous_subscription_status=subscription.status,
             ),
         )
         owners: QuerySet[Owner] = Owner.objects.filter(
@@ -335,6 +326,8 @@ class StripeWebhookHandler(APIView):
         owner.stripe_customer_id = subscription.customer
         owner.save()
 
+        # We may reach here if the subscription was created with a payment method
+        # that is awaiting verification (e.g. ACH microdeposits)
         if self._has_unverified_initial_payment_method(subscription):
             log.info(
                 "Subscription has pending initial payment verification - will upgrade plan after initial invoice payment",
