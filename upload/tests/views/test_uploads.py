@@ -929,3 +929,49 @@ class TestGitlabEnterpriseOIDC(APITestCase):
         mock_jwks_client.assert_called_with(
             "https://example.com/_services/token/.well-known/jwks"
         )
+
+    def test_uploads_post_github_enterprise_oidc_auth_no_url(self):
+        # Mock the configuration to set the URL to None
+        mock_config_helper(self.mocker, configs={"github_enterprise.url": None})
+
+        # Mock necessary services
+        self.mocker.patch(
+            "shared.api_archive.archive.StorageService.create_presigned_put",
+            return_value="presigned put",
+        )
+        self.mocker.patch("upload.views.uploads.trigger_upload_task", return_value=True)
+
+        repository = RepositoryFactory(
+            name="the_repo",
+            author__username="codecov",
+            author__service="github_enterprise",
+            author__upload_token_required_for_public_repos=True,
+            private=False,
+        )
+        token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+
+        commit = CommitFactory(repository=repository)
+        commit_report = CommitReport.objects.create(commit=commit, code="code")
+
+        client = APIClient()
+        url = reverse(
+            "new_upload.uploads",
+            args=[
+                "github_enterprise",
+                "codecov::::the_repo",
+                commit.commitid,
+                commit_report.code,
+            ],
+        )
+        response = client.post(
+            url,
+            {
+                "state": "uploaded",
+                "flags": ["flag1", "flag2"],
+                "version": "version",
+            },
+            headers={"Authorization": f"token {token}"},
+        )
+
+        assert response.status_code == 401
+        assert response.json().get("detail") == "Not valid tokenless upload"
