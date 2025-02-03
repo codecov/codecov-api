@@ -7,7 +7,6 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from shared.django_apps.codecov_auth.models import Owner
-from shared.plan.constants import DEFAULT_FREE_PLAN
 
 from api.shared.mixins import OwnerPropertyMixin
 from api.shared.owner.mixins import OwnerViewSetMixin, UserViewSetMixin
@@ -47,10 +46,10 @@ class AccountDetailsViewSet(
 
     @stripe_safe
     def update(self, request, *args, **kwargs):
-        # Temporary fix. Remove once Gazebo uses the new free plan
-        plan_value = request.data.get("plan", {}).get("value")
-        if plan_value == "users-basic":
-            request.data["plan"]["value"] = DEFAULT_FREE_PLAN
+        # # Temporary fix. Remove once Gazebo uses the new free plan
+        # plan_value = request.data.get("plan", {}).get("value")
+        # if plan_value == "users-basic":
+        #     request.data["plan"]["value"] = DEFAULT_FREE_PLAN
 
         return super().update(request, *args, **kwargs)
 

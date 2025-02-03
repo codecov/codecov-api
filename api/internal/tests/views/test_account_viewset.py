@@ -690,7 +690,7 @@ class AccountViewSetTests(APITestCase):
         assert self.current_owner.plan_auto_activate is False
         assert response.data["plan_auto_activate"] is False
 
-    def test_update_can_set_plan_to_users_basic_should_set_to_developer(self):
+    def test_update_can_set_plan_to_users_developer_should_set_to_developer(self):
         self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.save()
 
@@ -699,7 +699,7 @@ class AccountViewSetTests(APITestCase):
                 "service": self.current_owner.service,
                 "owner_username": self.current_owner.username,
             },
-            data={"plan": {"value": PlanName.BASIC_PLAN_NAME.value}},
+            data={"plan": {"value": DEFAULT_FREE_PLAN}},
         )
 
         assert response.status_code == status.HTTP_200_OK
