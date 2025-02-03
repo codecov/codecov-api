@@ -31,6 +31,7 @@ from shared.plan.constants import (
     PlanName,
 )
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov.commands.exceptions import ValidationError
 from codecov_auth.admin import (
     AccountAdmin,
@@ -53,6 +54,11 @@ from core.models import Pull
 
 
 class OwnerAdminTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        mock_all_plans_and_tiers()
+
     def setUp(self):
         self.staff_user = UserFactory(is_staff=True)
         self.client.force_login(user=self.staff_user)
@@ -68,8 +74,10 @@ class OwnerAdminTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_owner_admin_impersonate_owner(self):
-        owner_to_impersonate = OwnerFactory(service="bitbucket")
-        other_owner = OwnerFactory()
+        owner_to_impersonate = OwnerFactory(
+            service="bitbucket", plan=PlanName.BASIC_PLAN_NAME.value
+        )
+        other_owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
 
         with self.subTest("more than one user selected"):
             response = self.client.post(
@@ -103,7 +111,7 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_queryset(self, delete_mock):
-        user_to_delete = OwnerFactory()
+        user_to_delete = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
         ownerid = user_to_delete.ownerid
         queryset = MagicMock()
         queryset.__iter__.return_value = [user_to_delete]
@@ -114,14 +122,14 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_model(self, delete_mock):
-        user_to_delete = OwnerFactory()
+        user_to_delete = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
         ownerid = user_to_delete.ownerid
         self.owner_admin.delete_model(MagicMock(), user_to_delete)
         delete_mock.assert_called_once_with(ownerid=ownerid)
 
     @patch("codecov_auth.admin.admin.ModelAdmin.get_deleted_objects")
     def test_confirmation_deleted_objects(self, mocked_deleted_objs):
-        user_to_delete = OwnerFactory()
+        user_to_delete = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
         deleted_objs = [
             'Owner: <a href="/admin/codecov_auth/owner/{}/change/">{};</a>'.format(
                 user_to_delete.ownerid, user_to_delete
@@ -141,7 +149,7 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.admin.ModelAdmin.log_change")
     def test_prev_and_new_values_in_log_entry(self, mocked_super_log_change):
-        owner = OwnerFactory(staff=True)
+        owner = OwnerFactory(staff=True, plan=PlanName.BASIC_PLAN_NAME.value)
         owner.save()
         owner.staff = False
         form = MagicMock()
@@ -161,7 +169,7 @@ class OwnerAdminTest(TestCase):
         ]
 
     def test_inline_orgwide_tokens_display(self):
-        owner = OwnerFactory()
+        owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
         request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
@@ -170,7 +178,7 @@ class OwnerAdminTest(TestCase):
         assert isinstance(inlines[0], OrgUploadTokenInline)
 
     def test_inline_orgwide_permissions(self):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value)
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
@@ -194,7 +202,7 @@ class OwnerAdminTest(TestCase):
     def test_inline_orgwide_add_token_permission_no_token_and_user_in_enterprise_cloud_plan(
         self,
     ):
-        owner = OwnerFactory()
+        owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
         assert owner.plan not in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
         request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
@@ -207,7 +215,7 @@ class OwnerAdminTest(TestCase):
     def test_inline_orgwide_add_token_permission_no_token_user_not_in_enterprise_cloud_plan(
         self,
     ):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value)
         assert (
             OrganizationLevelToken.objects.filter(owner=owner_in_cloud_plan).count()
             == 0
@@ -227,7 +235,7 @@ class OwnerAdminTest(TestCase):
     def test_org_token_refresh_request_calls_service_to_refresh_token(
         self, mock_refresh
     ):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value)
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
@@ -264,7 +272,7 @@ class OwnerAdminTest(TestCase):
         "codecov_auth.services.org_level_token_service.OrgLevelTokenService.refresh_token"
     )
     def test_org_token_request_doesnt_call_service_to_refresh_token(self, mock_refresh):
-        owner_in_cloud_plan = OwnerFactory(plan="users-enterprisey")
+        owner_in_cloud_plan = OwnerFactory(plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value)
         org_token = OrganizationLevelTokenFactory(owner=owner_in_cloud_plan)
         owner_in_cloud_plan.save()
         org_token.save()
@@ -297,7 +305,7 @@ class OwnerAdminTest(TestCase):
         mock_refresh.assert_not_called()
 
     def test_start_trial_ui_display(self):
-        owner = OwnerFactory()
+        owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -312,7 +320,7 @@ class OwnerAdminTest(TestCase):
     @patch("shared.plan.service.PlanService.start_trial_manually")
     def test_start_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
-        org_to_be_trialed = OwnerFactory()
+        org_to_be_trialed = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -329,7 +337,7 @@ class OwnerAdminTest(TestCase):
     @patch("shared.plan.service.PlanService._start_trial_helper")
     def test_extend_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
-        org_to_be_trialed = OwnerFactory()
+        org_to_be_trialed = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
         org_to_be_trialed.plan = PlanName.TRIAL_PLAN_NAME.value
         org_to_be_trialed.save()
 
@@ -352,7 +360,7 @@ class OwnerAdminTest(TestCase):
             "Cannot trial from a paid plan"
         )
 
-        org_to_be_trialed = OwnerFactory()
+        org_to_be_trialed = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -367,7 +375,9 @@ class OwnerAdminTest(TestCase):
         assert mock_start_trial_service.called
 
     def test_account_widget(self):
-        owner = OwnerFactory(user=UserFactory(), plan="users-enterprisey")
+        owner = OwnerFactory(
+            user=UserFactory(), plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value
+        )
         rf = RequestFactory()
         get_request = rf.get(f"/admin/codecov_auth/owner/{owner.ownerid}/change/")
         get_request.user = self.staff_user
@@ -899,30 +909,28 @@ class PlanAdminTest(TestCase):
         admin_site = AdminSite()
         admin_site.register(Plan)
 
+        self.tier = TierFactory()
+        self.plan = PlanFactory(name=PlanName.BASIC_PLAN_NAME.value, tier=self.tier)
+
     def test_plan_admin_modal_display(self):
-        plan = PlanFactory()
         response = self.client.get(
-            reverse("admin:codecov_auth_plan_change", args=[plan.pk])
+            reverse("admin:codecov_auth_plan_change", args=[self.plan.pk])
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, plan.name)
+        self.assertContains(response, self.plan.name)
 
     def test_plan_modal_tiers_display(self):
-        tier = TierFactory()
-        plan = PlanFactory(tier=tier)
         response = self.client.get(
-            reverse("admin:codecov_auth_plan_change", args=[plan.pk])
+            reverse("admin:codecov_auth_plan_change", args=[self.plan.pk])
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, tier.tier_name)
+        self.assertContains(response, self.tier.tier_name)
 
     def test_add_plans_modal_action(self):
-        plan = PlanFactory(base_unit_price=10, max_seats=5)
-        tier = TierFactory()
         data = {
             "action": "add_plans",
-            ACTION_CHECKBOX_NAME: [plan.pk],
-            "tier_id": tier.pk,
+            ACTION_CHECKBOX_NAME: [self.plan.pk],
+            "tier_id": self.tier.pk,
         }
         response = self.client.post(
             reverse("admin:codecov_auth_plan_changelist"), data=data
@@ -931,9 +939,8 @@ class PlanAdminTest(TestCase):
         self.assertEqual(response.url, "/admin/codecov_auth/plan/")
 
     def test_plan_change_form(self):
-        plan = PlanFactory()
         response = self.client.get(
-            reverse("admin:codecov_auth_plan_change", args=[plan.pk])
+            reverse("admin:codecov_auth_plan_change", args=[self.plan.pk])
         )
         self.assertEqual(response.status_code, 200)
         for field in [
@@ -951,49 +958,50 @@ class PlanAdminTest(TestCase):
             self.assertContains(response, f"id_{field}")
 
     def test_plan_change_form_validation(self):
-        plan = PlanFactory(base_unit_price=-10)
+        self.plan.base_unit_price = -10
+        self.plan.save()
 
         response = self.client.post(
-            reverse("admin:codecov_auth_plan_change", args=[plan.pk]),
+            reverse("admin:codecov_auth_plan_change", args=[self.plan.pk]),
             {
-                "tier": plan.tier_id,
-                "name": plan.name,
-                "marketing_name": plan.marketing_name,
+                "tier": self.tier.pk,
+                "name": self.plan.name,
+                "marketing_name": self.plan.marketing_name,
                 "base_unit_price": -10,
-                "benefits": plan.benefits,
-                "is_active": plan.is_active,
-                "paid_plan": plan.paid_plan,
+                "benefits": self.plan.benefits,
+                "is_active": self.plan.is_active,
+                "paid_plan": self.plan.paid_plan,
             },
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Base unit price cannot be negative.")
 
         response = self.client.post(
-            reverse("admin:codecov_auth_plan_change", args=[plan.pk]),
+            reverse("admin:codecov_auth_plan_change", args=[self.plan.pk]),
             {
-                "tier": plan.tier_id,
-                "name": plan.name,
-                "marketing_name": plan.marketing_name,
-                "base_unit_price": plan.base_unit_price,
-                "benefits": plan.benefits,
-                "is_active": plan.is_active,
+                "tier": self.tier.pk,
+                "name": self.plan.name,
+                "marketing_name": self.plan.marketing_name,
+                "base_unit_price": self.plan.base_unit_price,
+                "benefits": self.plan.benefits,
+                "is_active": self.plan.is_active,
                 "max_seats": -5,
-                "paid_plan": plan.paid_plan,
+                "paid_plan": self.plan.paid_plan,
             },
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Max seats cannot be negative.")
 
         response = self.client.post(
-            reverse("admin:codecov_auth_plan_change", args=[plan.pk]),
+            reverse("admin:codecov_auth_plan_change", args=[self.plan.pk]),
             {
-                "tier": plan.tier_id,
-                "name": plan.name,
-                "marketing_name": plan.marketing_name,
-                "benefits": plan.benefits,
-                "is_active": plan.is_active,
+                "tier": self.tier.pk,
+                "name": self.plan.name,
+                "marketing_name": self.plan.marketing_name,
+                "benefits": self.plan.benefits,
+                "is_active": self.plan.is_active,
                 "monthly_uploads_limit": -5,
-                "paid_plan": plan.paid_plan,
+                "paid_plan": self.plan.paid_plan,
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -1007,21 +1015,21 @@ class TierAdminTest(TestCase):
         admin_site = AdminSite()
         admin_site.register(Tier)
 
+        self.tier = TierFactory()
+        self.plan = PlanFactory(name=PlanName.BASIC_PLAN_NAME.value, tier=self.tier)
+
     def test_tier_modal_plans_display(self):
-        tier = TierFactory()
         response = self.client.get(
-            reverse("admin:codecov_auth_tier_change", args=[tier.pk])
+            reverse("admin:codecov_auth_tier_change", args=[self.tier.pk])
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, tier.tier_name)
+        self.assertContains(response, self.tier.tier_name)
 
     def test_add_plans_modal_action(self):
-        tier = TierFactory()
-        plan = PlanFactory()
         data = {
             "action": "add_plans",
-            ACTION_CHECKBOX_NAME: [plan.pk],
-            "tier_id": tier.pk,
+            ACTION_CHECKBOX_NAME: [self.plan.pk],
+            "tier_id": self.tier.pk,
         }
         response = self.client.post(
             reverse("admin:codecov_auth_tier_changelist"), data=data
@@ -1030,9 +1038,8 @@ class TierAdminTest(TestCase):
         self.assertEqual(response.url, "/admin/codecov_auth/tier/")
 
     def test_tier_change_form(self):
-        tier = TierFactory()
         response = self.client.get(
-            reverse("admin:codecov_auth_tier_change", args=[tier.pk])
+            reverse("admin:codecov_auth_tier_change", args=[self.tier.pk])
         )
         self.assertEqual(response.status_code, 200)
         for field in [

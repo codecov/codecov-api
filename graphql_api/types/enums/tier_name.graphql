@@ -3,4 +3,6 @@ enum TierName {
   TEAM
   PRO
   ENTERPRISE
+  SENTRY
+  TRIAL
 }

@@ -1,9 +1,13 @@
+import csv
+import os
+import tempfile
 import unittest.mock as mock
 from io import StringIO
 
 import pytest
 from django.core.management import call_command
 from shared.config import ConfigHelper
+from shared.django_apps.codecov_auth.models import Plan, Tier
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from services.redis_configuration import get_redis_connection
@@ -121,3 +125,46 @@ def test_delete_rate_limit_keys_ip_option():
     # Get rid of lingering keys
     redis.delete("rl-user:1")
     redis.delete("rl-ip:2")
+
+
+@pytest.mark.django_db
+def test_insert_data_to_db_from_csv_for_plans_and_tiers():
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, newline="") as temp_csv:
+        writer = csv.writer(temp_csv)
+        writer.writerow(["id", "tier_name"])
+        writer.writerow([1, "Tier 1"])
+        writer.writerow([2, "Tier 2"])
+        csv_path = temp_csv.name
+
+    out = StringIO()
+    call_command("insert_data_to_db_from_csv", csv_path, "--model", "tiers", stdout=out)
+
+    # Check the output
+    assert "Successfully inserted all data into tiers from CSV" in out.getvalue()
+
+    # Verify the data was inserted correctly
+    assert Tier.objects.filter(tier_name="Tier 1").exists()
+    assert Tier.objects.filter(tier_name="Tier 2").exists()
+
+    # Create a temporary CSV file
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, newline="") as temp_csv:
+        writer = csv.writer(temp_csv)
+        writer.writerow(
+            ["name", "marketing_name", "base_unit_price", "tier_id", "is_active"]
+        )
+        writer.writerow(["Plan A", "Marketing A", 100, 1, "true"])
+        writer.writerow(["Plan B", "Marketing B", 200, 2, "false"])
+        csv_path = temp_csv.name
+
+    out = StringIO()
+    call_command("insert_data_to_db_from_csv", csv_path, "--model", "plans", stdout=out)
+
+    # Check the output
+    assert "Successfully inserted all data into plans from CSV" in out.getvalue()
+
+    # Verify the data was inserted correctly
+    assert Plan.objects.filter(name="Plan A").exists()
+    assert Plan.objects.filter(name="Plan B").exists()
+
+    # Clean up the temporary file
+    os.remove(csv_path)

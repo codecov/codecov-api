@@ -1,0 +1,8 @@
+type Billing {
+  unverifiedPaymentMethods: [UnverifiedPaymentMethod]
+}
+
+type UnverifiedPaymentMethod {
+  paymentMethodId: String!
+  hostedVerificationUrl: String
+}

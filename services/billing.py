@@ -6,17 +6,11 @@ from datetime import datetime, timezone
 import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from shared.plan.constants import (
-    FREE_PLAN_REPRESENTATIONS,
-    PAID_PLANS,
-    TEAM_PLANS,
-    USER_PLAN_REPRESENTATIONS,
-    PlanBillingRate,
-)
+from shared.plan.constants import PlanBillingRate, TierName
 from shared.plan.service import PlanService
 
 from billing.constants import REMOVED_INVOICE_STATUSES
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Plan
 
 log = logging.getLogger(__name__)
 
@@ -454,8 +448,8 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if switching from monthly to yearly plan.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+        current_plan_info = Plan.objects.get(name=owner.plan)
+        desired_plan_info = Plan.objects.get(name=desired_plan["value"])
 
         return bool(
             current_plan_info
@@ -468,8 +462,10 @@ class StripeService(AbstractPaymentService):
         """
         Returns `True` if switching to a plan with similar term and seats.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
+        current_plan_info = Plan.objects.select_related("tier").get(name=owner.plan)
+        desired_plan_info = Plan.objects.select_related("tier").get(
+            name=desired_plan["value"]
+        )
 
         is_same_term = (
             current_plan_info
@@ -480,12 +476,17 @@ class StripeService(AbstractPaymentService):
         is_same_seats = (
             owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
         )
-
         # If from PRO to TEAM, then not a similar plan
-        if owner.plan not in TEAM_PLANS and desired_plan["value"] in TEAM_PLANS:
+        if (
+            current_plan_info.tier.tier_name != TierName.TEAM.value
+            and desired_plan_info.tier.tier_name == TierName.TEAM.value
+        ):
             return False
         # If from TEAM to PRO, then considered a similar plan but really is an upgrade
-        elif owner.plan in TEAM_PLANS and desired_plan["value"] not in TEAM_PLANS:
+        elif (
+            current_plan_info.tier.tier_name == TierName.TEAM.value
+            and desired_plan_info.tier.tier_name != TierName.TEAM.value
+        ):
             return True
 
         return bool(is_same_term and is_same_seats)
@@ -534,9 +535,11 @@ class StripeService(AbstractPaymentService):
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
             tax_id_collection={"enabled": True},
-            customer_update={"name": "auto", "address": "auto"}
-            if owner.stripe_customer_id
-            else None,
+            customer_update=(
+                {"name": "auto", "address": "auto"}
+                if owner.stripe_customer_id
+                else None
+            ),
         )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
@@ -718,6 +721,75 @@ class StripeService(AbstractPaymentService):
             customer=owner.stripe_customer_id,
         )
 
+    @_log_stripe_error
+    def get_unverified_payment_methods(self, owner: Owner):
+        log.info(
+            "Getting unverified payment methods",
+            extra=dict(
+                owner_id=owner.ownerid, stripe_customer_id=owner.stripe_customer_id
+            ),
+        )
+        if not owner.stripe_customer_id:
+            return []
+
+        unverified_payment_methods = []
+
+        # Check payment intents
+        has_more = True
+        starting_after = None
+        while has_more:
+            payment_intents = stripe.PaymentIntent.list(
+                customer=owner.stripe_customer_id,
+                limit=20,
+                starting_after=starting_after,
+            )
+            for intent in payment_intents.data or []:
+                if (
+                    intent.get("next_action")
+                    and intent.next_action
+                    and intent.next_action.get("type") == "verify_with_microdeposits"
+                ):
+                    unverified_payment_methods.extend(
+                        [
+                            {
+                                "payment_method_id": intent.payment_method,
+                                "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                            }
+                        ]
+                    )
+            has_more = payment_intents.has_more
+            if has_more and payment_intents.data:
+                starting_after = payment_intents.data[-1].id
+
+        # Check setup intents
+        has_more = True
+        starting_after = None
+        while has_more:
+            setup_intents = stripe.SetupIntent.list(
+                customer=owner.stripe_customer_id,
+                limit=20,
+                starting_after=starting_after,
+            )
+            for intent in setup_intents.data:
+                if (
+                    intent.get("next_action")
+                    and intent.next_action
+                    and intent.next_action.get("type") == "verify_with_microdeposits"
+                ):
+                    unverified_payment_methods.extend(
+                        [
+                            {
+                                "payment_method_id": intent.payment_method,
+                                "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                            }
+                        ]
+                    )
+            has_more = setup_intents.has_more
+            if has_more and setup_intents.data:
+                starting_after = setup_intents.data[-1].id
+
+        return unverified_payment_methods
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -758,6 +830,9 @@ class EnterprisePaymentService(AbstractPaymentService):
     def create_setup_intent(self, owner):
         pass
 
+    def get_unverified_payment_methods(self, owner: Owner):
+        pass
+
 
 class BillingService:
     payment_service = None
@@ -788,28 +863,41 @@ class BillingService:
     def list_filtered_invoices(self, owner, limit=10):
         return self.payment_service.list_filtered_invoices(owner, limit)
 
+    def get_unverified_payment_methods(self, owner: Owner):
+        return self.payment_service.get_unverified_payment_methods(owner)
+
     def update_plan(self, owner, desired_plan):
         """
         Takes an owner and desired plan, and updates the owner's plan. Depending
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        if desired_plan["value"] in FREE_PLAN_REPRESENTATIONS:
+        try:
+            plan = Plan.objects.get(name=desired_plan["value"])
+        except Plan.DoesNotExist:
+            log.warning(
+                f"Unable to find plan {desired_plan['value']} for owner {owner.ownerid}"
+            )
+            return None
+
+        if not plan.is_active:
+            log.warning(
+                f"Attempted to transition to non-existent or legacy plan: "
+                f"owner {owner.ownerid}, plan: {desired_plan}"
+            )
+            return None
+
+        if plan.paid_plan is False:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
                 plan_service = PlanService(current_org=owner)
                 plan_service.set_default_plan_data()
-        elif desired_plan["value"] in PAID_PLANS:
+        else:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
                 return self.payment_service.create_checkout_session(owner, desired_plan)
-        else:
-            log.warning(
-                f"Attempted to transition to non-existent or legacy plan: "
-                f"owner {owner.ownerid}, plan: {desired_plan}"
-            )
 
     def update_payment_method(self, owner, payment_method):
         """
