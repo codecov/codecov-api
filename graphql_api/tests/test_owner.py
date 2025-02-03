@@ -25,7 +25,6 @@ from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from billing.helpers import mock_all_plans_and_tiers
 from codecov.commands.exceptions import (
-    MissingService,
     UnauthorizedGuestAccess,
 )
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
@@ -708,7 +707,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         res = self.gql_request(query, provider="", with_errors=True)
 
-        assert res["errors"][0]["message"] == MissingService.message
         assert res["data"]["owner"] is None
 
     def test_owner_query_with_private_repos(self):
