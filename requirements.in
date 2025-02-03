@@ -1,5 +1,4 @@
 aiodataloader
-amplitude-analytics
 ariadne==0.23
 ariadne_django==0.3.0
 celery>=5.3.6
@@ -26,7 +25,7 @@ freezegun
 google-cloud-pubsub
 gunicorn>=22.0.0
 https://github.com/codecov/opentelem-python/archive/refs/tags/v0.0.4a1.tar.gz#egg=codecovopentelem
-https://github.com/codecov/shared/archive/7e9511b228d3c916269d8d7b86e8e1c195b00cf6.tar.gz#egg=shared
+https://github.com/codecov/shared/archive/c8dca747a7feb93d7c4db6d8845692420b99e676.tar.gz#egg=shared
 https://github.com/photocrowd/django-cursor-pagination/archive/f560902696b0c8509e4d95c10ba0d62700181d84.tar.gz
 idna>=3.7
 minio
