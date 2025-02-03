@@ -2239,11 +2239,9 @@ class BillingServiceTests(TestCase):
         owner = OwnerFactory(stripe_subscription_id="sub_123")
         desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 10}
 
-        class MockSubscription:
-            def __init__(self):
-                self.status = "incomplete"
-
-        subscription = MockSubscription()
+        subscription = stripe.Subscription.construct_from(
+            {"status": "incomplete"}, "fake_api_key"
+        )
         get_subscription_mock.return_value = subscription
 
         self.billing_service.update_plan(owner, desired_plan)
@@ -2257,21 +2255,14 @@ class BillingServiceTests(TestCase):
     def test_cleanup_incomplete_subscription(self, delete_mock, retrieve_mock):
         owner = OwnerFactory(stripe_subscription_id="sub_123")
 
-        class MockSubscription:
-            id = "sub_123"
-
-            def get(self, key):
-                if key == "latest_invoice":
-                    return {"payment_intent": "pi_123"}
-                return None
-
-        subscription = MockSubscription()
-
-        class MockPaymentIntent:
-            id = "pi_123"
-            status = "requires_action"
-
-        retrieve_mock.return_value = MockPaymentIntent()
+        payment_intent = stripe.PaymentIntent.construct_from(
+            {"id": "pi_123", "status": "requires_action"}, "fake_api_key"
+        )
+        subscription = stripe.Subscription.construct_from(
+            {"id": "abcd", "latest_invoice": {"payment_intent": "pi_123"}},
+            "fake_api_key",
+        )
+        retrieve_mock.return_value = payment_intent
 
         self.billing_service._cleanup_incomplete_subscription(subscription, owner)
 
@@ -2285,13 +2276,9 @@ class BillingServiceTests(TestCase):
     ):
         owner = OwnerFactory(stripe_subscription_id="sub_123")
 
-        class MockSubscription:
-            id = "sub_123"
-
-            def get(self, key):
-                return None
-
-        subscription = MockSubscription()
+        subscription = stripe.Subscription.construct_from(
+            {"id": "sub_123"}, "fake_api_key"
+        )
 
         result = self.billing_service._cleanup_incomplete_subscription(
             subscription, owner
@@ -2335,21 +2322,14 @@ class BillingServiceTests(TestCase):
     ):
         owner = OwnerFactory(stripe_subscription_id="sub_123")
 
-        class MockSubscription:
-            id = "sub_123"
-
-            def get(self, key):
-                if key == "latest_invoice":
-                    return {"payment_intent": "pi_123"}
-                return None
-
-        subscription = MockSubscription()
-
-        class MockPaymentIntent:
-            id = "pi_123"
-            status = "requires_action"
-
-        retrieve_mock.return_value = MockPaymentIntent()
+        payment_intent = stripe.PaymentIntent.construct_from(
+            {"id": "pi_123", "status": "requires_action"}, "fake_api_key"
+        )
+        subscription = stripe.Subscription.construct_from(
+            {"id": "abcd", "latest_invoice": {"payment_intent": "pi_123"}},
+            "fake_api_key",
+        )
+        retrieve_mock.return_value = payment_intent
         delete_mock.side_effect = Exception("Delete failed")
 
         result = self.billing_service._cleanup_incomplete_subscription(

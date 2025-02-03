@@ -556,12 +556,8 @@ class StripeService(AbstractPaymentService):
             setup_intents = stripe.SetupIntent.list(
                 payment_method=payment_method_id, limit=1
             )
-            if (
-                setup_intents
-                and hasattr(setup_intents, "data")
-                and isinstance(setup_intents.data, list)
-                and len(setup_intents.data) > 0
-            ):
+
+            try:
                 latest_intent = setup_intents.data[0]
                 if (
                     latest_intent.status == "requires_action"
@@ -569,6 +565,13 @@ class StripeService(AbstractPaymentService):
                     and latest_intent.next_action.type == "verify_with_microdeposits"
                 ):
                     return True
+            except Exception as e:
+                log.error(
+                    "Error retrieving latest setup intent",
+                    payment_method_id=payment_method_id,
+                    extra=dict(error=e),
+                )
+                return False
 
         return False
 
@@ -987,11 +990,13 @@ class BillingService:
     def _cleanup_incomplete_subscription(
         self, subscription: stripe.Subscription, owner: Owner
     ):
-        latest_invoice = subscription.get("latest_invoice")
-        if not latest_invoice:
-            return None
-        payment_intent_id = latest_invoice.get("payment_intent")
-        if not payment_intent_id:
+        try:
+            payment_intent_id = subscription.latest_invoice.payment_intent
+        except Exception as e:
+            log.error(
+                "Latest invoice is missing payment intent id",
+                extra=dict(error=e),
+            )
             return None
 
         payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
@@ -999,9 +1004,9 @@ class BillingService:
             log.info(
                 "Subscription has pending payment verification",
                 extra=dict(
-                    subscription_id=subscription.id,
-                    payment_intent_id=payment_intent.id,
-                    payment_intent_status=payment_intent.status,
+                    subscription_id=subscription.get("id"),
+                    payment_intent_id=payment_intent.get("id"),
+                    payment_intent_status=payment_intent.get("status"),
                 ),
             )
             try:
@@ -1011,16 +1016,16 @@ class BillingService:
                 log.info(
                     "Deleted incomplete subscription",
                     extra=dict(
-                        subscription_id=subscription.id,
-                        payment_intent_id=payment_intent.id,
+                        subscription_id=subscription.get("id"),
+                        payment_intent_id=payment_intent.get("id"),
                     ),
                 )
             except Exception as e:
                 log.error(
                     "Failed to delete subscription",
                     extra=dict(
-                        subscription_id=subscription.id,
-                        payment_intent_id=payment_intent.id,
+                        subscription_id=subscription.get("id"),
+                        payment_intent_id=payment_intent.get("id"),
                         error=str(e),
                     ),
                 )

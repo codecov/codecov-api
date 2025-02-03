@@ -92,7 +92,7 @@ class StripeWebhookHandler(APIView):
             if invoice.payment_intent:
                 payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
                 if (
-                    payment_intent is not None
+                    payment_intent
                     and payment_intent.get("status") == "requires_action"
                     and payment_intent.get("next_action", {}).get("type")
                     == "verify_with_microdeposits"
@@ -129,12 +129,12 @@ class StripeWebhookHandler(APIView):
         payment_intent = stripe.PaymentIntent.retrieve(
             invoice["payment_intent"], expand=["payment_method"]
         )
-        card = (
-            payment_intent.get("payment_method", {}).get("card")
-            if payment_intent.get("payment_method")
-            and not isinstance(payment_intent.get("payment_method"), str)
-            else None
-        )
+
+        try:
+            card = payment_intent.payment_method.card
+        except AttributeError:
+            card = None
+
         template_vars = {
             "amount": invoice.total / 100,
             "card_type": card.brand if card else None,
@@ -374,10 +374,10 @@ class StripeWebhookHandler(APIView):
                 latest_invoice.payment_intent
             )
             return (
-                payment_intent is not None
-                and payment_intent.status == "requires_action"
-                and payment_intent.next_action is not None
-                and payment_intent.next_action.get("type")
+                payment_intent
+                and payment_intent.get("status") == "requires_action"
+                and payment_intent.get("next_action")
+                and payment_intent.get("next_action", {}).get("type")
                 == "verify_with_microdeposits"
             )
         return False
