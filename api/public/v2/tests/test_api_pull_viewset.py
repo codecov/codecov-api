@@ -415,4 +415,4 @@ class PullViewsetTests(InternalAPITest):
         )
         assert res.status_code == 200
         data = res.json()
-        assert data["patch"] == self.no_patch_response
+        assert data["patch"] == None
