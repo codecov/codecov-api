@@ -7,7 +7,10 @@ from django.test import TransactionTestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
+    PlanFactory,
+    TierFactory,
 )
+from shared.plan.constants import PlanName, TierName
 
 from codecov_auth.models import OrganizationLevelToken
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
@@ -20,7 +23,11 @@ def test_token_is_deleted_when_changing_user_plan(mocked_org_can_have_upload_tok
     # This should happen because of the signal consumer we have defined in
     # codecov_auth/services/org_upload_token_service.py > manage_org_tokens_if_owner_plan_changed
     mocked_org_can_have_upload_token.return_value = False
-    owner = OwnerFactory(plan="users-enterprisey")
+    enterprise_tier = TierFactory(tier_name=TierName.ENTERPRISE.value)
+    enterprise_plan = PlanFactory(
+        tier=enterprise_tier, name=PlanName.ENTERPRISE_CLOUD_YEARLY.value
+    )
+    owner = OwnerFactory(plan=enterprise_plan.name)
     org_token = OrganizationLevelTokenFactory(owner=owner)
     owner.save()
     org_token.save()
@@ -31,21 +38,33 @@ def test_token_is_deleted_when_changing_user_plan(mocked_org_can_have_upload_tok
 
 
 class TestOrgWideUploadTokenService(TransactionTestCase):
+    def setUp(self):
+        self.enterprise_tier = TierFactory(tier_name=TierName.ENTERPRISE.value)
+        self.enterprise_plan = PlanFactory(
+            tier=self.enterprise_tier,
+            name=PlanName.ENTERPRISE_CLOUD_YEARLY.value,
+        )
+        self.basic_tier = TierFactory(tier_name=TierName.BASIC.value)
+        self.basic_plan = PlanFactory(
+            tier=self.basic_tier,
+            name=PlanName.BASIC_PLAN_NAME.value,
+        )
+        self.owner = OwnerFactory(plan=self.enterprise_plan.name)
+
     def test_get_org_token(self):
         # Check that if you try to create a token for an org that already has one you get the same token
-        owner = OwnerFactory(plan="users-enterprisey")
-        org_token = OrganizationLevelTokenFactory(owner=owner)
-        owner.save()
+        org_token = OrganizationLevelTokenFactory(owner=self.owner)
+        self.owner.save()
         org_token.save()
-        assert org_token == OrgLevelTokenService.get_or_create_org_token(owner)
+        assert org_token == OrgLevelTokenService.get_or_create_org_token(self.owner)
 
     def test_create_org_token(self):
-        user_in_enterprise_plan = OwnerFactory(plan="users-enterprisey")
+        user_in_enterprise_plan = OwnerFactory(plan=self.enterprise_plan.name)
         token = OrgLevelTokenService.get_or_create_org_token(user_in_enterprise_plan)
         assert isinstance(token.token, uuid.UUID)
         assert token.owner == user_in_enterprise_plan
         # Check that users not in enterprise plan can create org tokens
-        user_not_in_enterprise_plan = OwnerFactory(plan="users-basic")
+        user_not_in_enterprise_plan = OwnerFactory(plan=self.basic_plan.name)
         token = OrgLevelTokenService.get_or_create_org_token(
             user_not_in_enterprise_plan
         )
@@ -53,13 +72,13 @@ class TestOrgWideUploadTokenService(TransactionTestCase):
         assert token.owner == user_not_in_enterprise_plan
 
     def test_delete_token(self):
-        owner = OwnerFactory(plan="users-enterprisey")
+        owner = OwnerFactory(plan=self.enterprise_plan.name)
         OrgLevelTokenService.delete_org_token_if_exists(owner)
         with pytest.raises(OrganizationLevelToken.DoesNotExist):
             OrganizationLevelToken.objects.get(owner=owner)
 
     def test_refresh_token(self):
-        owner = OwnerFactory(plan="users-enterprisey")
+        owner = OwnerFactory(plan=self.enterprise_plan.name)
         org_token = OrganizationLevelTokenFactory(owner=owner)
         owner.save()
         org_token.save()

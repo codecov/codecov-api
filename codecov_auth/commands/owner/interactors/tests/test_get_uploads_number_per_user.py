@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 
 from django.test import TransactionTestCase
+from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
     RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
-from shared.plan.constants import TrialStatus
+from shared.plan.constants import PlanName, TierName, TrialStatus
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from reports.tests.factories import CommitReportFactory, UploadFactory
@@ -17,8 +18,10 @@ from ..get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 
 class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.user_with_no_uploads = OwnerFactory()
-        self.user_with_uploads = OwnerFactory()
+        self.tier = TierFactory(tier_name=TierName.BASIC.value)
+        self.plan = PlanFactory(tier=self.tier, monthly_uploads_limit=250)
+        self.user_with_no_uploads = OwnerFactory(plan=self.plan.name)
+        self.user_with_uploads = OwnerFactory(plan=self.plan.name)
         repo = RepositoryFactory.create(author=self.user_with_uploads, private=True)
         commit = CommitFactory.create(repository=repo)
         report = CommitReportFactory.create(
@@ -44,10 +47,17 @@ class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
         report_within_40_days.save()
 
         # Trial Data
+        trial_tier = TierFactory(tier_name=TierName.TRIAL.value)
+        trial_plan = PlanFactory(
+            tier=trial_tier,
+            name=PlanName.TRIAL_PLAN_NAME.value,
+            monthly_uploads_limit=250,
+        )
         self.trial_owner = OwnerFactory(
             trial_status=TrialStatus.EXPIRED.value,
             trial_start_date=datetime.now() + timedelta(days=-10),
             trial_end_date=datetime.now() + timedelta(days=-2),
+            plan=trial_plan.name,
         )
         trial_repo = RepositoryFactory.create(author=self.trial_owner, private=True)
         trial_commit = CommitFactory.create(repository=trial_repo)

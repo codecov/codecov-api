@@ -42,6 +42,7 @@ def resolve_marketing_name(plan_service: PlanService, info) -> str:
 
 
 @plan_bindable.field("value")
+@sync_to_async
 def resolve_plan_name_as_value(plan_service: PlanService, info) -> str:
     return plan_service.plan_name
 
@@ -71,6 +72,7 @@ def resolve_benefits(plan_service: PlanService, info) -> List[str]:
 
 
 @plan_bindable.field("pretrialUsersCount")
+@sync_to_async
 def resolve_pretrial_users_count(plan_service: PlanService, info) -> Optional[int]:
     if plan_service.is_org_trialing:
         return plan_service.pretrial_users_count

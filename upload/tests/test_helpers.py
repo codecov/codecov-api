@@ -4,7 +4,7 @@ from unittest.mock import patch
 import jwt
 import pytest
 from django.conf import settings
-from django.test import TransactionTestCase
+from django.test import TestCase
 from rest_framework.exceptions import Throttled, ValidationError
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
@@ -15,6 +15,7 @@ from shared.django_apps.reports.models import ReportType
 from shared.plan.constants import PlanName
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import GithubAppInstallation, Service
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
@@ -27,7 +28,7 @@ from upload.helpers import (
 )
 
 
-class TestGithubAppInstallationUsage(TransactionTestCase):
+class TestGithubAppInstallationUsage(TestCase):
     def test_not_github_provider(self):
         repo = RepositoryFactory(author__service=Service.GITLAB.value)
         assert ghapp_installation_id_to_use(repo) is None
@@ -169,6 +170,7 @@ def test_check_commit_constraints_settings_disabled(db, settings):
 
 def test_check_commit_constraints_settings_enabled(db, settings, mocker):
     settings.UPLOAD_THROTTLING_ENABLED = True
+    mock_all_plans_and_tiers()
     author = OwnerFactory.create(plan=PlanName.BASIC_PLAN_NAME.value)
     repository = RepositoryFactory.create(author=author, private=True)
     public_repository = RepositoryFactory.create(author=author, private=False)

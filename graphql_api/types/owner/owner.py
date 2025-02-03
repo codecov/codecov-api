@@ -8,7 +8,7 @@ import yaml
 from ariadne import ObjectType
 from django.conf import settings
 from graphql import GraphQLResolveInfo
-from shared.plan.constants import FREE_PLAN_REPRESENTATIONS, PlanData, PlanName
+from shared.plan.constants import PlanData, PlanName, convert_to_DTO
 from shared.plan.service import PlanService
 
 import services.activation as activation
@@ -22,12 +22,11 @@ from codecov_auth.models import (
     Account,
     GithubAppInstallation,
     Owner,
+    Plan,
 )
 from codecov_auth.views.okta_cloud import OKTA_SIGNED_IN_ACCOUNTS_SESSION_KEY
 from core.models import Repository
-from graphql_api.actions.repository import (
-    list_repository_for_owner,
-)
+from graphql_api.actions.repository import list_repository_for_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     Connection,
@@ -104,20 +103,25 @@ def resolve_yaml(owner: Owner, info: GraphQLResolveInfo) -> Optional[str]:
 
 @owner_bindable.field("plan")
 @require_part_of_org
+@sync_to_async
 def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
     return PlanService(current_org=owner)
 
 
 @owner_bindable.field("pretrialPlan")
 @require_part_of_org
+@sync_to_async
 def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanData:
     info.context["plan_service"] = PlanService(current_org=owner)
-    free_plan = FREE_PLAN_REPRESENTATIONS[PlanName.BASIC_PLAN_NAME.value]
-    return free_plan.convert_to_DTO()
+    free_plan = Plan.objects.select_related("tier").get(
+        name=PlanName.BASIC_PLAN_NAME.value
+    )
+    return convert_to_DTO(free_plan)
 
 
 @owner_bindable.field("availablePlans")
 @require_part_of_org
+@sync_to_async
 def resolve_available_plans(owner: Owner, info: GraphQLResolveInfo) -> List[PlanData]:
     plan_service = PlanService(current_org=owner)
     info.context["plan_service"] = plan_service
@@ -396,3 +400,10 @@ def resolve_upload_token_required(
 @require_shared_account_or_part_of_org
 def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.activated_user_count
+
+
+@owner_bindable.field("billing")
+@sync_to_async
+@require_part_of_org
+def resolve_billing(owner: Owner, info: GraphQLResolveInfo) -> dict | None:
+    return owner

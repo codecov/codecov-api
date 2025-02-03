@@ -4,6 +4,7 @@ from ariadne import ObjectType
 from shared.plan.constants import PlanData
 from shared.plan.service import PlanService
 
+from codecov.db import sync_to_async
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 
 plan_representation = ariadne_load_local_graphql(
@@ -33,6 +34,7 @@ def resolve_base_unit_price(plan_data: PlanData, info) -> int:
 
 
 @plan_representation_bindable.field("benefits")
+@sync_to_async
 def resolve_benefits(plan_data: PlanData, info) -> List[str]:
     plan_service: PlanService = info.context["plan_service"]
     if plan_service.is_org_trialing:
