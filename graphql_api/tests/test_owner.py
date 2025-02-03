@@ -1000,8 +1000,135 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data["owner"]["aiEnabledRepos"] is None
 
     @patch("services.self_hosted.get_config")
-    def test_fetch_repos_ai_features_enabled_all_repos(self, get_config_mock):
+    def test_ai_enabled_repositories(self, get_config_mock):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        repo1 = RepositoryFactory(author=current_org, name="repo1", service_id="repo-1")
+        repo2 = RepositoryFactory(author=current_org, name="repo2", service_id="repo-2")
+        RepositoryFactory(author=current_org, name="repo3", service_id="repo-3")
+
         get_config_mock.return_value = [
+            {"service": "github", "ai_features_app_id": 12345},
+        ]
+
+        ai_app_installation = GithubAppInstallation(
+            name="ai-features",
+            owner=current_org,
+            repository_service_ids=["repo-1", "repo-2"],
+            installation_id=12345,
+        )
+        ai_app_installation.save()
+
+        query = """
+        query ($username: String!) {
+            owner(username: $username) {
+                aiEnabledRepositories(first: 10) {
+                    edges {
+                        node {
+                            name
+                        }
+                    }
+                    totalCount
+                }
+            }
+        }
+        """
+        variables = {"username": current_org.username}
+        data = self.gql_request(query, owner=current_org, variables=variables)
+        
+        assert data["owner"]["aiEnabledRepositories"]["totalCount"] == 2
+        repo_names = [edge["node"]["name"] for edge in data["owner"]["aiEnabledRepositories"]["edges"]]
+        assert set(repo_names) == {"repo1", "repo2"}
+
+    @patch("services.self_hosted.get_config")
+    def test_ai_enabled_repositories_app_not_installed(self, get_config_mock):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        RepositoryFactory(author=current_org, name="repo1", service_id="repo-1")
+
+        get_config_mock.return_value = [
+            {"service": "github", "ai_features_app_id": 12345},
+        ]
+
+        query = """
+        query ($username: String!) {
+            owner(username: $username) {
+                aiEnabledRepositories(first: 10) {
+                    edges {
+                        node {
+                            name
+                        }
+                    }
+                    totalCount
+                }
+            }
+        }
+        """
+        variables = {"username": current_org.username}
+        data = self.gql_request(query, owner=current_org, variables=variables)
+        
+        assert data["owner"]["aiEnabledRepositories"] is None
+
+    @patch("services.self_hosted.get_config")
+    def test_ai_enabled_repositories_pagination_and_ordering(self, get_config_mock):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        repo1 = RepositoryFactory(author=current_org, name="repo1", service_id="repo-1")
+        repo2 = RepositoryFactory(author=current_org, name="repo2", service_id="repo-2")
+        repo3 = RepositoryFactory(author=current_org, name="repo3", service_id="repo-3")
+
+        get_config_mock.return_value = [
+            {"service": "github", "ai_features_app_id": 12345},
+        ]
+
+        ai_app_installation = GithubAppInstallation(
+            name="ai-features",
+            owner=current_org,
+            repository_service_ids=None,  # All repos enabled
+            installation_id=12345,
+        )
+        ai_app_installation.save()
+
+        query = """
+        query ($username: String!, $first: Int, $after: String, $ordering: RepositoryOrdering, $orderingDirection: OrderingDirection) {
+            owner(username: $username) {
+                aiEnabledRepositories(first: $first, after: $after, ordering: $ordering, orderingDirection: $orderingDirection) {
+                    edges {
+                        node {
+                            name
+                        }
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                    totalCount
+                }
+            }
+        }
+        """
+        variables = {
+            "username": current_org.username,
+            "first": 2,
+            "ordering": "NAME",
+            "orderingDirection": "DESC"
+        }
+        data = self.gql_request(query, owner=current_org, variables=variables)
+        
+        assert data["owner"]["aiEnabledRepositories"]["totalCount"] == 3
+        assert data["owner"]["aiEnabledRepositories"]["pageInfo"]["hasNextPage"] == True
+        repo_names = [edge["node"]["name"] for edge in data["owner"]["aiEnabledRepositories"]["edges"]]
+        assert repo_names == ["repo3", "repo2"]
+
+    @patch("services.self_hosted.get_config")
+    def test_ai_enabled_repositories_app_not_configured(self, get_config_mock):
+        current_org = OwnerFactory(
             {"service": "github", "ai_features_app_id": 12345},
         ]
 
