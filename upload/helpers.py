@@ -237,7 +237,7 @@ def parse_params(data: Dict[str, Any]) -> Dict[str, Any]:
 def get_repo_with_github_actions_oidc_token(token: str) -> Repository:
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     token_issuer = str(unverified_contents.get("iss"))
-    if token_issuer == "https://token.actions.githubusercontent.com":
+    if "https://token.actions.githubusercontent.com" in token_issuer:
         service = "github"
         jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
     else:
