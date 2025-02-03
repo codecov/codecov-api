@@ -27,6 +27,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
 )
 from shared.django_apps.core.tests.factories import PullFactory, RepositoryFactory
 from shared.plan.constants import (
+    DEFAULT_FREE_PLAN,
     ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
 )
@@ -74,10 +75,8 @@ class OwnerAdminTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_owner_admin_impersonate_owner(self):
-        owner_to_impersonate = OwnerFactory(
-            service="bitbucket", plan=PlanName.BASIC_PLAN_NAME.value
-        )
-        other_owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        owner_to_impersonate = OwnerFactory(service="bitbucket", plan=DEFAULT_FREE_PLAN)
+        other_owner = OwnerFactory(plan=DEFAULT_FREE_PLAN)
 
         with self.subTest("more than one user selected"):
             response = self.client.post(
@@ -111,7 +110,7 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_queryset(self, delete_mock):
-        user_to_delete = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        user_to_delete = OwnerFactory(plan=DEFAULT_FREE_PLAN)
         ownerid = user_to_delete.ownerid
         queryset = MagicMock()
         queryset.__iter__.return_value = [user_to_delete]
@@ -122,14 +121,14 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_model(self, delete_mock):
-        user_to_delete = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        user_to_delete = OwnerFactory(plan=DEFAULT_FREE_PLAN)
         ownerid = user_to_delete.ownerid
         self.owner_admin.delete_model(MagicMock(), user_to_delete)
         delete_mock.assert_called_once_with(ownerid=ownerid)
 
     @patch("codecov_auth.admin.admin.ModelAdmin.get_deleted_objects")
     def test_confirmation_deleted_objects(self, mocked_deleted_objs):
-        user_to_delete = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        user_to_delete = OwnerFactory(plan=DEFAULT_FREE_PLAN)
         deleted_objs = [
             'Owner: <a href="/admin/codecov_auth/owner/{}/change/">{};</a>'.format(
                 user_to_delete.ownerid, user_to_delete
@@ -149,7 +148,7 @@ class OwnerAdminTest(TestCase):
 
     @patch("codecov_auth.admin.admin.ModelAdmin.log_change")
     def test_prev_and_new_values_in_log_entry(self, mocked_super_log_change):
-        owner = OwnerFactory(staff=True, plan=PlanName.BASIC_PLAN_NAME.value)
+        owner = OwnerFactory(staff=True, plan=DEFAULT_FREE_PLAN)
         owner.save()
         owner.staff = False
         form = MagicMock()
@@ -169,7 +168,7 @@ class OwnerAdminTest(TestCase):
         ]
 
     def test_inline_orgwide_tokens_display(self):
-        owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        owner = OwnerFactory(plan=DEFAULT_FREE_PLAN)
         request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)
         request.user = self.staff_user
@@ -202,7 +201,7 @@ class OwnerAdminTest(TestCase):
     def test_inline_orgwide_add_token_permission_no_token_and_user_in_enterprise_cloud_plan(
         self,
     ):
-        owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        owner = OwnerFactory(plan=DEFAULT_FREE_PLAN)
         assert owner.plan not in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
         request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
@@ -305,7 +304,7 @@ class OwnerAdminTest(TestCase):
         mock_refresh.assert_not_called()
 
     def test_start_trial_ui_display(self):
-        owner = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        owner = OwnerFactory(plan=DEFAULT_FREE_PLAN)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -320,7 +319,7 @@ class OwnerAdminTest(TestCase):
     @patch("shared.plan.service.PlanService.start_trial_manually")
     def test_start_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
-        org_to_be_trialed = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        org_to_be_trialed = OwnerFactory(plan=DEFAULT_FREE_PLAN)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -337,7 +336,7 @@ class OwnerAdminTest(TestCase):
     @patch("shared.plan.service.PlanService._start_trial_helper")
     def test_extend_trial_action(self, mock_start_trial_service):
         mock_start_trial_service.return_value = None
-        org_to_be_trialed = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        org_to_be_trialed = OwnerFactory(plan=DEFAULT_FREE_PLAN)
         org_to_be_trialed.plan = PlanName.TRIAL_PLAN_NAME.value
         org_to_be_trialed.save()
 
@@ -360,7 +359,7 @@ class OwnerAdminTest(TestCase):
             "Cannot trial from a paid plan"
         )
 
-        org_to_be_trialed = OwnerFactory(plan=PlanName.BASIC_PLAN_NAME.value)
+        org_to_be_trialed = OwnerFactory(plan=DEFAULT_FREE_PLAN)
 
         res = self.client.post(
             reverse("admin:codecov_auth_owner_changelist"),
@@ -581,7 +580,8 @@ class AccountAdminTest(TestCase):
         self.assertEqual(res.status_code, 200)
         decoded_res = res.content.decode("utf-8")
         self.assertIn(
-            '<option value="users-basic" selected>BASIC_PLAN_NAME</option>', decoded_res
+            '<option value="users-developer" selected>USERS_DEVELOPER</option>',
+            decoded_res,
         )
         self.assertIn("Organizations (read only)", decoded_res)
         self.assertIn("Stripe Billing (click save to commit changes)", decoded_res)
@@ -910,7 +910,7 @@ class PlanAdminTest(TestCase):
         admin_site.register(Plan)
 
         self.tier = TierFactory()
-        self.plan = PlanFactory(name=PlanName.BASIC_PLAN_NAME.value, tier=self.tier)
+        self.plan = PlanFactory(name=DEFAULT_FREE_PLAN, tier=self.tier)
 
     def test_plan_admin_modal_display(self):
         response = self.client.get(
@@ -1016,7 +1016,7 @@ class TierAdminTest(TestCase):
         admin_site.register(Tier)
 
         self.tier = TierFactory()
-        self.plan = PlanFactory(name=PlanName.BASIC_PLAN_NAME.value, tier=self.tier)
+        self.plan = PlanFactory(name=DEFAULT_FREE_PLAN, tier=self.tier)
 
     def test_tier_modal_plans_display(self):
         response = self.client.get(

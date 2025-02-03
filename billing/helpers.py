@@ -43,17 +43,6 @@ def mock_all_plans_and_tiers():
 
     basic_tier = TierFactory(tier_name=TierName.BASIC.value)
     PlanFactory(
-        name=PlanName.BASIC_PLAN_NAME.value,
-        tier=basic_tier,
-        marketing_name="Developer",
-        benefits=[
-            "Up to 1 user",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-        monthly_uploads_limit=250,
-    )
-    PlanFactory(
         name=PlanName.FREE_PLAN_NAME.value,
         tier=basic_tier,
         marketing_name="Developer",

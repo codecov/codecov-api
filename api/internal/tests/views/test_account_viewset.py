@@ -14,7 +14,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
     OwnerFactory,
     UserFactory,
 )
-from shared.plan.constants import PlanName, TrialStatus
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, TrialStatus
 from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
@@ -164,7 +164,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -249,7 +249,7 @@ class AccountViewSetTests(APITestCase):
             "plan_provider": owner.plan_provider,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -346,7 +346,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -420,7 +420,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -488,13 +488,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_free_user_plan(self):
-        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.current_owner.plan = DEFAULT_FREE_PLAN
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Developer",
-            "value": PlanName.BASIC_PLAN_NAME.value,
+            "value": DEFAULT_FREE_PLAN,
             "billing_rate": None,
             "base_unit_price": 0,
             "benefits": [
@@ -690,7 +690,7 @@ class AccountViewSetTests(APITestCase):
         assert self.current_owner.plan_auto_activate is False
         assert response.data["plan_auto_activate"] is False
 
-    def test_update_can_set_plan_to_users_basic(self):
+    def test_update_can_set_plan_to_users_basic_should_set_to_developer(self):
         self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.save()
 
@@ -706,7 +706,7 @@ class AccountViewSetTests(APITestCase):
 
         self.current_owner.refresh_from_db()
 
-        assert self.current_owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.current_owner.plan == DEFAULT_FREE_PLAN
         assert self.current_owner.plan_activated_users is None
         assert self.current_owner.plan_user_count == 1
         assert response.data["plan_auto_activate"] is True
@@ -963,7 +963,7 @@ class AccountViewSetTests(APITestCase):
         )
 
     def test_update_team_plan_must_fail_if_too_many_activated_users_during_trial(self):
-        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.current_owner.plan = DEFAULT_FREE_PLAN
         self.current_owner.plan_user_count = 1
         self.current_owner.trial_status = TrialStatus.ONGOING.value
         self.current_owner.plan_activated_users = list(range(11))
@@ -987,7 +987,7 @@ class AccountViewSetTests(APITestCase):
             assert response.json() == {
                 "plan": {
                     "value": [
-                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
+                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-pr-inappm', '{DEFAULT_FREE_PLAN}', 'users-pr-inappy']"
                     ]
                 }
             }
@@ -1567,7 +1567,7 @@ class AccountViewSetTests(APITestCase):
         assert res.json() == {
             "plan": {
                 "value": [
-                    "Invalid value for plan: users-sentrym; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy', 'users-teamm', 'users-teamy']"
+                    f"Invalid value for plan: users-sentrym; must be one of ['users-pr-inappm', 'users-pr-inappy', 'users-teamm', 'users-teamy', '{DEFAULT_FREE_PLAN}']"
                 ]
             }
         }
