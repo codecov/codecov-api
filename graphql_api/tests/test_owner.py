@@ -1195,3 +1195,19 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                 ]
             }
         }
+
+    def test_fetch_owner_with_no_service(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.BASIC_PLAN_NAME.value,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                username
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org, provider="", with_errors=True)
+        assert data == {"data": {"owner": None}}
