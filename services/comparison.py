@@ -20,7 +20,7 @@ from shared.reports.types import ReportTotals
 from shared.utils.merge import LineType, line_type
 
 from compare.models import CommitComparison
-from core.models import Commit
+from core.models import Commit, Pull
 from reports.models import CommitReport
 from services import ServiceException
 from services.redis_configuration import get_redis_connection
@@ -1186,7 +1186,8 @@ class PullRequestComparison(Comparison):
 class CommitComparisonService:
     """
     Utilities for determining whether a commit comparison needs to be recomputed
-    (and enqueueing that recompute when necessary)
+    (and enqueueing that recompute when necessary), and fetching associated comparisons
+    for pulls
     """
 
     def __init__(self, commit_comparison: CommitComparison):
@@ -1245,6 +1246,16 @@ class CommitComparisonService:
             .defer("_report")
             .first()
         )
+
+    @staticmethod
+    def get_commit_comparison_for_pull(obj: Pull) -> Optional[CommitComparison]:
+        comparison_qs = CommitComparison.objects.filter(
+            base_commit__commitid=obj.compared_to,
+            compare_commit__commitid=obj.head,
+            base_commit__repository_id=obj.repository_id,
+            compare_commit__repository_id=obj.repository_id,
+        ).select_related("compare_commit", "base_commit")
+        return comparison_qs.first()
 
     @classmethod
     def fetch_precomputed(self, repo_id: int, keys: List[Tuple]) -> QuerySet:
