@@ -1585,19 +1585,14 @@ class StripeWebhookHandlerTests(APITestCase):
         self, invoice_retrieve_mock, payment_intent_retrieve_mock
     ):
         subscription = stripe.Subscription.construct_from(
-            {"latest_invoice": "inv_123"},
-            "sub_123"
+            {"latest_invoice": "inv_123"}, "sub_123"
         )
 
         invoice_retrieve_mock.return_value = stripe.Invoice.construct_from(
-            {"payment_intent": "pi_123"},
-            "inv_123"
+            {"payment_intent": "pi_123"}, "inv_123"
         )
         payment_intent_retrieve_mock.return_value = stripe.PaymentIntent.construct_from(
-            {
-                "status": "succeeded"
-            },
-            "payment_intent_asdf"
+            {"status": "succeeded"}, "payment_intent_asdf"
         )
 
         handler = StripeWebhookHandler()
