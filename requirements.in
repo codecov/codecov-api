@@ -1,5 +1,4 @@
 aiodataloader
-amplitude-analytics
 ariadne==0.23
 ariadne_django==0.3.0
 celery>=5.3.6

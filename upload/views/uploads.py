@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Any, Callable, Dict
 
 from django.http import HttpRequest, HttpResponseNotAllowed
@@ -56,6 +57,19 @@ def create_upload(
         else None
     )
     archive_service = ArchiveService(repository)
+    # only Shelter requests are allowed to set their own `storage_path`
+
+    if not serializer.validated_data.get("storage_path") or not is_shelter_request:
+        serializer.validated_data["external_id"] = uuid.uuid4()
+        path = MinioEndpoints.raw_with_upload_id.get_path(
+            version="v4",
+            date=timezone.now().strftime("%Y-%m-%d"),
+            repo_hash=archive_service.storage_hash,
+            commit_sha=commit.commitid,
+            reportid=report.external_id,
+            uploadid=serializer.validated_data["external_id"],
+        )
+        serializer.validated_data["storage_path"] = path
     # Create upload record
     instance: ReportSession = serializer.save(
         report_id=report.id, upload_extras={"format_version": "v1"}, state="started"
@@ -72,18 +86,6 @@ def create_upload(
         report_type=report.report_type,
     )
 
-    # only Shelter requests are allowed to set their own `storage_path`
-    if instance.storage_path is None or not is_shelter_request:
-        path = MinioEndpoints.raw_with_upload_id.get_path(
-            version="v4",
-            date=timezone.now().strftime("%Y-%m-%d"),
-            repo_hash=archive_service.storage_hash,
-            commit_sha=commit.commitid,
-            reportid=report.external_id,
-            uploadid=instance.external_id,
-        )
-        instance.storage_path = path
-        instance.save()
     trigger_upload_task(repository, commit.commitid, instance, report)
     activate_repo(repository)
     send_analytics_data(commit, instance, version, analytics_token)

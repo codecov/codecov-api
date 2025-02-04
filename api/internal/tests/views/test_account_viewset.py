@@ -26,21 +26,42 @@ curr_path = os.path.dirname(__file__)
 
 
 class MockSubscription(object):
-    def __init__(self, subscription_params):
+    def __init__(self, subscription_params: dict):
         self.items = {"data": [{"id": "abc"}]}
         self.cancel_at_period_end = False
         self.current_period_end = 1633512445
-        self.latest_invoice = subscription_params["latest_invoice"]
+        self.latest_invoice = subscription_params.get(
+            "latest_invoice",
+            {
+                "id": "in_123",
+                "status": "complete",
+            },
+        )
+
+        default_payment_method = {
+            "id": "pm_123",
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+            },
+        }
         self.customer = {
             "invoice_settings": {
-                "default_payment_method": subscription_params["default_payment_method"]
+                "default_payment_method": subscription_params.get(
+                    "default_payment_method", default_payment_method
+                )
             },
             "id": "cus_LK&*Hli8YLIO",
             "discount": None,
             "email": None,
         }
-        self.schedule = subscription_params["schedule_id"]
-        self.collection_method = subscription_params["collection_method"]
+        self.schedule = subscription_params.get("schedule_id")
+        self.status = subscription_params.get("status", "active")
+        self.collection_method = subscription_params.get(
+            "collection_method", "charge_automatically"
+        )
         self.trial_end = subscription_params.get("trial_end")
 
         customer_coupon = subscription_params.get("customer_coupon")
@@ -1104,6 +1125,7 @@ class AccountViewSetTests(APITestCase):
         response = self.client.patch(url, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    @patch("services.billing.StripeService._is_unverified_payment_method")
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
@@ -1114,11 +1136,14 @@ class AccountViewSetTests(APITestCase):
         modify_customer_mock,
         attach_payment_mock,
         retrieve_subscription_mock,
+        is_unverified_payment_method_mock,
     ):
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
         f = open("./services/tests/samples/stripe_invoice.json")
+
+        is_unverified_payment_method_mock.return_value = False
 
         default_payment_method = {
             "card": {
@@ -1435,14 +1460,15 @@ class AccountViewSetTests(APITestCase):
         assert self.current_owner.name == expected_name
         assert self.current_owner.email == expected_email
 
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_handles_stripe_error(self, modify_sub_mock):
+    def test_update_handles_stripe_error(self, retrieve_sub_mock, modify_sub_mock):
         code, message = 402, "Not right, wrong in fact"
         desired_plan = {"value": PlanName.CODECOV_PRO_MONTHLY.value, "quantity": 12}
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
-
+        retrieve_sub_mock.return_value = MockSubscription({})
         modify_sub_mock.side_effect = StripeError(message=message, http_status=code)
 
         response = self._update(
@@ -1456,9 +1482,12 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == code
         assert response.data["detail"] == message
 
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan_monthly(self, modify_sub_mock, send_sentry_webhook):
+    def test_update_sentry_plan_monthly(
+        self, modify_sub_mock, send_sentry_webhook, retrieve_sub_mock
+    ):
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 12}
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
@@ -1499,9 +1528,15 @@ class AccountViewSetTests(APITestCase):
         )
         send_sentry_webhook.assert_called_once_with(self.current_owner, org)
 
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan_annual(self, modify_sub_mock, send_sentry_webhook):
+    def test_update_sentry_plan_annual(
+        self,
+        modify_sub_mock,
+        send_sentry_webhook,
+        retrieve_sub_mock,
+    ):
         desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 12}
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
