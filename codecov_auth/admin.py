@@ -1,7 +1,7 @@
+import csv
 import logging
 from datetime import timedelta
 from typing import Optional, Sequence
-
 import django.forms as forms
 from django.conf import settings
 from django.contrib import admin, messages
@@ -9,7 +9,7 @@ from django.contrib.admin.models import LogEntry
 from django.db.models import OuterRef, Subquery
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import CheckboxInput, Select, Textarea
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.html import format_html
@@ -734,9 +734,25 @@ class PlansInline(admin.TabularInline):
         Plan._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
     }
 
+def export_to_csv(modeladmin, request, queryset):
+    model = queryset.model
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="{model._meta.model_name}s.csv"'
+    writer = csv.writer(response)
+
+    writer.writerow([field.name for field in model._meta.fields])
+
+    for obj in queryset:
+        writer.writerow([getattr(obj, field.name) for field in model._meta.fields])
+
+    return response
+
+export_to_csv.short_description = "Export selected items to CSV"
+
 
 @admin.register(Tier)
 class TierAdmin(admin.ModelAdmin):
+    actions = [export_to_csv]
     list_display = (
         "tier_name",
         "bundle_analysis",
@@ -791,6 +807,8 @@ class PlanAdminForm(forms.ModelForm):
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
     form = PlanAdminForm
+    actions = [export_to_csv]
+
     list_display = (
         "name",
         "marketing_name",
