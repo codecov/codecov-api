@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock, call, patch
 
 import requests
+import stripe
 from django.conf import settings
 from django.test import TestCase
 from freezegun import freeze_time
@@ -106,7 +107,7 @@ expected_invoices = [
         "next_payment_attempt": None,
         "number": "EF0A41E-0001",
         "paid": True,
-        "payment_intent": None,
+        "payment_intent": {"id": "pi_3P4567890123456789012345", "status": "completed"},
         "period_end": 1489789420,
         "period_start": 1487370220,
         "post_payment_credit_notes_amount": 0,
@@ -1622,8 +1623,13 @@ class StripeServiceTests(TestCase):
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.StripeService._is_unverified_payment_method")
     def test_update_payment_method(
-        self, modify_sub_mock, modify_customer_mock, attach_payment_mock
+        self,
+        is_unverified_mock,
+        modify_sub_mock,
+        modify_customer_mock,
+        attach_payment_mock,
     ):
         payment_method_id = "pm_1234567"
         subscription_id = "sub_abc"
@@ -1631,6 +1637,7 @@ class StripeServiceTests(TestCase):
         owner = OwnerFactory(
             stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
         )
+        is_unverified_mock.return_value = False
         self.stripe.update_payment_method(owner, payment_method_id)
         attach_payment_mock.assert_called_once_with(
             payment_method_id, customer=customer_id
@@ -1642,6 +1649,65 @@ class StripeServiceTests(TestCase):
         modify_sub_mock.assert_called_once_with(
             subscription_id, default_payment_method=payment_method_id
         )
+
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.PaymentMethod.retrieve")
+    @patch("services.billing.stripe.SetupIntent.list")
+    def test_update_payment_method_with_unverified_payment_method(
+        self,
+        setup_intent_list_mock,
+        payment_method_retrieve_mock,
+        modify_sub_mock,
+        modify_customer_mock,
+        attach_payment_mock,
+    ):
+        # Define the mock return values
+        setup_intent_list_mock.return_value = MagicMock(
+            data=[
+                MagicMock(
+                    status="requires_action",
+                    next_action=MagicMock(
+                        type="verify_with_microdeposits",
+                        verify_with_microdeposits=MagicMock(
+                            hosted_verification_url="https://verify.stripe.com/1"
+                        ),
+                    ),
+                )
+            ]
+        )
+        payment_method_retrieve_mock.return_value = MagicMock(
+            type="us_bank_account",
+            us_bank_account=MagicMock(
+                status="requires_action",
+                next_action=MagicMock(
+                    type="verify_with_microdeposits",
+                    verify_with_microdeposits=MagicMock(
+                        hosted_verification_url="https://verify.stripe.com/1"
+                    ),
+                ),
+            ),
+        )
+        modify_sub_mock.return_value = MagicMock()
+        modify_customer_mock.return_value = MagicMock()
+        attach_payment_mock.return_value = MagicMock()
+
+        # Create a mock owner object
+        subscription_id = "sub_abc"
+        customer_id = "cus_abc"
+        owner = OwnerFactory(
+            stripe_subscription_id=subscription_id, stripe_customer_id=customer_id
+        )
+
+        result = self.stripe.update_payment_method(owner, "abc")
+
+        assert result is None
+        assert payment_method_retrieve_mock.called
+        assert setup_intent_list_mock.called
+        assert not attach_payment_mock.called
+        assert not modify_customer_mock.called
+        assert not modify_sub_mock.called
 
     def test_update_email_address_with_invalid_email(self):
         owner = OwnerFactory(stripe_subscription_id=None)
@@ -2107,8 +2173,10 @@ class BillingServiceTests(TestCase):
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
+    @patch("services.tests.test_billing.MockPaymentService.get_subscription")
     def test_update_plan_modifies_subscription_if_user_plan_and_subscription_exists(
         self,
+        get_subscription_mock,
         delete_subscription_mock,
         modify_subscription_mock,
         create_checkout_session_mock,
@@ -2116,8 +2184,20 @@ class BillingServiceTests(TestCase):
     ):
         owner = OwnerFactory(stripe_subscription_id=10)
         desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 10}
-        self.billing_service.update_plan(owner, desired_plan)
 
+        get_subscription_mock.return_value = stripe.util.convert_to_stripe_object(
+            {
+                "schedule": None,
+                "current_period_start": 1489799420,
+                "current_period_end": 1492477820,
+                "quantity": 10,
+                "name": PlanName.CODECOV_PRO_YEARLY.value,
+                "id": 215,
+                "status": "active",
+            }
+        )
+
+        self.billing_service.update_plan(owner, desired_plan)
         modify_subscription_mock.assert_called_once_with(owner, desired_plan)
 
         set_default_plan_data.assert_not_called()
@@ -2144,6 +2224,122 @@ class BillingServiceTests(TestCase):
         set_default_plan_data.assert_not_called()
         delete_subscription_mock.assert_not_called()
         modify_subscription_mock.assert_not_called()
+
+    @patch("services.tests.test_billing.MockPaymentService.get_subscription")
+    @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
+    @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
+    @patch("services.billing.BillingService._cleanup_incomplete_subscription")
+    def test_update_plan_cleans_up_incomplete_subscription_and_creates_new_checkout(
+        self,
+        cleanup_incomplete_mock,
+        modify_subscription_mock,
+        create_checkout_session_mock,
+        get_subscription_mock,
+    ):
+        owner = OwnerFactory(stripe_subscription_id="sub_123")
+        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 10}
+
+        subscription = stripe.Subscription.construct_from(
+            {"status": "incomplete"}, "fake_api_key"
+        )
+        get_subscription_mock.return_value = subscription
+
+        self.billing_service.update_plan(owner, desired_plan)
+
+        cleanup_incomplete_mock.assert_called_once_with(subscription, owner)
+        create_checkout_session_mock.assert_called_once_with(owner, desired_plan)
+        modify_subscription_mock.assert_not_called()
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    @patch("services.billing.stripe.Subscription.delete")
+    def test_cleanup_incomplete_subscription(self, delete_mock, retrieve_mock):
+        owner = OwnerFactory(stripe_subscription_id="sub_123")
+
+        payment_intent = stripe.PaymentIntent.construct_from(
+            {"id": "pi_123", "status": "requires_action"}, "fake_api_key"
+        )
+        subscription = stripe.Subscription.construct_from(
+            {"id": "abcd", "latest_invoice": {"payment_intent": "pi_123"}},
+            "fake_api_key",
+        )
+        retrieve_mock.return_value = payment_intent
+
+        self.billing_service._cleanup_incomplete_subscription(subscription, owner)
+
+        retrieve_mock.assert_called_once_with("pi_123")
+        delete_mock.assert_called_once_with(subscription)
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    @patch("services.billing.stripe.Subscription.delete")
+    def test_cleanup_incomplete_subscription_no_latest_invoice(
+        self, delete_mock, retrieve_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="sub_123")
+
+        subscription = stripe.Subscription.construct_from(
+            {"id": "sub_123"}, "fake_api_key"
+        )
+
+        result = self.billing_service._cleanup_incomplete_subscription(
+            subscription, owner
+        )
+
+        assert result is None
+        delete_mock.assert_not_called()
+        retrieve_mock.assert_not_called()
+        assert owner.stripe_subscription_id == "sub_123"
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    @patch("services.billing.stripe.Subscription.delete")
+    def test_cleanup_incomplete_subscription_no_payment_intent(
+        self, delete_mock, retrieve_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="sub_123")
+
+        class MockSubscription:
+            id = "sub_123"
+
+            def get(self, key):
+                if key == "latest_invoice":
+                    return {"payment_intent": None}
+                return None
+
+        subscription = MockSubscription()
+
+        result = self.billing_service._cleanup_incomplete_subscription(
+            subscription, owner
+        )
+
+        assert result is None
+        delete_mock.assert_not_called()
+        retrieve_mock.assert_not_called()
+        assert owner.stripe_subscription_id == "sub_123"
+
+    @patch("services.billing.stripe.PaymentIntent.retrieve")
+    @patch("services.billing.stripe.Subscription.delete")
+    def test_cleanup_incomplete_subscription_delete_fails(
+        self, delete_mock, retrieve_mock
+    ):
+        owner = OwnerFactory(stripe_subscription_id="sub_123")
+
+        payment_intent = stripe.PaymentIntent.construct_from(
+            {"id": "pi_123", "status": "requires_action"}, "fake_api_key"
+        )
+        subscription = stripe.Subscription.construct_from(
+            {"id": "abcd", "latest_invoice": {"payment_intent": "pi_123"}},
+            "fake_api_key",
+        )
+        retrieve_mock.return_value = payment_intent
+        delete_mock.side_effect = Exception("Delete failed")
+
+        result = self.billing_service._cleanup_incomplete_subscription(
+            subscription, owner
+        )
+
+        assert result is None
+        retrieve_mock.assert_called_once_with("pi_123")
+        delete_mock.assert_called_once_with(subscription)
+        assert owner.stripe_subscription_id == "sub_123"
 
     @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")

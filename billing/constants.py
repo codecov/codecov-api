@@ -17,6 +17,8 @@ class StripeWebhookEvents:
         "customer.updated",
         "invoice.payment_failed",
         "invoice.payment_succeeded",
+        "payment_intent.succeeded",
+        "setup_intent.succeeded",
         "subscription_schedule.created",
         "subscription_schedule.released",
         "subscription_schedule.updated",
