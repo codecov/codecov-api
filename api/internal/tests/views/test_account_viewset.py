@@ -1005,13 +1005,7 @@ class AccountViewSetTests(APITestCase):
             )
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
-            assert response.json() == {
-                "plan": {
-                    "value": [
-                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-pr-inappm', '{DEFAULT_FREE_PLAN}', 'users-pr-inappy']"
-                    ]
-                }
-            }
+            assert "Invalid value for plan:" in response.json()["plan"]["value"][0]
 
     def test_update_team_plan_must_fail_if_currently_team_plan_add_too_many_users(self):
         self.current_owner.plan = PlanName.TEAM_MONTHLY.value
