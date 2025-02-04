@@ -1584,14 +1584,21 @@ class StripeWebhookHandlerTests(APITestCase):
     def test_has_unverified_initial_payment_method_payment_intent_succeeded(
         self, invoice_retrieve_mock, payment_intent_retrieve_mock
     ):
-        subscription = Mock()
-        subscription.latest_invoice = "inv_123"
+        subscription = stripe.Subscription.construct_from(
+            {"latest_invoice": "inv_123"},
+            "sub_123"
+        )
 
-        class MockPaymentIntent:
-            status = "succeeded"
-
-        invoice_retrieve_mock.return_value = Mock(payment_intent="pi_123")
-        payment_intent_retrieve_mock.return_value = MockPaymentIntent()
+        invoice_retrieve_mock.return_value = stripe.Invoice.construct_from(
+            {"payment_intent": "pi_123"},
+            "inv_123"
+        )
+        payment_intent_retrieve_mock.return_value = stripe.PaymentIntent.construct_from(
+            {
+                "status": "succeeded"
+            },
+            "payment_intent_asdf"
+        )
 
         handler = StripeWebhookHandler()
         result = handler._has_unverified_initial_payment_method(subscription)
