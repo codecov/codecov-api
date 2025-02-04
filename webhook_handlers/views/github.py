@@ -30,6 +30,8 @@ from webhook_handlers.constants import (
     WebhookHandlerErrorMessages,
 )
 
+from . import WEBHOOKS_ERRORED, WEBHOOKS_RECEIVED
+
 log = logging.getLogger(__name__)
 
 
@@ -48,6 +50,19 @@ class GithubWebhookHandler(APIView):
     redis = get_redis_connection()
 
     service_name = "github"
+
+    def _inc_recv(self):
+        WEBHOOKS_RECEIVED.labels(
+            service=self.service_name, event=self.event, action=self.action
+        ).inc()
+
+    def _inc_err(self, reason: str):
+        WEBHOOKS_ERRORED.labels(
+            service=self.service_name,
+            event=self.event,
+            action=self.action,
+            error_reason=reason,
+        ).inc()
 
     def validate_signature(self, request):
         key = get_config(
@@ -79,9 +94,11 @@ class GithubWebhookHandler(APIView):
             or len(computed_sig) != len(expected_sig)
             or not constant_time_compare(computed_sig, expected_sig)
         ):
+            self._inc_err("validation_failed")
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
+        self._inc_err("unhandled_event")
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
     def _get_repo(self, request):
@@ -117,6 +134,7 @@ class GithubWebhookHandler(APIView):
                     "Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
+                self._inc_err("repo_not_found")
                 raise NotFound("Repository does not exist")
         else:
             try:
@@ -142,6 +160,7 @@ class GithubWebhookHandler(APIView):
                     "Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
+                self._inc_err("repo_not_found")
                 raise NotFound("Repository does not exist")
 
     def ping(self, request, *args, **kwargs):
@@ -698,6 +717,7 @@ class GithubWebhookHandler(APIView):
 
     def post(self, request, *args, **kwargs):
         self.event = self.request.META.get(GitHubHTTPHeaders.EVENT)
+        self.action = request.data.get("action", "")
         log.info(
             "GitHub Webhook Handler invoked",
             extra=dict(
@@ -708,8 +728,12 @@ class GithubWebhookHandler(APIView):
 
         self.validate_signature(request)
 
-        handler = getattr(self, self.event, self.unhandled_webhook_event)
-        return handler(request, *args, **kwargs)
+        if handler := getattr(self, self.event, None):
+            self._inc_recv()
+            return handler(request, *args, **kwargs)
+        else:
+            self._inc_err("unhandled_event")
+            return self.unhandled_webhook_event(request, *args, **kwargs)
 
 
 class GithubEnterpriseWebhookHandler(GithubWebhookHandler):
