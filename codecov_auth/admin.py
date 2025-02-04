@@ -1,7 +1,7 @@
-import csv
 import logging
 from datetime import timedelta
 from typing import Optional, Sequence
+
 import django.forms as forms
 from django.conf import settings
 from django.contrib import admin, messages
@@ -9,7 +9,7 @@ from django.contrib.admin.models import LogEntry
 from django.db.models import OuterRef, Subquery
 from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import CheckboxInput, Select, Textarea
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.html import format_html
@@ -25,7 +25,7 @@ from shared.plan.service import PlanService
 
 from codecov.admin import AdminMixin
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.helpers import History
+from codecov_auth.helpers import History, export_to_csv
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, Session, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from services.task import TaskService
@@ -733,21 +733,6 @@ class PlansInline(admin.TabularInline):
     formfield_overrides = {
         Plan._meta.get_field("benefits"): {"widget": Textarea(attrs={"rows": 3})},
     }
-
-def export_to_csv(modeladmin, request, queryset):
-    model = queryset.model
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = f'attachment; filename="{model._meta.model_name}s.csv"'
-    writer = csv.writer(response)
-
-    writer.writerow([field.name for field in model._meta.fields])
-
-    for obj in queryset:
-        writer.writerow([getattr(obj, field.name) for field in model._meta.fields])
-
-    return response
-
-export_to_csv.short_description = "Export selected items to CSV"
 
 
 @admin.register(Tier)
