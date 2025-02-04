@@ -15,6 +15,7 @@ from billing.helpers import on_enterprise_plan
 from services.billing import BillingService
 from services.decorators import stripe_safe
 from services.task import TaskService
+from shared.plan.constants import DEFAULT_FREE_PLAN
 
 from .serializers import (
     AccountDetailsSerializer,
@@ -46,10 +47,10 @@ class AccountDetailsViewSet(
 
     @stripe_safe
     def update(self, request, *args, **kwargs):
-        # # Temporary fix. Remove once Gazebo uses the new free plan
-        # plan_value = request.data.get("plan", {}).get("value")
-        # if plan_value == "users-basic":
-        #     request.data["plan"]["value"] = DEFAULT_FREE_PLAN
+        # Temporary fix. Remove once Gazebo uses the new free plan
+        plan_value = request.data.get("plan", {}).get("value")
+        if plan_value == "users-basic":
+            request.data["plan"]["value"] = DEFAULT_FREE_PLAN
 
         return super().update(request, *args, **kwargs)
 
