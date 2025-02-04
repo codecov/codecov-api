@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory, APITestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
-from shared.plan.constants import PlanName
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName
 
 from billing.helpers import mock_all_plans_and_tiers
 from billing.views import StripeWebhookHandler
@@ -554,7 +554,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
         self.owner.refresh_from_db()
 
-        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.owner.plan == DEFAULT_FREE_PLAN
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_activated_users is None
         assert self.owner.stripe_subscription_id is None
@@ -584,12 +584,12 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         self.other_owner.refresh_from_db()
 
-        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.owner.plan == DEFAULT_FREE_PLAN
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_activated_users is None
         assert self.owner.stripe_subscription_id is None
 
-        assert self.other_owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.other_owner.plan == DEFAULT_FREE_PLAN
         assert self.other_owner.plan_user_count == 1
         assert self.other_owner.plan_activated_users is None
         assert self.other_owner.stripe_subscription_id is None
@@ -998,7 +998,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
         self.owner.refresh_from_db()
 
-        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.owner.plan == DEFAULT_FREE_PLAN
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_auto_activate == False
         assert self.owner.stripe_subscription_id is None
@@ -1102,14 +1102,14 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.refresh_from_db()
         self.other_owner.refresh_from_db()
 
-        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.owner.plan == DEFAULT_FREE_PLAN
         assert self.owner.plan_user_count == 1
         assert self.owner.plan_auto_activate == False
         assert self.owner.stripe_subscription_id is None
         assert (
             self.owner.repository_set.filter(active=True, activated=True).count() == 0
         )
-        assert self.other_owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.other_owner.plan == DEFAULT_FREE_PLAN
         assert self.other_owner.plan_user_count == 1
         assert self.other_owner.plan_auto_activate == False
         assert self.other_owner.stripe_subscription_id is None

@@ -7,7 +7,7 @@ from django.conf import settings
 from django.test import TestCase
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
-from shared.plan.constants import PlanName
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName
 from stripe import InvalidRequestError
 from stripe.api_resources import PaymentIntent, SetupIntent
 
@@ -2138,20 +2138,18 @@ class BillingServiceTests(TestCase):
         ) == self.mock_payment_service.list_filtered_invoices(owner)
 
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
-    def test_update_plan_to_users_basic_deletes_subscription_if_user_has_stripe_subscription(
+    def test_update_plan_to_users_developer_deletes_subscription_if_user_has_stripe_subscription(
         self, delete_subscription_mock
     ):
         owner = OwnerFactory(stripe_subscription_id="tor_dsoe")
-        self.billing_service.update_plan(
-            owner, {"value": PlanName.BASIC_PLAN_NAME.value}
-        )
+        self.billing_service.update_plan(owner, {"value": DEFAULT_FREE_PLAN})
         delete_subscription_mock.assert_called_once_with(owner)
 
     @patch("shared.plan.service.PlanService.set_default_plan_data")
     @patch("services.tests.test_billing.MockPaymentService.create_checkout_session")
     @patch("services.tests.test_billing.MockPaymentService.modify_subscription")
     @patch("services.tests.test_billing.MockPaymentService.delete_subscription")
-    def test_update_plan_to_users_basic_sets_plan_if_no_subscription_id(
+    def test_update_plan_to_users_developer_sets_plan_if_no_subscription_id(
         self,
         delete_subscription_mock,
         modify_subscription_mock,
@@ -2159,9 +2157,7 @@ class BillingServiceTests(TestCase):
         set_default_plan_data,
     ):
         owner = OwnerFactory()
-        self.billing_service.update_plan(
-            owner, {"value": PlanName.BASIC_PLAN_NAME.value}
-        )
+        self.billing_service.update_plan(owner, {"value": DEFAULT_FREE_PLAN})
 
         set_default_plan_data.assert_called_once()
 
