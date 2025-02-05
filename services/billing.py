@@ -329,7 +329,7 @@ class StripeService(AbstractPaymentService):
         proration_behavior = self._get_proration_params(
             owner,
             desired_plan_info=desired_plan_info,
-            quantity=desired_plan["quantity"],
+            desired_quantity=desired_plan["quantity"],
         )
         subscription_schedule_id = subscription.schedule
 
@@ -464,11 +464,11 @@ class StripeService(AbstractPaymentService):
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
         )
 
-    def _is_upgrading_seats(self, owner: Owner, quantity: int) -> bool:
+    def _is_upgrading_seats(self, owner: Owner, desired_quantity: int) -> bool:
         """
         Returns `True` if purchasing more seats.
         """
-        return bool(owner.plan_user_count and owner.plan_user_count < quantity)
+        return bool(owner.plan_user_count and owner.plan_user_count < desired_quantity)
 
     def _is_extending_term(
         self, current_plan_info: Plan, desired_plan_info: Plan
@@ -489,7 +489,7 @@ class StripeService(AbstractPaymentService):
         owner: Owner,
         current_plan_info: Plan,
         desired_plan_info: Plan,
-        quantity: int,
+        desired_quantity: int,
     ) -> bool:
         """
         Returns `True` if switching to a plan with similar term and seats.
@@ -500,7 +500,9 @@ class StripeService(AbstractPaymentService):
             and current_plan_info.billing_rate == desired_plan_info.billing_rate
         )
 
-        is_same_seats = owner.plan_user_count and owner.plan_user_count == quantity
+        is_same_seats = (
+            owner.plan_user_count and owner.plan_user_count == desired_quantity
+        )
         # If from PRO to TEAM, then not a similar plan
         if (
             current_plan_info.tier.tier_name != TierName.TEAM.value
@@ -517,11 +519,11 @@ class StripeService(AbstractPaymentService):
         return bool(is_same_term and is_same_seats)
 
     def _get_proration_params(
-        self, owner: Owner, desired_plan_info: Plan, quantity: int
+        self, owner: Owner, desired_plan_info: Plan, desired_quantity: int
     ) -> str:
         current_plan_info = Plan.objects.select_related("tier").get(name=owner.plan)
         if (
-            self._is_upgrading_seats(owner=owner, quantity=quantity)
+            self._is_upgrading_seats(owner=owner, desired_quantity=desired_quantity)
             or self._is_extending_term(
                 current_plan_info=current_plan_info, desired_plan_info=desired_plan_info
             )
@@ -529,7 +531,7 @@ class StripeService(AbstractPaymentService):
                 owner=owner,
                 current_plan_info=current_plan_info,
                 desired_plan_info=desired_plan_info,
-                quantity=quantity,
+                desired_quantity=desired_quantity,
             )
         ):
             return "always_invoice"
