@@ -336,6 +336,14 @@ class StripeService(AbstractPaymentService):
         #   If the user is not in a schedule, create a schedule
         #   If the user is in a schedule, update the existing schedule
 
+        plan = Plan.objects.filter(name=desired_plan["value"]).first()
+        if not plan or not plan.stripe_id:
+            log.error(
+                f"Plan {desired_plan['value']} not found",
+                extra=dict(owner_id=owner.ownerid),
+            )
+            return
+
         if is_upgrading:
             if subscription_schedule_id:
                 log.info(
@@ -345,13 +353,14 @@ class StripeService(AbstractPaymentService):
             log.info(
                 f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
             )
+
             subscription = stripe.Subscription.modify(
                 owner.stripe_subscription_id,
                 cancel_at_period_end=False,
                 items=[
                     {
                         "id": subscription["items"]["data"][0]["id"],
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "plan": plan.stripe_id,
                         "quantity": desired_plan["quantity"],
                     }
                 ],
@@ -404,6 +413,14 @@ class StripeService(AbstractPaymentService):
         current_plan = subscription_item["plan"]["id"]
         current_quantity = subscription_item["quantity"]
 
+        plan = Plan.objects.filter(name=desired_plan["value"]).first()
+        if not plan or not plan.stripe_id:
+            log.error(
+                f"Plan {desired_plan['value']} not found",
+                extra=dict(owner_id=owner.ownerid),
+            )
+            return
+
         stripe.SubscriptionSchedule.modify(
             subscription_schedule_id,
             end_behavior="release",
@@ -425,8 +442,8 @@ class StripeService(AbstractPaymentService):
                     "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
                     "items": [
                         {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "plan": plan.stripe_id,
+                            "price": plan.stripe_id,
                             "quantity": desired_plan["quantity"],
                         }
                     ],
@@ -516,6 +533,14 @@ class StripeService(AbstractPaymentService):
             extra=dict(owner_id=owner.ownerid),
         )
 
+        plan = Plan.objects.filter(name=desired_plan["value"]).first()
+        if not plan or not plan.stripe_id:
+            log.error(
+                f"Plan {desired_plan['value']} not found",
+                extra=dict(owner_id=owner.ownerid),
+            )
+            return
+
         session = stripe.checkout.Session.create(
             payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
             billing_address_collection="required",
@@ -527,7 +552,7 @@ class StripeService(AbstractPaymentService):
             mode="subscription",
             line_items=[
                 {
-                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "price": plan.stripe_id,
                     "quantity": desired_plan["quantity"],
                 }
             ],

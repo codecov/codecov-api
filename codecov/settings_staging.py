@@ -18,22 +18,6 @@ STRIPE_API_KEY = os.environ.get("SERVICES__STRIPE__API_KEY", None)
 STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", None)
 COOKIES_DOMAIN = ".codecov.dev"
 SESSION_COOKIE_DOMAIN = ".codecov.dev"
-STRIPE_PLAN_IDS = {
-    "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
-    "users-pr-inappy": "plan_H6P16wij3lUuxg",
-    "users-sentrym": "price_1Mj1kYGlVGuVgOrk7jucaZAa",
-    "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
-    "users-teamm": "price_1OCM0gGlVGuVgOrkWDYEBtSL",
-    "users-teamy": "price_1OCM2cGlVGuVgOrkMWUFjPFz",
-}
-STRIPE_PLAN_VALS = {
-    "plan_H6P3KZXwmAbqPS": "users-pr-inappm",
-    "plan_H6P16wij3lUuxg": "users-pr-inappy",
-    "price_1Mj1kYGlVGuVgOrk7jucaZAa": "users-sentrym",
-    "price_1Mj1mMGlVGuVgOrkC0ORc6iW": "users-sentryy",
-    "price_1OCM0gGlVGuVgOrkWDYEBtSL": "users-teamm",
-    "price_1OCM2cGlVGuVgOrkMWUFjPFz": "users-teamy",
-}
 
 CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]
 CORS_ALLOWED_ORIGIN_REGEXES = [

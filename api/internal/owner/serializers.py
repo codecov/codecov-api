@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Dict
 
 from dateutil.relativedelta import relativedelta
-from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from shared.plan.constants import (
@@ -217,11 +216,7 @@ class StripeScheduledPhaseSerializer(serializers.Serializer):
 
     def get_plan(self, phase: Dict[str, Any]) -> str:
         plan_id = phase["items"][0]["plan"]
-        stripe_plan_dict = settings.STRIPE_PLAN_IDS
-        plan_name = list(stripe_plan_dict.keys())[
-            list(stripe_plan_dict.values()).index(plan_id)
-        ]
-        marketing_plan_name = Plan.objects.get(name=plan_name).marketing_name
+        marketing_plan_name = Plan.objects.get(stripe_id=plan_id).marketing_name
         return marketing_plan_name
 
     def get_quantity(self, phase: Dict[str, Any]) -> int:

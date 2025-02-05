@@ -234,7 +234,7 @@ class AccountViewSetTests(APITestCase):
         schedule_params = {
             "id": 123,
             "start_date": 123689126736,
-            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "stripe_plan_id": "plan_pro_yearly",
             "quantity": 6,
         }
         phases = [
@@ -330,7 +330,7 @@ class AccountViewSetTests(APITestCase):
         schedule_params = {
             "id": 123,
             "start_date": 123689126736,
-            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "stripe_plan_id": "plan_pro_yearly",
             "quantity": 6,
         }
         phases = [
