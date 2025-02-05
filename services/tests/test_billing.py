@@ -1696,6 +1696,32 @@ class StripeServiceTests(TestCase):
             customer_update={"name": "auto", "address": "auto"},
         )
 
+    @patch("logging.Logger.error")
+    @patch("services.billing.stripe.checkout.Session.create")
+    def test_create_checkout_session_with_invalid_plan(
+        self, create_checkout_session_mock, logger_error_mock
+    ):
+        stripe_customer_id = "test-cusa78723hb4@"
+        owner = OwnerFactory(
+            service=Service.GITHUB.value,
+            stripe_customer_id=stripe_customer_id,
+        )
+        desired_quantity = 25
+        desired_plan = {
+            "value": "invalid_plan",
+            "quantity": desired_quantity,
+        }
+
+        self.stripe.create_checkout_session(owner, desired_plan)
+
+        create_checkout_session_mock.assert_not_called()
+        logger_error_mock.assert_called_once_with(
+            f"Plan {desired_plan['value']} not found",
+            extra=dict(
+                owner_id=owner.ownerid,
+            ),
+        )
+
     def test_get_subscription_when_no_subscription(self):
         owner = OwnerFactory(stripe_subscription_id=None)
         assert self.stripe.get_subscription(owner) is None
