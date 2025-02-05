@@ -2,6 +2,7 @@ import logging
 import re
 from json import dumps
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 import jwt
 from asgiref.sync import async_to_sync
@@ -237,12 +238,15 @@ def parse_params(data: Dict[str, Any]) -> Dict[str, Any]:
 def get_repo_with_github_actions_oidc_token(token: str) -> Repository:
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     token_issuer = str(unverified_contents.get("iss"))
-    if token_issuer == "https://token.actions.githubusercontent.com":
+    parsed_url = urlparse(token_issuer)
+    if parsed_url.hostname == "token.actions.githubusercontent.com":
         service = "github"
         jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
     else:
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
+        if not github_enterprise_url:
+            raise ValidationError("GitHub Enterprise URL configuration is not set")
         # remove trailing slashes if present
         github_enterprise_url = re.sub(r"/+$", "", github_enterprise_url)
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
@@ -525,7 +529,7 @@ def insert_commit(
     return commit
 
 
-def get_global_tokens() -> Dict[str, Any]:
+def get_global_tokens() -> Dict[str | None, Any]:
     """
     Enterprise only: check the config to see if global tokens were set for this organization's uploads.
 

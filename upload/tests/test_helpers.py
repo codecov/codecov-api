@@ -335,7 +335,7 @@ def test_determine_repo_for_upload_github_actions(codecov_vcr):
     repository = RepositoryFactory.create()
     token = jwt.encode(
         {
-            "iss": "https://token.actions.githubusercontent.com",
+            "iss": "https://token.actions.githubusercontent.com/abcdefg",
             "aud": [f"{settings.CODECOV_API_URL}"],
             "repository": f"{repository.author.username}/{repository.name}",
             "repository_owner": repository.author.username,

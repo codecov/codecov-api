@@ -929,3 +929,59 @@ class TestGitlabEnterpriseOIDC(APITestCase):
         mock_jwks_client.assert_called_with(
             "https://example.com/_services/token/.well-known/jwks"
         )
+
+    @patch("upload.views.uploads.AnalyticsService")
+    @patch("upload.helpers.jwt.decode")
+    @patch("upload.helpers.PyJWKClient")
+    def test_uploads_post_github_enterprise_oidc_auth_no_url(
+        self,
+        mock_jwks_client,
+        mock_jwt_decode,
+        analytics_service_mock,
+    ):
+        mock_config_helper(self.mocker, configs={"github_enterprise.url": None})
+        self.mocker.patch(
+            "shared.api_archive.archive.StorageService.create_presigned_put",
+            return_value="presigned put",
+        )
+        self.mocker.patch("upload.views.uploads.trigger_upload_task", return_value=True)
+
+        repository = RepositoryFactory(
+            name="the_repo",
+            author__username="codecov",
+            author__service="github_enterprise",
+            author__upload_token_required_for_public_repos=True,
+            private=False,
+        )
+        mock_jwt_decode.return_value = {
+            "repository": f"url/{repository.name}",
+            "repository_owner": repository.author.username,
+            "iss": "https://enterprise-client.actions.githubusercontent.com",
+            "audience": [settings.CODECOV_API_URL],
+        }
+        token = "ThisValueDoesNotMatterBecauseOf_mock_jwt_decode"
+
+        commit = CommitFactory(repository=repository)
+        commit_report = CommitReport.objects.create(commit=commit, code="code")
+
+        client = APIClient()
+        url = reverse(
+            "new_upload.uploads",
+            args=[
+                "github_enterprise",
+                "codecov::::the_repo",
+                commit.commitid,
+                commit_report.code,
+            ],
+        )
+        response = client.post(
+            url,
+            {
+                "state": "uploaded",
+                "flags": ["flag1", "flag2"],
+                "version": "version",
+            },
+            headers={"Authorization": f"token {token}"},
+        )
+        assert response.status_code == 401
+        assert response.json().get("detail") == "Not valid tokenless upload"
