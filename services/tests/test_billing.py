@@ -715,9 +715,13 @@ class StripeServiceTests(TestCase):
         owner.refresh_from_db()
         assert owner.plan == original_plan
         assert owner.plan_user_count == original_user_count
-        log_error_mock.assert_called_once_with(
-            f"Plan {desired_plan_name} not found",
-            extra=dict(owner_id=owner.ownerid),
+        log_error_mock.assert_has_calls(
+            [
+                call(
+                    f"Plan {desired_plan_name} not found",
+                    extra=dict(owner_id=owner.ownerid),
+                ),
+            ]
         )
 
     @patch("services.billing.stripe.Subscription.modify")
