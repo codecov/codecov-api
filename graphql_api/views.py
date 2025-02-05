@@ -277,7 +277,20 @@ class AsyncGraphqlView(GraphQLAsyncView):
                 )
 
             content = response.content.decode("utf-8")
-            data = json.loads(content)
+            try:
+                data = json.loads(content)
+            except json.JSONDecodeError:
+                log.error(
+                    "Failed to decode JSON response",
+                    extra={"content": content, "request_body": req_body},
+                )
+                return JsonResponse(
+                    data={
+                        "status": 400,
+                        "detail": "Invalid JSON response received.",
+                    },
+                    status=400,
+                )
 
             if "errors" in data:
                 inc_counter(
