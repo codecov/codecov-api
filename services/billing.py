@@ -316,9 +316,21 @@ class StripeService(AbstractPaymentService):
         return stripe.SubscriptionSchedule.retrieve(subscription_schedule_id)
 
     @_log_stripe_error
-    def modify_subscription(self, owner, desired_plan):
+    def modify_subscription(self, owner: Owner, desired_plan: dict):
+        desired_plan_info = Plan.objects.filter(name=desired_plan["value"]).first()
+        if not desired_plan_info:
+            log.error(
+                f"Plan {desired_plan['value']} not found",
+                extra=dict(owner_id=owner.ownerid),
+            )
+            return
+
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
-        proration_behavior = self._get_proration_params(owner, desired_plan)
+        proration_behavior = self._get_proration_params(
+            owner,
+            desired_plan_info=desired_plan_info,
+            quantity=desired_plan["quantity"],
+        )
         subscription_schedule_id = subscription.schedule
 
         # proration_behavior indicates whether we immediately invoice a user or not. We only immediately
@@ -326,7 +338,11 @@ class StripeService(AbstractPaymentService):
         # An increase in seats and/or plan implies the user is upgrading, hence 'is_upgrading' is a consequence
         # of proration_behavior providing an invoice, in this case, != "none"
         # TODO: change this to "self._is_upgrading_seats(owner, desired_plan) or self._is_extending_term(owner, desired_plan)"
-        is_upgrading = True if proration_behavior != "none" else False
+        is_upgrading = (
+            True
+            if proration_behavior != "none" and desired_plan_info.stripe_id
+            else False
+        )
 
         # Divide logic bw immediate updates and scheduled updates
         # Immediate updates: when user upgrades seats or plan
@@ -335,15 +351,6 @@ class StripeService(AbstractPaymentService):
         # Scheduled updates: when the user decreases seats or plan
         #   If the user is not in a schedule, create a schedule
         #   If the user is in a schedule, update the existing schedule
-
-        plan = Plan.objects.filter(name=desired_plan["value"]).first()
-        if not plan or not plan.stripe_id:
-            log.error(
-                f"Plan {desired_plan['value']} not found",
-                extra=dict(owner_id=owner.ownerid),
-            )
-            return
-
         if is_upgrading:
             if subscription_schedule_id:
                 log.info(
@@ -360,7 +367,7 @@ class StripeService(AbstractPaymentService):
                 items=[
                     {
                         "id": subscription["items"]["data"][0]["id"],
-                        "plan": plan.stripe_id,
+                        "plan": desired_plan_info.stripe_id,
                         "quantity": desired_plan["quantity"],
                     }
                 ],
@@ -404,7 +411,11 @@ class StripeService(AbstractPaymentService):
             )
 
     def _modify_subscription_schedule(
-        self, owner: Owner, subscription, subscription_schedule_id, desired_plan
+        self,
+        owner: Owner,
+        subscription: stripe.Subscription,
+        subscription_schedule_id: str,
+        desired_plan: dict,
     ):
         current_subscription_start_date = subscription["current_period_start"]
         current_subscription_end_date = subscription["current_period_end"]
@@ -453,20 +464,18 @@ class StripeService(AbstractPaymentService):
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
         )
 
-    def _is_upgrading_seats(self, owner: Owner, desired_plan: dict) -> bool:
+    def _is_upgrading_seats(self, owner: Owner, quantity: int) -> bool:
         """
         Returns `True` if purchasing more seats.
         """
-        return bool(
-            owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]
-        )
+        return bool(owner.plan_user_count and owner.plan_user_count < quantity)
 
-    def _is_extending_term(self, owner: Owner, desired_plan: dict) -> bool:
+    def _is_extending_term(
+        self, current_plan_info: Plan, desired_plan_info: Plan
+    ) -> bool:
         """
         Returns `True` if switching from monthly to yearly plan.
         """
-        current_plan_info = Plan.objects.get(name=owner.plan)
-        desired_plan_info = Plan.objects.get(name=desired_plan["value"])
 
         return bool(
             current_plan_info
@@ -475,24 +484,23 @@ class StripeService(AbstractPaymentService):
             and desired_plan_info.billing_rate == PlanBillingRate.YEARLY.value
         )
 
-    def _is_similar_plan(self, owner: Owner, desired_plan: dict) -> bool:
+    def _is_similar_plan(
+        self,
+        owner: Owner,
+        current_plan_info: Plan,
+        desired_plan_info: Plan,
+        quantity: int,
+    ) -> bool:
         """
         Returns `True` if switching to a plan with similar term and seats.
         """
-        current_plan_info = Plan.objects.select_related("tier").get(name=owner.plan)
-        desired_plan_info = Plan.objects.select_related("tier").get(
-            name=desired_plan["value"]
-        )
-
         is_same_term = (
             current_plan_info
             and desired_plan_info
             and current_plan_info.billing_rate == desired_plan_info.billing_rate
         )
 
-        is_same_seats = (
-            owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
-        )
+        is_same_seats = owner.plan_user_count and owner.plan_user_count == quantity
         # If from PRO to TEAM, then not a similar plan
         if (
             current_plan_info.tier.tier_name != TierName.TEAM.value
@@ -508,17 +516,27 @@ class StripeService(AbstractPaymentService):
 
         return bool(is_same_term and is_same_seats)
 
-    def _get_proration_params(self, owner: Owner, desired_plan: dict) -> str:
+    def _get_proration_params(
+        self, owner: Owner, desired_plan_info: Plan, quantity: int
+    ) -> str:
+        current_plan_info = Plan.objects.select_related("tier").get(name=owner.plan)
         if (
-            self._is_upgrading_seats(owner, desired_plan)
-            or self._is_extending_term(owner, desired_plan)
-            or self._is_similar_plan(owner, desired_plan)
+            self._is_upgrading_seats(owner=owner, quantity=quantity)
+            or self._is_extending_term(
+                current_plan_info=current_plan_info, desired_plan_info=desired_plan_info
+            )
+            or self._is_similar_plan(
+                owner=owner,
+                current_plan_info=current_plan_info,
+                desired_plan_info=desired_plan_info,
+                quantity=quantity,
+            )
         ):
             return "always_invoice"
         else:
             return "none"
 
-    def _get_success_and_cancel_url(self, owner):
+    def _get_success_and_cancel_url(self, owner: Owner):
         short_services = {"github": "gh", "bitbucket": "bb", "gitlab": "gl"}
         base_path = f"/plan/{short_services[owner.service]}/{owner.username}"
         success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
@@ -526,7 +544,7 @@ class StripeService(AbstractPaymentService):
         return success_url, cancel_url
 
     @_log_stripe_error
-    def create_checkout_session(self, owner: Owner, desired_plan):
+    def create_checkout_session(self, owner: Owner, desired_plan: dict):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info(
             "Creating Stripe Checkout Session for owner",

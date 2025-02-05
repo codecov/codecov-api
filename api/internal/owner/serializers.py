@@ -339,11 +339,13 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
                 instance, desired_plan
             )
 
-            sentry_plans = Plan.objects.filter(
-                tier__tier_name=TierName.SENTRY.value, is_active=True
-            ).values_list("name", flat=True)
+            plan = (
+                Plan.objects.select_related("tier")
+                .filter(name=desired_plan["value"])
+                .first()
+            )
 
-            if desired_plan["value"] in sentry_plans:
+            if plan and plan.tier.tier_name == TierName.SENTRY.value:
                 current_owner = self.context["view"].request.current_owner
                 send_sentry_webhook(current_owner, instance)
 
