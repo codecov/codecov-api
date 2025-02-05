@@ -546,8 +546,37 @@ class StripeService(AbstractPaymentService):
         )
         return session["id"]
 
+    def _is_unverified_payment_method(self, payment_method_id: str) -> bool:
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+
+        is_us_bank_account = payment_method.type == "us_bank_account" and hasattr(
+            payment_method, "us_bank_account"
+        )
+        if is_us_bank_account:
+            setup_intents = stripe.SetupIntent.list(
+                payment_method=payment_method_id, limit=1
+            )
+
+            try:
+                latest_intent = setup_intents.data[0]
+                if (
+                    latest_intent.status == "requires_action"
+                    and latest_intent.next_action
+                    and latest_intent.next_action.type == "verify_with_microdeposits"
+                ):
+                    return True
+            except Exception as e:
+                log.error(
+                    "Error retrieving latest setup intent",
+                    payment_method_id=payment_method_id,
+                    extra=dict(error=e),
+                )
+                return False
+
+        return False
+
     @_log_stripe_error
-    def update_payment_method(self, owner: Owner, payment_method):
+    def update_payment_method(self, owner: Owner, payment_method: str) -> None:
         log.info(
             "Stripe update payment method for owner",
             extra=dict(
@@ -567,15 +596,21 @@ class StripeService(AbstractPaymentService):
                 ),
             )
             return None
-        # attach the payment method + set as default on the invoice and subscription
-        stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
-        stripe.Customer.modify(
-            owner.stripe_customer_id,
-            invoice_settings={"default_payment_method": payment_method},
-        )
-        stripe.Subscription.modify(
-            owner.stripe_subscription_id, default_payment_method=payment_method
-        )
+
+        # do not set as default if the new payment method is unverified (e.g., awaiting microdeposits)
+        should_set_as_default = not self._is_unverified_payment_method(payment_method)
+
+        if should_set_as_default:
+            stripe.PaymentMethod.attach(
+                payment_method, customer=owner.stripe_customer_id
+            )
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                invoice_settings={"default_payment_method": payment_method},
+            )
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id, default_payment_method=payment_method
+            )
         log.info(
             f"Successfully updated payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
             extra=dict(
@@ -895,8 +930,19 @@ class BillingService:
                 plan_service.set_default_plan_data()
         else:
             if owner.stripe_subscription_id is not None:
+                # if the existing subscription is incomplete, clean it up and create a new checkout session
+                subscription = self.payment_service.get_subscription(owner)
+
+                if subscription and subscription.status == "incomplete":
+                    self._cleanup_incomplete_subscription(subscription, owner)
+                    return self.payment_service.create_checkout_session(
+                        owner, desired_plan
+                    )
+
+                # if the existing subscription is complete, modify the plan
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
+                # if the owner has no subscription, create a new checkout session
                 return self.payment_service.create_checkout_session(owner, desired_plan)
 
     def update_payment_method(self, owner, payment_method):
@@ -940,3 +986,46 @@ class BillingService:
         See https://docs.stripe.com/api/setup_intents/create
         """
         return self.payment_service.create_setup_intent(owner)
+
+    def _cleanup_incomplete_subscription(
+        self, subscription: stripe.Subscription, owner: Owner
+    ):
+        try:
+            payment_intent_id = subscription.latest_invoice.payment_intent
+        except Exception as e:
+            log.error(
+                "Latest invoice is missing payment intent id",
+                extra=dict(error=e),
+            )
+            return None
+
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        if payment_intent.status == "requires_action":
+            log.info(
+                "Subscription has pending payment verification",
+                extra=dict(
+                    subscription_id=subscription.get("id"),
+                    payment_intent_id=payment_intent.get("id"),
+                    payment_intent_status=payment_intent.get("status"),
+                ),
+            )
+            try:
+                # Delete the subscription, which also removes the
+                # pending payment method and unverified payment intent
+                stripe.Subscription.delete(subscription)
+                log.info(
+                    "Deleted incomplete subscription",
+                    extra=dict(
+                        subscription_id=subscription.get("id"),
+                        payment_intent_id=payment_intent.get("id"),
+                    ),
+                )
+            except Exception as e:
+                log.error(
+                    "Failed to delete subscription",
+                    extra=dict(
+                        subscription_id=subscription.get("id"),
+                        payment_intent_id=payment_intent.get("id"),
+                        error=str(e),
+                    ),
+                )

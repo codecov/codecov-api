@@ -12,7 +12,7 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
-from shared.plan.constants import PlanName
+from shared.plan.constants import DEFAULT_FREE_PLAN
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from billing.helpers import mock_all_plans_and_tiers
@@ -151,9 +151,7 @@ def test_try_to_get_best_possible_nothing_and_not_private(db, mocker):
 
 def test_check_commit_constraints_settings_disabled(db, settings):
     settings.UPLOAD_THROTTLING_ENABLED = False
-    repository = RepositoryFactory.create(
-        author__plan=PlanName.BASIC_PLAN_NAME.value, private=True
-    )
+    repository = RepositoryFactory.create(author__plan=DEFAULT_FREE_PLAN, private=True)
     first_commit = CommitFactory.create(repository=repository)
     second_commit = CommitFactory.create(repository=repository)
     third_commit = CommitFactory.create(repository__author=repository.author)
@@ -171,7 +169,7 @@ def test_check_commit_constraints_settings_disabled(db, settings):
 def test_check_commit_constraints_settings_enabled(db, settings, mocker):
     settings.UPLOAD_THROTTLING_ENABLED = True
     mock_all_plans_and_tiers()
-    author = OwnerFactory.create(plan=PlanName.BASIC_PLAN_NAME.value)
+    author = OwnerFactory.create(plan=DEFAULT_FREE_PLAN)
     repository = RepositoryFactory.create(author=author, private=True)
     public_repository = RepositoryFactory.create(author=author, private=False)
     first_commit = CommitFactory.create(repository=repository)

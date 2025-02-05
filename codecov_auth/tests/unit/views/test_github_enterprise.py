@@ -5,6 +5,7 @@ from django.http.cookie import SimpleCookie
 from django.urls import reverse
 from django.utils import timezone
 from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.plan.constants import DEFAULT_FREE_PLAN
 from shared.torngit import GithubEnterprise
 from shared.torngit.exceptions import TorngitClientGeneralError
 
@@ -184,7 +185,7 @@ def test_get_ghe_already_with_code(client, mocker, db, mock_redis, settings):
     assert owner.root_parent_service_id is None
     assert not owner.staff
     assert owner.cache is None
-    assert owner.plan == "users-basic"
+    assert owner.plan == DEFAULT_FREE_PLAN
     assert owner.plan_provider is None
     assert owner.plan_user_count == 1
     assert owner.plan_auto_activate is True
