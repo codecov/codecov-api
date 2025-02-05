@@ -83,6 +83,31 @@ class StripeWebhookHandler(APIView):
         )
 
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
+        """
+        Stripe invoice.payment_failed webhook event is emitted when an invoice payment fails
+        (initial or recurring). Note that delayed payment methods (including ACH with
+        microdeposits) may have a failed initial invoice until the account is verified.
+        """
+        if invoice.default_payment_method is None:
+            if invoice.payment_intent:
+                payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
+                if (
+                    payment_intent
+                    and payment_intent.get("status") == "requires_action"
+                    and payment_intent.get("next_action", {}).get("type")
+                    == "verify_with_microdeposits"
+                ):
+                    log.info(
+                        "Invoice payment failed but still awaiting known customer action, skipping Delinquency actions",
+                        extra=dict(
+                            stripe_customer_id=invoice.customer,
+                            stripe_subscription_id=invoice.subscription,
+                            payment_intent_id=invoice.payment_intent,
+                            payment_intent_status=payment_intent.status,
+                        ),
+                    )
+                    return
+
         log.info(
             "Invoice Payment Failed - Setting Delinquency status True",
             extra=dict(
@@ -104,12 +129,12 @@ class StripeWebhookHandler(APIView):
         payment_intent = stripe.PaymentIntent.retrieve(
             invoice["payment_intent"], expand=["payment_method"]
         )
-        card = (
-            payment_intent.payment_method.card
-            if payment_intent.payment_method
-            and not isinstance(payment_intent.payment_method, str)
-            else None
-        )
+
+        try:
+            card = payment_intent.payment_method.card
+        except AttributeError:
+            card = None
+
         template_vars = {
             "amount": invoice.total / 100,
             "card_type": card.brand if card else None,
@@ -138,11 +163,18 @@ class StripeWebhookHandler(APIView):
         )
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
+        """
+        Stripe customer.subscription.deleted webhook event is emitted when a subscription is deleted.
+        This happens when an org goes from paid to free (see payment_service.delete_subscription)
+        or when cleaning up an incomplete subscription that never activated (e.g., abandoned async
+        ACH microdeposits verification).
+        """
         log.info(
             "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
             extra=dict(
                 stripe_subscription_id=subscription.id,
                 stripe_customer_id=subscription.customer,
+                previous_subscription_status=subscription.status,
             ),
         )
         owners: QuerySet[Owner] = Owner.objects.filter(
@@ -253,6 +285,10 @@ class StripeWebhookHandler(APIView):
         log.info("Customer created", extra=dict(stripe_customer_id=customer.id))
 
     def customer_subscription_created(self, subscription: stripe.Subscription) -> None:
+        """
+        Stripe customer.subscription.created webhook event is emitted when a subscription is created.
+        This happens when an owner completes a CheckoutSession for a new subscription.
+        """
         sub_item_plan_id = subscription.plan.id
 
         if not sub_item_plan_id:
@@ -289,10 +325,23 @@ class StripeWebhookHandler(APIView):
                 quantity=subscription.quantity,
             ),
         )
+        # add the subscription_id and customer_id to the owner
         owner = Owner.objects.get(ownerid=subscription.metadata.get("obo_organization"))
         owner.stripe_subscription_id = subscription.id
         owner.stripe_customer_id = subscription.customer
         owner.save()
+
+        # We may reach here if the subscription was created with a payment method
+        # that is awaiting verification (e.g. ACH microdeposits)
+        if self._has_unverified_initial_payment_method(subscription):
+            log.info(
+                "Subscription has pending initial payment verification - will upgrade plan after initial invoice payment",
+                extra=dict(
+                    subscription_id=subscription.id,
+                    customer_id=subscription.customer,
+                ),
+            )
+            return
 
         plan_service = PlanService(current_org=owner)
         plan_service.expire_trial_when_upgrading()
@@ -311,7 +360,34 @@ class StripeWebhookHandler(APIView):
 
         self._log_updated([owner])
 
+    def _has_unverified_initial_payment_method(
+        self, subscription: stripe.Subscription
+    ) -> bool:
+        """
+        Helper method to check if a subscription's latest invoice has a payment intent
+        that requires verification (e.g. ACH microdeposits). This indicates that
+        there is an unverified payment method from the initial CheckoutSession.
+        """
+        latest_invoice = stripe.Invoice.retrieve(subscription.latest_invoice)
+        if latest_invoice and latest_invoice.payment_intent:
+            payment_intent = stripe.PaymentIntent.retrieve(
+                latest_invoice.payment_intent
+            )
+            return (
+                payment_intent
+                and payment_intent.get("status") == "requires_action"
+                and payment_intent.get("next_action")
+                and payment_intent.get("next_action", {}).get("type")
+                == "verify_with_microdeposits"
+            )
+        return False
+
     def customer_subscription_updated(self, subscription: stripe.Subscription) -> None:
+        """
+        Stripe customer.subscription.updated webhook event is emitted when a subscription is updated.
+        This can happen when an owner updates the subscription's default payment method using our
+        update_payment_method api
+        """
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -323,6 +399,16 @@ class StripeWebhookHandler(APIView):
                     stripe_subscription_id=subscription.id,
                     stripe_customer_id=subscription.customer,
                     plan_id=subscription.plan.id,
+                ),
+            )
+            return
+
+        if self._has_unverified_initial_payment_method(subscription):
+            log.info(
+                "Subscription has pending initial payment verification - will upgrade plan after initial invoice payment",
+                extra=dict(
+                    subscription_id=subscription.id,
+                    customer_id=subscription.customer,
                 ),
             )
             return
@@ -444,6 +530,74 @@ class StripeWebhookHandler(APIView):
         owner.save()
 
         self._log_updated([owner])
+
+    def _check_and_handle_delayed_notification_payment_methods(
+        self, customer_id: str, payment_method_id: str
+    ):
+        """
+        Helper method to handle payment methods that require delayed verification (like ACH).
+        When verification succeeds, this attaches the payment method to the customer and sets
+        it as the default payment method for both the customer and subscription.
+        """
+        owner = Owner.objects.get(stripe_customer_id=customer_id)
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+
+        is_us_bank_account = payment_method.type == "us_bank_account" and hasattr(
+            payment_method, "us_bank_account"
+        )
+
+        should_set_as_default = is_us_bank_account
+
+        if should_set_as_default:
+            # attach the payment method + set as default on the invoice and subscription
+            stripe.PaymentMethod.attach(
+                payment_method, customer=owner.stripe_customer_id
+            )
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                invoice_settings={"default_payment_method": payment_method},
+            )
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id, default_payment_method=payment_method
+            )
+
+    def payment_intent_succeeded(self, payment_intent: stripe.PaymentIntent) -> None:
+        """
+        Stripe payment_intent.succeeded webhook event is emitted when a
+        payment intent goes to a success state.
+        We create a Stripe PaymentIntent for the initial checkout session.
+        """
+        log.info(
+            "Payment intent succeeded",
+            extra=dict(
+                stripe_customer_id=payment_intent.customer,
+                payment_intent_id=payment_intent.id,
+                payment_method_type=payment_intent.payment_method,
+            ),
+        )
+
+        self._check_and_handle_delayed_notification_payment_methods(
+            payment_intent.customer, payment_intent.payment_method
+        )
+
+    def setup_intent_succeeded(self, setup_intent: stripe.SetupIntent) -> None:
+        """
+        Stripe setup_intent.succeeded webhook event is emitted when a setup intent
+        goes to a success state. We create a Stripe SetupIntent for the gazebo UI
+        PaymentElement to modify payment methods.
+        """
+        log.info(
+            "Setup intent succeeded",
+            extra=dict(
+                stripe_customer_id=setup_intent.customer,
+                setup_intent_id=setup_intent.id,
+                payment_method_type=setup_intent.payment_method,
+            ),
+        )
+
+        self._check_and_handle_delayed_notification_payment_methods(
+            setup_intent.customer, setup_intent.payment_method
+        )
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:

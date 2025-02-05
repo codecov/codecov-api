@@ -7,13 +7,13 @@ from rest_framework.test import APIClient
 from shared.django_apps.codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
 )
+from shared.django_apps.core.models import Commit
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
     RepositoryFactory,
 )
 
-from core.models import Commit
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService
 
@@ -377,3 +377,73 @@ def test_update_repo_fields_when_upload_is_triggered(
     assert repository.active is True
     assert repository.activated is True
     assert repository.test_analytics_enabled is True
+
+
+def test_upload_test_results_file_not_found(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+    create_presigned_put = mocker.patch(
+        "shared.api_archive.archive.StorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    owner = OwnerFactory(service="github", username="codecov")
+    repository = RepositoryFactory.create(author=owner)
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"token {repository.upload_token}")
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "github-actions",
+            "branch": "aaaaaa",
+            "file_not_found": True,
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+    assert res.status_code == 201
+
+    assert res.data is None
+
+    create_presigned_put.assert_not_called()
+
+    commit = Commit.objects.get(commitid=commit_sha)
+    assert commit
+    assert commit.branch is not None
+
+    redis = get_redis_connection()
+    args = json.loads(
+        redis.rpop(f"uploads/{repository.repoid}/{commit_sha}/test_results")
+    )
+    assert args == {
+        "reportid": mocker.ANY,
+        "build": "test-build",
+        "build_url": "test-build-url",
+        "job": "test-job",
+        "service": "github-actions",
+        "url": None,
+        "commit": commit_sha,
+        "report_code": None,
+        "flags": None,
+    }
+
+    # sets latest upload timestamp
+    ts = redis.get(f"latest_upload/{repository.repoid}/{commit_sha}/test_results")
+    assert ts
+
+    # triggers upload task
+    upload.assert_called_with(
+        commitid=commit_sha,
+        repoid=repository.repoid,
+        report_code=None,
+        report_type="test_results",
+        arguments=args,
+        countdown=4,
+    )
