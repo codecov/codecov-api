@@ -2,7 +2,7 @@
 
 # starts the development server using gunicorn
 # NEVER run production with the --reload option command
-echo "Starting gunicorn in dev mode"
+echo "API: Starting gunicorn in dev mode"
 
 _start_gunicorn() {
   if [ -n "$PROMETHEUS_MULTIPROC_DIR" ]; then
@@ -19,6 +19,8 @@ _start_gunicorn() {
     python manage.py migrate
     python manage.py migrate --database "timeseries" timeseries
     python manage.py pgpartition --yes --skip-delete
+    python manage.py insert_data_to_db_from_csv core/management/commands/codecovTiers-Jan25.csv --model tiers
+    python manage.py insert_data_to_db_from_csv core/management/commands/codecovPlans-Jan25.csv --model plans
   fi
   if [[ "$DEBUGPY" ]]; then
       pip install debugpy
