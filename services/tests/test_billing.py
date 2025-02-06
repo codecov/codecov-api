@@ -193,28 +193,41 @@ class StripeServiceTests(TestCase):
             StripeService(None)
 
     def _assert_subscription_modify(
-        self, subscription_modify_mock, owner, subscription_params, desired_plan
+        self,
+        subscription_modify_mock,
+        owner,
+        subscription_params,
+        desired_plan,
+        call_succeeds=True,
     ):
-        subscription_modify_mock.assert_called_once_with(
-            owner.stripe_subscription_id,
-            cancel_at_period_end=False,
-            items=[
-                {
-                    "id": subscription_params["id"],
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                    "quantity": desired_plan["quantity"],
-                }
-            ],
-            metadata={
-                "service": owner.service,
-                "obo_organization": owner.ownerid,
-                "username": owner.username,
-                "obo_name": self.user.name,
-                "obo_email": self.user.email,
-                "obo": self.user.ownerid,
-            },
-            proration_behavior="always_invoice",
-            # payment_behavior="pending_if_incomplete",
+        expected_calls_success = [
+            call(
+                owner.stripe_subscription_id,
+                items=[
+                    {
+                        "id": subscription_params["id"],
+                        "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "quantity": desired_plan["quantity"],
+                    }
+                ],
+                proration_behavior="always_invoice",
+                payment_behavior="pending_if_incomplete",
+            ),
+            call(
+                owner.stripe_subscription_id,
+                metadata={
+                    "service": owner.service,
+                    "obo_organization": owner.ownerid,
+                    "username": owner.username,
+                    "obo_name": self.user.name,
+                    "obo_email": self.user.email,
+                    "obo": self.user.ownerid,
+                },
+            ),
+        ]
+        expected_calls_failure = expected_calls_success[:1]
+        subscription_modify_mock.assert_has_calls(
+            expected_calls_success if call_succeeds else expected_calls_failure
         )
 
     def _assert_schedule_modify(
@@ -437,7 +450,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "price_H6P3KZXwmAbqPS",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "month",
@@ -512,7 +525,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "price_H6P3KZXwmAbqPS",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "year",
@@ -589,7 +602,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "price_H6P3KZXwmAbqPS",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "year",
@@ -662,7 +675,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "price_H6P3KZXwmAbqPS",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "year",
@@ -830,7 +843,11 @@ class StripeServiceTests(TestCase):
         self.stripe.modify_subscription(owner, desired_plan)
 
         self._assert_subscription_modify(
-            subscription_modify_mock, owner, subscription_params, desired_plan
+            subscription_modify_mock,
+            owner,
+            subscription_params,
+            desired_plan,
+            call_succeeds=False,
         )
 
         # changes to plan are rejected, owner becomes delinquent

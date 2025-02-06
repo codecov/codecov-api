@@ -347,19 +347,15 @@ class StripeService(AbstractPaymentService):
             )
             subscription = stripe.Subscription.modify(
                 owner.stripe_subscription_id,
-                cancel_at_period_end=False,
                 items=[
                     {
                         "id": subscription["items"]["data"][0]["id"],
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
                         "quantity": desired_plan["quantity"],
                     }
                 ],
-                metadata=self._get_checkout_session_and_subscription_metadata(owner),
                 proration_behavior=proration_behavior,
-                # TODO: we need to include this arg, but it means we need to remove some of the existing args
-                # on the .modify() call https://docs.stripe.com/billing/subscriptions/pending-updates-reference
-                # payment_behavior="pending_if_incomplete",
+                payment_behavior="pending_if_incomplete",
             )
             log.info(
                 f"Stripe subscription upgrade attempted for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
@@ -377,6 +373,13 @@ class StripeService(AbstractPaymentService):
                 )
             else:
                 # payment successful
+                # metadata is not allowed for payment_behavior=pending_if_incomplete, add if payment succeeds
+                stripe.Subscription.modify(
+                    owner.stripe_subscription_id,
+                    metadata=self._get_checkout_session_and_subscription_metadata(
+                        owner
+                    ),
+                )
                 plan_service = PlanService(current_org=owner)
                 plan_service.update_plan(
                     name=desired_plan["value"], user_count=desired_plan["quantity"]
@@ -930,6 +933,8 @@ class BillingService:
                 plan_service.set_default_plan_data()
         else:
             if owner.stripe_subscription_id is not None:
+                # assume StripeService for billing_service
+
                 # if the existing subscription is incomplete, clean it up and create a new checkout session
                 subscription = self.payment_service.get_subscription(owner)
 

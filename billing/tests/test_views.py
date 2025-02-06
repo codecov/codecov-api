@@ -721,7 +721,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": "sub_123",
                         "customer": "cus_123",
-                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "plan": {"id": "price_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                     }
@@ -809,7 +809,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": stripe_subscription_id,
                         "customer": stripe_customer_id,
-                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "plan": {"id": "price_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "status": "active",
@@ -849,7 +849,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": stripe_subscription_id,
                         "customer": stripe_customer_id,
-                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "plan": {"id": "price_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "default_payment_method": "blabla",
@@ -929,7 +929,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "plan": {"id": "price_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
                         "status": "active",
@@ -985,7 +985,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
                         "plan": {
-                            "id": "plan_H6P16wij3lUuxg",
+                            "id": "price_H6P16wij3lUuxg",
                         },
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
@@ -1088,7 +1088,7 @@ class StripeWebhookHandlerTests(APITestCase):
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
                         "plan": {
-                            "id": "plan_H6P16wij3lUuxg",
+                            "id": "price_H6P16wij3lUuxg",
                         },
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": 20,
@@ -1149,7 +1149,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "plan": {"id": "price_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "status": "active",
@@ -1200,7 +1200,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": self.owner.stripe_subscription_id,
                         "customer": self.owner.stripe_customer_id,
-                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "plan": {"id": "price_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": self.owner.ownerid},
                         "quantity": quantity,
                         "status": "active",
@@ -1238,7 +1238,7 @@ class StripeWebhookHandlerTests(APITestCase):
                     "object": {
                         "id": "sub_notexist",
                         "customer": "cus_notexist",
-                        "plan": {"id": "plan_H6P16wij3lUuxg"},
+                        "plan": {"id": "price_H6P16wij3lUuxg"},
                         "metadata": {"obo_organization": 1},
                         "quantity": 8,
                         "status": "active",
@@ -1254,7 +1254,7 @@ class StripeWebhookHandlerTests(APITestCase):
             extra={
                 "stripe_subscription_id": "sub_notexist",
                 "stripe_customer_id": "cus_notexist",
-                "plan_id": "plan_H6P16wij3lUuxg",
+                "plan_id": "price_H6P16wij3lUuxg",
             },
         )
 
@@ -1267,7 +1267,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.save()
 
         self.new_params = {
-            "new_plan": "plan_H6P3KZXwmAbqPS",
+            "new_plan": "price_H6P3KZXwmAbqPS",
             "new_quantity": 7,
             "subscription_id": "sub_123",
         }
@@ -1304,7 +1304,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.other_owner.save()
 
         self.new_params = {
-            "new_plan": "plan_H6P3KZXwmAbqPS",
+            "new_plan": "price_H6P3KZXwmAbqPS",
             "new_quantity": 7,
             "subscription_id": "sub_123",
         }
@@ -1342,7 +1342,7 @@ class StripeWebhookHandlerTests(APITestCase):
         log_error_mock,
     ):
         self.new_params = {
-            "new_plan": "plan_H6P3KZXwmAbqPS",
+            "new_plan": "price_H6P3KZXwmAbqPS",
             "new_quantity": 7,
             "subscription_id": "sub_notexist",
         }
@@ -1367,7 +1367,7 @@ class StripeWebhookHandlerTests(APITestCase):
             extra={
                 "stripe_subscription_id": "sub_notexist",
                 "stripe_customer_id": "cus_123",
-                "plan_id": "plan_H6P3KZXwmAbqPS",
+                "plan_id": "price_H6P3KZXwmAbqPS",
             },
         )
 
@@ -1383,7 +1383,7 @@ class StripeWebhookHandlerTests(APITestCase):
         self.owner.save()
 
         self.params = {
-            "new_plan": "plan_H6P3KZXwmAbqPS",
+            "new_plan": "price_H6P3KZXwmAbqPS",
             "new_quantity": 7,
             "subscription_id": subscription_id,
         }
@@ -1410,7 +1410,7 @@ class StripeWebhookHandlerTests(APITestCase):
         original_plan = "users-pr-inappy"
         original_quantity = 10
         subscription_id = "sub_1K8xfkGlVGuVgOrkxvroyZdH"
-        new_plan = "plan_H6P3KZXwmAbqPS"
+        new_plan = "price_H6P3KZXwmAbqPS"
         new_quantity = 7
         self.owner.plan = original_plan
         self.owner.plan_user_count = original_quantity

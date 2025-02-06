@@ -19,16 +19,16 @@ STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", Non
 COOKIES_DOMAIN = ".codecov.dev"
 SESSION_COOKIE_DOMAIN = ".codecov.dev"
 STRIPE_PLAN_IDS = {
-    "users-pr-inappm": "plan_H6P3KZXwmAbqPS",
-    "users-pr-inappy": "plan_H6P16wij3lUuxg",
+    "users-pr-inappm": "price_H6P3KZXwmAbqPS",
+    "users-pr-inappy": "price_H6P16wij3lUuxg",
     "users-sentrym": "price_1Mj1kYGlVGuVgOrk7jucaZAa",
     "users-sentryy": "price_1Mj1mMGlVGuVgOrkC0ORc6iW",
     "users-teamm": "price_1OCM0gGlVGuVgOrkWDYEBtSL",
     "users-teamy": "price_1OCM2cGlVGuVgOrkMWUFjPFz",
 }
 STRIPE_PLAN_VALS = {
-    "plan_H6P3KZXwmAbqPS": "users-pr-inappm",
-    "plan_H6P16wij3lUuxg": "users-pr-inappy",
+    "price_H6P3KZXwmAbqPS": "users-pr-inappm",
+    "price_H6P16wij3lUuxg": "users-pr-inappy",
     "price_1Mj1kYGlVGuVgOrk7jucaZAa": "users-sentrym",
     "price_1Mj1mMGlVGuVgOrkC0ORc6iW": "users-sentryy",
     "price_1OCM0gGlVGuVgOrkWDYEBtSL": "users-teamm",

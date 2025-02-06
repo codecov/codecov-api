@@ -1,6 +1,6 @@
 interactions:
 - request:
-    body: billing_address_collection=required&payment_method_types[0]=card&payment_method_collection=if_required&client_reference_id=65&success_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fysantos%3Fsuccess&cancel_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fysantos%3Fcancel&subscription_data[items][0][plan]=plan_H6P16wij3lUuxg&subscription_data[items][0][quantity]=14&subscription_data[payment_behavior]=allow_incomplete&subscription_data[metadata][service]=github&subscription_data[metadata][obo_organization]=65&subscription_data[metadata][username]=ysantos&subscription_data[metadata][obo_name]=Matthew+Guzman&subscription_data[metadata][obo_email]=ybrown%40fitzgerald-cummings.org&subscription_data[metadata][obo]=65&customer=1000
+    body: billing_address_collection=required&payment_method_types[0]=card&payment_method_collection=if_required&client_reference_id=65&success_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fysantos%3Fsuccess&cancel_url=http%3A%2F%2Flocalhost%3A3000%2Fplan%2Fgh%2Fysantos%3Fcancel&subscription_data[items][0][plan]=price_H6P16wij3lUuxg&subscription_data[items][0][quantity]=14&subscription_data[payment_behavior]=allow_incomplete&subscription_data[metadata][service]=github&subscription_data[metadata][obo_organization]=65&subscription_data[metadata][username]=ysantos&subscription_data[metadata][obo_name]=Matthew+Guzman&subscription_data[metadata][obo_email]=ybrown%40fitzgerald-cummings.org&subscription_data[metadata][obo]=65&customer=1000
     headers:
       Accept:
       - '*/*'

@@ -1,9 +1,10 @@
 import json
 import os
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
+from django.conf import settings
 from django.test import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -234,7 +235,7 @@ class AccountViewSetTests(APITestCase):
         schedule_params = {
             "id": 123,
             "start_date": 123689126736,
-            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "stripe_plan_id": "price_H6P3KZXwmAbqPS",
             "quantity": 6,
         }
         phases = [
@@ -330,7 +331,7 @@ class AccountViewSetTests(APITestCase):
         schedule_params = {
             "id": 123,
             "start_date": 123689126736,
-            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "stripe_plan_id": "price_H6P3KZXwmAbqPS",
             "quantity": 6,
         }
         phases = [
@@ -779,6 +780,7 @@ class AccountViewSetTests(APITestCase):
         }
 
         subscription_params = {
+            "id": "abc",
             "default_payment_method": default_payment_method,
             "latest_invoice": json.load(f)["data"][0],
             "schedule_id": None,
@@ -797,7 +799,33 @@ class AccountViewSetTests(APITestCase):
             data={"plan": desired_plan},
         )
 
-        modify_subscription_mock.assert_called_once()
+        modify_subscription_mock.assert_has_calls(
+            [
+                call(
+                    self.current_owner.stripe_subscription_id,
+                    items=[
+                        {
+                            "id": subscription_params["id"],
+                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "quantity": desired_plan["quantity"],
+                        }
+                    ],
+                    proration_behavior="always_invoice",
+                    payment_behavior="pending_if_incomplete",
+                ),
+                call(
+                    self.current_owner.stripe_subscription_id,
+                    metadata={
+                        "service": self.current_owner.service,
+                        "obo_organization": self.current_owner.ownerid,
+                        "username": self.current_owner.username,
+                        "obo_name": self.current_owner.name,
+                        "obo_email": self.current_owner.email,
+                        "obo": self.current_owner.ownerid,
+                    },
+                ),
+            ]
+        )
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"]["value"] == desired_plan["value"]
