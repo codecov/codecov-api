@@ -109,9 +109,9 @@ class PrefixedPath:
         The base path name (including the prefix).  For example, if `full_path`
         is `a/b/c/d.txt` and `prefix` is `a/b` then this method would return `a/b/c`.
         """
-        name = self.relative_path.split("/", 1)[0]
-        if self.prefix:
-            return f"{self.prefix}/{name}"
+        name = self.full_path.rsplit("/", 1)[0]
+        if name == self.prefix:
+            return self.full_path
         else:
             return name
 
