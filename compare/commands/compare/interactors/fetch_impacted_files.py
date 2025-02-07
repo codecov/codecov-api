@@ -1,7 +1,7 @@
 import enum
 from typing import List, Optional
 
-from shared.utils.match import match
+from shared.utils.match import Matcher
 
 import services.components as components
 from codecov.commands.base import BaseInteractor
@@ -74,11 +74,8 @@ class FetchImpactedFiles(BaseInteractor):
         res = impacted_files
 
         if components_paths:
-            res = [
-                file
-                for file in impacted_files
-                if match(components_paths, file.head_name)
-            ]
+            matcher = Matcher(components_paths)
+            res = [file for file in impacted_files if matcher.match(file.head_name)]
         return res
 
     def get_attribute(
