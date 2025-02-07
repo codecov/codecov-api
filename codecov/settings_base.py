@@ -443,6 +443,7 @@ MIGRATION_MODULES = {
     "profiling": "shared.django_apps.profiling.migrations",
     "reports": "shared.django_apps.reports.migrations",
     "staticanalysis": "shared.django_apps.staticanalysis.migrations",
+    "timeseries": "shared.django_apps.timeseries.migrations",
 }
 
 # to aid in debugging, print out this info on startup. If no license, prints nothing

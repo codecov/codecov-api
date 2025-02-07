@@ -100,7 +100,6 @@ class GithubWebhookHandler(APIView):
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
-        self._inc_err("unhandled_event")
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
     def _get_repo(self, request):
