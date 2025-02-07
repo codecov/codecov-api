@@ -14,23 +14,47 @@ from webhook_handlers.constants import (
     WebhookHandlerErrorMessages,
 )
 
+from . import WEBHOOKS_ERRORED, WEBHOOKS_RECEIVED
+
 log = logging.getLogger(__name__)
 
 
 class BitbucketWebhookHandler(APIView):
     permission_classes = [AllowAny]
+    service_name = "bitbucket"
+
+    def _inc_recv(self):
+        event, _, action = self.event.partition(":")
+        WEBHOOKS_RECEIVED.labels(
+            service=self.service_name, event=event, action=action
+        ).inc()
+
+    def _inc_err(self, reason: str):
+        event, _, action = self.event.partition(":")
+        WEBHOOKS_ERRORED.labels(
+            service=self.service_name,
+            event=event,
+            action=action,
+            error_reason=reason,
+        ).inc()
 
     def post(self, request, *args, **kwargs):
         self.event = self.request.META.get(BitbucketHTTPHeaders.EVENT)
         event_hook_id = self.request.META.get(BitbucketHTTPHeaders.UUID)
 
-        repo = get_object_or_404(
-            Repository,
-            author__service="bitbucket",
-            service_id=self.request.data["repository"]["uuid"][1:-1],
-            hookid=event_hook_id,
-        )
+        try:
+            repo = get_object_or_404(
+                Repository,
+                author__service="bitbucket",
+                service_id=self.request.data["repository"]["uuid"][1:-1],
+                hookid=event_hook_id,
+            )
+        except Exception as e:
+            self._inc_err("repo_not_found")
+            raise e
+
         if not repo.active:
+            self._inc_err("repo_not_active")
             return Response(data=WebhookHandlerErrorMessages.SKIP_NOT_ACTIVE)
 
         log.info(
@@ -39,20 +63,25 @@ class BitbucketWebhookHandler(APIView):
         )
 
         if self.event == BitbucketWebhookEvents.PULL_REQUEST_CREATED:
+            self._inc_recv()
             return self._handle_pull_request_created_event(repo)
         elif self.event in (
             BitbucketWebhookEvents.PULL_REQUEST_FULFILLED,
             BitbucketWebhookEvents.PULL_REQUEST_REJECTED,
         ):
+            self._inc_recv()
             return self._handle_pull_request_state_change(repo)
         elif self.event == BitbucketWebhookEvents.REPO_PUSH:
+            self._inc_recv()
             return self._handle_repo_push_event(repo)
         elif self.event in (
             BitbucketWebhookEvents.REPO_COMMIT_STATUS_CREATED,
             BitbucketWebhookEvents.REPO_COMMIT_STATUS_UPDATED,
         ):
+            self._inc_recv()
             return self._handle_repo_commit_status_change(repo)
 
+        self._inc_err("unhandled_event")
         return Response()
 
     def _handle_pull_request_created_event(self, repo):
