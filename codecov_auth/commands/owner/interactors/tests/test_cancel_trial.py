@@ -7,7 +7,7 @@ from freezegun import freeze_time
 from shared.django_apps.codecov.commands.exceptions import ValidationError
 from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import OwnerFactory
-from shared.plan.constants import PlanName, TierName, TrialStatus
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, TierName, TrialStatus
 
 from codecov.commands.exceptions import Unauthorized
 from codecov.commands.exceptions import ValidationError as CodecovValidationError
@@ -18,7 +18,7 @@ from ..cancel_trial import CancelTrialInteractor
 
 class CancelTrialInteractorTest(TransactionTestCase):
     def setUp(self):
-        self.tier = TierFactory(tier_name=TierName.BASIC.value)
+        self.tier = TierFactory(tier_name=DEFAULT_FREE_PLAN)
         self.plan = PlanFactory(tier=self.tier)
 
     @async_to_sync
@@ -103,7 +103,7 @@ class CancelTrialInteractorTest(TransactionTestCase):
         now = datetime.now()
         assert current_user.trial_end_date == now
         assert current_user.trial_status == TrialStatus.EXPIRED.value
-        assert current_user.plan == PlanName.BASIC_PLAN_NAME.value
+        assert current_user.plan == DEFAULT_FREE_PLAN
         assert current_user.plan_activated_users is None
         assert current_user.plan_user_count == 1
         assert current_user.stripe_subscription_id is None

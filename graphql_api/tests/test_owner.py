@@ -20,12 +20,11 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
-from shared.plan.constants import PlanName, TrialStatus
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, TrialStatus
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from billing.helpers import mock_all_plans_and_tiers
 from codecov.commands.exceptions import (
-    MissingService,
     UnauthorizedGuestAccess,
 )
 from codecov_auth.models import GithubAppInstallation, OwnerProfile
@@ -357,7 +356,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """
         repository = RepositoryFactory.create(
-            author__plan=PlanName.BASIC_PLAN_NAME.value, author=self.owner
+            author__plan=DEFAULT_FREE_PLAN, author=self.owner
         )
         first_commit = CommitFactory.create(repository=repository)
         first_report = CommitReportFactory.create(
@@ -687,11 +686,11 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["availablePlans"] == [
-            {"value": "users-basic"},
             {"value": "users-pr-inappm"},
             {"value": "users-pr-inappy"},
             {"value": "users-teamm"},
             {"value": "users-teamy"},
+            {"value": DEFAULT_FREE_PLAN},
         ]
 
     def test_owner_query_with_no_service(self):
@@ -708,7 +707,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         res = self.gql_request(query, provider="", with_errors=True)
 
-        assert res["errors"][0]["message"] == MissingService.message
         assert res["data"]["owner"] is None
 
     def test_owner_query_with_private_repos(self):
@@ -1126,7 +1124,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
-            plan=PlanName.BASIC_PLAN_NAME.value,
+            plan=DEFAULT_FREE_PLAN,
         )
 
         query = """{
@@ -1147,15 +1145,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         assert data == {
             "owner": {
                 "availablePlans": [
-                    {
-                        "value": "users-basic",
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": False,
-                        "isSentryPlan": False,
-                        "isFreePlan": True,
-                        "isTrialPlan": False,
-                    },
                     {
                         "value": "users-pr-inappm",
                         "isEnterprisePlan": False,
@@ -1192,6 +1181,31 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                         "isFreePlan": False,
                         "isTrialPlan": False,
                     },
+                    {
+                        "value": DEFAULT_FREE_PLAN,
+                        "isEnterprisePlan": False,
+                        "isProPlan": False,
+                        "isTeamPlan": True,
+                        "isSentryPlan": False,
+                        "isFreePlan": True,
+                        "isTrialPlan": False,
+                    },
                 ]
             }
         }
+
+    def test_fetch_owner_with_no_service(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+            plan=PlanName.BASIC_PLAN_NAME.value,
+        )
+
+        query = """{
+            owner(username: "%s") {
+                username
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org, provider="", with_errors=True)
+        assert data == {"data": {"owner": None}}

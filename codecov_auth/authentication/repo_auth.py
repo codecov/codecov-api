@@ -9,7 +9,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 from jwt import PyJWTError
 from rest_framework import authentication, exceptions, serializers
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 from shared.django_apps.codecov_auth.models import Owner
@@ -200,7 +200,7 @@ class GlobalTokenAuthentication(authentication.TokenAuthentication):
         if not using_global_token:
             return None  # continue to next auth class
 
-        service = global_tokens[token]
+        service = global_tokens.get(token, "")
         upload_info = get_upload_info_from_request_path(request)
         if upload_info is None:
             return None  # continue to next auth class
@@ -257,7 +257,7 @@ class GitHubOIDCTokenAuthentication(authentication.TokenAuthentication):
 
         try:
             repository = get_repo_with_github_actions_oidc_token(token)
-        except (ObjectDoesNotExist, PyJWTError):
+        except (ObjectDoesNotExist, PyJWTError, ValidationError):
             return None  # continue to next auth class
 
         log.info(
