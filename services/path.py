@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
@@ -68,7 +70,7 @@ class Dir(PathNode):
     """
 
     full_path: str
-    children: list[File | "Dir"]
+    children: list[File | Dir]
 
     @cached_property
     def totals(self) -> ReportTotals:
