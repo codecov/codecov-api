@@ -539,7 +539,6 @@ class StripeWebhookHandler(APIView):
         When verification succeeds, this attaches the payment method to the customer and sets
         it as the default payment method for both the customer and subscription.
         """
-        owner = Owner.objects.get(stripe_customer_id=customer_id)
         payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
         is_us_bank_account = payment_method.type == "us_bank_account" and hasattr(
@@ -548,18 +547,33 @@ class StripeWebhookHandler(APIView):
 
         should_set_as_default = is_us_bank_account
 
+        # attach the payment method + set as default on the invoice and subscription
         if should_set_as_default:
-            # attach the payment method + set as default on the invoice and subscription
-            stripe.PaymentMethod.attach(
-                payment_method, customer=owner.stripe_customer_id
+            # retrieve the number of owners to update
+            owners = Owner.objects.filter(
+                stripe_customer_id=customer_id, stripe_subscription_id__isnull=False
             )
-            stripe.Customer.modify(
-                owner.stripe_customer_id,
-                invoice_settings={"default_payment_method": payment_method},
-            )
-            stripe.Subscription.modify(
-                owner.stripe_subscription_id, default_payment_method=payment_method
-            )
+
+            if owners.exists():
+                # Even if multiple results are returned, these two stripe calls are
+                # just for a single customer
+                stripe.PaymentMethod.attach(payment_method, customer=customer_id)
+                stripe.Customer.modify(
+                    customer_id,
+                    invoice_settings={"default_payment_method": payment_method},
+                )
+
+                # But this one is for each subscription an owner may have
+                for owner in owners:
+                    stripe.Subscription.modify(
+                        owner.stripe_subscription_id,
+                        default_payment_method=payment_method,
+                    )
+            else:
+                log.error(
+                    "No owners found with that customer_id, something went wrong",
+                    extra=dict(customer_id=customer_id),
+                )
 
     def payment_intent_succeeded(self, payment_intent: stripe.PaymentIntent) -> None:
         """
