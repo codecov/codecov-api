@@ -1643,6 +1643,7 @@ class StripeWebhookHandlerTests(APITestCase):
             "sub_123", default_payment_method=payment_method_retrieve_mock.return_value
         )
 
+    @patch("logging.Logger.error")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     @patch("services.billing.stripe.Subscription.modify")
@@ -1653,6 +1654,7 @@ class StripeWebhookHandlerTests(APITestCase):
         subscription_modify_mock,
         customer_modify_mock,
         payment_method_attach_mock,
+        log_error_mock,
     ):
         class MockPaymentMethod:
             type = "us_bank_account"
@@ -1675,6 +1677,12 @@ class StripeWebhookHandlerTests(APITestCase):
         customer_modify_mock.assert_not_called()
         subscription_modify_mock.assert_not_called()
 
+        log_error_mock.assert_called_once_with(
+            "No owners found with that customer_id, something went wrong",
+            extra=dict(customer_id="cus_123"),
+        )
+
+    @patch("logging.Logger.error")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     @patch("services.billing.stripe.Subscription.modify")
@@ -1685,6 +1693,7 @@ class StripeWebhookHandlerTests(APITestCase):
         subscription_modify_mock,
         customer_modify_mock,
         payment_method_attach_mock,
+        log_error_mock,
     ):
         class MockPaymentMethod:
             type = "us_bank_account"
@@ -1695,7 +1704,7 @@ class StripeWebhookHandlerTests(APITestCase):
 
         handler = StripeWebhookHandler()
         handler._check_and_handle_delayed_notification_payment_methods(
-            "cus_123", "pm_123"
+            "cus_1", "pm_123"
         )
 
         payment_method_retrieve_mock.assert_called_once_with("pm_123")
@@ -1703,7 +1712,11 @@ class StripeWebhookHandlerTests(APITestCase):
         customer_modify_mock.assert_not_called()
         subscription_modify_mock.assert_not_called()
 
-    @patch("logging.Logger.error")
+        log_error_mock.assert_called_once_with(
+            "No owners found with that customer_id, something went wrong",
+            extra=dict(customer_id="cus_1"),
+        )
+
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     @patch("services.billing.stripe.Subscription.modify")
