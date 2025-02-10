@@ -1643,6 +1643,132 @@ class StripeWebhookHandlerTests(APITestCase):
             "sub_123", default_payment_method=payment_method_retrieve_mock.return_value
         )
 
+    @patch("logging.Logger.error")
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.PaymentMethod.retrieve")
+    def test_check_and_handle_delayed_notification_payment_methods_no_subscription(
+        self,
+        payment_method_retrieve_mock,
+        subscription_modify_mock,
+        customer_modify_mock,
+        payment_method_attach_mock,
+        log_error_mock,
+    ):
+        class MockPaymentMethod:
+            type = "us_bank_account"
+            us_bank_account = {}
+            id = "pm_123"
+
+        payment_method_retrieve_mock.return_value = MockPaymentMethod()
+
+        self.owner.stripe_subscription_id = None
+        self.owner.stripe_customer_id = "cus_123"
+        self.owner.save()
+
+        handler = StripeWebhookHandler()
+        handler._check_and_handle_delayed_notification_payment_methods(
+            "cus_123", "pm_123"
+        )
+
+        payment_method_retrieve_mock.assert_called_once_with("pm_123")
+        payment_method_attach_mock.assert_not_called()
+        customer_modify_mock.assert_not_called()
+        subscription_modify_mock.assert_not_called()
+
+        log_error_mock.assert_called_once_with(
+            "No owners found with that customer_id, something went wrong",
+            extra=dict(customer_id="cus_123"),
+        )
+
+    @patch("logging.Logger.error")
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.PaymentMethod.retrieve")
+    def test_check_and_handle_delayed_notification_payment_methods_no_customer(
+        self,
+        payment_method_retrieve_mock,
+        subscription_modify_mock,
+        customer_modify_mock,
+        payment_method_attach_mock,
+        log_error_mock,
+    ):
+        class MockPaymentMethod:
+            type = "us_bank_account"
+            us_bank_account = {}
+            id = "pm_123"
+
+        payment_method_retrieve_mock.return_value = MockPaymentMethod()
+
+        handler = StripeWebhookHandler()
+        handler._check_and_handle_delayed_notification_payment_methods(
+            "cus_1", "pm_123"
+        )
+
+        payment_method_retrieve_mock.assert_called_once_with("pm_123")
+        payment_method_attach_mock.assert_not_called()
+        customer_modify_mock.assert_not_called()
+        subscription_modify_mock.assert_not_called()
+
+        log_error_mock.assert_called_once_with(
+            "No owners found with that customer_id, something went wrong",
+            extra=dict(customer_id="cus_1"),
+        )
+
+    @patch("services.billing.stripe.PaymentMethod.attach")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.Subscription.modify")
+    @patch("services.billing.stripe.PaymentMethod.retrieve")
+    def test_check_and_handle_delayed_notification_payment_methods_multiple_subscriptions(
+        self,
+        payment_method_retrieve_mock,
+        subscription_modify_mock,
+        customer_modify_mock,
+        payment_method_attach_mock,
+    ):
+        class MockPaymentMethod:
+            type = "us_bank_account"
+            us_bank_account = {}
+            id = "pm_123"
+
+        payment_method_retrieve_mock.return_value = MockPaymentMethod()
+
+        self.owner.stripe_subscription_id = "sub_123"
+        self.owner.stripe_customer_id = "cus_123"
+        self.owner.save()
+
+        OwnerFactory(stripe_subscription_id="sub_124", stripe_customer_id="cus_123")
+
+        handler = StripeWebhookHandler()
+        handler._check_and_handle_delayed_notification_payment_methods(
+            "cus_123", "pm_123"
+        )
+
+        payment_method_retrieve_mock.assert_called_once_with("pm_123")
+        payment_method_attach_mock.assert_called_once_with(
+            payment_method_retrieve_mock.return_value, customer="cus_123"
+        )
+        customer_modify_mock.assert_called_once_with(
+            "cus_123",
+            invoice_settings={
+                "default_payment_method": payment_method_retrieve_mock.return_value
+            },
+        )
+        subscription_modify_mock.assert_has_calls(
+            [
+                call(
+                    "sub_123",
+                    default_payment_method=payment_method_retrieve_mock.return_value,
+                ),
+                call(
+                    "sub_124",
+                    default_payment_method=payment_method_retrieve_mock.return_value,
+                ),
+            ]
+        )
+
     @patch(
         "billing.views.StripeWebhookHandler._check_and_handle_delayed_notification_payment_methods"
     )
