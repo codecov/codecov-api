@@ -18,7 +18,7 @@ def update_repository(
     log.info(f"Signal triggered for repository {instance.repoid}")
     created: bool = cast(bool, kwargs["created"])
     changes: Dict[str, Any] = instance.tracker.changed()
-    tracked_fields: List[str] = ["name", "upload_token", "activated", "active"]
+    tracked_fields: List[str] = ["name", "upload_token", "author_id", "private"]
 
     if created or any(field in changes for field in tracked_fields):
         data = {

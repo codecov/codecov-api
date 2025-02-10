@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from shared.plan.service import PlanService
 
 from billing.helpers import get_all_admins_for_owners
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Plan
 from services.task.task import TaskService
 
 from .constants import StripeHTTPHeaders, StripeWebhookEvents
@@ -203,7 +203,7 @@ class StripeWebhookHandler(APIView):
     ) -> None:
         subscription = stripe.Subscription.retrieve(schedule["subscription"])
         sub_item_plan_id = subscription.plan.id
-        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
+        plan_name = Plan.objects.get(stripe_id=sub_item_plan_id).name
         log.info(
             "Schedule created for customer",
             extra=dict(
@@ -223,10 +223,7 @@ class StripeWebhookHandler(APIView):
             scheduled_phase = schedule["phases"][-1]
             scheduled_plan = scheduled_phase["items"][0]
             plan_id = scheduled_plan["plan"]
-            stripe_plan_dict = settings.STRIPE_PLAN_IDS
-            plan_name = list(stripe_plan_dict.keys())[
-                list(stripe_plan_dict.values()).index(plan_id)
-            ]
+            plan_name = Plan.objects.get(stripe_id=plan_id).name
             quantity = scheduled_plan["quantity"]
             log.info(
                 "Schedule updated for customer",
@@ -259,7 +256,7 @@ class StripeWebhookHandler(APIView):
             return
 
         sub_item_plan_id = subscription.plan.id
-        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
+        plan_name = Plan.objects.get(stripe_id=sub_item_plan_id).name
         for owner in owners:
             plan_service = PlanService(current_org=owner)
             plan_service.update_plan(name=plan_name, user_count=subscription.quantity)
@@ -302,7 +299,9 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        if sub_item_plan_id not in settings.STRIPE_PLAN_VALS:
+        try:
+            plan = Plan.objects.get(stripe_id=sub_item_plan_id)
+        except Plan.DoesNotExist:
             log.warning(
                 "Subscription creation requested for invalid plan",
                 extra=dict(
@@ -313,7 +312,7 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        plan_name = settings.STRIPE_PLAN_VALS[sub_item_plan_id]
+        plan_name = plan.name
 
         log.info(
             "Subscription created for customer",
@@ -441,7 +440,9 @@ class StripeWebhookHandler(APIView):
                 invoice_settings={"default_payment_method": default_payment_method},
             )
 
-        if subscription.plan.id not in settings.STRIPE_PLAN_VALS:
+        try:
+            plan = Plan.objects.get(stripe_id=subscription.plan.id)
+        except Plan.DoesNotExist:
             log.error(
                 "Subscription update requested with invalid plan",
                 extra=dict(
@@ -453,7 +454,7 @@ class StripeWebhookHandler(APIView):
             return
 
         subscription_schedule_id = subscription.schedule
-        plan_name = settings.STRIPE_PLAN_VALS[subscription.plan.id]
+        plan_name = plan.name
         incomplete_expired = subscription.status == "incomplete_expired"
 
         # Only update if there is not a scheduled subscription
