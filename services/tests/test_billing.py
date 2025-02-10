@@ -12,7 +12,7 @@ from stripe import InvalidRequestError
 from stripe.api_resources import PaymentIntent, SetupIntent
 
 from billing.helpers import mock_all_plans_and_tiers
-from codecov_auth.models import Service
+from codecov_auth.models import Plan, Service
 from services.billing import AbstractPaymentService, BillingService, StripeService
 
 SCHEDULE_RELEASE_OFFSET = 10
@@ -195,13 +195,14 @@ class StripeServiceTests(TestCase):
     def _assert_subscription_modify(
         self, subscription_modify_mock, owner, subscription_params, desired_plan
     ):
+        plan = Plan.objects.get(name=desired_plan["value"])
         subscription_modify_mock.assert_called_once_with(
             owner.stripe_subscription_id,
             cancel_at_period_end=False,
             items=[
                 {
                     "id": subscription_params["id"],
-                    "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "plan": plan.stripe_id,
                     "quantity": desired_plan["quantity"],
                 }
             ],
@@ -225,6 +226,7 @@ class StripeServiceTests(TestCase):
         desired_plan,
         schedule_id,
     ):
+        plan = Plan.objects.get(name=desired_plan["value"])
         schedule_modify_mock.assert_called_once_with(
             schedule_id,
             end_behavior="release",
@@ -247,8 +249,8 @@ class StripeServiceTests(TestCase):
                     + SCHEDULE_RELEASE_OFFSET,
                     "items": [
                         {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "plan": plan.stripe_id,
+                            "price": plan.stripe_id,
                             "quantity": desired_plan["quantity"],
                         }
                     ],
@@ -437,7 +439,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "plan_pro_yearly",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "month",
@@ -512,7 +514,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "plan_pro_yearly",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "year",
@@ -589,7 +591,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "plan_pro_yearly",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "year",
@@ -662,7 +664,7 @@ class StripeServiceTests(TestCase):
             "name": plan,
             "id": 215,
             "plan": {
-                "new_plan": "plan_H6P3KZXwmAbqPS",
+                "new_plan": "plan_pro_yearly",
                 "new_quantity": 7,
                 "subscription_id": "sub_123",
                 "interval": "year",
@@ -691,6 +693,36 @@ class StripeServiceTests(TestCase):
         assert owner.plan == plan
         assert owner.plan_activated_users == [4, 6, 3]
         assert owner.plan_user_count == 9
+
+    @patch("logging.Logger.error")
+    def test_modify_subscription_no_plan_found(
+        self,
+        log_error_mock,
+    ):
+        original_plan = PlanName.CODECOV_PRO_MONTHLY.value
+        original_user_count = 10
+        owner = OwnerFactory(
+            plan=original_plan,
+            plan_user_count=original_user_count,
+            stripe_subscription_id="33043sdf",
+        )
+
+        desired_plan_name = "invalid plan"
+        desired_user_count = 10
+        desired_plan = {"value": desired_plan_name, "quantity": desired_user_count}
+        self.stripe.modify_subscription(owner, desired_plan)
+
+        owner.refresh_from_db()
+        assert owner.plan == original_plan
+        assert owner.plan_user_count == original_user_count
+        log_error_mock.assert_has_calls(
+            [
+                call(
+                    f"Plan {desired_plan_name} not found",
+                    extra=dict(owner_id=owner.ownerid),
+                ),
+            ]
+        )
 
     @patch("services.billing.stripe.Subscription.modify")
     @patch("services.billing.stripe.Subscription.retrieve")
@@ -1220,7 +1252,7 @@ class StripeServiceTests(TestCase):
             "start_date": current_subscription_start_date,
             "end_date": current_subscription_end_date,
             "quantity": original_user_count,
-            "name": original_plan,
+            "name": Plan.objects.get(name=original_plan).stripe_id,
             "id": 110,
         }
 
@@ -1383,121 +1415,191 @@ class StripeServiceTests(TestCase):
     def test_get_proration_params(self):
         # Test same plan, increased users
         owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=10)
-        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 14}
+        plan = Plan.objects.get(name=PlanName.CODECOV_PRO_YEARLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=14
+            )
+            == "always_invoice"
         )
 
         # Test same plan, decrease users
         owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=20)
-        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 14}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=14
+            )
+            == "none"
+        )
 
         # Test going from monthly to yearly
         owner = OwnerFactory(
             plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
         )
-        desired_plan = {"value": PlanName.CODECOV_PRO_YEARLY.value, "quantity": 14}
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=14
+            )
+            == "always_invoice"
         )
 
         # monthly to Sentry monthly plan
         owner = OwnerFactory(
             plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
         )
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
+        plan = Plan.objects.get(name=PlanName.SENTRY_MONTHLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=19
+            )
+            == "none"
         )
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=20
+            )
+            == "always_invoice"
+        )
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=21
+            )
+            == "always_invoice"
         )
 
         # yearly to Sentry monthly plan
         owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=20)
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
+        plan = Plan.objects.get(name=PlanName.SENTRY_MONTHLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=19
+            )
+            == "none"
+        )
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=20
+            )
+            == "none"
+        )
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=21
+            )
+            == "always_invoice"
         )
 
         # monthly to Sentry monthly plan
         owner = OwnerFactory(
             plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
         )
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 19}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 20}
+        plan = Plan.objects.get(name=PlanName.SENTRY_MONTHLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=19
+            )
+            == "none"
         )
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 21}
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=20
+            )
+            == "always_invoice"
+        )
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=21
+            )
+            == "always_invoice"
         )
 
         # yearly to Sentry yearly plan
         owner = OwnerFactory(plan=PlanName.CODECOV_PRO_YEARLY.value, plan_user_count=20)
-        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 19}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
-        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 20}
+        plan = Plan.objects.get(name=PlanName.SENTRY_YEARLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=19
+            )
+            == "none"
         )
-        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 21}
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=20
+            )
+            == "always_invoice"
+        )
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=21
+            )
+            == "always_invoice"
         )
 
         # monthly to Sentry yearly plan
         owner = OwnerFactory(
             plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=20
         )
-        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 19}
+        plan = Plan.objects.get(name=PlanName.SENTRY_YEARLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=19
+            )
+            == "always_invoice"
         )
-        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 20}
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=20
+            )
+            == "always_invoice"
         )
-        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 21}
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=21
+            )
+            == "always_invoice"
         )
 
         # Team to Sentry
         owner = OwnerFactory(plan=PlanName.TEAM_MONTHLY.value, plan_user_count=10)
-        desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 10}
+        plan = Plan.objects.get(name=PlanName.SENTRY_MONTHLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=10
+            )
+            == "always_invoice"
         )
 
         # Team to Pro
         owner = OwnerFactory(plan=PlanName.TEAM_MONTHLY.value, plan_user_count=10)
-        desired_plan = {"value": PlanName.CODECOV_PRO_MONTHLY.value, "quantity": 10}
+        plan = Plan.objects.get(name=PlanName.CODECOV_PRO_MONTHLY.value)
         assert (
-            self.stripe._get_proration_params(owner, desired_plan) == "always_invoice"
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=10
+            )
+            == "always_invoice"
         )
 
         # Sentry to Team
         owner = OwnerFactory(plan=PlanName.SENTRY_MONTHLY.value, plan_user_count=10)
-        desired_plan = {"value": PlanName.TEAM_MONTHLY.value, "quantity": 10}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+        plan = Plan.objects.get(name=PlanName.TEAM_MONTHLY.value)
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=10
+            )
+            == "none"
+        )
 
         # Sentry to Pro
         owner = OwnerFactory(
             plan=PlanName.CODECOV_PRO_MONTHLY.value, plan_user_count=10
         )
-        desired_plan = {"value": PlanName.TEAM_MONTHLY.value, "quantity": 10}
-        assert self.stripe._get_proration_params(owner, desired_plan) == "none"
+        plan = Plan.objects.get(name=PlanName.TEAM_MONTHLY.value)
+        assert (
+            self.stripe._get_proration_params(
+                owner=owner, desired_plan_info=plan, desired_quantity=10
+            )
+            == "none"
+        )
 
     @patch("services.billing.stripe.checkout.Session.create")
     def test_create_checkout_session_with_no_stripe_customer_id(
@@ -1515,6 +1617,7 @@ class StripeServiceTests(TestCase):
             "value": PlanName.CODECOV_PRO_MONTHLY.value,
             "quantity": desired_quantity,
         }
+        plan = Plan.objects.get(name=desired_plan["value"])
 
         assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
 
@@ -1529,7 +1632,7 @@ class StripeServiceTests(TestCase):
             mode="subscription",
             line_items=[
                 {
-                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "price": plan.stripe_id,
                     "quantity": desired_quantity,
                 }
             ],
@@ -1566,6 +1669,8 @@ class StripeServiceTests(TestCase):
 
         assert self.stripe.create_checkout_session(owner, desired_plan) == expected_id
 
+        plan = Plan.objects.get(name=desired_plan["value"])
+
         create_checkout_session_mock.assert_called_once_with(
             billing_address_collection="required",
             payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
@@ -1577,7 +1682,7 @@ class StripeServiceTests(TestCase):
             mode="subscription",
             line_items=[
                 {
-                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "price": plan.stripe_id,
                     "quantity": desired_quantity,
                 }
             ],
@@ -1593,6 +1698,32 @@ class StripeServiceTests(TestCase):
             },
             tax_id_collection={"enabled": True},
             customer_update={"name": "auto", "address": "auto"},
+        )
+
+    @patch("logging.Logger.error")
+    @patch("services.billing.stripe.checkout.Session.create")
+    def test_create_checkout_session_with_invalid_plan(
+        self, create_checkout_session_mock, logger_error_mock
+    ):
+        stripe_customer_id = "test-cusa78723hb4@"
+        owner = OwnerFactory(
+            service=Service.GITHUB.value,
+            stripe_customer_id=stripe_customer_id,
+        )
+        desired_quantity = 25
+        desired_plan = {
+            "value": "invalid_plan",
+            "quantity": desired_quantity,
+        }
+
+        self.stripe.create_checkout_session(owner, desired_plan)
+
+        create_checkout_session_mock.assert_not_called()
+        logger_error_mock.assert_called_once_with(
+            f"Plan {desired_plan['value']} not found",
+            extra=dict(
+                owner_id=owner.ownerid,
+            ),
         )
 
     def test_get_subscription_when_no_subscription(self):
