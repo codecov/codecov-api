@@ -433,6 +433,8 @@ STRIPE_PAYMENT_METHOD_CONFIGURATION_ID = get_config(
     "setup", "stripe", "payment_method_configuration_id", default=None
 )
 
+AMPLITUDE_API_KEY = os.environ.get("AMPLITUDE_API_KEY", None)
+
 # Allows to do migrations from another module
 MIGRATION_MODULES = {
     "codecov_auth": "shared.django_apps.codecov_auth.migrations",
