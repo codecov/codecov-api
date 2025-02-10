@@ -11,6 +11,10 @@ from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     RepositoryFactory,
 )
+from shared.django_apps.timeseries.tests.factories import (
+    DatasetFactory,
+    MeasurementFactory,
+)
 from shared.reports.resources import Report, ReportFile, ReportLine
 from shared.utils.sessions import Session
 
@@ -22,7 +26,6 @@ from timeseries.helpers import (
     repository_coverage_measurements_with_fallback,
 )
 from timeseries.models import Dataset, Interval, MeasurementName
-from timeseries.tests.factories import DatasetFactory, MeasurementFactory
 
 
 def sample_report():
