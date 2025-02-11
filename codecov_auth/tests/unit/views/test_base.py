@@ -186,10 +186,12 @@ class LoginMixinTests(TestCase):
             self.request,
         )
 
+        owner = Owner.objects.get(service_id=12345, username="testuser")
+
         amplitude_publish_mock.assert_has_calls(
             [
-                call("User Created", {"user_ownerid": 15}),
-                call("set_orgs", {"user_ownerid": 15, "org_ids": []}),
+                call("User Created", {"user_ownerid": owner.ownerid}),
+                call("set_orgs", {"user_ownerid": owner.ownerid, "org_ids": []}),
             ]
         )
 
@@ -230,8 +232,8 @@ class LoginMixinTests(TestCase):
 
         amplitude_publish_mock.assert_has_calls(
             [
-                call("User Logged in", {"user_ownerid": 16}),
-                call("set_orgs", {"user_ownerid": 16, "org_ids": [1, 2]}),
+                call("User Logged in", {"user_ownerid": owner.ownerid}),
+                call("set_orgs", {"user_ownerid": owner.ownerid, "org_ids": [1, 2]}),
             ]
         )
 
