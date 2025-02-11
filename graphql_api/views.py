@@ -12,7 +12,9 @@ from ariadne.types import Extension
 from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
 from django.conf import settings
+from django.core.handlers.wsgi import WSGIRequest
 from django.http import (
+    HttpResponse,
     HttpResponseBadRequest,
     HttpResponseNotAllowed,
     JsonResponse,
@@ -84,13 +86,13 @@ class QueryMetricsExtension(Extension):
 
     """
 
-    def __init__(self):
-        self.start_timestamp = None
-        self.end_timestamp = None
-        self.operation_type = None
-        self.operation_name = None
+    def __init__(self) -> None:
+        self.start_timestamp: float = 0
+        self.end_timestamp: float = 0
+        self.operation_type: str | None = None
+        self.operation_name: str | None = None
 
-    def set_type_and_name(self, query):
+    def set_type_and_name(self, query: str) -> None:
         operation_type = "unknown_type"  # default value
         operation_name = "unknown_name"  # default value
         try:
@@ -119,7 +121,7 @@ class QueryMetricsExtension(Extension):
                 extra=dict(query_slice=query_slice),
             )
 
-    def request_started(self, context):
+    def request_started(self, context: dict[str, Any]) -> None:
         """
         Extension hook executed at request's start.
         """
@@ -133,7 +135,7 @@ class QueryMetricsExtension(Extension):
             ),
         )
 
-    def request_finished(self, context):
+    def request_finished(self, context: dict[str, Any]) -> None:
         """
         Extension hook executed at request's end.
         """
@@ -143,7 +145,7 @@ class QueryMetricsExtension(Extension):
             operation_type=self.operation_type, operation_name=self.operation_name
         ).observe(latency)
 
-    def has_errors(self, errors, context):
+    def has_errors(self, errors: list[dict[str, Any]], context: dict[str, Any]) -> None:
         """
         Extension hook executed when GraphQL encountered errors.
         """
@@ -163,10 +165,10 @@ class RequestFinalizer:
         "bundle_analysis_base_report_db_path",
     ]
 
-    def __init__(self, request):
+    def __init__(self, request: WSGIRequest) -> None:
         self.request = request
 
-    def _remove_temp_files(self):
+    def _remove_temp_files(self) -> None:
         """
         Some requests cause temporary files to be created in /tmp (eg BundleAnalysis)
         This cleanup step clears all contents of the /tmp directory after each request
@@ -184,10 +186,10 @@ class RequestFinalizer:
                             extra={"file_path": file_path, "exc": e},
                         )
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         pass
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self, exc_type: Any, exc_value: Any, exc_traceback: Any) -> None:
         self._remove_temp_files()
 
 
@@ -203,7 +205,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         data: dict,
     ) -> Optional[Collection]:
         return [
-            create_required_variables_rule(variables=data.get("variables")),
+            create_required_variables_rule(variables=data.get("variables", {})),
             create_max_aliases_rule(max_aliases=settings.GRAPHQL_MAX_ALIASES),
             create_max_depth_rule(max_depth=settings.GRAPHQL_MAX_DEPTH),
             cost_validator(
@@ -215,20 +217,22 @@ class AsyncGraphqlView(GraphQLAsyncView):
 
     validation_rules = get_validation_rules  # type: ignore
 
-    def get_clean_query(self, request_body):
+    def get_clean_query(self, request_body: dict[str, Any]) -> str | None:
         # clean up graphql query to remove new lines and extra spaces
         if "query" in request_body and isinstance(request_body["query"], str):
             clean_query = request_body["query"].replace("\n", " ")
             clean_query = clean_query.replace("  ", "").strip()
             return clean_query
 
-    async def get(self, *args, **kwargs):
+    async def get(self, *args: Any, **kwargs: Any) -> HttpResponse:
         if settings.GRAPHQL_PLAYGROUND:
             return await super().get(*args, **kwargs)
         # No GraphqlPlayground if no settings.DEBUG
         return HttpResponseNotAllowed(["POST"])
 
-    async def post(self, request, *args, **kwargs):
+    async def post(
+        self, request: WSGIRequest, *args: Any, **kwargs: Any
+    ) -> HttpResponse:
         await self._get_user(request)
         # get request body information for logging
         req_body = json.loads(request.body.decode("utf-8")) if request.body else {}
@@ -277,7 +281,20 @@ class AsyncGraphqlView(GraphQLAsyncView):
                 )
 
             content = response.content.decode("utf-8")
-            data = json.loads(content)
+            try:
+                data = json.loads(content)
+            except json.JSONDecodeError:
+                log.error(
+                    "Failed to decode JSON response",
+                    extra={"content": content, "request_body": req_body},
+                )
+                return JsonResponse(
+                    data={
+                        "status": 400,
+                        "detail": "Invalid JSON response received.",
+                    },
+                    status=400,
+                )
 
             if "errors" in data:
                 inc_counter(
@@ -309,7 +326,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
                     pass
             return response
 
-    def context_value(self, request, *_):
+    def context_value(self, request: WSGIRequest, *_args: Any) -> dict[str, Any]:
         request_body = json.loads(request.body.decode("utf-8")) if request.body else {}
         self.request = request
 
@@ -320,7 +337,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             "clean_query": self.get_clean_query(request_body) if request_body else "",
         }
 
-    def error_formatter(self, error, debug=False):
+    def error_formatter(self, error: Any, debug: bool = False) -> dict[str, Any]:
         user = self.request.user
         is_anonymous = user.is_anonymous if user else True
         # the only way to check for a malformed query
@@ -335,7 +352,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
         if isinstance(original_error, BaseException) or isinstance(
             original_error, ServiceException
         ):
-            formatted["message"] = original_error.message
+            formatted["message"] = original_error.message  # type: ignore
             formatted["type"] = type(original_error).__name__
         else:
             # otherwise it's not supposed to happen, so we log it
@@ -344,13 +361,13 @@ class AsyncGraphqlView(GraphQLAsyncView):
         return formatted
 
     @sync_to_async
-    def _get_user(self, request):
+    def _get_user(self, request: WSGIRequest) -> None:
         # force eager evaluation of `request.user` (a lazy object)
         # while we're in a sync context
         if request.user:
             request.user.pk
 
-    def _check_ratelimit(self, request):
+    def _check_ratelimit(self, request: WSGIRequest) -> bool:
         if not settings.GRAPHQL_RATE_LIMIT_ENABLED:
             return False
 
@@ -392,7 +409,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
             redis.incr(key)
         return False
 
-    def get_client_ip(self, request):
+    def get_client_ip(self, request: WSGIRequest) -> str:
         x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
             ip = x_forwarded_for.split(",")[0]
@@ -404,7 +421,7 @@ class AsyncGraphqlView(GraphQLAsyncView):
 BaseAriadneView = AsyncGraphqlView.as_view()
 
 
-async def ariadne_view(request, service):
+async def ariadne_view(request: WSGIRequest, service: str) -> HttpResponse:
     response = BaseAriadneView(request, service)
     if iscoroutine(response):
         response = await response

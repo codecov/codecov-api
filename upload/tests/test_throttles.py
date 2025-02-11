@@ -8,19 +8,21 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
-from shared.plan.constants import PlanName
+from shared.plan.constants import DEFAULT_FREE_PLAN
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
+from billing.helpers import mock_all_plans_and_tiers
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from services.redis_configuration import get_redis_connection
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 
 class ThrottlesUnitTests(APITestCase):
-    def setUp(self):
-        self.owner = OwnerFactory(
-            plan=PlanName.BASIC_PLAN_NAME.value, max_upload_limit=150
-        )
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        mock_all_plans_and_tiers()
+        cls.owner = OwnerFactory(plan=DEFAULT_FREE_PLAN, max_upload_limit=150)
 
     def request_should_not_throttle(self, commit):
         self.uploads_per_window_not_throttled(commit)
@@ -55,7 +57,7 @@ class ThrottlesUnitTests(APITestCase):
     @override_settings(UPLOAD_THROTTLING_ENABLED=False)
     def test_check_commit_constraints_settings_disabled(self):
         repository = RepositoryFactory(
-            author__plan=PlanName.BASIC_PLAN_NAME.value,
+            author__plan=DEFAULT_FREE_PLAN,
             private=True,
             author=self.owner,
         )

@@ -6,17 +6,11 @@ from datetime import datetime, timezone
 import stripe
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from shared.plan.constants import (
-    FREE_PLAN_REPRESENTATIONS,
-    PAID_PLANS,
-    TEAM_PLANS,
-    USER_PLAN_REPRESENTATIONS,
-    PlanBillingRate,
-)
+from shared.plan.constants import PlanBillingRate, TierName
 from shared.plan.service import PlanService
 
 from billing.constants import REMOVED_INVOICE_STATUSES
-from codecov_auth.models import Owner
+from codecov_auth.models import Owner, Plan
 
 log = logging.getLogger(__name__)
 
@@ -81,6 +75,10 @@ class AbstractPaymentService(ABC):
 
     @abstractmethod
     def apply_cancellation_discount(self, owner: Owner):
+        pass
+
+    @abstractmethod
+    def create_setup_intent(self, owner):
         pass
 
 
@@ -318,9 +316,21 @@ class StripeService(AbstractPaymentService):
         return stripe.SubscriptionSchedule.retrieve(subscription_schedule_id)
 
     @_log_stripe_error
-    def modify_subscription(self, owner, desired_plan):
+    def modify_subscription(self, owner: Owner, desired_plan: dict):
+        desired_plan_info = Plan.objects.filter(name=desired_plan["value"]).first()
+        if not desired_plan_info:
+            log.error(
+                f"Plan {desired_plan['value']} not found",
+                extra=dict(owner_id=owner.ownerid),
+            )
+            return
+
         subscription = stripe.Subscription.retrieve(owner.stripe_subscription_id)
-        proration_behavior = self._get_proration_params(owner, desired_plan)
+        proration_behavior = self._get_proration_params(
+            owner,
+            desired_plan_info=desired_plan_info,
+            desired_quantity=desired_plan["quantity"],
+        )
         subscription_schedule_id = subscription.schedule
 
         # proration_behavior indicates whether we immediately invoice a user or not. We only immediately
@@ -328,7 +338,11 @@ class StripeService(AbstractPaymentService):
         # An increase in seats and/or plan implies the user is upgrading, hence 'is_upgrading' is a consequence
         # of proration_behavior providing an invoice, in this case, != "none"
         # TODO: change this to "self._is_upgrading_seats(owner, desired_plan) or self._is_extending_term(owner, desired_plan)"
-        is_upgrading = True if proration_behavior != "none" else False
+        is_upgrading = (
+            True
+            if proration_behavior != "none" and desired_plan_info.stripe_id
+            else False
+        )
 
         # Divide logic bw immediate updates and scheduled updates
         # Immediate updates: when user upgrades seats or plan
@@ -337,7 +351,6 @@ class StripeService(AbstractPaymentService):
         # Scheduled updates: when the user decreases seats or plan
         #   If the user is not in a schedule, create a schedule
         #   If the user is in a schedule, update the existing schedule
-
         if is_upgrading:
             if subscription_schedule_id:
                 log.info(
@@ -347,13 +360,14 @@ class StripeService(AbstractPaymentService):
             log.info(
                 f"Updating Stripe subscription for owner {owner.ownerid} to {desired_plan['value']} by user #{self.requesting_user.ownerid}"
             )
+
             subscription = stripe.Subscription.modify(
                 owner.stripe_subscription_id,
                 cancel_at_period_end=False,
                 items=[
                     {
                         "id": subscription["items"]["data"][0]["id"],
-                        "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                        "plan": desired_plan_info.stripe_id,
                         "quantity": desired_plan["quantity"],
                     }
                 ],
@@ -397,7 +411,11 @@ class StripeService(AbstractPaymentService):
             )
 
     def _modify_subscription_schedule(
-        self, owner: Owner, subscription, subscription_schedule_id, desired_plan
+        self,
+        owner: Owner,
+        subscription: stripe.Subscription,
+        subscription_schedule_id: str,
+        desired_plan: dict,
     ):
         current_subscription_start_date = subscription["current_period_start"]
         current_subscription_end_date = subscription["current_period_end"]
@@ -405,6 +423,14 @@ class StripeService(AbstractPaymentService):
         subscription_item = subscription["items"]["data"][0]
         current_plan = subscription_item["plan"]["id"]
         current_quantity = subscription_item["quantity"]
+
+        plan = Plan.objects.filter(name=desired_plan["value"]).first()
+        if not plan or not plan.stripe_id:
+            log.error(
+                f"Plan {desired_plan['value']} not found",
+                extra=dict(owner_id=owner.ownerid),
+            )
+            return
 
         stripe.SubscriptionSchedule.modify(
             subscription_schedule_id,
@@ -427,8 +453,8 @@ class StripeService(AbstractPaymentService):
                     "end_date": current_subscription_end_date + SCHEDULE_RELEASE_OFFSET,
                     "items": [
                         {
-                            "plan": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
-                            "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                            "plan": plan.stripe_id,
+                            "price": plan.stripe_id,
                             "quantity": desired_plan["quantity"],
                         }
                     ],
@@ -438,20 +464,18 @@ class StripeService(AbstractPaymentService):
             metadata=self._get_checkout_session_and_subscription_metadata(owner),
         )
 
-    def _is_upgrading_seats(self, owner: Owner, desired_plan: dict) -> bool:
+    def _is_upgrading_seats(self, owner: Owner, desired_quantity: int) -> bool:
         """
         Returns `True` if purchasing more seats.
         """
-        return bool(
-            owner.plan_user_count and owner.plan_user_count < desired_plan["quantity"]
-        )
+        return bool(owner.plan_user_count and owner.plan_user_count < desired_quantity)
 
-    def _is_extending_term(self, owner: Owner, desired_plan: dict) -> bool:
+    def _is_extending_term(
+        self, current_plan_info: Plan, desired_plan_info: Plan
+    ) -> bool:
         """
         Returns `True` if switching from monthly to yearly plan.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
 
         return bool(
             current_plan_info
@@ -460,13 +484,16 @@ class StripeService(AbstractPaymentService):
             and desired_plan_info.billing_rate == PlanBillingRate.YEARLY.value
         )
 
-    def _is_similar_plan(self, owner: Owner, desired_plan: dict) -> bool:
+    def _is_similar_plan(
+        self,
+        owner: Owner,
+        current_plan_info: Plan,
+        desired_plan_info: Plan,
+        desired_quantity: int,
+    ) -> bool:
         """
         Returns `True` if switching to a plan with similar term and seats.
         """
-        current_plan_info = USER_PLAN_REPRESENTATIONS.get(owner.plan)
-        desired_plan_info = USER_PLAN_REPRESENTATIONS.get(desired_plan["value"])
-
         is_same_term = (
             current_plan_info
             and desired_plan_info
@@ -474,29 +501,44 @@ class StripeService(AbstractPaymentService):
         )
 
         is_same_seats = (
-            owner.plan_user_count and owner.plan_user_count == desired_plan["quantity"]
+            owner.plan_user_count and owner.plan_user_count == desired_quantity
         )
-
         # If from PRO to TEAM, then not a similar plan
-        if owner.plan not in TEAM_PLANS and desired_plan["value"] in TEAM_PLANS:
+        if (
+            current_plan_info.tier.tier_name != TierName.TEAM.value
+            and desired_plan_info.tier.tier_name == TierName.TEAM.value
+        ):
             return False
         # If from TEAM to PRO, then considered a similar plan but really is an upgrade
-        elif owner.plan in TEAM_PLANS and desired_plan["value"] not in TEAM_PLANS:
+        elif (
+            current_plan_info.tier.tier_name == TierName.TEAM.value
+            and desired_plan_info.tier.tier_name != TierName.TEAM.value
+        ):
             return True
 
         return bool(is_same_term and is_same_seats)
 
-    def _get_proration_params(self, owner: Owner, desired_plan: dict) -> str:
+    def _get_proration_params(
+        self, owner: Owner, desired_plan_info: Plan, desired_quantity: int
+    ) -> str:
+        current_plan_info = Plan.objects.select_related("tier").get(name=owner.plan)
         if (
-            self._is_upgrading_seats(owner, desired_plan)
-            or self._is_extending_term(owner, desired_plan)
-            or self._is_similar_plan(owner, desired_plan)
+            self._is_upgrading_seats(owner=owner, desired_quantity=desired_quantity)
+            or self._is_extending_term(
+                current_plan_info=current_plan_info, desired_plan_info=desired_plan_info
+            )
+            or self._is_similar_plan(
+                owner=owner,
+                current_plan_info=current_plan_info,
+                desired_plan_info=desired_plan_info,
+                desired_quantity=desired_quantity,
+            )
         ):
             return "always_invoice"
         else:
             return "none"
 
-    def _get_success_and_cancel_url(self, owner):
+    def _get_success_and_cancel_url(self, owner: Owner):
         short_services = {"github": "gh", "bitbucket": "bb", "gitlab": "gl"}
         base_path = f"/plan/{short_services[owner.service]}/{owner.username}"
         success_url = f"{settings.CODECOV_DASHBOARD_URL}{base_path}?success"
@@ -504,16 +546,24 @@ class StripeService(AbstractPaymentService):
         return success_url, cancel_url
 
     @_log_stripe_error
-    def create_checkout_session(self, owner: Owner, desired_plan):
+    def create_checkout_session(self, owner: Owner, desired_plan: dict):
         success_url, cancel_url = self._get_success_and_cancel_url(owner)
         log.info(
             "Creating Stripe Checkout Session for owner",
             extra=dict(owner_id=owner.ownerid),
         )
 
+        plan = Plan.objects.filter(name=desired_plan["value"]).first()
+        if not plan or not plan.stripe_id:
+            log.error(
+                f"Plan {desired_plan['value']} not found",
+                extra=dict(owner_id=owner.ownerid),
+            )
+            return
+
         session = stripe.checkout.Session.create(
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
             billing_address_collection="required",
-            payment_method_types=["card"],
             payment_method_collection="if_required",
             client_reference_id=str(owner.ownerid),
             success_url=success_url,
@@ -522,7 +572,7 @@ class StripeService(AbstractPaymentService):
             mode="subscription",
             line_items=[
                 {
-                    "price": settings.STRIPE_PLAN_IDS[desired_plan["value"]],
+                    "price": plan.stripe_id,
                     "quantity": desired_plan["quantity"],
                 }
             ],
@@ -530,17 +580,48 @@ class StripeService(AbstractPaymentService):
                 "metadata": self._get_checkout_session_and_subscription_metadata(owner),
             },
             tax_id_collection={"enabled": True},
-            customer_update={"name": "auto", "address": "auto"}
-            if owner.stripe_customer_id
-            else None,
+            customer_update=(
+                {"name": "auto", "address": "auto"}
+                if owner.stripe_customer_id
+                else None
+            ),
         )
         log.info(
             f"Stripe Checkout Session created successfully for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
         return session["id"]
 
+    def _is_unverified_payment_method(self, payment_method_id: str) -> bool:
+        payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+
+        is_us_bank_account = payment_method.type == "us_bank_account" and hasattr(
+            payment_method, "us_bank_account"
+        )
+        if is_us_bank_account:
+            setup_intents = stripe.SetupIntent.list(
+                payment_method=payment_method_id, limit=1
+            )
+
+            try:
+                latest_intent = setup_intents.data[0]
+                if (
+                    latest_intent.status == "requires_action"
+                    and latest_intent.next_action
+                    and latest_intent.next_action.type == "verify_with_microdeposits"
+                ):
+                    return True
+            except Exception as e:
+                log.error(
+                    "Error retrieving latest setup intent",
+                    payment_method_id=payment_method_id,
+                    extra=dict(error=e),
+                )
+                return False
+
+        return False
+
     @_log_stripe_error
-    def update_payment_method(self, owner: Owner, payment_method):
+    def update_payment_method(self, owner: Owner, payment_method: str) -> None:
         log.info(
             "Stripe update payment method for owner",
             extra=dict(
@@ -560,15 +641,21 @@ class StripeService(AbstractPaymentService):
                 ),
             )
             return None
-        # attach the payment method + set as default on the invoice and subscription
-        stripe.PaymentMethod.attach(payment_method, customer=owner.stripe_customer_id)
-        stripe.Customer.modify(
-            owner.stripe_customer_id,
-            invoice_settings={"default_payment_method": payment_method},
-        )
-        stripe.Subscription.modify(
-            owner.stripe_subscription_id, default_payment_method=payment_method
-        )
+
+        # do not set as default if the new payment method is unverified (e.g., awaiting microdeposits)
+        should_set_as_default = not self._is_unverified_payment_method(payment_method)
+
+        if should_set_as_default:
+            stripe.PaymentMethod.attach(
+                payment_method, customer=owner.stripe_customer_id
+            )
+            stripe.Customer.modify(
+                owner.stripe_customer_id,
+                invoice_settings={"default_payment_method": payment_method},
+            )
+            stripe.Subscription.modify(
+                owner.stripe_subscription_id, default_payment_method=payment_method
+            )
         log.info(
             f"Successfully updated payment method for owner {owner.ownerid} by user #{self.requesting_user.ownerid}",
             extra=dict(
@@ -580,7 +667,12 @@ class StripeService(AbstractPaymentService):
         )
 
     @_log_stripe_error
-    def update_email_address(self, owner: Owner, email_address: str):
+    def update_email_address(
+        self,
+        owner: Owner,
+        email_address: str,
+        apply_to_default_payment_method: bool = False,
+    ):
         if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email_address):
             return None
 
@@ -594,6 +686,35 @@ class StripeService(AbstractPaymentService):
         log.info(
             f"Stripe successfully updated email address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
         )
+
+        if apply_to_default_payment_method:
+            try:
+                default_payment_method = stripe.Customer.retrieve(
+                    owner.stripe_customer_id
+                )["invoice_settings"]["default_payment_method"]
+
+                stripe.PaymentMethod.modify(
+                    default_payment_method,
+                    billing_details={"email": email_address},
+                )
+                log.info(
+                    "Stripe successfully updated billing email for payment method",
+                    extra=dict(
+                        payment_method=default_payment_method,
+                        stripe_customer_id=owner.stripe_customer_id,
+                        ownerid=owner.ownerid,
+                    ),
+                )
+            except Exception as e:
+                log.error(
+                    "Unable to update billing email for payment method",
+                    extra=dict(
+                        payment_method=default_payment_method,
+                        stripe_customer_id=owner.stripe_customer_id,
+                        error=str(e),
+                        ownerid=owner.ownerid,
+                    ),
+                )
 
     @_log_stripe_error
     def update_billing_address(self, owner: Owner, name, billing_address):
@@ -664,6 +785,91 @@ class StripeService(AbstractPaymentService):
                 coupon=owner.stripe_coupon_id,
             )
 
+    @_log_stripe_error
+    def create_setup_intent(self, owner: Owner) -> stripe.SetupIntent:
+        log.info(
+            "Stripe create setup intent for owner",
+            extra=dict(
+                owner_id=owner.ownerid,
+                requesting_user_id=self.requesting_user.ownerid,
+                subscription_id=owner.stripe_subscription_id,
+                customer_id=owner.stripe_customer_id,
+            ),
+        )
+        return stripe.SetupIntent.create(
+            payment_method_configuration=settings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
+            customer=owner.stripe_customer_id,
+        )
+
+    @_log_stripe_error
+    def get_unverified_payment_methods(self, owner: Owner):
+        log.info(
+            "Getting unverified payment methods",
+            extra=dict(
+                owner_id=owner.ownerid, stripe_customer_id=owner.stripe_customer_id
+            ),
+        )
+        if not owner.stripe_customer_id:
+            return []
+
+        unverified_payment_methods = []
+
+        # Check payment intents
+        has_more = True
+        starting_after = None
+        while has_more:
+            payment_intents = stripe.PaymentIntent.list(
+                customer=owner.stripe_customer_id,
+                limit=20,
+                starting_after=starting_after,
+            )
+            for intent in payment_intents.data or []:
+                if (
+                    intent.get("next_action")
+                    and intent.next_action
+                    and intent.next_action.get("type") == "verify_with_microdeposits"
+                ):
+                    unverified_payment_methods.extend(
+                        [
+                            {
+                                "payment_method_id": intent.payment_method,
+                                "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                            }
+                        ]
+                    )
+            has_more = payment_intents.has_more
+            if has_more and payment_intents.data:
+                starting_after = payment_intents.data[-1].id
+
+        # Check setup intents
+        has_more = True
+        starting_after = None
+        while has_more:
+            setup_intents = stripe.SetupIntent.list(
+                customer=owner.stripe_customer_id,
+                limit=20,
+                starting_after=starting_after,
+            )
+            for intent in setup_intents.data:
+                if (
+                    intent.get("next_action")
+                    and intent.next_action
+                    and intent.next_action.get("type") == "verify_with_microdeposits"
+                ):
+                    unverified_payment_methods.extend(
+                        [
+                            {
+                                "payment_method_id": intent.payment_method,
+                                "hosted_verification_url": intent.next_action.verify_with_microdeposits.hosted_verification_url,
+                            }
+                        ]
+                    )
+            has_more = setup_intents.has_more
+            if has_more and setup_intents.data:
+                starting_after = setup_intents.data[-1].id
+
+        return unverified_payment_methods
+
 
 class EnterprisePaymentService(AbstractPaymentService):
     # enterprise has no payments setup so these are all noops
@@ -701,6 +907,12 @@ class EnterprisePaymentService(AbstractPaymentService):
     def apply_cancellation_discount(self, owner: Owner):
         pass
 
+    def create_setup_intent(self, owner):
+        pass
+
+    def get_unverified_payment_methods(self, owner: Owner):
+        pass
+
 
 class BillingService:
     payment_service = None
@@ -731,28 +943,52 @@ class BillingService:
     def list_filtered_invoices(self, owner, limit=10):
         return self.payment_service.list_filtered_invoices(owner, limit)
 
+    def get_unverified_payment_methods(self, owner: Owner):
+        return self.payment_service.get_unverified_payment_methods(owner)
+
     def update_plan(self, owner, desired_plan):
         """
         Takes an owner and desired plan, and updates the owner's plan. Depending
         on current state, might create a stripe checkout session and return
         the checkout session's ID, which is a string. Otherwise returns None.
         """
-        if desired_plan["value"] in FREE_PLAN_REPRESENTATIONS:
+        try:
+            plan = Plan.objects.get(name=desired_plan["value"])
+        except Plan.DoesNotExist:
+            log.warning(
+                f"Unable to find plan {desired_plan['value']} for owner {owner.ownerid}"
+            )
+            return None
+
+        if not plan.is_active:
+            log.warning(
+                f"Attempted to transition to non-existent or legacy plan: "
+                f"owner {owner.ownerid}, plan: {desired_plan}"
+            )
+            return None
+
+        if plan.paid_plan is False:
             if owner.stripe_subscription_id is not None:
                 self.payment_service.delete_subscription(owner)
             else:
                 plan_service = PlanService(current_org=owner)
                 plan_service.set_default_plan_data()
-        elif desired_plan["value"] in PAID_PLANS:
+        else:
             if owner.stripe_subscription_id is not None:
+                # if the existing subscription is incomplete, clean it up and create a new checkout session
+                subscription = self.payment_service.get_subscription(owner)
+
+                if subscription and subscription.status == "incomplete":
+                    self._cleanup_incomplete_subscription(subscription, owner)
+                    return self.payment_service.create_checkout_session(
+                        owner, desired_plan
+                    )
+
+                # if the existing subscription is complete, modify the plan
                 self.payment_service.modify_subscription(owner, desired_plan)
             else:
+                # if the owner has no subscription, create a new checkout session
                 return self.payment_service.create_checkout_session(owner, desired_plan)
-        else:
-            log.warning(
-                f"Attempted to transition to non-existent or legacy plan: "
-                f"owner {owner.ownerid}, plan: {desired_plan}"
-            )
 
     def update_payment_method(self, owner, payment_method):
         """
@@ -762,14 +998,21 @@ class BillingService:
         """
         return self.payment_service.update_payment_method(owner, payment_method)
 
-    def update_email_address(self, owner: Owner, email_address: str):
+    def update_email_address(
+        self,
+        owner: Owner,
+        email_address: str,
+        apply_to_default_payment_method: bool = False,
+    ):
         """
         Takes an owner and a new email. Email is a string coming directly from
         the front-end. If the owner has a payment id and if it's a valid email,
         the payment service will update the email address in the upstream service.
         Otherwise returns None.
         """
-        return self.payment_service.update_email_address(owner, email_address)
+        return self.payment_service.update_email_address(
+            owner, email_address, apply_to_default_payment_method
+        )
 
     def update_billing_address(self, owner: Owner, name: str, billing_address):
         """
@@ -781,3 +1024,53 @@ class BillingService:
 
     def apply_cancellation_discount(self, owner: Owner):
         return self.payment_service.apply_cancellation_discount(owner)
+
+    def create_setup_intent(self, owner: Owner):
+        """
+        Creates a SetupIntent for the given owner to securely collect payment details
+        See https://docs.stripe.com/api/setup_intents/create
+        """
+        return self.payment_service.create_setup_intent(owner)
+
+    def _cleanup_incomplete_subscription(
+        self, subscription: stripe.Subscription, owner: Owner
+    ):
+        try:
+            payment_intent_id = subscription.latest_invoice.payment_intent
+        except Exception as e:
+            log.error(
+                "Latest invoice is missing payment intent id",
+                extra=dict(error=e),
+            )
+            return None
+
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+        if payment_intent.status == "requires_action":
+            log.info(
+                "Subscription has pending payment verification",
+                extra=dict(
+                    subscription_id=subscription.get("id"),
+                    payment_intent_id=payment_intent.get("id"),
+                    payment_intent_status=payment_intent.get("status"),
+                ),
+            )
+            try:
+                # Delete the subscription, which also removes the
+                # pending payment method and unverified payment intent
+                stripe.Subscription.delete(subscription)
+                log.info(
+                    "Deleted incomplete subscription",
+                    extra=dict(
+                        subscription_id=subscription.get("id"),
+                        payment_intent_id=payment_intent.get("id"),
+                    ),
+                )
+            except Exception as e:
+                log.error(
+                    "Failed to delete subscription",
+                    extra=dict(
+                        subscription_id=subscription.get("id"),
+                        payment_intent_id=payment_intent.get("id"),
+                        error=str(e),
+                    ),
+                )

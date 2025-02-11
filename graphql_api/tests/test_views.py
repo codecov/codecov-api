@@ -309,3 +309,23 @@ class AriadneViewTestCase(GraphQLTestHelper, TestCase):
         data = await self.do_query(schema, query=query, variables={})
 
         assert data == {"detail": "Missing required variables: name", "status": 400}
+
+    async def test_empty_request_body(self):
+        schema = generate_schema_with_required_variables()
+
+        request = RequestFactory().post(
+            "/graphql/gh", "", content_type="application/json"
+        )
+        match = ResolverMatch(func=lambda: None, args=(), kwargs={"service": "github"})
+        request.resolver_match = match
+        request.user = None
+        request.current_owner = None
+
+        view = AsyncGraphqlView.as_view(schema=schema)
+        response = await view(request, service="gh")
+
+        assert response.status_code == 400
+        assert json.loads(response.content) == {
+            "status": 400,
+            "detail": "Invalid JSON response received.",
+        }

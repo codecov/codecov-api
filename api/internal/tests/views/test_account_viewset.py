@@ -14,10 +14,11 @@ from shared.django_apps.codecov_auth.tests.factories import (
     OwnerFactory,
     UserFactory,
 )
-from shared.plan.constants import PlanName, TrialStatus
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, TrialStatus
 from stripe import StripeError
 
 from api.internal.tests.test_utils import GetAdminProviderAdapter
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import Service
 from utils.test_utils import APIClient
 
@@ -25,21 +26,42 @@ curr_path = os.path.dirname(__file__)
 
 
 class MockSubscription(object):
-    def __init__(self, subscription_params):
+    def __init__(self, subscription_params: dict):
         self.items = {"data": [{"id": "abc"}]}
         self.cancel_at_period_end = False
         self.current_period_end = 1633512445
-        self.latest_invoice = subscription_params["latest_invoice"]
+        self.latest_invoice = subscription_params.get(
+            "latest_invoice",
+            {
+                "id": "in_123",
+                "status": "complete",
+            },
+        )
+
+        default_payment_method = {
+            "id": "pm_123",
+            "card": {
+                "brand": "visa",
+                "exp_month": 12,
+                "exp_year": 2024,
+                "last4": "abcd",
+            },
+        }
         self.customer = {
             "invoice_settings": {
-                "default_payment_method": subscription_params["default_payment_method"]
+                "default_payment_method": subscription_params.get(
+                    "default_payment_method", default_payment_method
+                )
             },
             "id": "cus_LK&*Hli8YLIO",
             "discount": None,
             "email": None,
         }
-        self.schedule = subscription_params["schedule_id"]
-        self.collection_method = subscription_params["collection_method"]
+        self.schedule = subscription_params.get("schedule_id")
+        self.status = subscription_params.get("status", "active")
+        self.collection_method = subscription_params.get(
+            "collection_method", "charge_automatically"
+        )
         self.trial_end = subscription_params.get("trial_end")
 
         customer_coupon = subscription_params.get("customer_coupon")
@@ -91,6 +113,11 @@ class AccountViewSetTests(APITestCase):
     def _destroy(self, kwargs):
         return self.client.delete(reverse("account_details-detail", kwargs=kwargs))
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        mock_all_plans_and_tiers()
+
     def setUp(self):
         self.service = "gitlab"
         self.current_owner = OwnerFactory(
@@ -120,7 +147,7 @@ class AccountViewSetTests(APITestCase):
                     "description": "(10) users-pr-inappm",
                     "amount": 120,
                     "currency": "usd",
-                    "plan_name": "users-pr-inappm",
+                    "plan_name": PlanName.CODECOV_PRO_MONTHLY.value,
                     "quantity": 1,
                     "period": {"end": 1521326190, "start": 1518906990},
                 }
@@ -158,7 +185,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -207,7 +234,7 @@ class AccountViewSetTests(APITestCase):
         schedule_params = {
             "id": 123,
             "start_date": 123689126736,
-            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "stripe_plan_id": "plan_pro_yearly",
             "quantity": 6,
         }
         phases = [
@@ -230,14 +257,20 @@ class AccountViewSetTests(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         assert response.data == {
-            "activated_user_count": 0,
-            "root_organization": None,
             "integration_id": owner.integration_id,
-            "plan_auto_activate": owner.plan_auto_activate,
+            "activated_student_count": 0,
+            "activated_user_count": 0,
+            "checkout_session_id": None,
+            "delinquent": None,
+            "email": owner.email,
             "inactive_user_count": 1,
+            "name": owner.name,
+            "nb_active_private_repos": 0,
+            "plan_auto_activate": True,
+            "plan_provider": owner.plan_provider,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -247,6 +280,17 @@ class AccountViewSetTests(APITestCase):
                 ],
                 "quantity": 1,
             },
+            "repo_total_credits": 99999999,
+            "root_organization": None,
+            "schedule_detail": {
+                "id": "123",
+                "scheduled_phase": {
+                    "start_date": schedule_params["start_date"],
+                    "plan": "Pro",
+                    "quantity": schedule_params["quantity"],
+                },
+            },
+            "student_count": 0,
             "subscription_detail": {
                 "latest_invoice": None,
                 "default_payment_method": None,
@@ -254,27 +298,10 @@ class AccountViewSetTests(APITestCase):
                 "current_period_end": 1633512445,
                 "customer": {"id": "cus_LK&*Hli8YLIO", "discount": None, "email": None},
                 "collection_method": "charge_automatically",
-                "trial_end": None,
                 "tax_ids": None,
-            },
-            "checkout_session_id": None,
-            "name": owner.name,
-            "email": owner.email,
-            "nb_active_private_repos": 0,
-            "repo_total_credits": 99999999,
-            "plan_provider": owner.plan_provider,
-            "activated_student_count": 0,
-            "student_count": 0,
-            "schedule_detail": {
-                "id": "123",
-                "scheduled_phase": {
-                    "plan": "monthly",
-                    "quantity": schedule_params["quantity"],
-                    "start_date": schedule_params["start_date"],
-                },
+                "trial_end": None,
             },
             "uses_invoice": False,
-            "delinquent": None,
         }
 
     @patch("services.billing.stripe.SubscriptionSchedule.retrieve")
@@ -303,7 +330,7 @@ class AccountViewSetTests(APITestCase):
         schedule_params = {
             "id": 123,
             "start_date": 123689126736,
-            "stripe_plan_id": "plan_H6P3KZXwmAbqPS",
+            "stripe_plan_id": "plan_pro_yearly",
             "quantity": 6,
         }
         phases = [
@@ -340,7 +367,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -371,7 +398,7 @@ class AccountViewSetTests(APITestCase):
             "schedule_detail": {
                 "id": "123",
                 "scheduled_phase": {
-                    "plan": "monthly",
+                    "plan": "Pro",
                     "quantity": schedule_params["quantity"],
                     "start_date": schedule_params["start_date"],
                 },
@@ -414,7 +441,7 @@ class AccountViewSetTests(APITestCase):
             "inactive_user_count": 1,
             "plan": {
                 "marketing_name": "Developer",
-                "value": PlanName.BASIC_PLAN_NAME.value,
+                "value": DEFAULT_FREE_PLAN,
                 "billing_rate": None,
                 "base_unit_price": 0,
                 "benefits": [
@@ -482,13 +509,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_free_user_plan(self):
-        self.current_owner.plan = "users-free"
+        self.current_owner.plan = DEFAULT_FREE_PLAN
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Developer",
-            "value": "users-free",
+            "value": DEFAULT_FREE_PLAN,
             "billing_rate": None,
             "base_unit_price": 0,
             "benefits": [
@@ -500,13 +527,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_paid_user_plan_billed_monthly(self):
-        self.current_owner.plan = "users-pr-inappm"
+        self.current_owner.plan = PlanName.CODECOV_PRO_MONTHLY.value
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Pro",
-            "value": "users-pr-inappm",
+            "value": PlanName.CODECOV_PRO_MONTHLY.value,
             "billing_rate": "monthly",
             "base_unit_price": 12,
             "benefits": [
@@ -519,13 +546,13 @@ class AccountViewSetTests(APITestCase):
         }
 
     def test_account_with_paid_user_plan_billed_annually(self):
-        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY_LEGACY.value
+        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.save()
         response = self._retrieve()
         assert response.status_code == status.HTTP_200_OK
         assert response.data["plan"] == {
             "marketing_name": "Pro",
-            "value": PlanName.CODECOV_PRO_YEARLY_LEGACY.value,
+            "value": PlanName.CODECOV_PRO_YEARLY.value,
             "billing_rate": "annually",
             "base_unit_price": 10,
             "benefits": [
@@ -684,8 +711,8 @@ class AccountViewSetTests(APITestCase):
         assert self.current_owner.plan_auto_activate is False
         assert response.data["plan_auto_activate"] is False
 
-    def test_update_can_set_plan_to_users_basic(self):
-        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY_LEGACY.value
+    def test_update_can_set_plan_to_users_developer_should_set_to_developer(self):
+        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.save()
 
         response = self._update(
@@ -693,14 +720,14 @@ class AccountViewSetTests(APITestCase):
                 "service": self.current_owner.service,
                 "owner_username": self.current_owner.username,
             },
-            data={"plan": {"value": PlanName.BASIC_PLAN_NAME.value}},
+            data={"plan": {"value": DEFAULT_FREE_PLAN}},
         )
 
         assert response.status_code == status.HTTP_200_OK
 
         self.current_owner.refresh_from_db()
 
-        assert self.current_owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.current_owner.plan == DEFAULT_FREE_PLAN
         assert self.current_owner.plan_activated_users is None
         assert self.current_owner.plan_user_count == 1
         assert response.data["plan_auto_activate"] is True
@@ -957,7 +984,7 @@ class AccountViewSetTests(APITestCase):
         )
 
     def test_update_team_plan_must_fail_if_too_many_activated_users_during_trial(self):
-        self.current_owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.current_owner.plan = DEFAULT_FREE_PLAN
         self.current_owner.plan_user_count = 1
         self.current_owner.trial_status = TrialStatus.ONGOING.value
         self.current_owner.plan_activated_users = list(range(11))
@@ -978,13 +1005,7 @@ class AccountViewSetTests(APITestCase):
             )
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
-            assert response.json() == {
-                "plan": {
-                    "value": [
-                        f"Invalid value for plan: {desired_plan['value']}; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy']"
-                    ]
-                }
-            }
+            assert "Invalid value for plan:" in response.json()["plan"]["value"][0]
 
     def test_update_team_plan_must_fail_if_currently_team_plan_add_too_many_users(self):
         self.current_owner.plan = PlanName.TEAM_MONTHLY.value
@@ -1098,6 +1119,7 @@ class AccountViewSetTests(APITestCase):
         response = self.client.patch(url, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    @patch("services.billing.StripeService._is_unverified_payment_method")
     @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
@@ -1108,11 +1130,14 @@ class AccountViewSetTests(APITestCase):
         modify_customer_mock,
         attach_payment_mock,
         retrieve_subscription_mock,
+        is_unverified_payment_method_mock,
     ):
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
         f = open("./services/tests/samples/stripe_invoice.json")
+
+        is_unverified_payment_method_mock.return_value = False
 
         default_payment_method = {
             "card": {
@@ -1226,6 +1251,46 @@ class AccountViewSetTests(APITestCase):
 
         modify_customer_mock.assert_called_once_with(
             self.current_owner.stripe_customer_id, email=new_email
+        )
+
+    @patch("services.billing.stripe.Subscription.retrieve")
+    @patch("services.billing.stripe.Customer.modify")
+    @patch("services.billing.stripe.PaymentMethod.modify")
+    @patch("services.billing.stripe.Customer.retrieve")
+    def test_update_email_address_with_propagate(
+        self,
+        customer_retrieve_mock,
+        payment_method_mock,
+        modify_customer_mock,
+        retrieve_mock,
+    ):
+        self.current_owner.stripe_customer_id = "flsoe"
+        self.current_owner.stripe_subscription_id = "djfos"
+        self.current_owner.save()
+
+        payment_method_id = "pm_123"
+        customer_retrieve_mock.return_value = {
+            "invoice_settings": {"default_payment_method": payment_method_id}
+        }
+
+        new_email = "test@gmail.com"
+        kwargs = {
+            "service": self.current_owner.service,
+            "owner_username": self.current_owner.username,
+        }
+        data = {"new_email": new_email, "apply_to_default_payment_method": True}
+        url = reverse("account_details-update-email", kwargs=kwargs)
+        response = self.client.patch(url, data=data, format="json")
+        assert response.status_code == status.HTTP_200_OK
+
+        modify_customer_mock.assert_called_once_with(
+            self.current_owner.stripe_customer_id, email=new_email
+        )
+        customer_retrieve_mock.assert_called_once_with(
+            self.current_owner.stripe_customer_id
+        )
+        payment_method_mock.assert_called_once_with(
+            payment_method_id, billing_details={"email": new_email}
         )
 
     def test_update_billing_address_without_body(self):
@@ -1389,14 +1454,15 @@ class AccountViewSetTests(APITestCase):
         assert self.current_owner.name == expected_name
         assert self.current_owner.email == expected_email
 
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_handles_stripe_error(self, modify_sub_mock):
+    def test_update_handles_stripe_error(self, retrieve_sub_mock, modify_sub_mock):
         code, message = 402, "Not right, wrong in fact"
         desired_plan = {"value": PlanName.CODECOV_PRO_MONTHLY.value, "quantity": 12}
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
-
+        retrieve_sub_mock.return_value = MockSubscription({})
         modify_sub_mock.side_effect = StripeError(message=message, http_status=code)
 
         response = self._update(
@@ -1410,9 +1476,12 @@ class AccountViewSetTests(APITestCase):
         assert response.status_code == code
         assert response.data["detail"] == message
 
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan_monthly(self, modify_sub_mock, send_sentry_webhook):
+    def test_update_sentry_plan_monthly(
+        self, modify_sub_mock, send_sentry_webhook, retrieve_sub_mock
+    ):
         desired_plan = {"value": PlanName.SENTRY_MONTHLY.value, "quantity": 12}
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
@@ -1453,10 +1522,16 @@ class AccountViewSetTests(APITestCase):
         )
         send_sentry_webhook.assert_called_once_with(self.current_owner, org)
 
+    @patch("services.billing.stripe.Subscription.retrieve")
     @patch("api.internal.owner.serializers.send_sentry_webhook")
     @patch("services.billing.StripeService.modify_subscription")
-    def test_update_sentry_plan_annual(self, modify_sub_mock, send_sentry_webhook):
-        desired_plan = {"value": "users-sentryy", "quantity": 12}
+    def test_update_sentry_plan_annual(
+        self,
+        modify_sub_mock,
+        send_sentry_webhook,
+        retrieve_sub_mock,
+    ):
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 12}
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.sentry_user_id = "sentry-user-id"
@@ -1478,7 +1553,7 @@ class AccountViewSetTests(APITestCase):
     def test_update_sentry_plan_annual_with_users_org(
         self, modify_sub_mock, send_sentry_webhook
     ):
-        desired_plan = {"value": "users-sentryy", "quantity": 12}
+        desired_plan = {"value": PlanName.SENTRY_YEARLY.value, "quantity": 12}
         org = OwnerFactory(
             service=Service.GITHUB.value,
             service_id="923836740",
@@ -1521,7 +1596,7 @@ class AccountViewSetTests(APITestCase):
         assert res.json() == {
             "plan": {
                 "value": [
-                    "Invalid value for plan: users-sentrym; must be one of ['users-basic', 'users-pr-inappm', 'users-pr-inappy', 'users-teamm', 'users-teamy']"
+                    f"Invalid value for plan: users-sentrym; must be one of ['users-pr-inappm', 'users-pr-inappy', 'users-teamm', 'users-teamy', '{DEFAULT_FREE_PLAN}']"
                 ]
             }
         }
@@ -1534,7 +1609,7 @@ class AccountViewSetTests(APITestCase):
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
-        self.current_owner.plan = "users-pr-inappm"
+        self.current_owner.plan = PlanName.CODECOV_PRO_MONTHLY.value
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
@@ -1586,7 +1661,7 @@ class AccountViewSetTests(APITestCase):
     ):
         coupon_create_mock.return_value = MagicMock(id="test-coupon-id")
 
-        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY_LEGACY.value
+        self.current_owner.plan = PlanName.CODECOV_PRO_YEARLY.value
         self.current_owner.stripe_customer_id = "flsoe"
         self.current_owner.stripe_subscription_id = "djfos"
         self.current_owner.save()
@@ -1639,7 +1714,7 @@ class AccountViewSetTests(APITestCase):
             name="Hello World",
             plan_seat_count=5,
             free_seat_count=3,
-            plan="users-enterprisey",
+            plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value,
             is_delinquent=False,
         )
         InvoiceBillingFactory(is_active=True, account=account)

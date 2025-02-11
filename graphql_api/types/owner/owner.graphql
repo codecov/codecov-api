@@ -2,6 +2,7 @@ type Owner {
   account: Account
   availablePlans: [PlanRepresentation!]
   avatarUrl: String!
+  billing: Billing
   defaultOrgUsername: String
   delinquent: Boolean
   hashOwnerid: String

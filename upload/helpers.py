@@ -2,6 +2,7 @@ import logging
 import re
 from json import dumps
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 import jwt
 from asgiref.sync import async_to_sync
@@ -15,7 +16,6 @@ from jwt import PyJWKClient, PyJWTError
 from redis import Redis
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
 from shared.github import InvalidInstallationError
-from shared.plan.constants import USER_PLAN_REPRESENTATIONS
 from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
 from shared.torngit.base import TorngitBaseAdapter
@@ -29,6 +29,7 @@ from codecov_auth.models import (
     SERVICE_GITHUB_ENTERPRISE,
     GithubAppInstallation,
     Owner,
+    Plan,
 )
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportSession
@@ -237,12 +238,15 @@ def parse_params(data: Dict[str, Any]) -> Dict[str, Any]:
 def get_repo_with_github_actions_oidc_token(token: str) -> Repository:
     unverified_contents = jwt.decode(token, options={"verify_signature": False})
     token_issuer = str(unverified_contents.get("iss"))
-    if token_issuer == "https://token.actions.githubusercontent.com":
+    parsed_url = urlparse(token_issuer)
+    if parsed_url.hostname == "token.actions.githubusercontent.com":
         service = "github"
         jwks_url = "https://token.actions.githubusercontent.com/.well-known/jwks"
     else:
         service = "github_enterprise"
         github_enterprise_url = get_config("github_enterprise", "url")
+        if not github_enterprise_url:
+            raise ValidationError("GitHub Enterprise URL configuration is not set")
         # remove trailing slashes if present
         github_enterprise_url = re.sub(r"/+$", "", github_enterprise_url)
         jwks_url = f"{github_enterprise_url}/_services/token/.well-known/jwks"
@@ -525,7 +529,7 @@ def insert_commit(
     return commit
 
 
-def get_global_tokens() -> Dict[str, Any]:
+def get_global_tokens() -> Dict[str | None, Any]:
     """
     Enterprise only: check the config to see if global tokens were set for this organization's uploads.
 
@@ -637,7 +641,10 @@ def validate_upload(
         owner = _determine_responsible_owner(repository)
 
         # If author is on per repo billing, check their repo credits
-        if owner.plan not in USER_PLAN_REPRESENTATIONS and owner.repo_credits <= 0:
+        if (
+            owner.plan not in Plan.objects.values_list("name", flat=True)
+            and owner.repo_credits <= 0
+        ):
             raise ValidationError(
                 "Sorry, but this team has no private repository credits left."
             )

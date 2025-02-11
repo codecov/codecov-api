@@ -19,12 +19,37 @@ from webhook_handlers.constants import (
     WebhookHandlerErrorMessages,
 )
 
+from . import WEBHOOKS_ERRORED, WEBHOOKS_RECEIVED
+
 log = logging.getLogger(__name__)
 
 
 class GitLabWebhookHandler(APIView):
     permission_classes = [AllowAny]
     service_name = "gitlab"
+
+    def _inc_recv(self):
+        event_name = self.request.data.get("event_name")
+        if not event_name:
+            event_name = self.request.data.get("object_kind")
+        action = self.request.data.get("object_attributes", {}).get("action", "")
+
+        WEBHOOKS_RECEIVED.labels(
+            service=self.service_name, event=event_name, action=action
+        ).inc()
+
+    def _inc_err(self, reason: str):
+        event_name = self.request.data.get("event_name")
+        if not event_name:
+            event_name = self.request.data.get("object_kind")
+        action = self.request.data.get("object_attributes", {}).get("action", "")
+
+        WEBHOOKS_ERRORED.labels(
+            service=self.service_name,
+            event=event_name,
+            action=action,
+            error_reason=reason,
+        ).inc()
 
     def post(self, request, *args, **kwargs):
         """
@@ -50,14 +75,20 @@ class GitLabWebhookHandler(APIView):
         # special case - only event that doesn't have a repo yet
         if event_name == "project_create":
             if event == GitLabWebhookEvents.SYSTEM and is_enterprise:
+                self._inc_recv()
                 return self._handle_system_project_create_hook_event()
             else:
+                self._inc_err("permission_denied")
                 raise PermissionDenied()
 
-        # all other events should correspond to a repo in the db
-        repo = get_object_or_404(
-            Repository, author__service=self.service_name, service_id=project_id
-        )
+        try:
+            # all other events should correspond to a repo in the db
+            repo = get_object_or_404(
+                Repository, author__service=self.service_name, service_id=project_id
+            )
+        except Exception as e:
+            self._inc_err("repo_not_found")
+            raise e
 
         webhook_validation = bool(
             get_config(
@@ -68,17 +99,23 @@ class GitLabWebhookHandler(APIView):
             self._validate_secret(request, repo.webhook_secret)
 
         if event == GitLabWebhookEvents.PUSH:
+            self._inc_recv()
             return self._handle_push_event(repo)
         elif event == GitLabWebhookEvents.JOB:
+            self._inc_recv()
             return self._handle_job_event(repo)
         elif event == GitLabWebhookEvents.MERGE_REQUEST:
+            self._inc_recv()
             return self._handle_merge_request_event(repo)
         elif event == GitLabWebhookEvents.SYSTEM:
             # SYSTEM events have always been gated behind is_enterprise, requires an enterprise_license
             if not is_enterprise:
+                self._inc_err("permission_denied")
                 raise PermissionDenied()
+            self._inc_recv()
             return self._handle_system_hook_event(repo, event_name)
 
+        self._inc_err("unhandled_event")
         return Response()
 
     def _handle_push_event(self, repo):
@@ -251,6 +288,7 @@ class GitLabWebhookHandler(APIView):
         if token and webhook_secret:
             if constant_time_compare(webhook_secret, token):
                 return
+        self._inc_err("validation_failed")
         raise PermissionDenied()
 
 

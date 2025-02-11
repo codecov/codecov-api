@@ -4,18 +4,22 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
-from shared.plan.constants import PlanName, TrialStatus
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, TrialStatus
+
+from billing.helpers import mock_all_plans_and_tiers
 
 from .helper import GraphQLTestHelper
 
 
 class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
+        mock_all_plans_and_tiers()
         self.current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
             trial_start_date=timezone.now(),
             trial_end_date=timezone.now() + timedelta(days=14),
+            plan=PlanName.USERS_DEVELOPER.value,
         )
 
     @freeze_time("2023-06-19")
@@ -47,7 +51,7 @@ class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["pretrialPlan"] == {
             "marketingName": "Developer",
-            "value": "users-basic",
+            "value": DEFAULT_FREE_PLAN,
             "billingRate": None,
             "baseUnitPrice": 0,
             "benefits": [
