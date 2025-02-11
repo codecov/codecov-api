@@ -871,7 +871,7 @@ class StripeWebhookHandlerTests(APITestCase):
         has_unverified_initial_payment_method_mock,
     ):
         has_unverified_initial_payment_method_mock.return_value = False
-        self.owner.plan = PlanName.BASIC_PLAN_NAME.value
+        self.owner.plan = DEFAULT_FREE_PLAN
         self.owner.plan_user_count = 0
         self.owner.plan_auto_activate = False
         self.owner.save()
@@ -895,7 +895,7 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
         self.owner.refresh_from_db()
-        assert self.owner.plan == PlanName.BASIC_PLAN_NAME.value
+        assert self.owner.plan == DEFAULT_FREE_PLAN
         assert self.owner.plan_user_count == 0
         assert self.owner.plan_auto_activate == False
         pm_mock.assert_called_once_with(

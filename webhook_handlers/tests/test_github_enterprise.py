@@ -18,6 +18,7 @@ from shared.django_apps.core.tests.factories import (
 )
 from shared.plan.constants import PlanName
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import GithubAppInstallation, Owner, Service
 from utils.config import get_config
 from webhook_handlers.constants import (
@@ -950,6 +951,7 @@ class GithubEnterpriseWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_organization_member_removed_with_nonexistent_or_nonactivated_member(self):
+        mock_all_plans_and_tiers()
         org = OwnerFactory(
             service_id="4321",
             plan_activated_users=[50392],
