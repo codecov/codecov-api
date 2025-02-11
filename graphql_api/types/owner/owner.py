@@ -406,12 +406,6 @@ def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
 def resolve_billing(owner: Owner, info: GraphQLResolveInfo) -> dict | None:
     return owner
 
-@owner_bindable.field("billing")
-@sync_to_async
-@require_part_of_org
-def resolve_billing(owner: Owner, info: GraphQLResolveInfo) -> dict | None:
-    return owner
-
 @owner_bindable.field("aiEnabledRepositories")
 def resolve_ai_enabled_repositories(
     owner: Owner,
