@@ -57,6 +57,7 @@ class UpdateBundleCacheConfigInteractor(BaseInteractor):
                 {
                     "bundle_name": bundle_name,
                     "is_cached": is_caching,
+                    "cache_config": is_caching,
                 }
             )
         return results

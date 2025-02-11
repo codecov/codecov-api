@@ -18,8 +18,12 @@ from shared.bundle_analysis import BundleChange as SharedBundleChange
 from shared.bundle_analysis import BundleReport as SharedBundleReport
 from shared.bundle_analysis import ModuleReport as SharedModuleReport
 from shared.bundle_analysis.models import AssetType
+from shared.django_apps.bundle_analysis.service.bundle_analysis import (
+    BundleAnalysisCacheConfigService,
+)
 from shared.storage import get_appropriate_storage_service
 
+from codecov.db import sync_to_async
 from core.models import Commit, Repository
 from graphql_api.actions.measurements import (
     measurements_by_ids,
@@ -305,6 +309,12 @@ class BundleReport(object):
     @cached_property
     def info(self) -> dict:
         return self.report.info()
+
+    @sync_to_async
+    def cache_config(self, repo_id: int) -> bool:
+        return BundleAnalysisCacheConfigService.get_cache_option(
+            repo_id=repo_id, name=self.report.name
+        )
 
 
 @dataclass
