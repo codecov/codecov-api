@@ -26,6 +26,12 @@ type Commit {
   coverageStatus: CommitStatus
   coverageAnalytics: CommitCoverageAnalytics
   bundleAnalysis: CommitBundleAnalysis
+  latestUploadError: LatestUploadError
+}
+
+type LatestUploadError {
+  errorCode: UploadErrorEnum
+  errorMessage: String
 }
 
 "fields related to Codecov's Coverage product offering"

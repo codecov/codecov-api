@@ -478,3 +478,9 @@ def resolve_commit_bundle_analysis_report(commit: Commit, info) -> BundleAnalysi
     info.context["commit"] = commit
 
     return bundle_analysis_report
+
+
+@commit_bindable.field("latestUploadError")
+async def resolve_latest_upload_error(commit, info):
+    command = info.context["executor"].get_command("commit")
+    return await command.get_latest_upload_error(commit)
