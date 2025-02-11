@@ -10,7 +10,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
     PlanFactory,
     TierFactory,
 )
-from shared.plan.constants import PlanName, TierName
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, TierName
 
 from codecov_auth.models import OrganizationLevelToken
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
@@ -47,7 +47,7 @@ class TestOrgWideUploadTokenService(TransactionTestCase):
         self.basic_tier = TierFactory(tier_name=TierName.BASIC.value)
         self.basic_plan = PlanFactory(
             tier=self.basic_tier,
-            name=PlanName.BASIC_PLAN_NAME.value,
+            name=DEFAULT_FREE_PLAN,
         )
         self.owner = OwnerFactory(plan=self.enterprise_plan.name)
 
