@@ -30,6 +30,7 @@ mutation UpdateBundleCacheConfig(
         results {
             bundleName
             isCached
+            cacheConfig
         }
         error {
             __typename
