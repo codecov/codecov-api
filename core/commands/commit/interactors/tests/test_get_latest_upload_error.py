@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TransactionTestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
@@ -82,3 +84,11 @@ class GetLatestUploadErrorInteractorTest(TransactionTestCase):
             "error_code": UploadErrorEnum.UNKNOWN_PROCESSING,
             "error_message": "Some other error",
         }
+
+    async def test_return_none_on_raised_error(self):
+        with patch(
+            "core.commands.commit.interactors.get_latest_upload_error.GetLatestUploadErrorInteractor._get_latest_error",
+            side_effect=Exception("Test error"),
+        ):
+            result = await self.execute(commit=self.commit, owner=self.org)
+            assert result is None
