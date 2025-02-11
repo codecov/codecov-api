@@ -28,7 +28,6 @@ from shared.django_apps.codecov_auth.tests.factories import (
 from shared.django_apps.core.tests.factories import PullFactory, RepositoryFactory
 from shared.plan.constants import (
     DEFAULT_FREE_PLAN,
-    ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS,
     PlanName,
 )
 
@@ -202,7 +201,6 @@ class OwnerAdminTest(TestCase):
         self,
     ):
         owner = OwnerFactory(plan=DEFAULT_FREE_PLAN)
-        assert owner.plan not in ENTERPRISE_CLOUD_USER_PLAN_REPRESENTATIONS
         assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
         request_url = reverse("admin:codecov_auth_owner_change", args=[owner.ownerid])
         request = RequestFactory().get(request_url)

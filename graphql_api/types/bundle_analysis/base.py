@@ -372,6 +372,13 @@ def resolve_bundle_report_is_cached(
     return bundle_report.is_cached
 
 
+@bundle_report_bindable.field("cacheConfig")
+def resolve_bundle_report_cache_config(
+    bundle_report: BundleReport, info: GraphQLResolveInfo
+) -> bool:
+    return bundle_report.cache_config(info.context["commit"].repository.pk)
+
+
 @bundle_report_bindable.field("info")
 def resolve_bundle_report_info(
     bundle_report: BundleReport, info: GraphQLResolveInfo

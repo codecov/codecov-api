@@ -76,8 +76,8 @@ class UpdateBundleCacheConfigInteractorTest(TransactionTestCase):
         )
 
         assert res == [
-            {"bundle_name": "bundle1", "is_cached": False},
-            {"bundle_name": "bundle2", "is_cached": True},
+            {"bundle_name": "bundle1", "is_cached": False, "cache_config": False},
+            {"bundle_name": "bundle2", "is_cached": True, "cache_config": True},
         ]
 
         assert len(CacheConfig.objects.all()) == 2

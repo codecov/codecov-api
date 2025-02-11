@@ -1202,6 +1202,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                     }
                                                 }
                                                 isCached
+                                                cacheConfig
                                             }
                                             bundleData {
                                                 loadTime {
@@ -1263,6 +1264,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
                 {
                     "name": "b2",
@@ -1285,6 +1287,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
                 {
                     "name": "b3",
@@ -1307,6 +1310,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
                 {
                     "name": "b5",
@@ -1329,6 +1333,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
             ],
             "bundleData": {
