@@ -4,6 +4,7 @@ from .interactors.fetch_totals import FetchTotalsInteractor
 from .interactors.get_commit_errors import GetCommitErrorsInteractor
 from .interactors.get_file_content import GetFileContentInteractor
 from .interactors.get_final_yaml import GetFinalYamlInteractor
+from .interactors.get_latest_upload_error import GetLatestUploadErrorInteractor
 from .interactors.get_uploads_number import GetUploadsNumberInteractor
 
 
@@ -24,3 +25,6 @@ class CommitCommands(BaseCommand):
 
     def get_uploads_number(self, commit):
         return self.get_interactor(GetUploadsNumberInteractor).execute(commit)
+
+    def get_latest_upload_error(self, commit):
+        return self.get_interactor(GetLatestUploadErrorInteractor).execute(commit)

@@ -16,3 +16,7 @@ class PullSerializer(serializers.ModelSerializer):
             "state",
         )
         fields = read_only_fields + ("user_provided_base_sha",)
+
+
+class PullIdSerializer(serializers.Serializer):
+    pullid = serializers.IntegerField()

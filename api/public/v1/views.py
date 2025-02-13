@@ -1,17 +1,17 @@
 import logging
 
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, QuerySet, Subquery
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, viewsets
 
 from api.shared.mixins import RepoPropertyMixin
 from codecov_auth.authentication.repo_auth import RepositoryLegacyTokenAuthentication
-from core.models import Commit
+from core.models import Commit, Pull
 from services.task import TaskService
 
 from .permissions import PullUpdatePermission
-from .serializers import PullSerializer
+from .serializers import PullIdSerializer, PullSerializer
 
 log = logging.getLogger(__name__)
 
@@ -30,8 +30,11 @@ class PullViewSet(
     authentication_classes = [RepositoryLegacyTokenAuthentication]
     permission_classes = [PullUpdatePermission]
 
-    def get_object(self):
-        pullid = self.kwargs.get("pk")
+    def get_object(self) -> Pull:
+        serializer = PullIdSerializer(data={"pullid": self.kwargs.get("pk")})
+        serializer.is_valid(raise_exception=True)
+        pullid = serializer.validated_data["pullid"]
+
         if self.request.method == "PUT":
             # Note: We create a new pull if needed to make sure that they can be updated
             # with a base before the upload has finished processing.
@@ -41,7 +44,7 @@ class PullViewSet(
             return obj
         return get_object_or_404(self.get_queryset(), pullid=pullid)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         return self.repo.pull_requests.annotate(
             ci_passed=Subquery(
                 Commit.objects.filter(
@@ -50,7 +53,7 @@ class PullViewSet(
             )
         )
 
-    def perform_update(self, serializer):
+    def perform_update(self, serializer: PullSerializer) -> Pull:
         result = super().perform_update(serializer)
         TaskService().pulls_sync(repoid=self.repo.repoid, pullid=self.kwargs.get("pk"))
         return result

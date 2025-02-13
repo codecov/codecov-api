@@ -1198,7 +1198,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
-            plan=PlanName.BASIC_PLAN_NAME.value,
+            plan=DEFAULT_FREE_PLAN,
         )
 
         query = """{

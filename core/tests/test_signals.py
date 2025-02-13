@@ -11,7 +11,7 @@ def test_shelter_repo_sync(mocker):
 
     # this triggers the publish via Django signals
     repo = RepositoryFactory(
-        repoid=91728376, author=OwnerFactory(ownerid=555), active=False, activated=False
+        repoid=91728376, author=OwnerFactory(ownerid=555), private=False
     )
 
     # triggers publish on create
@@ -47,19 +47,28 @@ def test_shelter_repo_sync(mocker):
     publish_calls = publish.call_args_list
     assert len(publish_calls) == 3
 
-    # Triggers call when active is changed
-    repo.active = True
+    # Triggers call when owner is changed
+    repo.author = OwnerFactory(ownerid=888)
     repo.save()
 
     publish_calls = publish.call_args_list
-    assert len(publish_calls) == 4
-
-    # Triggers call when activated is changed
-    repo.activated = True
-    repo.save()
-
-    publish_calls = publish.call_args_list
+    # 1 is for the new owner created
     assert len(publish_calls) == 5
+    publish.assert_has_calls(
+        [
+            call(
+                "projects/test-project-id/topics/test-topic-id",
+                b'{"type": "owner", "sync": "one", "id": 888}',
+            ),
+        ]
+    )
+
+    # Triggers call when private is changed
+    repo.private = True
+    repo.save()
+
+    # publish_calls = publish.call_args_list
+    assert len(publish_calls) == 6
 
 
 @pytest.mark.django_db

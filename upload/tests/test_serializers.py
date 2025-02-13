@@ -6,6 +6,7 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 
+from billing.helpers import mock_all_plans_and_tiers
 from reports.tests.factories import (
     CommitReportFactory,
     ReportResultsFactory,
@@ -175,6 +176,7 @@ def test_commit_serializer_contains_expected_fields(transactional_db, mocker):
 
 
 def test_commit_serializer_does_not_duplicate(transactional_db, mocker):
+    mock_all_plans_and_tiers()
     repository = RepositoryFactory()
     serializer = CommitSerializer()
 

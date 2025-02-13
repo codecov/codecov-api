@@ -15,6 +15,7 @@ from django.http.response import HttpResponse
 from django.utils import timezone
 from django.utils.timezone import now
 from shared.encryption.token import encode_token
+from shared.events.amplitude import AmplitudeEventPublisher
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.models import Owner, OwnerProfile, Session, User
@@ -393,10 +394,21 @@ class LoginMixin(object):
         owner.save(update_fields=fields_to_update)
 
         marketing_tags = self.retrieve_marketing_tags_from_cookie()
+        amplitude = AmplitudeEventPublisher()
         if was_created:
             self.analytics_service.user_signed_up(owner, **marketing_tags)
+            amplitude.publish("User Created", {"user_ownerid": owner.ownerid})
         else:
             self.analytics_service.user_signed_in(owner, **marketing_tags)
+            amplitude.publish("User Logged in", {"user_ownerid": owner.ownerid})
+        orgs = owner.organizations
+        amplitude.publish(
+            "set_orgs",
+            {
+                "user_ownerid": owner.ownerid,
+                "org_ids": orgs if orgs is not None else [],
+            },
+        )
 
         return (owner, was_created)
 

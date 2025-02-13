@@ -13,6 +13,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.events.amplitude import AmplitudeEventPublisher
 
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
@@ -498,9 +499,34 @@ class GithubWebhookHandler(APIView):
             # GithubWebhookEvents.INSTALLTION_REPOSITORIES also execute this code
             # because of deprecated flow. But the GithubAppInstallation shouldn't be changed
             if event == GitHubWebhookEvents.INSTALLATION:
-                ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
-                    installation_id=installation_id, owner=owner
+                ghapp_installation, was_created = (
+                    GithubAppInstallation.objects.get_or_create(
+                        installation_id=installation_id, owner=owner
+                    )
                 )
+                if was_created:
+                    installer_username = request.data.get("sender", {}).get(
+                        "login", None
+                    )
+                    installer = (
+                        Owner.objects.filter(
+                            service=self.service_name,
+                            username=installer_username,
+                        ).first()
+                        if installer_username
+                        else None
+                    )
+                    # If installer does not exist, just attribute the action to the org owner.
+                    AmplitudeEventPublisher().publish(
+                        "App Installed",
+                        {
+                            "user_ownerid": installer.ownerid
+                            if installer is not None
+                            else owner.ownerid,
+                            "ownerid": owner.ownerid,
+                        },
+                    )
+
                 app_id = request.data["installation"]["app_id"]
                 # Either update or set
                 # But this value shouldn't change for the installation, so doesn't matter
