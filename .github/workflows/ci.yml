@@ -49,7 +49,7 @@ jobs:
   test:
     name: Test
     needs: [build]
-    uses: codecov/gha-workflows/.github/workflows/run-tests-split.yml@v1.2.28
+    uses: codecov/gha-workflows/.github/workflows/run-tests-split.yml@285163a75899bad2018fe960ac9dba7530e009fb
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
