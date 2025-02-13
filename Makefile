@@ -34,10 +34,18 @@ test:
 	COVERAGE_CORE=sysmon python -m pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy
 
 test.unit:
-	COVERAGE_CORE=sysmon python -m pytest --splits 5 --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy
+	@if [ -n "$(GROUP)" ]; then \
+		COVERAGE_CORE=sysmon python -m pytest --splits 5 --$(GROUP) --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy; \
+	else \
+		COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy; \
+	fi
 
 test.integration:
-	COVERAGE_CORE=sysmon python -m pytest --splits 5 --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy
+	@if [ -n "$(GROUP)" ]; then \
+		COVERAGE_CORE=sysmon python -m pytest --splits 5 --$(GROUP) --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy; \
+	else \
+		COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy; \
+	fi
 
 lint:
 	make lint.install
