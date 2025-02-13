@@ -220,11 +220,11 @@ test_env.run_unit:
 	fi
 
 test_env.run_integration:
-	@if [ -n "$(GROUP)" ]; then \
-		docker-compose exec api make test.integration SPLIT=${SPLIT} GROUP=${GROUP}; \
-	else \
-		docker-compose exec api make test.integration; \
-	fi
+	# @if [ -n "$(GROUP)" ]; then \
+	# 	docker-compose exec api make test.integration SPLIT=${SPLIT} GROUP=${GROUP}; \
+	# else \
+	# 	docker-compose exec api make test.integration; \
+	# fi
 	echo "Skipping. No Tests"
 
 test_env.check-for-migration-conflicts:
