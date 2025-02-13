@@ -8,8 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from shared.django_apps.codecov_auth.tests.factories import UserFactory
 from shared.django_apps.core.tests.factories import RepositoryFactory
-
-from timeseries.tests.factories import DatasetFactory
+from shared.django_apps.timeseries.tests.factories import DatasetFactory
 
 
 @pytest.mark.skipif(

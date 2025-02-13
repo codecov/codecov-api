@@ -1202,6 +1202,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                                     }
                                                 }
                                                 isCached
+                                                cacheConfig
                                             }
                                             bundleData {
                                                 loadTime {
@@ -1263,6 +1264,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
                 {
                     "name": "b2",
@@ -1285,6 +1287,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
                 {
                     "name": "b3",
@@ -1307,6 +1310,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
                 {
                     "name": "b5",
@@ -1329,6 +1333,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         },
                     },
                     "isCached": False,
+                    "cacheConfig": False,
                 },
             ],
             "bundleData": {
@@ -3523,3 +3528,45 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert bundle_info["duration"] == 331
         assert bundle_info["bundlerName"] == "rollup"
         assert bundle_info["bundlerVersion"] == "3.29.4"
+
+    def test_latest_upload_error(self):
+        commit = CommitFactory(repository=self.repo)
+        report = CommitReportFactory(
+            commit=commit, report_type=CommitReport.ReportType.TEST_RESULTS
+        )
+        upload = UploadFactory(report=report)
+        UploadErrorFactory(
+            report_session=upload,
+            error_code=UploadErrorEnum.UNKNOWN_PROCESSING,
+            error_params={"error_message": "Unknown processing error"},
+        )
+
+        query = """
+            query FetchCommit($org: String!, $repo: String!, $commit: String!) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                latestUploadError {
+                                    errorCode
+                                    errorMessage
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": commit.commitid,
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["latestUploadError"] == {
+            "errorCode": "UNKNOWN_PROCESSING",
+            "errorMessage": "Unknown processing error",
+        }

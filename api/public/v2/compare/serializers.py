@@ -16,10 +16,11 @@ class ComparisonSerializer(BaseComparisonSerializer):
 
     def get_files(self, comparison: Comparison) -> List[dict]:
         data = []
-        for filename in comparison.head_report.files:
-            file = comparison.get_file_comparison(filename, bypass_max_diff=True)
-            if self._should_include_file(file):
-                data.append(FileComparisonSerializer(file).data)
+        if comparison.head_report is not None:
+            for filename in comparison.head_report.files:
+                file = comparison.get_file_comparison(filename, bypass_max_diff=True)
+                if self._should_include_file(file):
+                    data.append(FileComparisonSerializer(file).data)
         return data
 
 
