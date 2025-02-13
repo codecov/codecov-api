@@ -211,10 +211,7 @@ def get_sorted_path_contents(
     if len(report_paths.paths) == 0:
         # we do not know about this path
 
-        if (
-            not path
-            or path_service.provider_path_exists(path, commit, current_owner) is False
-        ):
+        if path_service.provider_path_exists(path, commit, current_owner) is False:
             # file doesn't exist
             return UnknownPath(f"path does not exist: {path}")
 
