@@ -11,7 +11,7 @@ from django.conf import settings
 from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
-from shared.utils.match import match
+from shared.utils.match import Matcher
 
 import services.report as report_service
 from codecov_auth.models import Owner
@@ -195,7 +195,8 @@ class ReportPaths:
 
         # Do path filtering if needed
         if self.filter_paths:
-            files = [file for file in files if match(self.filter_paths, file)]
+            matcher = Matcher(self.filter_paths)
+            files = [file for file in files if matcher.match(file)]
 
         return files
 
