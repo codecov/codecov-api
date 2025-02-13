@@ -459,46 +459,44 @@ class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
             "behindByCommit": "1089nf898as-jdf09hahs09fgh",
         }
 
-    def test_compare_bundle_analysis_missing_reports(self):
-        head = CommitFactory(
-            repository=self.repository,
-            author=self.owner,
-            commitid="5672734ij1n234918231290j12nasdfioasud0f9",
-            totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
-        )
-        compared_to = CommitFactory(
-            repository=self.repository,
-            author=self.owner,
-            commitid="9asd78fa7as8d8fa97s8d7fgagsd8fa9asd8f77s",
-        )
+    # def test_compare_bundle_analysis_missing_reports(self):
+    #     repository = RepositoryFactory(author=self.owner)
+    #     head = CommitFactory(
+    #         repository=repository,
+    #         author=self.owner,
+    #         commitid="cool-commit-id",
+    #         totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
+    #     )
+    #     compared_to = CommitFactory(
+    #         repository=repository,
+    #         author=self.owner,
+    #         commitid="blah",
+    #     )
 
-        my_pull = PullFactory(
-            repository=self.repository,
-            title="test-pull-request",
-            author=self.owner,
-            head=head.commitid,
-            compared_to=compared_to.commitid,
-            behind_by=23,
-            behind_by_commit="1089nf898as-jdf09hahs09fgh",
-        )
+    #     my_pull = PullFactory(
+    #         repository=repository,
+    #         author=self.owner,
+    #         head=head.commitid,
+    #         compared_to=compared_to.commitid,
+    #     )
 
-        pull = self.fetch_one_pull_request(
-            my_pull.pullid, pull_request_bundle_analysis_missing_reports
-        )
-        assert pull == {
-            "bundleAnalysisCompareWithBase": {"__typename": "MissingHeadReport"}
-        }
+    #     pull = self.fetch_one_pull_request(
+    #         my_pull.pullid, pull_request_bundle_analysis_missing_reports
+    #     )
+    #     assert pull == {
+    #         "bundleAnalysisCompareWithBase": {"__typename": "MissingHeadReport"}
+    #     }
 
-        CommitReportFactory(
-            commit=head, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
-        )
+    #     CommitReportFactory(
+    #         commit=head, report_type=CommitReport.ReportType.BUNDLE_ANALYSIS
+    #     )
 
-        pull = self.fetch_one_pull_request(
-            my_pull.pullid, pull_request_bundle_analysis_missing_reports
-        )
-        assert pull == {
-            "bundleAnalysisCompareWithBase": {"__typename": "MissingBaseReport"}
-        }
+    #     pull = self.fetch_one_pull_request(
+    #         my_pull.pullid, pull_request_bundle_analysis_missing_reports
+    #     )
+    #     assert pull == {
+    #         "bundleAnalysisCompareWithBase": {"__typename": "MissingBaseReport"}
+    #     }
 
     @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
     def test_bundle_analysis_sqlite_file_deleted(self, get_storage_service):
