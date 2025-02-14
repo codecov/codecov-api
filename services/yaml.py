@@ -1,9 +1,10 @@
 import enum
 import logging
 from functools import lru_cache
-from typing import Dict, Optional
 
+import sentry_sdk
 from asgiref.sync import async_to_sync
+from shared.helpers.cache import OurOwnCache
 from shared.yaml import UserYaml, fetch_current_yaml_from_provider_via_reference
 from shared.yaml.validation import validate_yaml
 from yaml import safe_load
@@ -11,6 +12,8 @@ from yaml import safe_load
 from codecov_auth.models import Owner, get_config
 from core.models import Commit
 from services.repo_providers import RepoProviderService
+
+cache = OurOwnCache()
 
 
 class YamlStates(enum.Enum):
@@ -20,7 +23,8 @@ class YamlStates(enum.Enum):
 log = logging.getLogger(__name__)
 
 
-def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
+@cache.cache_function(ttl=60 * 60)
+def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> dict | None:
     """
     Fetches the codecov.yaml file for a particular commit from the service provider.
     Service provider API request is made on behalf of the given `owner`.
@@ -61,7 +65,7 @@ def fetch_commit_yaml(commit: Commit, owner: Owner | None) -> Dict | None:
 
 
 @lru_cache()
-# TODO: make this use the Redis cache logic in 'shared' once it's there
+@sentry_sdk.trace
 def final_commit_yaml(commit: Commit, owner: Owner | None) -> UserYaml:
     return UserYaml.get_final_yaml(
         owner_yaml=commit.repository.author.yaml,
@@ -70,6 +74,6 @@ def final_commit_yaml(commit: Commit, owner: Owner | None) -> UserYaml:
     )
 
 
-def get_yaml_state(yaml: UserYaml) -> Optional[YamlStates]:
+def get_yaml_state(yaml: UserYaml) -> YamlStates | None:
     if yaml == get_config("site", default={}):
         return YamlStates.DEFAULT
