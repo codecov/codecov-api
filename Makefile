@@ -35,14 +35,14 @@ test:
 
 test.unit:
 	@if [ -n "$(GROUP)" ]; then \
-		COVERAGE_CORE=sysmon python -m pytest --splits ${SPLIT} --group $(GROUP) --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy; \
+		COVERAGE_CORE=sysmon python -m pytest --splits ${SPLIT} --group $(GROUP) --cov=./ -m "not integration" --cov-report=xml:unit.$(GROUP).coverage.xml --junitxml=unit.$(GROUP).junit.xml -o junit_family=legacy; \
 	else \
 		COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy; \
 	fi
 
 test.integration:
 	@if [ -n "$(GROUP)" ]; then \
-		COVERAGE_CORE=sysmon python -m pytest --splits ${SPLIT} --group $(GROUP) --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy; \
+		COVERAGE_CORE=sysmon python -m pytest --splits ${SPLIT} --group $(GROUP) --cov=./ -m "integration" --cov-report=xml:integration.$(GROUP).coverage.xml --junitxml=integration.$(GROUP).junit.xml -o junit_family=legacy; \
 	else \
 		COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy; \
 	fi
