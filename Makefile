@@ -7,7 +7,7 @@ branch = $(shell git branch | grep \* | cut -f2 -d' ')
 epoch := $(shell date +"%s")
 AR_REPO ?= codecov/api
 DOCKERHUB_REPO ?= codecov/self-hosted-api
-REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
+REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum uv.lock | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
 VERSION := release-${sha}
 CODECOV_UPLOAD_TOKEN ?= "notset"
 CODECOV_STATIC_TOKEN ?= "notset"
@@ -21,7 +21,7 @@ API_DOMAIN ?= api
 PROXY_NETWORK ?= api_default
 
 # Codecov CLI version to use
-CODECOV_CLI_VERSION := 0.5.1
+CODECOV_CLI_VERSION := 9.0.4
 
 build:
 	make build.requirements
@@ -31,13 +31,13 @@ check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
 test:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy
+	COVERAGE_CORE=sysmon pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy
 
 test.unit:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy
+	COVERAGE_CORE=sysmon pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy
 
 test.integration:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy
+	COVERAGE_CORE=sysmon pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy
 
 lint:
 	make lint.install
@@ -179,17 +179,17 @@ push.self-hosted-rolling:
 	docker push ${DOCKERHUB_REPO}:rolling
 
 shell:
-	docker-compose exec api bash
+	docker compose exec api bash
 	
 test_env.up:
 	env | grep GITHUB > .testenv; true
-	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose up -d
+	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker compose up -d
 
 test_env.prepare:
-	docker-compose exec api make test_env.container_prepare
+	docker compose exec api make test_env.container_prepare
 
 test_env.check_db:
-	docker-compose exec api make test_env.container_check_db
+	docker compose exec api make test_env.container_check_db
 	make test_env.check-for-migration-conflicts
 
 test_env.install_cli:
@@ -205,18 +205,18 @@ test_env.container_check_db:
 	while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
 
 test_env.run_unit:
-	docker-compose exec api make test.unit
+	docker compose exec api make test.unit
 
 test_env.run_integration:
-	#docker-compose exec api make test.integration
+	#docker compose exec api make test.integration
 	echo "Skipping. No Tests"
 
 test_env.check-for-migration-conflicts:
-	docker-compose exec api python manage.py check_for_migration_conflicts
+	docker compose exec api python manage.py check_for_migration_conflicts
 
 test_env.upload:
-	docker-compose exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
-	docker-compose exec api make test_env.container_upload_test_results CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
+	docker compose exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
+	docker compose exec api make test_env.container_upload_test_results CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
 
 test_env.container_upload:
 	codecovcli -u ${CODECOV_URL} upload-process --flag unit-latest-uploader --flag unit  \
@@ -229,13 +229,13 @@ test_env.container_upload_test_results:
 	--files-search-exclude-folder=api/internal/tests/unit/views/cassetes/** || true
 
 test_env.static_analysis:
-	docker-compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
+	docker compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
 
 test_env.label_analysis:
-	docker-compose exec api make test_env.container_label_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
+	docker compose exec api make test_env.container_label_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
 
 test_env.ats:
-	docker-compose exec api make test_env.container_ats CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
+	docker compose exec api make test_env.container_ats CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
 
 test_env.container_static_analysis:
 	codecovcli -u ${CODECOV_URL} static-analysis --token=${CODECOV_STATIC_TOKEN}
