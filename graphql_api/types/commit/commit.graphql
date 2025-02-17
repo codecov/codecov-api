@@ -30,8 +30,8 @@ type Commit {
 }
 
 type LatestUploadError {
-  errorCode: UploadErrorEnum
-  errorMessage: String
+  errorCode: UploadErrorEnum!
+  errorMessage: String!
 }
 
 "fields related to Codecov's Coverage product offering"
