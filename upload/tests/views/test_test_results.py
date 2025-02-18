@@ -25,6 +25,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
         "shared.storage.MinioStorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
+    mock_amplitude = mocker.patch("shared.events.amplitude.AmplitudeEventPublisher")
 
     owner = OwnerFactory(service="github", username="codecov")
     repository = RepositoryFactory.create(author=owner)
@@ -112,6 +113,19 @@ def test_upload_test_results(db, client, mocker, mock_redis):
             "is_using_shelter": "no",
             "position": "end",
             "upload_version": None,
+        },
+    )
+
+    # emits Amplitude event
+    mock_amplitude.return_value.publish.assert_called_with(
+        "Upload Sent",
+        {
+            "user_ownerid": commit.repository.author.ownerid,
+            "ownerid": commit.repository.author.ownerid,
+            "repoid": commit.repository.repoid,
+            "commitid": commit.id,
+            "pullid": commit.pullid,
+            "upload_type": "Test results",
         },
     )
 
