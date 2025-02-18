@@ -10,6 +10,7 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 
+from billing.helpers import mock_all_plans_and_tiers
 from core.models import Commit, Repository
 from graphql_api.tests.helper import GraphQLTestHelper
 from graphql_api.types.coverage_analytics.coverage_analytics import (
@@ -248,6 +249,7 @@ class TestFetchCoverageAnalytics(GraphQLTestHelper, TransactionTestCase):
     def test_coverage_analytics_with_interval(self):
         """Test with interval argument to fetch coverage data in a specific time range"""
 
+        mock_all_plans_and_tiers()
         # Create data to populate the timeseries graph
         repo = self.create_repository("test-repo")
         one_day_ago = timezone.make_aware(datetime.datetime(2022, 1, 1, 0, 0))

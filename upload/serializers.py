@@ -71,6 +71,7 @@ class UploadSerializer(serializers.ModelSerializer):
         flag_names = (
             validated_data.pop("flags") if "flags" in validated_data.keys() else []
         )
+        repoid = validated_data.pop("repo_id", None)
 
         # default is necessary here, or else if the key is not in the dict
         # the below will throw a KeyError
@@ -81,7 +82,6 @@ class UploadSerializer(serializers.ModelSerializer):
         flags = []
 
         if upload:
-            repoid = upload.report.commit.repository.repoid
             existing_flags_map = self._create_existing_flags_map(repoid)
             for individual_flag in flag_names:
                 flag_obj = existing_flags_map.get(individual_flag, None)

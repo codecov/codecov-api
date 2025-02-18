@@ -154,6 +154,11 @@ class MockSession(object):
     pass
 
 
+class MockFile:
+    def __init__(self, name: str):
+        self.name = name
+
+
 class MockReport(object):
     def __init__(self):
         self.sessions = {1: MockSession()}
@@ -170,6 +175,10 @@ class MockReport(object):
             "folder/subfolder/fileC.py",
             "folder/subfolder/fileD.py",
         ]
+
+    def __iter__(self):
+        for name in self.files:
+            yield MockFile(name)
 
     @property
     def flags(self):
@@ -774,11 +783,9 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_in_sessions")
     def test_fetch_path_contents_component_filter_has_coverage(
-        self, session_files_mock, report_mock, commit_components_mock, filtered_mock
+        self, report_mock, commit_components_mock, filtered_mock
     ):
-        session_files_mock.return_value = MockReport().files
         components = ["Global"]
         variables = {
             "org": self.org.username,

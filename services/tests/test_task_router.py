@@ -1,7 +1,7 @@
 import pytest
 import shared.celery_config as shared_celery_config
-from shared.billing import BillingPlan
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName
 
 from compare.tests.factories import CommitComparisonFactory
 from labelanalysis.tests.factories import LabelAnalysisRequestFactory
@@ -23,9 +23,9 @@ from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
 
 @pytest.fixture
 def fake_owners(db):
-    owner = OwnerFactory.create(plan=BillingPlan.pr_monthly.db_name)
+    owner = OwnerFactory.create(plan=PlanName.CODECOV_PRO_MONTHLY.value)
     owner_enterprise_cloud = OwnerFactory.create(
-        plan=BillingPlan.enterprise_cloud_yearly.db_name
+        plan=PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
     owner.save()
     owner_enterprise_cloud.save()
@@ -103,71 +103,65 @@ def fake_static_analysis_suite(db, fake_repos):
 
 def test_get_owner_plan_from_ownerid(fake_owners):
     (owner, owner_enterprise_cloud) = fake_owners
-    assert _get_user_plan_from_ownerid(owner.ownerid) == BillingPlan.pr_monthly.db_name
+    assert (
+        _get_user_plan_from_ownerid(owner.ownerid) == PlanName.CODECOV_PRO_MONTHLY.value
+    )
     assert (
         _get_user_plan_from_ownerid(owner_enterprise_cloud.ownerid)
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
-    assert _get_user_plan_from_ownerid(10000000) == BillingPlan.users_basic.db_name
+    assert _get_user_plan_from_ownerid(10000000) == DEFAULT_FREE_PLAN
 
 
 def test_get_owner_plan_from_repoid(fake_repos):
     (repo, repo_enterprise) = fake_repos
-    assert _get_user_plan_from_repoid(repo.repoid) == BillingPlan.pr_monthly.db_name
+    assert _get_user_plan_from_repoid(repo.repoid) == PlanName.CODECOV_PRO_MONTHLY.value
     assert (
         _get_user_plan_from_repoid(repo_enterprise.repoid)
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
-    assert _get_user_plan_from_repoid(10000000) == BillingPlan.users_basic.db_name
+    assert _get_user_plan_from_repoid(10000000) == DEFAULT_FREE_PLAN
 
 
 def test_get_owner_plan_from_profiling_id(fake_profiling_commit):
     (profing_commit, profiling_commit_enterprise) = fake_profiling_commit
     assert (
         _get_user_plan_from_profiling_commit(profiling_id=profing_commit.id)
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
     assert (
         _get_user_plan_from_profiling_commit(
             profiling_id=profiling_commit_enterprise.id
         )
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
-    assert (
-        _get_user_plan_from_profiling_commit(10000000)
-        == BillingPlan.users_basic.db_name
-    )
+    assert _get_user_plan_from_profiling_commit(10000000) == DEFAULT_FREE_PLAN
 
 
 def test_get_owner_plan_from_profiling_upload(fake_profiling_upload):
     (profiling_upload, profiling_upload_enterprise) = fake_profiling_upload
     assert (
         _get_user_plan_from_profiling_upload(profiling_upload.id)
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
     assert (
         _get_user_plan_from_profiling_upload(profiling_upload_enterprise.id)
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
-    assert (
-        _get_user_plan_from_profiling_upload(10000000)
-        == BillingPlan.users_basic.db_name
-    )
+    assert _get_user_plan_from_profiling_upload(10000000) == DEFAULT_FREE_PLAN
 
 
 def test_get_user_plan_from_comparison_id(fake_compare_commit):
     (compare_commit, compare_commit_enterprise) = fake_compare_commit
     assert (
         _get_user_plan_from_comparison_id(compare_commit.id)
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
     assert (
         _get_user_plan_from_comparison_id(compare_commit_enterprise.id)
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
-    assert (
-        _get_user_plan_from_comparison_id(10000000) == BillingPlan.users_basic.db_name
-    )
+    assert _get_user_plan_from_comparison_id(10000000) == DEFAULT_FREE_PLAN
 
 
 def test_get_user_plan_from_label_request_id(fake_label_analysis_request):
@@ -177,18 +171,15 @@ def test_get_user_plan_from_label_request_id(fake_label_analysis_request):
     ) = fake_label_analysis_request
     assert (
         _get_user_plan_from_label_request_id(request_id=label_analysis_request.id)
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
     assert (
         _get_user_plan_from_label_request_id(
             request_id=label_analysis_request_enterprise.id
         )
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
-    assert (
-        _get_user_plan_from_label_request_id(10000000)
-        == BillingPlan.users_basic.db_name
-    )
+    assert _get_user_plan_from_label_request_id(10000000) == DEFAULT_FREE_PLAN
 
 
 def test_get_user_plan_from_static_analysis_suite(fake_static_analysis_suite):
@@ -198,13 +189,13 @@ def test_get_user_plan_from_static_analysis_suite(fake_static_analysis_suite):
     ) = fake_static_analysis_suite
     assert (
         _get_user_plan_from_suite_id(suite_id=static_analysis_suite.id)
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
     assert (
         _get_user_plan_from_suite_id(suite_id=static_analysis_suite_enterprise.id)
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
-    assert _get_user_plan_from_suite_id(10000000) == BillingPlan.users_basic.db_name
+    assert _get_user_plan_from_suite_id(10000000) == DEFAULT_FREE_PLAN
 
 
 def test_get_user_plan_from_task(
@@ -220,7 +211,7 @@ def test_get_user_plan_from_task(
     task_kwargs = dict(repoid=repo.repoid, commitid=0, debug=False, rebuild=False)
     assert (
         _get_user_plan_from_task(shared_celery_config.upload_task_name, task_kwargs)
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
 
     task_kwargs = dict(
@@ -228,7 +219,7 @@ def test_get_user_plan_from_task(
     )
     assert (
         _get_user_plan_from_task(shared_celery_config.upload_task_name, task_kwargs)
-        == BillingPlan.enterprise_cloud_yearly.db_name
+        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
     )
 
     task_kwargs = dict(ownerid=repo.author.ownerid)
@@ -236,7 +227,7 @@ def test_get_user_plan_from_task(
         _get_user_plan_from_task(
             shared_celery_config.delete_owner_task_name, task_kwargs
         )
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
 
     task_kwargs = dict(profiling_id=profiling_commit.id)
@@ -244,7 +235,7 @@ def test_get_user_plan_from_task(
         _get_user_plan_from_task(
             shared_celery_config.profiling_collection_task_name, task_kwargs
         )
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
 
     task_kwargs = dict(profiling_upload_id=profiling_upload.id)
@@ -253,7 +244,7 @@ def test_get_user_plan_from_task(
             shared_celery_config.profiling_normalization_task_name,
             task_kwargs,
         )
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
 
     task_kwargs = dict(comparison_id=compare_commit.id)
@@ -261,16 +252,13 @@ def test_get_user_plan_from_task(
         _get_user_plan_from_task(
             shared_celery_config.compute_comparison_task_name, task_kwargs
         )
-        == BillingPlan.pr_monthly.db_name
+        == PlanName.CODECOV_PRO_MONTHLY.value
     )
 
     task_kwargs = dict(
         repoid=repo_enterprise_cloud.repoid, commitid=0, debug=False, rebuild=False
     )
-    assert (
-        _get_user_plan_from_task("unknown task", task_kwargs)
-        == BillingPlan.users_basic.db_name
-    )
+    assert _get_user_plan_from_task("unknown task", task_kwargs) == DEFAULT_FREE_PLAN
 
 
 def test_route_task(mocker, fake_repos):
@@ -283,5 +271,5 @@ def test_route_task(mocker, fake_repos):
     response = route_task(shared_celery_config.upload_task_name, [], task_kwargs, {})
     assert response == {"queue": "correct queue"}
     mock_route_tasks_shared.assert_called_with(
-        shared_celery_config.upload_task_name, BillingPlan.pr_monthly.db_name
+        shared_celery_config.upload_task_name, PlanName.CODECOV_PRO_MONTHLY.value
     )
