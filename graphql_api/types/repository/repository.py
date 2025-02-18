@@ -23,7 +23,6 @@ from graphql_api.types.coverage_analytics.coverage_analytics import (
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.enums.enum_types import PullRequestState
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from services.profiling import CriticalFile, ProfilingSummary
 from services.redis_configuration import get_redis_connection
 
 TOKEN_UNAVAILABLE = "Token Unavailable. Please contact your admin."
@@ -168,8 +167,8 @@ def resolve_default_branch(repository: Repository, info: GraphQLResolveInfo) -> 
 
 @repository_bindable.field("profilingToken")
 def resolve_profiling_token(repository: Repository, info: GraphQLResolveInfo) -> str:
-    command = info.context["executor"].get_command("repository")
-    return command.get_repository_token(repository, token_type="profiling")
+    """DEPRECATED"""
+    return ""
 
 
 @repository_bindable.field("staticAnalysisToken")
@@ -178,22 +177,6 @@ def resolve_static_analysis_token(
 ) -> str:
     command = info.context["executor"].get_command("repository")
     return command.get_repository_token(repository, token_type="static_analysis")
-
-
-@repository_bindable.field("criticalFiles")
-@sync_to_async
-def resolve_critical_files(
-    repository: Repository, info: GraphQLResolveInfo
-) -> List[CriticalFile]:
-    """
-    The current critical files for this repository - not tied to any
-    particular commit or branch.  Based on the most recently received
-    profiling data.
-
-    See the `commit.criticalFiles` resolver for commit-specific files.
-    """
-    profiling_summary = ProfilingSummary(repository)
-    return profiling_summary.critical_files
 
 
 @repository_bindable.field("graphToken")

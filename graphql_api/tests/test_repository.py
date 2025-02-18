@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 
 from django.test import TransactionTestCase, override_settings
 from freezegun import freeze_time
@@ -12,7 +12,6 @@ from shared.django_apps.core.tests.factories import (
 )
 
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
-from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -62,7 +61,6 @@ default_fields = """
     defaultBranch
     author { username }
     profilingToken
-    criticalFiles { name }
     graphToken
     yaml
     isATSConfigured
@@ -114,9 +112,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             languages=["python", "rust"],
             test_analytics_enabled=True,
         )
-        profiling_token = RepositoryTokenFactory(
-            repository_id=repo.repoid, token_type="profiling"
-        ).key
         graphToken = repo.image_token
         assert self.fetch_repository(
             repo.name,
@@ -141,8 +136,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "main",
             "author": {"username": "codecov-user"},
-            "profilingToken": profiling_token,
-            "criticalFiles": [],
+            "profilingToken": "",
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
@@ -180,9 +174,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         repo.updatestamp = datetime.datetime.now()
         repo.save()
 
-        profiling_token = RepositoryTokenFactory(
-            repository_id=repo.repoid, token_type="profiling"
-        ).key
         graphToken = repo.image_token
         assert self.fetch_repository(
             repo.name,
@@ -207,8 +198,7 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "main",
             "author": {"username": "codecov-user"},
-            "profilingToken": profiling_token,
-            "criticalFiles": [],
+            "profilingToken": "",
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
@@ -243,18 +233,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
         assert res["pulls"]["edges"][0]["node"]["pullId"] == 3
         assert res["pulls"]["edges"][1]["node"]["pullId"] == 2
 
-    def test_repository_get_profiling_token(self):
-        user = OwnerFactory()
-        repo = RepositoryFactory(author=user, name="gazebo", active=True)
-        RepositoryTokenFactory(repository=repo, key="random", token_type="profiling")
-
-        data = self.gql_request(
-            query_repository % "profilingToken",
-            owner=user,
-            variables={"name": repo.name},
-        )
-        assert data["me"]["owner"]["repository"]["profilingToken"] == "random"
-
     def test_repository_get_static_analysis_token(self):
         user = OwnerFactory()
         repo = RepositoryFactory(author=user, name="gazebo", active=True)
@@ -268,27 +246,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             variables={"name": repo.name},
         )
         assert data["me"]["owner"]["repository"]["staticAnalysisToken"] == "random"
-
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
-    def test_repository_critical_files(self, critical_files):
-        critical_files.return_value = [
-            CriticalFile("one"),
-            CriticalFile("two"),
-            CriticalFile("three"),
-        ]
-        repo = RepositoryFactory(
-            author=self.owner,
-            active=True,
-            private=True,
-        )
-        res = self.fetch_repository(repo.name)
-        assert res["criticalFiles"] == [
-            {"name": "one"},
-            {"name": "two"},
-            {"name": "three"},
-        ]
 
     def test_repository_get_graph_token(self):
         user = OwnerFactory()
