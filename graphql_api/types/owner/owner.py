@@ -416,7 +416,7 @@ def resolve_ai_enabled_repositories(
     ordering: Optional[RepositoryOrdering] = RepositoryOrdering.ID,
     ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
     **kwargs: Any,
-) -> Coroutine[Any, Any, Connection]:
+) -> Coroutine[Any, Any, Connection] | None:
     ai_features_app_install = GithubAppInstallation.objects.filter(
         app_id=AI_FEATURES_GH_APP_ID, owner=owner
     ).first()
