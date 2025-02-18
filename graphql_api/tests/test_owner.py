@@ -1203,7 +1203,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         ai_app_installation = GithubAppInstallation(
             name="ai-features",
             owner=self.owner,
-            repository_service_ids=[],
+            repository_service_ids=["repo-1", "repo-2"],
             installation_id=12345,
         )
 
