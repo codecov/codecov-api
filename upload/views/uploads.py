@@ -171,7 +171,12 @@ def send_analytics_data(
     AmplitudeEventPublisher().publish(
         "Upload Sent",
         {
-            "user_ownerid": commit.author.ownerid,
+            # Attribute this event to the repo owner. For BA/TA uploads we
+            # don't necessarily have the commit author at upload time, so to
+            # align the upload events, we will always attribute uploads to the
+            # repo owner. It's also not necessarily the case that the commit
+            # author is the owner performing the 'Upload Sent' action.
+            "user_ownerid": commit.repository.author.ownerid,
             "ownerid": commit.repository.author.ownerid,
             "repoid": commit.repository.repoid,
             "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
