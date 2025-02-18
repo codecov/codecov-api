@@ -131,7 +131,7 @@ class PlanSerializer(serializers.Serializer):
 
         plan_service = PlanService(current_org=current_org)
         plan_values = [
-            plan["value"] for plan in plan_service.available_plans(current_owner)
+            plan.name for plan in plan_service.available_plans(current_owner)
         ]
         if value not in plan_values:
             raise serializers.ValidationError(

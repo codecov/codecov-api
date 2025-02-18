@@ -72,7 +72,10 @@ def create_upload(
         serializer.validated_data["storage_path"] = path
     # Create upload record
     instance: ReportSession = serializer.save(
-        report_id=report.id, upload_extras={"format_version": "v1"}, state="started"
+        repo_id=repository.repoid,
+        report_id=report.id,
+        upload_extras={"format_version": "v1"},
+        state="started",
     )
 
     # Inserts mirror upload record into measurements table. CLI hits this endpoint
