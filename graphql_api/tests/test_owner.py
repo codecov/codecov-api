@@ -1223,8 +1223,8 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
 
         """ % (self.owner.username)
         data = self.gql_request(query, owner=self.owner)
-        reps = paginate_connection(data["owner"]["aiEnabledRepositories"])
-        assert reps == [{'name': 'a'}, {'name': 'b'}]
+        repos = paginate_connection(data["owner"]["aiEnabledRepositories"])
+        assert repos == [{"name": "a"}, {"name": "b"}]
 
     @patch("services.self_hosted.get_config")
     def test_ai_enabled_repositories_app_not_configured(self, get_config_mock):
