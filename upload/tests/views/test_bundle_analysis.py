@@ -27,7 +27,9 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
         "shared.storage.MinioStorageService.create_presigned_put",
         return_value="test-presigned-put",
     )
-    mock_amplitude = mocker.patch("shared.events.amplitude.AmplitudeEventPublisher")
+    mock_amplitude = mocker.patch(
+        "shared.events.amplitude.AmplitudeEventPublisher.publish"
+    )
 
     repository = RepositoryFactory.create()
     commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
@@ -105,7 +107,7 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
     )
 
     # emits Amplitude event
-    mock_amplitude.return_value.publish.assert_called_with(
+    mock_amplitude.assert_called_with(
         "Upload Sent",
         {
             "user_ownerid": commit.repository.author.ownerid,
