@@ -61,7 +61,6 @@ default_fields = """
     defaultBranch
     author { username }
     profilingToken
-    criticalFiles { name }
     graphToken
     yaml
     isATSConfigured
@@ -138,7 +137,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "defaultBranch": "main",
             "author": {"username": "codecov-user"},
             "profilingToken": "",
-            "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
@@ -201,7 +199,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "defaultBranch": "main",
             "author": {"username": "codecov-user"},
             "profilingToken": "",
-            "criticalFiles": [],
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,

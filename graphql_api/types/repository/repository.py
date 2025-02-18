@@ -179,13 +179,6 @@ def resolve_static_analysis_token(
     return command.get_repository_token(repository, token_type="static_analysis")
 
 
-@repository_bindable.field("criticalFiles")
-@sync_to_async
-def resolve_critical_files(repository: Repository, info: GraphQLResolveInfo) -> List:
-    """Deprecated. Return dummy."""
-    return []
-
-
 @repository_bindable.field("graphToken")
 def resolve_graph_token(repository: Repository, info: GraphQLResolveInfo) -> str:
     return repository.image_token

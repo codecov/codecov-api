@@ -40,7 +40,6 @@ type Repository {
   ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
   defaultBranch: String
   profilingToken: String
-  criticalFiles: [CriticalFile!]!
   graphToken: String
   yaml: String
   bot: Owner

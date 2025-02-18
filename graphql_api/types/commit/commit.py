@@ -133,13 +133,6 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
         return ComparisonReport(commit_comparison)
 
 
-@commit_bindable.field("criticalFiles")
-@sync_to_async
-def resolve_critical_files(commit: Commit, info, **kwargs) -> List:
-    """DEPRECATED. Returning empty list."""
-    return []
-
-
 @sentry_sdk.trace
 def get_sorted_path_contents(
     current_owner: Owner,
