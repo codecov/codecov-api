@@ -10,6 +10,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
+from shared.events.amplitude import AmplitudeEventPublisher
 from shared.metrics import inc_counter
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
@@ -166,6 +167,22 @@ def send_analytics_data(
     }
     AnalyticsService().account_uploaded_coverage_report(
         commit.repository.author.ownerid, analytics_upload_data
+    )
+    AmplitudeEventPublisher().publish(
+        "Upload Sent",
+        {
+            # Attribute this event to the repo owner. For BA/TA uploads we
+            # don't necessarily have the commit author at upload time, so to
+            # align the upload events, we will always attribute uploads to the
+            # repo owner. It's also not necessarily the case that the commit
+            # author is the owner performing the 'Upload Sent' action.
+            "user_ownerid": commit.repository.author.ownerid,
+            "ownerid": commit.repository.author.ownerid,
+            "repoid": commit.repository.repoid,
+            "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
+            "pullid": commit.pullid,
+            "upload_type": "Coverage report",
+        },
     )
 
 
