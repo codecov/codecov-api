@@ -147,6 +147,7 @@ def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]
     return profiling_summary.critical_files
 
 
+@sentry_sdk.trace
 def get_sorted_path_contents(
     current_owner: Owner,
     commit: Commit,
@@ -226,7 +227,6 @@ def get_sorted_path_contents(
     return sort_path_contents(items, filters)
 
 
-@sentry_sdk.trace
 @commit_bindable.field("pathContents")
 @sync_to_async
 def resolve_path_contents(
