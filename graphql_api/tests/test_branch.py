@@ -11,7 +11,6 @@ from shared.django_apps.core.tests.factories import (
 from shared.reports.types import ReportTotals
 
 from services.components import Component
-from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -347,11 +346,8 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    def test_fetch_path_contents_with_files(self, report_mock, critical_files):
+    def test_fetch_path_contents_with_files(self, report_mock):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -365,7 +361,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             },
         }
         report_mock.return_value = MockReport()
-        critical_files.return_value = [CriticalFile("fileA.py")]
 
         data = self.gql_request(query_files, variables=variables)
         assert data == {
@@ -406,7 +401,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": True,
+                                        "isCriticalFile": False,
                                     },
                                 ],
                             }
@@ -416,12 +411,10 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_path_prefix(
-        self, report_mock, critical_files
+        self,
+        report_mock,
     ):
         variables = {
             "org": self.org.username,
@@ -436,7 +429,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             },
         }
         report_mock.return_value = MockReport()
-        critical_files.return_value = [CriticalFile("folder/fileB.py")]
 
         data = self.gql_request(query_files, variables=variables)
 
@@ -457,7 +449,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": True,
+                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentDir",
@@ -477,12 +469,10 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_search_value_case_insensitive(
-        self, report_mock, critical_files
+        self,
+        report_mock,
     ):
         variables = {
             "org": self.org.username,
@@ -494,7 +484,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             },
         }
         report_mock.return_value = MockReport()
-        critical_files.return_value = [CriticalFile("folder/fileB.py")]
 
         data = self.gql_request(query_files, variables=variables)
 
@@ -526,7 +515,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": True,
+                                        "isCriticalFile": False,
                                     },
                                 ],
                             }
@@ -1147,13 +1136,9 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    def test_fetch_path_contents_deprecated(self, report_mock, critical_files_mock):
+    def test_fetch_path_contents_deprecated(self, report_mock):
         report_mock.return_value = MockReport()
-        critical_files_mock.return_value = []
 
         variables = {
             "org": self.org.username,
@@ -1212,15 +1197,12 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_deprecated_paginated(
-        self, report_mock, critical_files_mock
+        self,
+        report_mock,
     ):
         report_mock.return_value = MockReport()
-        critical_files_mock.return_value = []
 
         variables = {
             "org": self.org.username,

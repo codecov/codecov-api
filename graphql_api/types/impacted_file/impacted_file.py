@@ -15,7 +15,6 @@ from services.comparison import (
     ImpactedFile,
     MissingComparisonReport,
 )
-from services.profiling import ProfilingSummary
 
 impacted_file_bindable = ObjectType("ImpactedFile")
 
@@ -138,16 +137,8 @@ def resolve_misses_count(impacted_file: ImpactedFile, info) -> int:
 @impacted_file_bindable.field("isCriticalFile")
 @sync_to_async
 def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
-    if "profiling_summary" in info.context:
-        base_name = impacted_file.base_name
-        head_name = impacted_file.head_name
-
-        profiling_summary: ProfilingSummary = info.context["profiling_summary"]
-        critical_filenames = profiling_summary.critical_filenames
-
-        return base_name in critical_filenames or head_name in critical_filenames
-    else:
-        return False
+    """DEPRECATED. Returning False for all responses."""
+    return False
 
 
 impacted_files_result_bindable = UnionType("ImpactedFilesResult")

@@ -41,7 +41,6 @@ from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from services.billing import BillingService
-from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval
@@ -174,7 +173,6 @@ async def resolve_repository(
     if repository.private and has_products_enabled:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
 
-    info.context["profiling_summary"] = ProfilingSummary(repository)
     return repository
 
 

@@ -34,7 +34,7 @@ class RegenerateRepositoryTokenInteractorTest(TransactionTestCase):
         return RegenerateRepositoryTokenInteractor(owner, "github").execute(
             repo_name=repo.name,
             owner_username=self.org.username,
-            token_type="profiling",
+            token_type="upload",
         )
 
     async def test_when_validation_error_repo_not_active(self):
@@ -44,14 +44,3 @@ class RegenerateRepositoryTokenInteractorTest(TransactionTestCase):
     async def test_when_validation_error_repo_not_viewable(self):
         with pytest.raises(ValidationError):
             await self.execute(owner=self.random_user, repo=self.active_repo)
-
-    async def test_regenerate_profiling_token_repo_has_no_token(self):
-        token = await self.execute(owner=self.user, repo=self.repo_with_no_token)
-        assert token is not None
-        assert len(token) == 40
-
-    async def test_regenerate_profiling_token(self):
-        token = await self.execute(owner=self.user, repo=self.active_repo)
-        assert token is not None
-        assert token != "random"
-        assert len(token) == 40

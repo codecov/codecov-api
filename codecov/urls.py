@@ -20,7 +20,6 @@ urlpatterns = [
     path("webhooks/", include("webhook_handlers.urls")),
     path("graphql/", include("graphql_api.urls")),
     path("", include("codecov_auth.urls")),
-    path("profiling/", include("profiling.urls")),
     path(f"{settings.DJANGO_ADMIN_URL}/", admin.site.urls),
     path("staticanalysis/", include("staticanalysis.urls")),
     path("labels/", include("labelanalysis.urls")),

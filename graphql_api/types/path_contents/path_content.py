@@ -10,7 +10,6 @@ from graphql_api.helpers.connection import (
 from graphql_api.types.errors import MissingCoverage, MissingHeadReport, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
 from services.path import Dir, File
-from services.profiling import ProfilingSummary
 
 path_content_bindable = InterfaceType("PathContent")
 path_content_file_bindable = ObjectType("PathContentFile")
@@ -63,10 +62,7 @@ def resolve_percent_covered(item: Union[File, Dir], info) -> float:
 @path_content_file_bindable.field("isCriticalFile")
 @sync_to_async
 def resolve_is_critical_file(item: Union[File, Dir], info) -> bool:
-    if isinstance(item, File) and "profiling_summary" in info.context:
-        profiling_summary: ProfilingSummary = info.context["profiling_summary"]
-        return item.full_path in profiling_summary.critical_filenames
-
+    """DEPRECATED. Returning dummy value"""
     return False
 
 
