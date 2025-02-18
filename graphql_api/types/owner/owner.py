@@ -32,6 +32,7 @@ from graphql_api.helpers.connection import (
     Connection,
     build_connection_graphql,
     queryset_to_connection,
+    queryset_to_connection_sync,
 )
 from graphql_api.helpers.mutation import (
     require_part_of_org,
@@ -403,3 +404,34 @@ def resolve_activated_user_count(owner: Owner, info: GraphQLResolveInfo) -> int:
 @require_part_of_org
 def resolve_billing(owner: Owner, info: GraphQLResolveInfo) -> dict | None:
     return owner
+
+
+@owner_bindable.field("aiEnabledRepositories")
+@sync_to_async
+def resolve_ai_enabled_repositories(
+    owner: Owner,
+    info: GraphQLResolveInfo,
+    ordering: Optional[RepositoryOrdering] = RepositoryOrdering.ID,
+    ordering_direction: Optional[OrderingDirection] = OrderingDirection.ASC,
+    **kwargs: Any,
+) -> Coroutine[Any, Any, Connection] | None:
+    ai_features_app_install = GithubAppInstallation.objects.filter(
+        app_id=AI_FEATURES_GH_APP_ID, owner=owner
+    ).first()
+
+    if not ai_features_app_install:
+        return None
+
+    current_owner = info.context["request"].current_owner
+    queryset = Repository.objects.filter(author=owner).viewable_repos(current_owner)
+    if ai_features_app_install.repository_service_ids:
+        queryset = queryset.filter(
+            service_id__in=ai_features_app_install.repository_service_ids
+        )
+
+    return queryset_to_connection_sync(
+        queryset,
+        ordering=(ordering, RepositoryOrdering.ID),
+        ordering_direction=ordering_direction,
+        **kwargs,
+    )
