@@ -47,7 +47,7 @@ type Owner {
     after: String
     last: Int
     before: String
-  ): RepositoryConnection! @cost(complexity: 25, multipliers: ["first", "last"])
+  ): RepositoryConnection @cost(complexity: 25, multipliers: ["first", "last"])
   uploadTokenRequired: Boolean
   activatedUserCount: Int
 }
