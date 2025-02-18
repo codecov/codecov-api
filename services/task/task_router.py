@@ -6,7 +6,6 @@ from codecov_auth.models import Owner
 from compare.models import CommitComparison
 from core.models import Repository
 from labelanalysis.models import LabelAnalysisRequest
-from profiling.models import ProfilingCommit, ProfilingUpload
 from staticanalysis.models import StaticAnalysisSuite
 
 
@@ -21,29 +20,6 @@ def _get_user_plan_from_repoid(repoid, *args, **kwargs) -> str:
     repo = Repository.objects.filter(repoid=repoid).first()
     if repo and repo.author:
         return repo.author.plan
-    return DEFAULT_FREE_PLAN
-
-
-def _get_user_plan_from_profiling_commit(profiling_id, *args, **kwargs) -> str:
-    profiling_commit = ProfilingCommit.objects.filter(id=profiling_id).first()
-    if (
-        profiling_commit
-        and profiling_commit.repository
-        and profiling_commit.repository.author
-    ):
-        return profiling_commit.repository.author.plan
-    return DEFAULT_FREE_PLAN
-
-
-def _get_user_plan_from_profiling_upload(profiling_upload_id, *args, **kwargs) -> str:
-    profiling_upload = ProfilingUpload.objects.filter(id=profiling_upload_id).first()
-    if (
-        profiling_upload
-        and profiling_upload.profiling_commit
-        and profiling_upload.profiling_commit.repository
-        and profiling_upload.profiling_commit.repository.author
-    ):
-        return profiling_upload.profiling_commit.repository.author.plan
     return DEFAULT_FREE_PLAN
 
 
@@ -107,10 +83,6 @@ def _get_user_plan_from_task(task_name: str, task_kwargs: dict) -> str:
         shared_celery_config.status_set_error_task_name: _get_user_plan_from_repoid,
         shared_celery_config.status_set_pending_task_name: _get_user_plan_from_repoid,
         shared_celery_config.pulls_task_name: _get_user_plan_from_repoid,
-        # from profiling_commitid
-        shared_celery_config.profiling_collection_task_name: _get_user_plan_from_profiling_commit,
-        # from profiling_upload_id
-        shared_celery_config.profiling_normalization_task_name: _get_user_plan_from_profiling_upload,
         # from comparison_id
         shared_celery_config.compute_comparison_task_name: _get_user_plan_from_comparison_id,
         # from label_request_id

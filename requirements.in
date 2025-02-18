@@ -43,6 +43,7 @@ pytest-cov
 pytest-django
 pytest-mock
 pytest>=7.2.0
+pytest-split
 python-dateutil
 python-json-logger
 python-redis-lock

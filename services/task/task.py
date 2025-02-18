@@ -105,18 +105,6 @@ class TaskService(object):
                 )
             group(signatures).apply_async()
 
-    def normalize_profiling_upload(self, profiling_upload_id):
-        return self._create_signature(
-            celery_config.profiling_normalization_task_name,
-            kwargs=dict(profiling_upload_id=profiling_upload_id),
-        ).apply_async(countdown=10)
-
-    def collect_profiling_commit(self, profiling_commit_id):
-        return self._create_signature(
-            celery_config.profiling_collection_task_name,
-            kwargs=dict(profiling_id=profiling_commit_id),
-        ).apply_async()
-
     def status_set_pending(self, repoid, commitid, branch, on_a_pull_request):
         self._create_signature(
             "app.tasks.status.SetPending",

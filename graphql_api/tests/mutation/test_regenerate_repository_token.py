@@ -61,26 +61,6 @@ class RegeneratRepositoryTokenTests(GraphQLTestHelper, TransactionTestCase):
             == "ValidationError"
         )
 
-    def test_when_authenticated_regenerate_profiling_token(self):
-        user = OwnerFactory(
-            organizations=[self.org.ownerid], permission=[self.repo.repoid]
-        )
-        RepositoryTokenFactory(repository=self.repo, key="random")
-        data = self.gql_request(
-            query,
-            owner=user,
-            variables={
-                "input": {
-                    "owner": "codecov",
-                    "repoName": "gazebo",
-                    "tokenType": "PROFILING",
-                }
-            },
-        )
-        newToken = data["regenerateRepositoryToken"]["token"]
-        assert newToken != "random"
-        assert len(newToken) == 40
-
     def test_when_authenticated_regenerate_staticanalysis_token(self):
         user = OwnerFactory(
             organizations=[self.org.ownerid], permission=[self.repo.repoid]

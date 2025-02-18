@@ -48,8 +48,8 @@ def resolve_totals(data, info):
 @file_bindable.field("isCriticalFile")
 @sync_to_async
 def resolve_is_critical_file(data, info):
-    critical_filenames = info.context["profiling_summary"].critical_filenames
-    return data.get("path") in critical_filenames
+    """DEPRECATED. Returning dummy value"""
+    return False
 
 
 @file_bindable.field("hashedPath")

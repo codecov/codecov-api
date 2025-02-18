@@ -26,7 +26,7 @@ class GetRepositoryTokenInteractorTest(TransactionTestCase):
         self.user = OwnerFactory(organizations=[self.org.ownerid])
         RepositoryTokenFactory(repository=self.active_repo, key="random")
 
-    def execute(self, owner, repo, token_type="profiling"):
+    def execute(self, owner, repo, token_type="upload"):
         return GetRepositoryTokenInteractor(owner, "github").execute(
             repository=repo, token_type=token_type
         )
@@ -43,11 +43,6 @@ class GetRepositoryTokenInteractorTest(TransactionTestCase):
         token = await self.execute(owner=self.user, repo=self.repo_with_no_token)
         assert token is not None
         assert len(token) == 40
-
-    async def test_get_profiling_token(self):
-        token = await self.execute(owner=self.user, repo=self.active_repo)
-        assert token is not None
-        assert token == "random"
 
     async def test_get_static_analysis_token(self):
         token = await self.execute(

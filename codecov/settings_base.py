@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     "core",
     "graphql_api",
     "labelanalysis",
-    "profiling",
     "reports",
     "staticanalysis",
     "timeseries",

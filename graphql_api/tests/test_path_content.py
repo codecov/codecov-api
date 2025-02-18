@@ -11,7 +11,6 @@ from services.path import Dir, File
 from ..types.commit.commit import resolve_path_contents
 from ..types.errors.errors import MissingCoverage, UnknownPath
 from ..types.path_contents.path_content import (
-    resolve_is_critical_file,
     resolve_path_content_type,
 )
 
@@ -54,31 +53,6 @@ class TestResolvePathContent:
     def test_returns_none(self):
         type = resolve_path_content_type("string")
         assert type is None
-
-
-class TestIsCriticalFile(TransactionTestCase):
-    async def test_is_critical_file_returns_true(self):
-        file = File(full_path="file.py", totals=ReportTotals.default_totals())
-        info = MockContext(context={})
-        info.context["profiling_summary"] = MockProfilingSummary(["file.py"])
-
-        data = await resolve_is_critical_file(file, info)
-        assert data == True
-
-    async def test_is_critical_file_returns_false(self):
-        file = File(full_path="file.py", totals=ReportTotals.default_totals())
-        info = MockContext(context={})
-        info.context["profiling_summary"] = MockProfilingSummary([])
-
-        data = await resolve_is_critical_file(file, info)
-        assert data == False
-
-    async def test_is_critical_file_no_critical_filenames(self):
-        file = File(full_path="file.py", totals=ReportTotals.default_totals())
-        info = MockContext(context={})
-
-        data = await resolve_is_critical_file(file, info)
-        assert data == False
 
 
 class TestPathContents(TransactionTestCase):

@@ -5,14 +5,10 @@ from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName
 
 from compare.tests.factories import CommitComparisonFactory
 from labelanalysis.tests.factories import LabelAnalysisRequestFactory
-from profiling.models import ProfilingUpload
-from profiling.tests.factories import ProfilingCommitFactory
 from services.task.task_router import (
     _get_user_plan_from_comparison_id,
     _get_user_plan_from_label_request_id,
     _get_user_plan_from_ownerid,
-    _get_user_plan_from_profiling_commit,
-    _get_user_plan_from_profiling_upload,
     _get_user_plan_from_repoid,
     _get_user_plan_from_suite_id,
     _get_user_plan_from_task,
@@ -41,28 +37,6 @@ def fake_repos(db, fake_owners):
     repo.save()
     repo_enterprise.save()
     return (repo, repo_enterprise)
-
-
-@pytest.fixture
-def fake_profiling_commit(db, fake_repos):
-    (repo, repo_enterprise) = fake_repos
-    profiling_commit = ProfilingCommitFactory(repository=repo)
-    profiling_commit_enterprise = ProfilingCommitFactory(repository=repo_enterprise)
-    profiling_commit.save()
-    profiling_commit_enterprise.save()
-    return (profiling_commit, profiling_commit_enterprise)
-
-
-@pytest.fixture
-def fake_profiling_upload(db, fake_profiling_commit):
-    (profing_commit, profiling_commit_enterprise) = fake_profiling_commit
-    profiling_upload = ProfilingUpload(profiling_commit=profing_commit)
-    profiling_upload_enterprise = ProfilingUpload(
-        profiling_commit=profiling_commit_enterprise
-    )
-    profiling_upload.save()
-    profiling_upload_enterprise.save()
-    return (profiling_upload, profiling_upload_enterprise)
 
 
 @pytest.fixture
@@ -123,34 +97,6 @@ def test_get_owner_plan_from_repoid(fake_repos):
     assert _get_user_plan_from_repoid(10000000) == DEFAULT_FREE_PLAN
 
 
-def test_get_owner_plan_from_profiling_id(fake_profiling_commit):
-    (profing_commit, profiling_commit_enterprise) = fake_profiling_commit
-    assert (
-        _get_user_plan_from_profiling_commit(profiling_id=profing_commit.id)
-        == PlanName.CODECOV_PRO_MONTHLY.value
-    )
-    assert (
-        _get_user_plan_from_profiling_commit(
-            profiling_id=profiling_commit_enterprise.id
-        )
-        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
-    )
-    assert _get_user_plan_from_profiling_commit(10000000) == DEFAULT_FREE_PLAN
-
-
-def test_get_owner_plan_from_profiling_upload(fake_profiling_upload):
-    (profiling_upload, profiling_upload_enterprise) = fake_profiling_upload
-    assert (
-        _get_user_plan_from_profiling_upload(profiling_upload.id)
-        == PlanName.CODECOV_PRO_MONTHLY.value
-    )
-    assert (
-        _get_user_plan_from_profiling_upload(profiling_upload_enterprise.id)
-        == PlanName.ENTERPRISE_CLOUD_YEARLY.value
-    )
-    assert _get_user_plan_from_profiling_upload(10000000) == DEFAULT_FREE_PLAN
-
-
 def test_get_user_plan_from_comparison_id(fake_compare_commit):
     (compare_commit, compare_commit_enterprise) = fake_compare_commit
     assert (
@@ -200,13 +146,9 @@ def test_get_user_plan_from_static_analysis_suite(fake_static_analysis_suite):
 
 def test_get_user_plan_from_task(
     fake_repos,
-    fake_profiling_commit,
-    fake_profiling_upload,
     fake_compare_commit,
 ):
     (repo, repo_enterprise_cloud) = fake_repos
-    profiling_commit = fake_profiling_commit[0]
-    profiling_upload = fake_profiling_upload[0]
     compare_commit = fake_compare_commit[0]
     task_kwargs = dict(repoid=repo.repoid, commitid=0, debug=False, rebuild=False)
     assert (
@@ -226,23 +168,6 @@ def test_get_user_plan_from_task(
     assert (
         _get_user_plan_from_task(
             shared_celery_config.delete_owner_task_name, task_kwargs
-        )
-        == PlanName.CODECOV_PRO_MONTHLY.value
-    )
-
-    task_kwargs = dict(profiling_id=profiling_commit.id)
-    assert (
-        _get_user_plan_from_task(
-            shared_celery_config.profiling_collection_task_name, task_kwargs
-        )
-        == PlanName.CODECOV_PRO_MONTHLY.value
-    )
-
-    task_kwargs = dict(profiling_upload_id=profiling_upload.id)
-    assert (
-        _get_user_plan_from_task(
-            shared_celery_config.profiling_normalization_task_name,
-            task_kwargs,
         )
         == PlanName.CODECOV_PRO_MONTHLY.value
     )
