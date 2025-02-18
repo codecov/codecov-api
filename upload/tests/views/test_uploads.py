@@ -314,7 +314,9 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         "upload.views.uploads.trigger_upload_task", return_value=True
     )
     analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
-    amplitude_mock = mocker.path("shared.events.amplitude.AmplitudeEventPublisher")
+    amplitude_mock = mocker.patch(
+        "shared.events.amplitude.AmplitudeEventPublisher.publish"
+    )
 
     repository = RepositoryFactory(
         name="the_repo",
@@ -432,7 +434,7 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
                 "uploader_type": "CLI",
             },
         )
-        amplitude_mock.return_value.publish.assert_called_with(
+        amplitude_mock.assert_called_with(
             "Upload Sent",
             {
                 "user_ownerid": commit.repository.author.ownerid,
@@ -471,7 +473,9 @@ def test_uploads_post_token_required_auth_check(
         "upload.views.uploads.trigger_upload_task", return_value=True
     )
     analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
-    amplitude_mock = mocker.path("shared.events.amplitude.AmplitudeEventPublisher")
+    amplitude_mock = mocker.patch(
+        "shared.events.amplitude.AmplitudeEventPublisher.publish"
+    )
 
     repository = RepositoryFactory(
         name="the_repo",
@@ -596,7 +600,7 @@ def test_uploads_post_token_required_auth_check(
                 "uploader_type": "CLI",
             },
         )
-        amplitude_mock.return_value.publish.assert_called_with(
+        amplitude_mock.assert_called_with(
             "Upload Sent",
             {
                 "user_ownerid": commit.repository.author.ownerid,
@@ -612,7 +616,7 @@ def test_uploads_post_token_required_auth_check(
         assert response.json().get("detail") == "Not valid tokenless upload"
 
 
-@patch("shared.events.amplitude.AmplitudeEventPublisher")
+@patch("shared.events.amplitude.AmplitudeEventPublisher.publish")
 @patch("upload.views.uploads.AnalyticsService")
 @patch("upload.helpers.jwt.decode")
 @patch("upload.helpers.PyJWKClient")
@@ -743,7 +747,7 @@ def test_uploads_post_github_oidc_auth(
             "uploader_type": "CLI",
         },
     )
-    amplitude_mock.return_value.publish.assert_called_with(
+    amplitude_mock.assert_called_with(
         "Upload Sent",
         {
             "user_ownerid": commit.repository.author.ownerid,
