@@ -155,3 +155,21 @@ class RepositoryQuerySetTests(TransactionTestCase):
 
         with self.assertRaises(ValidationError):
             queryset_to_connection_sync(data, first=3, after="invalid")
+
+    def test_dict_cursor_paginator_null_encoding(self):
+        from graphql_api.helpers.connection import DictCursorPaginator, field_order
+
+        repo_1 = RepositoryFactory(name="a", active=None)
+        repo_2 = RepositoryFactory(name="b", active=True)
+        repo_3 = RepositoryFactory(name="c", active=False)
+        r = Repository.objects.all()
+
+        ordering = tuple(
+            field_order(field, OrderingDirection.ASC) for field in ("active",)
+        )
+
+        paginator = DictCursorPaginator(r, ordering=ordering)
+
+        assert paginator.position_from_instance(repo_1) == ["\x1f"]
+        assert paginator.position_from_instance(repo_2) == ["True"]
+        assert paginator.position_from_instance(repo_3) == ["False"]
