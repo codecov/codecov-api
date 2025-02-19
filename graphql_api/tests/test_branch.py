@@ -772,18 +772,15 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_filter_has_coverage(
-        self, report_mock, commit_components_mock, filtered_mock
+        self, files_mock, report_mock, commit_components_mock, filtered_mock
     ):
-        components = ["Global"]
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "branch": self.branch.name,
-            "path": "",
-            "filters": {"components": components},
-        }
-
+        files_mock.return_value = [
+            "folder/fileB.py",
+            "folder/subfolder/fileC.py",
+            "folder/subfolder/fileD.py",
+        ]
         report_mock.return_value = MockReport()
         commit_components_mock.return_value = [
             Component.from_dict(
@@ -810,6 +807,14 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         ]
         filtered_mock.return_value = MockReport()
 
+        components = ["Global"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components},
+        }
         data = self.gql_request(query_files, variables=variables)
 
         assert data == {
@@ -841,18 +846,15 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_belonging_to_flags")
-    @patch("services.report.files_in_sessions")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_and_flag_filters(
         self,
-        session_files_mock,
-        flag_files_mock,
+        files_mock,
         report_mock,
         commit_components_mock,
         filtered_mock,
     ):
-        session_files_mock.return_value = ["fileA.py"]
-        flag_files_mock.return_value = ["fileA.py"]
+        files_mock.return_value = ["fileA.py"]
         report_mock.return_value = MockReport()
         commit_components_mock.return_value = [
             Component.from_dict(
@@ -945,11 +947,11 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_belonging_to_flags")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_and_flag_filters_unknown_flags(
-        self, flag_files_mock, report_mock, commit_components_mock, filtered_mock
+        self, files_mock, report_mock, commit_components_mock, filtered_mock
     ):
-        flag_files_mock.return_value = ["fileA.py"]
+        files_mock.return_value = ["fileA.py"]
         report_mock.return_value = MockNoFlagsReport()
         commit_components_mock.return_value = [
             Component.from_dict(
@@ -1035,18 +1037,15 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_belonging_to_flags")
-    @patch("services.report.files_in_sessions")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_flags_filters(
         self,
-        session_files_mock,
-        flag_files_mock,
+        files_mock,
         report_mock,
         commit_components_mock,
         filtered_mock,
     ):
-        session_files_mock.return_value = ["fileA.py"]
-        flag_files_mock.return_value = ["fileA.py"]
+        files_mock.return_value = ["fileA.py"]
         report_mock.return_value = MockReport()
         commit_components_mock.return_value = [
             Component.from_dict(

@@ -8,12 +8,11 @@ from typing import Iterable
 import sentry_sdk
 from asgiref.sync import async_to_sync
 from django.conf import settings
+from shared.reports.filtered import FilteredReport, FilteredReportFile
 from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
-from shared.utils.match import Matcher
 
-import services.report as report_service
 from codecov_auth.models import Owner
 from core.models import Commit
 from services.repo_providers import RepoProviderService
@@ -150,13 +149,12 @@ class ReportPaths:
         report: Report,
         path: str | None = None,
         search_term: str | None = None,
-        filter_flags: list[str] = [],
-        filter_paths: list[str] = [],
+        filter_flags: list[str] = None,
+        filter_paths: list[str] = None,
     ):
-        self.report = report
-        self.unfiltered_report = report
-        self.filter_flags = filter_flags
-        self.filter_paths = filter_paths
+        self.report: Report | FilteredReport = report
+        self.filter_flags = filter_flags or []
+        self.filter_paths = filter_paths or []
         self.prefix = path or ""
 
         # Filter report if flags or paths exist
@@ -172,36 +170,36 @@ class ReportPaths:
         ]
 
         if search_term:
+            search_term = search_term.lower()
             self._paths = [
                 path
-                for path in self.paths
-                if search_term.lower() in path.relative_path.lower()
+                for path in self._paths
+                if search_term in path.relative_path.lower()
             ]
 
     @cached_property
     def files(self) -> list[str]:
-        # No filtering, just return files in Report
-        if not self.filter_flags and not self.filter_paths:
+        # No flags filtering, just return (path-filtered) files in Report
+        if not self.filter_flags:
             return self.report.files
 
+        # When there is a flag filter, `FilteredReport` currently yields
+        # `FilteredReportFile`s without actually checking whether they match the sessions.
+        # Before that bug is fixed, lets do the filtering manually here. Once that bug is fixed,
+        # this should just forward to `self.report.files` like above.
         files = []
-        # Do flag filtering if needed
-        if self.filter_flags:
-            files = report_service.files_belonging_to_flags(
-                commit_report=self.unfiltered_report, flags=self.filter_flags
-            )
-        else:
-            files = [file.name for file in self.unfiltered_report]
+        for file in self.report:
+            if isinstance(file, FilteredReportFile):
+                found = False
+                for _ln, line in file.lines:
+                    if line and any(s.id in file.session_ids for s in line.sessions):
+                        found = True
+                        break
+                if not found:
+                    continue
 
-        # Do path filtering if needed
-        if self.filter_paths:
-            matcher = Matcher(self.filter_paths)
-            files = [file for file in files if matcher.match(file)]
-
+            files.append(file.name)
         return files
-
-    def _filter_commit_report(self) -> None:
-        self.report = self.report.filter(flags=self.filter_flags)
 
     @property
     def paths(self) -> list[PrefixedPath]:
