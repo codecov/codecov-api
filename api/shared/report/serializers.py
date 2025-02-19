@@ -14,13 +14,35 @@ class TreeSerializer(serializers.Serializer):
     partials = serializers.IntegerField()
     misses = serializers.IntegerField()
 
-    def to_representation(self, instance):
+    def to_representation(self, instance: Dir) -> dict:
         depth = self.context.get("depth", 1)
         max_depth = self.context.get("max_depth", math.inf)
         res = super().to_representation(instance)
         if isinstance(instance, Dir):
             if depth < max_depth:
                 res["children"] = TreeSerializer(
+                    instance.children,
+                    many=True,
+                    context={
+                        "depth": depth + 1,
+                        "max_depth": max_depth,
+                    },
+                ).data
+        return res
+
+
+class SunburstSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    full_path = serializers.CharField()
+    value = serializers.FloatField()
+
+    def to_representation(self, instance: Dir) -> dict:
+        depth = self.context.get("depth", 1)
+        max_depth = self.context.get("max_depth", math.inf)
+        res = super().to_representation(instance)
+        if isinstance(instance, Dir):
+            if depth < max_depth:
+                res["children"] = SunburstSerializer(
                     instance.children,
                     many=True,
                     context={
