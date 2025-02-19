@@ -205,7 +205,6 @@ test_env.install_cli:
 
 test_env.container_prepare:
 	apt-get -y install git build-essential netcat-traditional
-	make test_env.install_cli
 	git config --global --add safe.directory /app
 
 test_env.container_check_db:
@@ -229,20 +228,6 @@ test_env.run_integration:
 
 test_env.check-for-migration-conflicts:
 	docker-compose exec api python manage.py check_for_migration_conflicts
-
-test_env.upload:
-	docker-compose exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
-	docker-compose exec api make test_env.container_upload_test_results CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
-
-test_env.container_upload:
-	codecovcli -u ${CODECOV_URL} upload-process --flag unit-latest-uploader --flag unit  \
-	--coverage-files-search-exclude-folder=graphql_api/types/** \
-	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
-
-test_env.container_upload_test_results:
-	codecovcli -u ${CODECOV_URL} do-upload --report-type "test_results" \
-	--files-search-exclude-folder=graphql_api/types/** \
-	--files-search-exclude-folder=api/internal/tests/unit/views/cassetes/** || true
 
 test_env.static_analysis:
 	docker-compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
