@@ -1194,65 +1194,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch("services.self_hosted.get_config")
-    def test_ai_enabled_repositories(self, get_config_mock):
-        get_config_mock.return_value = [
-            {"service": "github", "ai_features_app_id": 12345},
-        ]
-
-        ai_app_installation = GithubAppInstallation(
-            name="ai-features",
-            owner=self.owner,
-            repository_service_ids=[],
-            installation_id=12345,
-        )
-
-        ai_app_installation.save()
-
-        query = """{
-            owner(username: "%s") {
-                aiEnabledRepositories(first: 20) {
-                    edges {
-                        node {
-                            name
-                        }
-                    }
-                }
-            }
-        }
-
-        """ % (self.owner.username)
-        data = self.gql_request(query, owner=self.owner)
-        repos = paginate_connection(data["owner"]["aiEnabledRepositories"])
-        assert repos == [{"name": "a"}, {"name": "b"}]
-
-    @patch("services.self_hosted.get_config")
-    def test_ai_enabled_repositories_app_not_configured(self, get_config_mock):
-        current_org = OwnerFactory(
-            username="random-plan-user",
-            service="github",
-        )
-
-        get_config_mock.return_value = [
-            {"service": "github", "ai_features_app_id": 12345},
-        ]
-
-        query = """{
-            owner(username: "%s") {
-                aiEnabledRepositories {
-                    edges {
-                        node {
-                            name
-                        }
-                    }
-                }
-            }
-        }
-
-        """ % (current_org.username)
-        data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["aiEnabledRepositories"] is None
-
     def test_fetch_owner_with_no_service(self):
         current_org = OwnerFactory(
             username="random-plan-user",

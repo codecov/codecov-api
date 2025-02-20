@@ -40,14 +40,6 @@ type Owner {
   yaml: String
   aiFeaturesEnabled: Boolean!
   aiEnabledRepos: [String]
-  aiEnabledRepositories(
-    ordering: RepositoryOrdering
-    orderingDirection: OrderingDirection
-    first: Int
-    after: String
-    last: Int
-    before: String
-  ): RepositoryConnection @cost(complexity: 25, multipliers: ["first", "last"])
   uploadTokenRequired: Boolean
   activatedUserCount: Int
 }
