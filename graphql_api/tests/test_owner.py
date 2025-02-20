@@ -720,12 +720,37 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = """{
             owner(username: "%s") {
                 hasPrivateRepos
+                hasPublicRepos
+                hasActiveRepos
             }
         }
         """ % (current_org.username)
 
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["hasPrivateRepos"] == True
+        assert data["owner"]["hasPublicRepos"] == False
+        assert data["owner"]["hasActiveRepos"] == True
+
+    def test_owner_query_with_no_active_repos(self):
+        current_org = OwnerFactory(
+            username="random-plan-user",
+            service="github",
+        )
+        RepositoryFactory(
+            author=current_org, active=False, activated=False, private=True
+        )
+        query = """{
+            owner(username: "%s") {
+                hasPrivateRepos
+                hasPublicRepos
+                hasActiveRepos
+            }
+        }
+        """ % (current_org.username)
+        data = self.gql_request(query, owner=current_org)
+        assert data["owner"]["hasPrivateRepos"] == True
+        assert data["owner"]["hasPublicRepos"] == False
+        assert data["owner"]["hasActiveRepos"] == False
 
     def test_owner_query_with_public_repos(self):
         current_org = OwnerFactory(
@@ -749,12 +774,16 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         query = """{
             owner(username: "%s") {
                 hasPrivateRepos
+                hasPublicRepos
+                hasActiveRepos
             }
         }
         """ % (current_org.username)
 
         data = self.gql_request(query, owner=current_org)
         assert data["owner"]["hasPrivateRepos"] == False
+        assert data["owner"]["hasPublicRepos"] == True
+        assert data["owner"]["hasActiveRepos"] == True
 
     def test_owner_hash_owner_id(self):
         user = OwnerFactory(username="sample-user")
