@@ -229,24 +229,6 @@ test_env.run_integration:
 test_env.check-for-migration-conflicts:
 	docker-compose exec api python manage.py check_for_migration_conflicts
 
-test_env.static_analysis:
-	docker-compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
-
-test_env.label_analysis:
-	docker-compose exec api make test_env.container_label_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
-
-test_env.ats:
-	docker-compose exec api make test_env.container_ats CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN}
-
-test_env.container_static_analysis:
-	codecovcli -u ${CODECOV_URL} static-analysis --token=${CODECOV_STATIC_TOKEN}
-
-test_env.container_label_analysis:
-	codecovcli -u ${CODECOV_URL} label-analysis --base-sha=${merge_sha} --token=${CODECOV_STATIC_TOKEN}
-
-test_env.container_ats:
-	codecovcli -u ${CODECOV_URL} --codecov-yml-path=codecov_cli.yml upload-process --plugin pycoverage --plugin compress-pycoverage --flag smart-labels --fail-on-error
-
 test_env:
 	make test_env.up
 	make test_env.prepare
