@@ -191,7 +191,7 @@ class TestResultsView(
         AmplitudeEventPublisher().publish(
             "Upload Sent",
             {
-                "user_ownerid": repo.author.ownerid,
+                "user_ownerid": commit.author.ownerid if commit.author else -1,
                 "ownerid": repo.author.ownerid,
                 "repoid": repo.repoid,
                 "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
