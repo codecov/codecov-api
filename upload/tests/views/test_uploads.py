@@ -437,7 +437,7 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         amplitude_mock.assert_called_with(
             "Upload Sent",
             {
-                "user_ownerid": commit.repository.author.ownerid,
+                "user_ownerid": commit.author.ownerid,
                 "ownerid": commit.repository.author.ownerid,
                 "repoid": commit.repository.repoid,
                 "commitid": commit.id,
@@ -603,7 +603,7 @@ def test_uploads_post_token_required_auth_check(
         amplitude_mock.assert_called_with(
             "Upload Sent",
             {
-                "user_ownerid": commit.repository.author.ownerid,
+                "user_ownerid": commit.author.ownerid,
                 "ownerid": commit.repository.author.ownerid,
                 "repoid": commit.repository.repoid,
                 "commitid": commit.id,
@@ -750,7 +750,7 @@ def test_uploads_post_github_oidc_auth(
     amplitude_mock.assert_called_with(
         "Upload Sent",
         {
-            "user_ownerid": commit.repository.author.ownerid,
+            "user_ownerid": commit.author.ownerid,
             "ownerid": commit.repository.author.ownerid,
             "repoid": commit.repository.repoid,
             "commitid": commit.id,
