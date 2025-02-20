@@ -14,7 +14,6 @@ from shared.utils.merge import LineType
 from compare.models import CommitComparison
 from compare.tests.factories import CommitComparisonFactory, FlagComparisonFactory
 from reports.tests.factories import RepositoryFlagFactory
-from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -344,13 +343,13 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         }
 
     @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
-    @patch(
         "services.comparison.ComparisonReport.files",
         new_callable=PropertyMock,
     )
-    def test_pull_comparison_impacted_files(self, files_mock, critical_files):
+    def test_pull_comparison_impacted_files(
+        self,
+        files_mock,
+    ):
         base_report_totals = ReportTotals(
             coverage=75.0,
             files=1,
@@ -403,9 +402,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 head_coverage=head_report_totals,
                 patch_coverage=patch_totals,
             ),
-        ]
-        critical_files.return_value = [
-            CriticalFile("foo.py"),
         ]
 
         query = """
@@ -511,13 +507,10 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         }
 
     @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
-    @patch(
         "services.comparison.ComparisonReport.files",
         new_callable=PropertyMock,
     )
-    def test_pull_comparison_is_critical_file(self, files_mock, critical_files):
+    def test_pull_comparison_is_critical_file(self, files_mock):
         TestImpactedFile = namedtuple("TestImpactedFile", ["base_name", "head_name"])
 
         files_mock.return_value = [
@@ -529,9 +522,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                 base_name=None,
                 head_name="baz.py",
             ),
-        ]
-        critical_files.return_value = [
-            CriticalFile("foo.py"),
         ]
 
         query = """
@@ -563,7 +553,7 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                         {
                             "baseName": "foo.py",
                             "headName": "bar.py",
-                            "isCriticalFile": True,
+                            "isCriticalFile": False,
                         },
                         {
                             "baseName": None,

@@ -34,10 +34,18 @@ test:
 	COVERAGE_CORE=sysmon python -m pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy
 
 test.unit:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy
+	@if [ -n "$(GROUP)" ]; then \
+		COVERAGE_CORE=sysmon python -m pytest --splits ${SPLIT} --group $(GROUP) --cov=./ -m "not integration" --cov-report=xml:unit.$(GROUP).coverage.xml --junitxml=unit.$(GROUP).junit.xml -o junit_family=legacy; \
+	else \
+		COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy; \
+	fi
 
 test.integration:
-	COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy
+	@if [ -n "$(GROUP)" ]; then \
+		COVERAGE_CORE=sysmon python -m pytest --splits ${SPLIT} --group $(GROUP) --cov=./ -m "integration" --cov-report=xml:integration.$(GROUP).coverage.xml --junitxml=integration.$(GROUP).junit.xml -o junit_family=legacy; \
+	else \
+		COVERAGE_CORE=sysmon python -m pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy; \
+	fi
 
 lint:
 	make lint.install
@@ -197,36 +205,29 @@ test_env.install_cli:
 
 test_env.container_prepare:
 	apt-get -y install git build-essential netcat-traditional
-	make test_env.install_cli
-	git config --global --add safe.directory /app
+	git config --global --add safe.directory /app || true
 
 test_env.container_check_db:
 	while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
 	while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
 
 test_env.run_unit:
-	docker-compose exec api make test.unit
+	@if [ -n "$(GROUP)" ]; then \
+		docker-compose exec api make test.unit SPLIT=${SPLIT} GROUP=${GROUP}; \
+	else \
+		docker-compose exec api make test.unit; \
+	fi
 
 test_env.run_integration:
-	#docker-compose exec api make test.integration
+	# @if [ -n "$(GROUP)" ]; then \
+	# 	docker-compose exec api make test.integration SPLIT=${SPLIT} GROUP=${GROUP}; \
+	# else \
+	# 	docker-compose exec api make test.integration; \
+	# fi
 	echo "Skipping. No Tests"
 
 test_env.check-for-migration-conflicts:
 	docker-compose exec api python manage.py check_for_migration_conflicts
-
-test_env.upload:
-	docker-compose exec api make test_env.container_upload CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
-	docker-compose exec api make test_env.container_upload_test_results CODECOV_UPLOAD_TOKEN=${CODECOV_UPLOAD_TOKEN} CODECOV_URL=${CODECOV_URL}
-
-test_env.container_upload:
-	codecovcli -u ${CODECOV_URL} upload-process --flag unit-latest-uploader --flag unit  \
-	--coverage-files-search-exclude-folder=graphql_api/types/** \
-	--coverage-files-search-exclude-folder=api/internal/tests/unit/views/cassetes/**
-
-test_env.container_upload_test_results:
-	codecovcli -u ${CODECOV_URL} do-upload --report-type "test_results" \
-	--files-search-exclude-folder=graphql_api/types/** \
-	--files-search-exclude-folder=api/internal/tests/unit/views/cassetes/** || true
 
 test_env.static_analysis:
 	docker-compose exec api make test_env.container_static_analysis CODECOV_STATIC_TOKEN=${CODECOV_STATIC_TOKEN}
