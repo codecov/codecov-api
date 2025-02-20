@@ -122,7 +122,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
     mock_amplitude.assert_called_with(
         "Upload Sent",
         {
-            "user_ownerid": commit.author.ownerid,
+            "user_ownerid": -1,
             "ownerid": commit.repository.author.ownerid,
             "repoid": commit.repository.repoid,
             "commitid": commit.id,
