@@ -198,7 +198,7 @@ def generate_test_results(
         )
 
     if term:
-        table = table.filter(pl.col("name").str.starts_with(term))
+        table = table.filter(pl.col("name").str.contains(term))
 
     if testsuites:
         table = table.filter(
