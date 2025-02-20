@@ -1209,3 +1209,32 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org, provider="", with_errors=True)
         assert data == {"data": {"owner": None}}
+
+    def test_fetch_repositories_ai_features_enabled(self):
+        ai_app_installation = GithubAppInstallation(
+            name="ai-features",
+            owner=self.owner,
+            repository_service_ids=[],
+            installation_id=12345,
+        )
+
+        ai_app_installation.save()
+        query = query_repositories % (
+            self.owner.username,
+            "(filters: { aiEnabled: true })",
+            "",
+        )
+
+        data = self.gql_request(query, owner=self.owner)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "a"}, {"name": "b"}]
+
+    def test_fetch_repositories_ai_features_enabled_no_app_install(self):
+        query = query_repositories % (
+            self.owner.username,
+            "(filters: { aiEnabled: true })",
+            "",
+        )
+        data = self.gql_request(query, owner=self.owner)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == []
