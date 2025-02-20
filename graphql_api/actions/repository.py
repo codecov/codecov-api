@@ -5,8 +5,8 @@ import sentry_sdk
 from django.db.models import QuerySet
 from shared.django_apps.codecov_auth.models import GithubAppInstallation, Owner
 from shared.django_apps.core.models import Repository
-from utils.config import get_config
 
+from utils.config import get_config
 
 log = logging.getLogger(__name__)
 AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
