@@ -13,7 +13,7 @@ AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 def apply_filters_to_queryset(
-    queryset: QuerySet, filters: dict[str, Any] | None, owner: Owner
+    queryset: QuerySet, filters: dict[str, Any] | None, owner: Owner | None = None
 ) -> QuerySet:
     filters = filters or {}
     term = filters.get("term")
