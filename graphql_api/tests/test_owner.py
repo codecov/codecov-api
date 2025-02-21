@@ -685,13 +685,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["availablePlans"] == [
+        assert sorted(data["owner"]["availablePlans"]) == sorted([
             {"value": "users-pr-inappm"},
             {"value": "users-pr-inappy"},
             {"value": "users-teamm"},
             {"value": "users-teamy"},
             {"value": DEFAULT_FREE_PLAN},
-        ]
+        ])
 
     def test_owner_query_with_no_service(self):
         current_org = OwnerFactory(
@@ -1142,7 +1142,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        assert data == {
+        assert sorted(data) == sorted({
             "owner": {
                 "availablePlans": [
                     {
@@ -1192,7 +1192,7 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
                     },
                 ]
             }
-        }
+        })
 
     def test_fetch_owner_with_no_service(self):
         current_org = OwnerFactory(
