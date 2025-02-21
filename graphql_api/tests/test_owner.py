@@ -1122,7 +1122,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["activatedUserCount"] == 2
 
-
     def test_fetch_available_plans_is_enterprise_plan(self):
         current_org = OwnerFactory(
             username="random-plan-user",
