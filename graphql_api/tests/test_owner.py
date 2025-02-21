@@ -685,13 +685,15 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        assert sorted(data["owner"]["availablePlans"]) == sorted([
+        expected_plans = [
             {"value": "users-pr-inappm"},
             {"value": "users-pr-inappy"},
             {"value": "users-teamm"},
             {"value": "users-teamy"},
             {"value": DEFAULT_FREE_PLAN},
-        ])
+        ]
+        for plan in expected_plans:
+            self.assertIn(plan, data["owner"]["availablePlans"])
 
     def test_owner_query_with_no_service(self):
         current_org = OwnerFactory(
@@ -1120,13 +1122,13 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         data = self.gql_request(query, owner=owner)
         assert data["owner"]["activatedUserCount"] == 2
 
+
     def test_fetch_available_plans_is_enterprise_plan(self):
         current_org = OwnerFactory(
             username="random-plan-user",
             service="github",
             plan=DEFAULT_FREE_PLAN,
         )
-
         query = """{
             owner(username: "%s") {
                 availablePlans {
@@ -1142,57 +1144,55 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        assert sorted(data) == sorted({
-            "owner": {
-                "availablePlans": [
-                    {
-                        "value": "users-pr-inappm",
-                        "isEnterprisePlan": False,
-                        "isProPlan": True,
-                        "isTeamPlan": False,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": "users-pr-inappy",
-                        "isEnterprisePlan": False,
-                        "isProPlan": True,
-                        "isTeamPlan": False,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": "users-teamm",
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": True,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": "users-teamy",
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": True,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": DEFAULT_FREE_PLAN,
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": True,
-                        "isSentryPlan": False,
-                        "isFreePlan": True,
-                        "isTrialPlan": False,
-                    },
-                ]
-            }
-        })
+        expected_plans = [
+            {
+                "value": "users-pr-inappm",
+                "isEnterprisePlan": False,
+                "isProPlan": True,
+                "isTeamPlan": False,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": "users-pr-inappy",
+                "isEnterprisePlan": False,
+                "isProPlan": True,
+                "isTeamPlan": False,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": "users-teamm",
+                "isEnterprisePlan": False,
+                "isProPlan": False,
+                "isTeamPlan": True,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": "users-teamy",
+                "isEnterprisePlan": False,
+                "isProPlan": False,
+                "isTeamPlan": True,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": DEFAULT_FREE_PLAN,
+                "isEnterprisePlan": False,
+                "isProPlan": False,
+                "isTeamPlan": True,
+                "isSentryPlan": False,
+                "isFreePlan": True,
+                "isTrialPlan": False,
+            },
+        ]
+        for plan in expected_plans:
+            self.assertIn(plan, data["owner"]["availablePlans"])
 
     def test_fetch_owner_with_no_service(self):
         current_org = OwnerFactory(
