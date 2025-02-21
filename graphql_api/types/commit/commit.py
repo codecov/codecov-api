@@ -46,7 +46,6 @@ from services.bundle_analysis import BundleAnalysisComparison, BundleAnalysisRep
 from services.comparison import Comparison, ComparisonReport
 from services.components import Component
 from services.path import Dir, File, ReportPaths
-from services.profiling import CriticalFile, ProfilingSummary
 from services.yaml import (
     YamlStates,
     get_yaml_state,
@@ -134,19 +133,7 @@ async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
         return ComparisonReport(commit_comparison)
 
 
-@commit_bindable.field("criticalFiles")
-@sync_to_async
-def resolve_critical_files(commit: Commit, info, **kwargs) -> List[CriticalFile]:
-    """
-    The critical files for this particular commit (might be empty
-    depending on whether the profiling info included a commit SHA).
-    The results of this resolver could be different than that of the
-    `repository.criticalFiles` resolver.
-    """
-    profiling_summary = ProfilingSummary(commit.repository, commit_sha=commit.commitid)
-    return profiling_summary.critical_files
-
-
+@sentry_sdk.trace
 def get_sorted_path_contents(
     current_owner: Owner,
     commit: Commit,
@@ -226,7 +213,6 @@ def get_sorted_path_contents(
     return sort_path_contents(items, filters)
 
 
-@sentry_sdk.trace
 @commit_bindable.field("pathContents")
 @sync_to_async
 def resolve_path_contents(

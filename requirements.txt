@@ -202,6 +202,8 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 graphql-core==3.2.3
     # via ariadne
+greenlet==3.1.1
+    # via sqlalchemy
 grpc-google-iam-v1==0.12.6
     # via google-cloud-pubsub
 grpcio==1.62.1
@@ -358,6 +360,7 @@ pytest==8.1.1
     #   pytest-cov
     #   pytest-django
     #   pytest-mock
+    #   pytest-split
 pytest-asyncio==0.23.6
     # via -r requirements.in
 pytest-cov==5.0.0
@@ -365,6 +368,8 @@ pytest-cov==5.0.0
 pytest-django==4.8.0
     # via -r requirements.in
 pytest-mock==3.14.0
+    # via -r requirements.in
+pytest-split==0.10.0
     # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via
@@ -416,7 +421,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/3aea532ed80c4d941cbc50e27b11147a8f72d3cd.tar.gz
+shared @ https://github.com/codecov/shared/archive/04b5f811bd64eb67acff23d89300a988b1c3e61e.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
