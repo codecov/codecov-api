@@ -31,7 +31,7 @@ from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     Connection,
     build_connection_graphql,
-    queryset_to_connection,
+    queryset_to_connection_sync,
 )
 from graphql_api.helpers.mutation import (
     require_part_of_org,
@@ -53,6 +53,7 @@ AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 @owner_bindable.field("repositories")
+@sync_to_async
 def resolve_repositories(
     owner: Owner,
     info: GraphQLResolveInfo,
@@ -75,7 +76,7 @@ def resolve_repositories(
         current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
     )
 
-    return queryset_to_connection(
+    return queryset_to_connection_sync(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
         ordering_direction=ordering_direction,

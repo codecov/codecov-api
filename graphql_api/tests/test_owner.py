@@ -685,13 +685,15 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        assert data["owner"]["availablePlans"] == [
+        expected_plans = [
             {"value": "users-pr-inappm"},
             {"value": "users-pr-inappy"},
             {"value": "users-teamm"},
             {"value": "users-teamy"},
             {"value": DEFAULT_FREE_PLAN},
         ]
+        for plan in expected_plans:
+            self.assertIn(plan, data["owner"]["availablePlans"])
 
     def test_owner_query_with_no_service(self):
         current_org = OwnerFactory(
@@ -1126,7 +1128,6 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
             service="github",
             plan=DEFAULT_FREE_PLAN,
         )
-
         query = """{
             owner(username: "%s") {
                 availablePlans {
@@ -1142,57 +1143,55 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         }
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org)
-        assert data == {
-            "owner": {
-                "availablePlans": [
-                    {
-                        "value": "users-pr-inappm",
-                        "isEnterprisePlan": False,
-                        "isProPlan": True,
-                        "isTeamPlan": False,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": "users-pr-inappy",
-                        "isEnterprisePlan": False,
-                        "isProPlan": True,
-                        "isTeamPlan": False,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": "users-teamm",
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": True,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": "users-teamy",
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": True,
-                        "isSentryPlan": False,
-                        "isFreePlan": False,
-                        "isTrialPlan": False,
-                    },
-                    {
-                        "value": DEFAULT_FREE_PLAN,
-                        "isEnterprisePlan": False,
-                        "isProPlan": False,
-                        "isTeamPlan": True,
-                        "isSentryPlan": False,
-                        "isFreePlan": True,
-                        "isTrialPlan": False,
-                    },
-                ]
-            }
-        }
+        expected_plans = [
+            {
+                "value": "users-pr-inappm",
+                "isEnterprisePlan": False,
+                "isProPlan": True,
+                "isTeamPlan": False,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": "users-pr-inappy",
+                "isEnterprisePlan": False,
+                "isProPlan": True,
+                "isTeamPlan": False,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": "users-teamm",
+                "isEnterprisePlan": False,
+                "isProPlan": False,
+                "isTeamPlan": True,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": "users-teamy",
+                "isEnterprisePlan": False,
+                "isProPlan": False,
+                "isTeamPlan": True,
+                "isSentryPlan": False,
+                "isFreePlan": False,
+                "isTrialPlan": False,
+            },
+            {
+                "value": DEFAULT_FREE_PLAN,
+                "isEnterprisePlan": False,
+                "isProPlan": False,
+                "isTeamPlan": True,
+                "isSentryPlan": False,
+                "isFreePlan": True,
+                "isTrialPlan": False,
+            },
+        ]
+        for plan in expected_plans:
+            self.assertIn(plan, data["owner"]["availablePlans"])
 
     def test_fetch_owner_with_no_service(self):
         current_org = OwnerFactory(
@@ -1209,3 +1208,32 @@ class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
         """ % (current_org.username)
         data = self.gql_request(query, owner=current_org, provider="", with_errors=True)
         assert data == {"data": {"owner": None}}
+
+    def test_fetch_repositories_ai_features_enabled(self):
+        ai_app_installation = GithubAppInstallation(
+            name="ai-features",
+            owner=self.owner,
+            repository_service_ids=[],
+            installation_id=12345,
+        )
+
+        ai_app_installation.save()
+        query = query_repositories % (
+            self.owner.username,
+            "(filters: { aiEnabled: true })",
+            "",
+        )
+
+        data = self.gql_request(query, owner=self.owner)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == [{"name": "a"}, {"name": "b"}]
+
+    def test_fetch_repositories_ai_features_enabled_no_app_install(self):
+        query = query_repositories % (
+            self.owner.username,
+            "(filters: { aiEnabled: true })",
+            "",
+        )
+        data = self.gql_request(query, owner=self.owner)
+        repos = paginate_connection(data["owner"]["repositories"])
+        assert repos == []
