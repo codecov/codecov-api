@@ -13,6 +13,7 @@ from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     RepositoryFactory,
 )
+from shared.events.amplitude import UNKNOWN_USER_OWNERID
 
 from services.redis_configuration import get_redis_connection
 from services.task import TaskService
@@ -122,7 +123,7 @@ def test_upload_test_results(db, client, mocker, mock_redis):
     mock_amplitude.assert_called_with(
         "Upload Sent",
         {
-            "user_ownerid": -1,
+            "user_ownerid": UNKNOWN_USER_OWNERID,
             "ownerid": commit.repository.author.ownerid,
             "repoid": commit.repository.repoid,
             "commitid": commit.id,
