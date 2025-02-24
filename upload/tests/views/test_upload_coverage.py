@@ -98,7 +98,7 @@ def test_upload_coverage_post(db, mocker):
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
     presigned_put_mock = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
@@ -197,7 +197,7 @@ def test_upload_coverage_post_shelter(db, mocker):
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
     presigned_put_mock = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(

@@ -46,7 +46,7 @@ def get_fake_upload_with_flags():
 
 def test_serialize_upload(transactional_db, mocker):
     mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     fake_upload = get_fake_upload()
@@ -63,7 +63,7 @@ def test_serialize_upload(transactional_db, mocker):
 
 def test_upload_serializer_contains_expected_fields_no_flags(transactional_db, mocker):
     mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload = get_fake_upload()
@@ -90,7 +90,7 @@ def test_upload_serializer_contains_expected_fields_with_flags(
     transactional_db, mocker
 ):
     mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload = get_fake_upload_with_flags()
@@ -114,6 +114,10 @@ def test_upload_serializer_contains_expected_fields_with_flags(
 
 
 def test_upload_serializer_null_build_url_empty_flags(transactional_db, mocker):
+    mocker.patch(
+        "shared.storage.MinioStorageService.create_presigned_put",
+        return_value="presigned put",
+    )
     data = {
         "ci_url": None,
         "flags": [],
@@ -128,7 +132,7 @@ def test_upload_serializer_null_build_url_empty_flags(transactional_db, mocker):
 
 def test__create_existing_flags_map(transactional_db, mocker):
     mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload = get_fake_upload_with_flags()

@@ -51,7 +51,7 @@ class RowFactory:
 
 @pytest.fixture
 def mock_storage(mocker):
-    m = mocker.patch("utils.test_results.StorageService")
+    m = mocker.patch("utils.test_results.get_appropriate_storage_service")
     storage_server = MemoryStorageService({})
     m.return_value = storage_server
     yield storage_server
