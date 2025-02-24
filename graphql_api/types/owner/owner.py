@@ -134,6 +134,20 @@ def resolve_has_private_repos(owner: Owner, info: GraphQLResolveInfo) -> bool:
     return owner.has_private_repos
 
 
+@owner_bindable.field("hasPublicRepos")
+@sync_to_async
+@require_part_of_org
+def resolve_has_public_repos(owner: Owner, info: GraphQLResolveInfo) -> bool:
+    return owner.has_public_repos
+
+
+@owner_bindable.field("hasActiveRepos")
+@sync_to_async
+@require_part_of_org
+def resolve_has_active_repos(owner: Owner, info: GraphQLResolveInfo) -> bool:
+    return owner.has_active_repos
+
+
 @owner_bindable.field("ownerid")
 @require_part_of_org
 def resolve_ownerid(owner: Owner, info: GraphQLResolveInfo) -> int:
