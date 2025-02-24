@@ -10,6 +10,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
 )
 from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
+from shared.events.amplitude import UNKNOWN_USER_OWNERID
 
 from core.models import Commit
 from services.redis_configuration import get_redis_connection
@@ -110,7 +111,7 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
     mock_amplitude.assert_called_with(
         "Upload Sent",
         {
-            "user_ownerid": -1,
+            "user_ownerid": UNKNOWN_USER_OWNERID,
             "ownerid": commit.repository.author.ownerid,
             "repoid": commit.repository.repoid,
             "commitid": commit.id,
