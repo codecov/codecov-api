@@ -1,6 +1,6 @@
 interface PathContent {
   name: String!
-  path: String
+  path: String!
   hits: Int!
   misses: Int!
   partials: Int!
@@ -10,7 +10,7 @@ interface PathContent {
 
 type PathContentFile implements PathContent {
   name: String!
-  path: String
+  path: String!
   hits: Int!
   misses: Int!
   partials: Int!
@@ -21,7 +21,7 @@ type PathContentFile implements PathContent {
 
 type PathContentDir implements PathContent {
   name: String!
-  path: String
+  path: String!
   hits: Int!
   misses: Int!
   partials: Int!
