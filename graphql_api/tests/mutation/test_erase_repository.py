@@ -22,6 +22,10 @@ mutation($input: EraseRepositoryInput!) {
 class EraseRepositoryTests(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
+        self.non_admin_user = OwnerFactory(organizations=[self.org.ownerid])
+        self.admin_user = OwnerFactory(organizations=[self.org.ownerid])
+        self.org.add_admin(self.admin_user)
+
         self.repo = RepositoryFactory(author=self.org, name="gazebo", active=True)
 
     def test_when_authenticated(self):
@@ -92,3 +96,31 @@ class EraseRepositoryTests(GraphQLTestHelper, TransactionTestCase):
         )
 
         assert data == {"eraseRepository": None}
+
+    def test_when_other_admin(self):
+        data = self.gql_request(
+            query,
+            owner=self.admin_user,
+            variables={
+                "input": {
+                    "owner": "codecov",
+                    "repoName": "gazebo",
+                }
+            },
+        )
+
+        assert data == {"eraseRepository": None}
+
+    def test_when_not_other_admin(self):
+        data = self.gql_request(
+            query,
+            owner=self.non_admin_user,
+            variables={
+                "input": {
+                    "owner": "codecov",
+                    "repoName": "gazebo",
+                }
+            },
+        )
+
+        assert data["eraseRepository"]["error"]["__typename"] == "UnauthorizedError"

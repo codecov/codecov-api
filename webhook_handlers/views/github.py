@@ -13,6 +13,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.events.amplitude import AmplitudeEventPublisher
 
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
@@ -29,6 +30,8 @@ from webhook_handlers.constants import (
     GitHubWebhookEvents,
     WebhookHandlerErrorMessages,
 )
+
+from . import WEBHOOKS_ERRORED, WEBHOOKS_RECEIVED
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +51,21 @@ class GithubWebhookHandler(APIView):
     redis = get_redis_connection()
 
     service_name = "github"
+
+    def _inc_recv(self):
+        action = self.request.data.get("action", "")
+        WEBHOOKS_RECEIVED.labels(
+            service=self.service_name, event=self.event, action=action
+        ).inc()
+
+    def _inc_err(self, reason: str):
+        action = self.request.data.get("action", "")
+        WEBHOOKS_ERRORED.labels(
+            service=self.service_name,
+            event=self.event,
+            action=action,
+            error_reason=reason,
+        ).inc()
 
     def validate_signature(self, request):
         key = get_config(
@@ -79,6 +97,7 @@ class GithubWebhookHandler(APIView):
             or len(computed_sig) != len(expected_sig)
             or not constant_time_compare(computed_sig, expected_sig)
         ):
+            self._inc_err("validation_failed")
             raise PermissionDenied()
 
     def unhandled_webhook_event(self, request, *args, **kwargs):
@@ -117,6 +136,7 @@ class GithubWebhookHandler(APIView):
                     "Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
+                self._inc_err("repo_not_found")
                 raise NotFound("Repository does not exist")
         else:
             try:
@@ -142,6 +162,7 @@ class GithubWebhookHandler(APIView):
                     "Received event for non-existent repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
+                self._inc_err("repo_not_found")
                 raise NotFound("Repository does not exist")
 
     def ping(self, request, *args, **kwargs):
@@ -478,9 +499,34 @@ class GithubWebhookHandler(APIView):
             # GithubWebhookEvents.INSTALLTION_REPOSITORIES also execute this code
             # because of deprecated flow. But the GithubAppInstallation shouldn't be changed
             if event == GitHubWebhookEvents.INSTALLATION:
-                ghapp_installation, _ = GithubAppInstallation.objects.get_or_create(
-                    installation_id=installation_id, owner=owner
+                ghapp_installation, was_created = (
+                    GithubAppInstallation.objects.get_or_create(
+                        installation_id=installation_id, owner=owner
+                    )
                 )
+                if was_created:
+                    installer_username = request.data.get("sender", {}).get(
+                        "login", None
+                    )
+                    installer = (
+                        Owner.objects.filter(
+                            service=self.service_name,
+                            username=installer_username,
+                        ).first()
+                        if installer_username
+                        else None
+                    )
+                    # If installer does not exist, just attribute the action to the org owner.
+                    AmplitudeEventPublisher().publish(
+                        "App Installed",
+                        {
+                            "user_ownerid": installer.ownerid
+                            if installer is not None
+                            else owner.ownerid,
+                            "ownerid": owner.ownerid,
+                        },
+                    )
+
                 app_id = request.data["installation"]["app_id"]
                 # Either update or set
                 # But this value shouldn't change for the installation, so doesn't matter
@@ -708,8 +754,12 @@ class GithubWebhookHandler(APIView):
 
         self.validate_signature(request)
 
-        handler = getattr(self, self.event, self.unhandled_webhook_event)
-        return handler(request, *args, **kwargs)
+        if handler := getattr(self, self.event, None):
+            self._inc_recv()
+            return handler(request, *args, **kwargs)
+        else:
+            self._inc_err("unhandled_event")
+            return self.unhandled_webhook_event(request, *args, **kwargs)
 
 
 class GithubEnterpriseWebhookHandler(GithubWebhookHandler):

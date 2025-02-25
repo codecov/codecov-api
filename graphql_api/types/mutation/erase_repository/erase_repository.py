@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ariadne import UnionType
 from graphql import GraphQLResolveInfo
@@ -13,13 +13,14 @@ from graphql_api.helpers.mutation import (
 @wrap_error_handling_mutation
 @require_authenticated
 async def resolve_erase_repository(
-    _: Any, info: GraphQLResolveInfo, input: Dict[str, Any]
+    _: Any, info: GraphQLResolveInfo, input: dict[str, Any]
 ) -> None:
     command = info.context["executor"].get_command("repository")
     current_owner = info.context["request"].current_owner
+
+    owner_username = input.get("owner") or current_owner.username
     repo_name = input.get("repo_name")
-    # TODO: change the graphql mutation to allow working on other owners
-    owner_username = current_owner.username
+
     await command.erase_repository(owner_username, repo_name)
     return None
 

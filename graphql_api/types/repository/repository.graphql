@@ -39,8 +39,7 @@ type Repository {
     before: String
   ): BranchConnection @cost(complexity: 3, multipliers: ["first", "last"])
   defaultBranch: String
-  profilingToken: String
-  criticalFiles: [CriticalFile!]!
+  profilingToken: String @deprecated(reason: "Impact Analysis is deprecated.")
   graphToken: String
   yaml: String
   bot: Owner

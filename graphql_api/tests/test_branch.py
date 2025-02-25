@@ -11,7 +11,6 @@ from shared.django_apps.core.tests.factories import (
 from shared.reports.types import ReportTotals
 
 from services.components import Component
-from services.profiling import CriticalFile
 
 from .helper import GraphQLTestHelper
 
@@ -154,6 +153,11 @@ class MockSession(object):
     pass
 
 
+class MockFile:
+    def __init__(self, name: str):
+        self.name = name
+
+
 class MockReport(object):
     def __init__(self):
         self.sessions = {1: MockSession()}
@@ -170,6 +174,10 @@ class MockReport(object):
             "folder/subfolder/fileC.py",
             "folder/subfolder/fileD.py",
         ]
+
+    def __iter__(self):
+        for name in self.files:
+            yield MockFile(name)
 
     @property
     def flags(self):
@@ -338,11 +346,8 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    def test_fetch_path_contents_with_files(self, report_mock, critical_files):
+    def test_fetch_path_contents_with_files(self, report_mock):
         variables = {
             "org": self.org.username,
             "repo": self.repo.name,
@@ -356,7 +361,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             },
         }
         report_mock.return_value = MockReport()
-        critical_files.return_value = [CriticalFile("fileA.py")]
 
         data = self.gql_request(query_files, variables=variables)
         assert data == {
@@ -397,7 +401,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": True,
+                                        "isCriticalFile": False,
                                     },
                                 ],
                             }
@@ -407,12 +411,10 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_path_prefix(
-        self, report_mock, critical_files
+        self,
+        report_mock,
     ):
         variables = {
             "org": self.org.username,
@@ -427,7 +429,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             },
         }
         report_mock.return_value = MockReport()
-        critical_files.return_value = [CriticalFile("folder/fileB.py")]
 
         data = self.gql_request(query_files, variables=variables)
 
@@ -448,7 +449,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": True,
+                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentDir",
@@ -468,12 +469,10 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_with_files_and_search_value_case_insensitive(
-        self, report_mock, critical_files
+        self,
+        report_mock,
     ):
         variables = {
             "org": self.org.username,
@@ -485,7 +484,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             },
         }
         report_mock.return_value = MockReport()
-        critical_files.return_value = [CriticalFile("folder/fileB.py")]
 
         data = self.gql_request(query_files, variables=variables)
 
@@ -517,7 +515,7 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": True,
+                                        "isCriticalFile": False,
                                     },
                                 ],
                             }
@@ -774,20 +772,15 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_in_sessions")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_filter_has_coverage(
-        self, session_files_mock, report_mock, commit_components_mock, filtered_mock
+        self, files_mock, report_mock, commit_components_mock, filtered_mock
     ):
-        session_files_mock.return_value = MockReport().files
-        components = ["Global"]
-        variables = {
-            "org": self.org.username,
-            "repo": self.repo.name,
-            "branch": self.branch.name,
-            "path": "",
-            "filters": {"components": components},
-        }
-
+        files_mock.return_value = [
+            "folder/fileB.py",
+            "folder/subfolder/fileC.py",
+            "folder/subfolder/fileD.py",
+        ]
         report_mock.return_value = MockReport()
         commit_components_mock.return_value = [
             Component.from_dict(
@@ -814,6 +807,14 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
         ]
         filtered_mock.return_value = MockReport()
 
+        components = ["Global"]
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "branch": self.branch.name,
+            "path": "",
+            "filters": {"components": components},
+        }
         data = self.gql_request(query_files, variables=variables)
 
         assert data == {
@@ -845,18 +846,15 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_belonging_to_flags")
-    @patch("services.report.files_in_sessions")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_and_flag_filters(
         self,
-        session_files_mock,
-        flag_files_mock,
+        files_mock,
         report_mock,
         commit_components_mock,
         filtered_mock,
     ):
-        session_files_mock.return_value = ["fileA.py"]
-        flag_files_mock.return_value = ["fileA.py"]
+        files_mock.return_value = ["fileA.py"]
         report_mock.return_value = MockReport()
         commit_components_mock.return_value = [
             Component.from_dict(
@@ -949,11 +947,11 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_belonging_to_flags")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_and_flag_filters_unknown_flags(
-        self, flag_files_mock, report_mock, commit_components_mock, filtered_mock
+        self, files_mock, report_mock, commit_components_mock, filtered_mock
     ):
-        flag_files_mock.return_value = ["fileA.py"]
+        files_mock.return_value = ["fileA.py"]
         report_mock.return_value = MockNoFlagsReport()
         commit_components_mock.return_value = [
             Component.from_dict(
@@ -1039,18 +1037,15 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
     @patch("services.components.component_filtered_report")
     @patch("services.components.commit_components")
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    @patch("services.report.files_belonging_to_flags")
-    @patch("services.report.files_in_sessions")
+    @patch("services.path.ReportPaths.files", new_callable=PropertyMock)
     def test_fetch_path_contents_component_flags_filters(
         self,
-        session_files_mock,
-        flag_files_mock,
+        files_mock,
         report_mock,
         commit_components_mock,
         filtered_mock,
     ):
-        session_files_mock.return_value = ["fileA.py"]
-        flag_files_mock.return_value = ["fileA.py"]
+        files_mock.return_value = ["fileA.py"]
         report_mock.return_value = MockReport()
         commit_components_mock.return_value = [
             Component.from_dict(
@@ -1140,13 +1135,9 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
-    def test_fetch_path_contents_deprecated(self, report_mock, critical_files_mock):
+    def test_fetch_path_contents_deprecated(self, report_mock):
         report_mock.return_value = MockReport()
-        critical_files_mock.return_value = []
 
         variables = {
             "org": self.org.username,
@@ -1205,15 +1196,12 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
             }
         }
 
-    @patch(
-        "services.profiling.ProfilingSummary.critical_files", new_callable=PropertyMock
-    )
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_fetch_path_contents_deprecated_paginated(
-        self, report_mock, critical_files_mock
+        self,
+        report_mock,
     ):
         report_mock.return_value = MockReport()
-        critical_files_mock.return_value = []
 
         variables = {
             "org": self.org.username,

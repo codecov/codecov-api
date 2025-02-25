@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
 from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
+from billing.helpers import mock_all_plans_and_tiers
 from reports.models import ReportSession, RepositoryFlag, UploadFlagMembership
 from upload.views.upload_coverage import CanDoCoverageUploadsPermission
 
@@ -67,6 +68,7 @@ def test_deactivated_repo(db):
 
 
 def test_upload_coverage_with_errors(db):
+    mock_all_plans_and_tiers()
     repository = RepositoryFactory()
     repo_slug = f"{repository.author.username}::::{repository.name}"
     url = reverse(
@@ -91,6 +93,7 @@ def test_upload_coverage_with_errors(db):
 
 
 def test_upload_coverage_post(db, mocker):
+    mock_all_plans_and_tiers()
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
@@ -189,6 +192,7 @@ def test_upload_coverage_post(db, mocker):
 
 @override_settings(SHELTER_SHARED_SECRET="shelter-shared-secret")
 def test_upload_coverage_post_shelter(db, mocker):
+    mock_all_plans_and_tiers()
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )

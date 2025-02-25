@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 from django.conf import settings
@@ -174,6 +174,27 @@ class LoginMixinTests(TestCase):
         )
         user_signed_up_mock.assert_called_once()
 
+    @patch("shared.events.amplitude.AmplitudeEventPublisher.publish")
+    def test_get_or_create_calls_amplitude_user_created_when_owner_created(
+        self, amplitude_publish_mock
+    ):
+        self.mixin_instance._get_or_create_owner(
+            {
+                "user": {"id": 12345, "key": "4567", "login": "testuser"},
+                "has_private_access": False,
+            },
+            self.request,
+        )
+
+        owner = Owner.objects.get(service_id=12345, username="testuser")
+
+        amplitude_publish_mock.assert_has_calls(
+            [
+                call("User Created", {"user_ownerid": owner.ownerid}),
+                call("set_orgs", {"user_ownerid": owner.ownerid, "org_ids": []}),
+            ]
+        )
+
     @patch("services.analytics.AnalyticsService.user_signed_in")
     def test_get_or_create_calls_analytics_user_signed_in_when_owner_not_created(
         self, user_signed_in_mock
@@ -191,6 +212,30 @@ class LoginMixinTests(TestCase):
             self.request,
         )
         user_signed_in_mock.assert_called_once()
+
+    @patch("shared.events.amplitude.AmplitudeEventPublisher.publish")
+    def test_get_or_create_calls_amplitude_user_logged_in_when_owner_not_created(
+        self, amplitude_publish_mock
+    ):
+        owner = OwnerFactory(service_id=89, service="github", organizations=[1, 2])
+        self.mixin_instance._get_or_create_owner(
+            {
+                "user": {
+                    "id": owner.service_id,
+                    "key": "02or0sa",
+                    "login": owner.username,
+                },
+                "has_private_access": owner.private_access,
+            },
+            self.request,
+        )
+
+        amplitude_publish_mock.assert_has_calls(
+            [
+                call("User Logged in", {"user_ownerid": owner.ownerid}),
+                call("set_orgs", {"user_ownerid": owner.ownerid, "org_ids": [1, 2]}),
+            ]
+        )
 
     @override_settings(IS_ENTERPRISE=False)
     @patch("services.analytics.AnalyticsService.user_signed_in")

@@ -17,7 +17,6 @@ type Commit {
     last: Int
     before: String
   ): UploadConnection @cost(complexity: 10, multipliers: ["first", "last"])
-  criticalFiles: [CriticalFile!]!
   pathContents(path: String, filters: PathContentsFilters): PathContentsResult
   deprecatedPathContents(path: String, filters: PathContentsFilters, first: Int, after: String, last: Int, before: String): DeprecatedPathContentsResult
   errors(errorType: CommitErrorType!): CommitErrorsConnection!
@@ -26,6 +25,12 @@ type Commit {
   coverageStatus: CommitStatus
   coverageAnalytics: CommitCoverageAnalytics
   bundleAnalysis: CommitBundleAnalysis
+  latestUploadError: LatestUploadError
+}
+
+type LatestUploadError {
+  errorCode: UploadErrorEnum
+  errorMessage: String
 }
 
 "fields related to Codecov's Coverage product offering"

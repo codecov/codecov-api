@@ -51,8 +51,15 @@ class Command(BaseCommand):
                         )
                         continue
 
-                Model.objects.create(**model_data)
-                self.stdout.write(self.style.SUCCESS(f"Inserted row: {row}"))
+                try:
+                    Model.objects.update_or_create(
+                        defaults=model_data,
+                        id=row.get("id"),
+                    )
+                    self.stdout.write(self.style.SUCCESS(f"Inserted row: {row}"))
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"Error inserting row: {e}"))
+                    continue
 
         self.stdout.write(
             self.style.SUCCESS(

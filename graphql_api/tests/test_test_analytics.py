@@ -468,7 +468,7 @@ class TestAnalyticsTestCase(
     def test_test_analytics_term_filter(self, repository, store_in_redis, mock_storage):
         test_results = generate_test_results(
             repoid=repository.repoid,
-            term=rows[0]["name"],
+            term=rows[0]["name"][2:],
             ordering=TestResultsOrderingParameter.UPDATED_AT,
             ordering_direction=OrderingDirection.DESC,
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,

@@ -38,3 +38,8 @@ class CommitCommandsTest(TransactionTestCase):
     def test_get_uploads_number_delegate_to_interactor(self, interactor_mock):
         self.command.get_uploads_number(self.commit)
         interactor_mock.assert_called_once_with(self.commit)
+
+    @patch("core.commands.commit.commit.GetLatestUploadErrorInteractor.execute")
+    def test_get_latest_upload_error_delegate_to_interactor(self, interactor_mock):
+        self.command.get_latest_upload_error(self.commit)
+        interactor_mock.assert_called_once_with(self.commit)

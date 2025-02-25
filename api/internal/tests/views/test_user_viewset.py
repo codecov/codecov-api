@@ -10,7 +10,7 @@ from shared.django_apps.core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
-from shared.plan.constants import PlanName, TierName
+from shared.plan.constants import DEFAULT_FREE_PLAN, TierName
 
 from core.models import Pull
 from utils.test_utils import APIClient
@@ -20,7 +20,7 @@ class UserViewSetTests(APITestCase):
     def setUp(self):
         non_org_active_user = OwnerFactory()
         tier = TierFactory(tier_name=TierName.BASIC.value)
-        plan = PlanFactory(name=PlanName.BASIC_PLAN_NAME.value, tier=tier)
+        plan = PlanFactory(name=DEFAULT_FREE_PLAN, tier=tier)
         self.current_owner = OwnerFactory(
             plan=plan.name,
             plan_user_count=5,

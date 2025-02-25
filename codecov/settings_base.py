@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     "core",
     "graphql_api",
     "labelanalysis",
-    "profiling",
     "reports",
     "staticanalysis",
     "timeseries",
@@ -345,11 +344,11 @@ DJANGO_ADMIN_URL = get_config("django", "admin_url", default="admin")
 IS_ENTERPRISE = get_settings_module() == SettingsModule.ENTERPRISE.value
 IS_DEV = get_settings_module() == SettingsModule.DEV.value
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = get_config(
-    "setup", "http", "upload_max_memory_size", default=2621440
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(
+    get_config("setup", "http", "upload_max_memory_size", default=2621440)
 )
-FILE_UPLOAD_MAX_MEMORY_SIZE = get_config(
-    "setup", "http", "file_upload_max_memory_size", default=2621440
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(
+    get_config("setup", "http", "file_upload_max_memory_size", default=2621440)
 )
 
 CORS_ALLOWED_ORIGIN_REGEXES = get_config(
@@ -433,6 +432,8 @@ STRIPE_PAYMENT_METHOD_CONFIGURATION_ID = get_config(
     "setup", "stripe", "payment_method_configuration_id", default=None
 )
 
+AMPLITUDE_API_KEY = os.environ.get("AMPLITUDE_API_KEY", None)
+
 # Allows to do migrations from another module
 MIGRATION_MODULES = {
     "codecov_auth": "shared.django_apps.codecov_auth.migrations",
@@ -443,6 +444,7 @@ MIGRATION_MODULES = {
     "profiling": "shared.django_apps.profiling.migrations",
     "reports": "shared.django_apps.reports.migrations",
     "staticanalysis": "shared.django_apps.staticanalysis.migrations",
+    "timeseries": "shared.django_apps.timeseries.migrations",
 }
 
 # to aid in debugging, print out this info on startup. If no license, prints nothing

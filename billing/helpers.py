@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db.models import QuerySet
 from shared.django_apps.codecov_auth.models import BillingRate
 from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
-from shared.plan.constants import PlanName, PlanPrice, TierName
+from shared.plan.constants import DEFAULT_FREE_PLAN, PlanName, PlanPrice, TierName
 
 from codecov_auth.models import Owner, Plan
 
@@ -27,6 +27,8 @@ def get_all_admins_for_owners(owners: QuerySet[Owner]):
 
 
 def mock_all_plans_and_tiers():
+    TierFactory(tier_name=TierName.BASIC.value)
+
     trial_tier = TierFactory(tier_name=TierName.TRIAL.value)
     PlanFactory(
         tier=trial_tier,
@@ -39,29 +41,7 @@ def mock_all_plans_and_tiers():
             "Unlimited private repositories",
             "Priority Support",
         ],
-    )
-
-    basic_tier = TierFactory(tier_name=TierName.BASIC.value)
-    PlanFactory(
-        name=PlanName.BASIC_PLAN_NAME.value,
-        tier=basic_tier,
-        marketing_name="Developer",
-        benefits=[
-            "Up to 1 user",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
-        monthly_uploads_limit=250,
-    )
-    PlanFactory(
-        name=PlanName.FREE_PLAN_NAME.value,
-        tier=basic_tier,
-        marketing_name="Developer",
-        benefits=[
-            "Up to 1 user",
-            "Unlimited public repositories",
-            "Unlimited private repositories",
-        ],
+        stripe_id="plan_trial",
     )
 
     pro_tier = TierFactory(tier_name=TierName.PRO.value)
@@ -78,6 +58,7 @@ def mock_all_plans_and_tiers():
         billing_rate=BillingRate.MONTHLY.value,
         base_unit_price=PlanPrice.MONTHLY.value,
         paid_plan=True,
+        stripe_id="plan_pro",
     )
     PlanFactory(
         name=PlanName.CODECOV_PRO_YEARLY.value,
@@ -92,6 +73,7 @@ def mock_all_plans_and_tiers():
         billing_rate=BillingRate.ANNUALLY.value,
         base_unit_price=PlanPrice.YEARLY.value,
         paid_plan=True,
+        stripe_id="plan_pro_yearly",
     )
 
     team_tier = TierFactory(tier_name=TierName.TEAM.value)
@@ -109,6 +91,7 @@ def mock_all_plans_and_tiers():
         base_unit_price=PlanPrice.TEAM_MONTHLY.value,
         monthly_uploads_limit=2500,
         paid_plan=True,
+        stripe_id="plan_team_monthly",
     )
     PlanFactory(
         name=PlanName.TEAM_YEARLY.value,
@@ -124,6 +107,7 @@ def mock_all_plans_and_tiers():
         base_unit_price=PlanPrice.TEAM_YEARLY.value,
         monthly_uploads_limit=2500,
         paid_plan=True,
+        stripe_id="plan_team_yearly",
     )
 
     sentry_tier = TierFactory(tier_name=TierName.SENTRY.value)
@@ -141,6 +125,7 @@ def mock_all_plans_and_tiers():
             "Unlimited private repositories",
             "Priority Support",
         ],
+        stripe_id="plan_sentry_monthly",
     )
     PlanFactory(
         name=PlanName.SENTRY_YEARLY.value,
@@ -156,6 +141,7 @@ def mock_all_plans_and_tiers():
             "Unlimited private repositories",
             "Priority Support",
         ],
+        stripe_id="plan_sentry_yearly",
     )
 
     enterprise_tier = TierFactory(tier_name=TierName.ENTERPRISE.value)
@@ -172,6 +158,7 @@ def mock_all_plans_and_tiers():
             "Unlimited private repositories",
             "Priority Support",
         ],
+        stripe_id="plan_enterprise_cloud_monthly",
     )
     PlanFactory(
         name=PlanName.ENTERPRISE_CLOUD_YEARLY.value,
@@ -186,4 +173,21 @@ def mock_all_plans_and_tiers():
             "Unlimited private repositories",
             "Priority Support",
         ],
+        stripe_id="plan_enterprise_cloud_yearly",
+    )
+
+    PlanFactory(
+        name=DEFAULT_FREE_PLAN,
+        tier=team_tier,
+        marketing_name="Developer",
+        billing_rate=None,
+        base_unit_price=0,
+        paid_plan=False,
+        monthly_uploads_limit=250,
+        benefits=[
+            "Up to 1 user",
+            "Unlimited public repositories",
+            "Unlimited private repositories",
+        ],
+        stripe_id="plan_default_free",
     )

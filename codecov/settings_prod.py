@@ -15,27 +15,6 @@ WEBHOOK_URL = get_config("setup", "webhook_url", default="https://codecov.io")
 
 STRIPE_API_KEY = os.environ.get("SERVICES__STRIPE__API_KEY", None)
 STRIPE_ENDPOINT_SECRET = os.environ.get("SERVICES__STRIPE__ENDPOINT_SECRET", None)
-STRIPE_PLAN_IDS = {
-    "users-pr-inappm": "price_1Gv2B8GlVGuVgOrkFnLunCgc",
-    "users-pr-inappy": "price_1Gv2COGlVGuVgOrkuOYVLIj7",
-    "users-sentrym": "price_1MlY9yGlVGuVgOrkHluurBtJ",
-    "users-sentryy": "price_1MlYAYGlVGuVgOrke9SdbBUn",
-    "users-enterprisey": "price_1LmjzwGlVGuVgOrkIwlM46EU",
-    "users-enterprisem": "price_1LmjypGlVGuVgOrkzKtNqhwW",
-    "users-teamm": "price_1NqPKdGlVGuVgOrkm9OFvtz8",
-    "users-teamy": "price_1NrlXiGlVGuVgOrkgMTw5yno",
-}
-
-STRIPE_PLAN_VALS = {
-    "price_1Gv2B8GlVGuVgOrkFnLunCgc": "users-pr-inappm",
-    "price_1Gv2COGlVGuVgOrkuOYVLIj7": "users-pr-inappy",
-    "price_1MlY9yGlVGuVgOrkHluurBtJ": "users-sentrym",
-    "price_1MlYAYGlVGuVgOrke9SdbBUn": "users-sentryy",
-    "price_1LmjzwGlVGuVgOrkIwlM46EU": "users-enterprisey",
-    "price_1LmjypGlVGuVgOrkzKtNqhwW": "users-enterprisem",
-    "price_1NqPKdGlVGuVgOrkm9OFvtz8": "users-teamm",
-    "price_1NrlXiGlVGuVgOrkgMTw5yno": "users-teamy",
-}
 
 CORS_ALLOW_HEADERS += ["sentry-trace", "baggage"]
 CORS_ALLOW_CREDENTIALS = True

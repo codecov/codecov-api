@@ -19,6 +19,7 @@ from shared.django_apps.core.tests.factories import (
 from shared.plan.constants import PlanName
 from shared.utils.test_utils import mock_config_helper
 
+from billing.helpers import mock_all_plans_and_tiers
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
     GithubAppInstallation,
@@ -583,6 +584,84 @@ class GithubWebhookHandlerTests(APITestCase):
             repos_affected=[("12321", "R_kgDOG2tZYQ"), ("12343", "R_kgDOG2tABC")],
         )
 
+    @patch("shared.events.amplitude.AmplitudeEventPublisher.publish")
+    @patch("services.task.TaskService.refresh")
+    def test_installation_publishes_amplitude_event_without_installer(
+        self, mock_refresh, mock_amplitude_publish
+    ):
+        username, service_id = "newuser", 123456
+
+        self._post_event_data(
+            event=GitHubWebhookEvents.INSTALLATION,
+            data={
+                "installation": {
+                    "id": 4,
+                    "repository_selection": "selected",
+                    "account": {"id": service_id, "login": username},
+                    "app_id": DEFAULT_APP_ID,
+                },
+                "repositories": [
+                    {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
+                    {"id": "12343", "node_id": "R_kgDOG2tABC"},
+                ],
+                "sender": {"type": "User"},
+            },
+        )
+
+        owner_set = Owner.objects.filter(
+            service="github", service_id=service_id, username=username
+        )
+        assert owner_set.exists()
+        owner = owner_set.first()
+
+        mock_amplitude_publish.assert_called_with(
+            "App Installed",
+            {
+                "user_ownerid": owner.ownerid,
+                "ownerid": owner.ownerid,
+            },
+        )
+
+    @patch("shared.events.amplitude.AmplitudeEventPublisher.publish")
+    @patch("services.task.TaskService.refresh")
+    def test_installation_publishes_amplitude_event_with_installer(
+        self, mock_refresh, mock_amplitude_publish
+    ):
+        installer = OwnerFactory(service="github", username="installer_username")
+
+        username, service_id = "newuser", 123456
+
+        self._post_event_data(
+            event=GitHubWebhookEvents.INSTALLATION,
+            data={
+                "installation": {
+                    "id": 4,
+                    "repository_selection": "selected",
+                    "account": {"id": service_id, "login": username},
+                    "app_id": DEFAULT_APP_ID,
+                },
+                "repositories": [
+                    {"id": "12321", "node_id": "R_kgDOG2tZYQ"},
+                    {"id": "12343", "node_id": "R_kgDOG2tABC"},
+                ],
+                "sender": {"type": "User", "login": "installer_username"},
+            },
+        )
+
+        owner_set = Owner.objects.filter(
+            service="github", service_id=service_id, username=username
+        )
+        assert owner_set.exists()
+        owner = owner_set.first()
+
+        mock_amplitude_publish.assert_called_with(
+            "App Installed",
+            {
+                "user_ownerid": installer.ownerid,
+                "ownerid": owner.ownerid,
+            },
+        )
+
     @patch(
         "services.task.TaskService.refresh",
         lambda self,
@@ -1068,6 +1147,7 @@ class GithubWebhookHandlerTests(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_organization_member_removed_with_nonexistent_or_nonactivated_member(self):
+        mock_all_plans_and_tiers()
         org = OwnerFactory(
             service_id="4321",
             plan_activated_users=[50392],

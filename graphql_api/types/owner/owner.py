@@ -8,7 +8,7 @@ import yaml
 from ariadne import ObjectType
 from django.conf import settings
 from graphql import GraphQLResolveInfo
-from shared.plan.constants import PlanData, PlanName, convert_to_DTO
+from shared.plan.constants import DEFAULT_FREE_PLAN
 from shared.plan.service import PlanService
 
 import services.activation as activation
@@ -31,7 +31,7 @@ from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
     Connection,
     build_connection_graphql,
-    queryset_to_connection,
+    queryset_to_connection_sync,
 )
 from graphql_api.helpers.mutation import (
     require_part_of_org,
@@ -41,7 +41,6 @@ from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from services.billing import BillingService
-from services.profiling import ProfilingSummary
 from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval
@@ -54,6 +53,7 @@ AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 @owner_bindable.field("repositories")
+@sync_to_async
 def resolve_repositories(
     owner: Owner,
     info: GraphQLResolveInfo,
@@ -76,7 +76,7 @@ def resolve_repositories(
         current_owner, owner, filters, okta_account_auths, exclude_okta_enforced_repos
     )
 
-    return queryset_to_connection(
+    return queryset_to_connection_sync(
         queryset,
         ordering=(ordering, RepositoryOrdering.ID),
         ordering_direction=ordering_direction,
@@ -111,18 +111,16 @@ def resolve_plan(owner: Owner, info: GraphQLResolveInfo) -> PlanService:
 @owner_bindable.field("pretrialPlan")
 @require_part_of_org
 @sync_to_async
-def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> PlanData:
+def resolve_plan_representation(owner: Owner, info: GraphQLResolveInfo) -> Plan:
     info.context["plan_service"] = PlanService(current_org=owner)
-    free_plan = Plan.objects.select_related("tier").get(
-        name=PlanName.BASIC_PLAN_NAME.value
-    )
-    return convert_to_DTO(free_plan)
+    free_plan = Plan.objects.select_related("tier").get(name=DEFAULT_FREE_PLAN)
+    return free_plan
 
 
 @owner_bindable.field("availablePlans")
 @require_part_of_org
 @sync_to_async
-def resolve_available_plans(owner: Owner, info: GraphQLResolveInfo) -> List[PlanData]:
+def resolve_available_plans(owner: Owner, info: GraphQLResolveInfo) -> List[Plan]:
     plan_service = PlanService(current_org=owner)
     info.context["plan_service"] = plan_service
     owner = info.context["request"].current_owner
@@ -132,8 +130,22 @@ def resolve_available_plans(owner: Owner, info: GraphQLResolveInfo) -> List[Plan
 @owner_bindable.field("hasPrivateRepos")
 @sync_to_async
 @require_part_of_org
-def resolve_has_private_repos(owner: Owner, info: GraphQLResolveInfo) -> List[PlanData]:
+def resolve_has_private_repos(owner: Owner, info: GraphQLResolveInfo) -> bool:
     return owner.has_private_repos
+
+
+@owner_bindable.field("hasPublicRepos")
+@sync_to_async
+@require_part_of_org
+def resolve_has_public_repos(owner: Owner, info: GraphQLResolveInfo) -> bool:
+    return owner.has_public_repos
+
+
+@owner_bindable.field("hasActiveRepos")
+@sync_to_async
+@require_part_of_org
+def resolve_has_active_repos(owner: Owner, info: GraphQLResolveInfo) -> bool:
+    return owner.has_active_repos
 
 
 @owner_bindable.field("ownerid")
@@ -176,7 +188,6 @@ async def resolve_repository(
     if repository.private and has_products_enabled:
         await sync_to_async(activation.try_auto_activate)(owner, current_owner)
 
-    info.context["profiling_summary"] = ProfilingSummary(repository)
     return repository
 
 

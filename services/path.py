@@ -1,17 +1,18 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Iterable, List, Optional, Union
+from typing import Iterable
 
 import sentry_sdk
 from asgiref.sync import async_to_sync
 from django.conf import settings
+from shared.reports.filtered import FilteredReport, FilteredReportFile
 from shared.reports.resources import Report
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
-from shared.utils.match import match
 
-import services.report as report_service
 from codecov_auth.models import Owner
 from core.models import Commit
 from services.repo_providers import RepoProviderService
@@ -24,7 +25,7 @@ class PathNode:
     """
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.full_path.split("/")[-1]
 
     @property
@@ -68,10 +69,10 @@ class Dir(PathNode):
     """
 
     full_path: str
-    children: List[PathNode]
+    children: list[File | Dir]
 
     @cached_property
-    def totals(self):
+    def totals(self) -> ReportTotals:
         # A dir's totals are sum of its children's totals
         totals = ReportTotals.default_totals()
         for child in self.children:
@@ -88,7 +89,7 @@ class PrefixedPath:
     prefix: str
 
     @property
-    def relative_path(self):
+    def relative_path(self) -> str:
         """
         The path relative to the `prefix`.  For example, if `full_path`
         is `a/b/c/d.txt` and `prefix` is `a/b` then this method would return `c/d.txt`.
@@ -96,15 +97,15 @@ class PrefixedPath:
         if not self.prefix:
             return self.full_path
         else:
-            return self.full_path.replace(f"{self.prefix}/", "", 1)
+            return self.full_path.removeprefix(f"{self.prefix}/")
 
     @property
-    def is_file(self):
+    def is_file(self) -> bool:
         parts = self.relative_path.split("/")
         return len(parts) == 1
 
     @property
-    def basename(self):
+    def basename(self) -> str:
         """
         The base path name (including the prefix).  For example, if `full_path`
         is `a/b/c/d.txt` and `prefix` is `a/b` then this method would return `a/b/c`.
@@ -116,14 +117,14 @@ class PrefixedPath:
             return name
 
 
-def is_subpath(full_path: str, subpath: str):
+def is_subpath(full_path: str, subpath: str) -> bool:
     if not subpath:
         return True
     return full_path.startswith(f"{subpath}/") or full_path == subpath
 
 
 def dashboard_commit_file_url(
-    path: Optional[str],
+    path: str | None,
     service: str,
     owner: str,
     repo: str,
@@ -146,15 +147,14 @@ class ReportPaths:
     def __init__(
         self,
         report: Report,
-        path: PrefixedPath = None,
-        search_term: str = None,
-        filter_flags: List[str] = [],
-        filter_paths: List[str] = [],
+        path: str | None = None,
+        search_term: str | None = None,
+        filter_flags: list[str] = None,
+        filter_paths: list[str] = None,
     ):
-        self.report = report
-        self.unfiltered_report = report
-        self.filter_flags = filter_flags
-        self.filter_paths = filter_paths
+        self.report: Report | FilteredReport = report
+        self.filter_flags = filter_flags or []
+        self.filter_paths = filter_paths or []
         self.prefix = path or ""
 
         # Filter report if flags or paths exist
@@ -170,44 +170,43 @@ class ReportPaths:
         ]
 
         if search_term:
+            search_term = search_term.lower()
             self._paths = [
                 path
-                for path in self.paths
-                if search_term.lower() in path.relative_path.lower()
+                for path in self._paths
+                if search_term in path.relative_path.lower()
             ]
 
     @cached_property
-    def files(self) -> List[str]:
-        # No filtering, just return files in Report
-        if not self.filter_flags and not self.filter_paths:
+    def files(self) -> list[str]:
+        # No flags filtering, just return (path-filtered) files in Report
+        if not self.filter_flags:
             return self.report.files
 
+        # When there is a flag filter, `FilteredReport` currently yields
+        # `FilteredReportFile`s without actually checking whether they match the sessions.
+        # Before that bug is fixed, lets do the filtering manually here. Once that bug is fixed,
+        # this should just forward to `self.report.files` like above.
         files = []
-        # Do flag filtering if needed
-        if self.filter_flags:
-            files = report_service.files_belonging_to_flags(
-                commit_report=self.unfiltered_report, flags=self.filter_flags
-            )
-        else:
-            files = report_service.files_in_sessions(
-                commit_report=self.unfiltered_report,
-                session_ids=self.unfiltered_report.sessions.keys(),
-            )
-        # Do path filtering if needed
-        if self.filter_paths:
-            files = [file for file in files if match(self.filter_paths, file)]
+        for file in self.report:
+            if isinstance(file, FilteredReportFile):
+                found = False
+                for _ln, line in file.lines:
+                    if line and any(s.id in file.session_ids for s in line.sessions):
+                        found = True
+                        break
+                if not found:
+                    continue
 
+            files.append(file.name)
         return files
 
-    def _filter_commit_report(self) -> None:
-        self.report = self.report.filter(flags=self.filter_flags)
-
     @property
-    def paths(self):
+    def paths(self) -> list[PrefixedPath]:
         return self._paths
 
     @sentry_sdk.trace
-    def full_filelist(self) -> Iterable[File]:
+    def full_filelist(self) -> list[File | Dir]:
         """
         Return a flat file list of all files under the specified `path` prefix/directory.
         """
@@ -217,7 +216,7 @@ class ReportPaths:
         ]
 
     @sentry_sdk.trace
-    def single_directory(self) -> Iterable[Union[File, Dir]]:
+    def single_directory(self) -> list[File | Dir]:
         """
         Return a single directory (specified by `path`) of mixed file/directory results.
         """
@@ -238,15 +237,14 @@ class ReportPaths:
 
     def _single_directory_recursive(
         self, paths: Iterable[PrefixedPath]
-    ) -> Iterable[Union[File, Dir]]:
+    ) -> list[File | Dir]:
         grouped = defaultdict(list)
         for path in paths:
             grouped[path.basename].append(path)
 
-        results = []
+        results: list[File | Dir] = []
 
         for basename, paths in grouped.items():
-            paths = list(paths)
             if len(paths) == 1 and paths[0].is_file:
                 path = paths[0]
                 results.append(
@@ -254,17 +252,15 @@ class ReportPaths:
                 )
             else:
                 children = self._single_directory_recursive(
-                    [
-                        PrefixedPath(full_path=path.full_path, prefix=basename)
-                        for path in paths
-                    ]
+                    PrefixedPath(full_path=path.full_path, prefix=basename)
+                    for path in paths
                 )
                 results.append(Dir(full_path=basename, children=children))
 
         return results
 
 
-def provider_path_exists(path: str, commit: Commit, owner: Owner):
+def provider_path_exists(path: str, commit: Commit, owner: Owner) -> bool | None:
     """
     Check whether the given path exists on the provider.
     """

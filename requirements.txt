@@ -358,6 +358,7 @@ pytest==8.1.1
     #   pytest-cov
     #   pytest-django
     #   pytest-mock
+    #   pytest-split
 pytest-asyncio==0.23.6
     # via -r requirements.in
 pytest-cov==5.0.0
@@ -365,6 +366,8 @@ pytest-cov==5.0.0
 pytest-django==4.8.0
     # via -r requirements.in
 pytest-mock==3.14.0
+    # via -r requirements.in
+pytest-split==0.10.0
     # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via
@@ -416,7 +419,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/7ba099fa0552244c77a8cc3a4b772216613c09c8.tar.gz
+shared @ https://github.com/codecov/shared/archive/47fa7fd405cd4a37ab6df9f200d6b600795f2786.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
