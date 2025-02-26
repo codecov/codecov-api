@@ -6,7 +6,9 @@ type Owner {
   defaultOrgUsername: String
   delinquent: Boolean
   hashOwnerid: String
+  hasActiveRepos: Boolean
   hasPrivateRepos: Boolean
+  hasPublicRepos: Boolean
   invoice(invoiceId: String!): Invoice
   invoices: [Invoice] @cost(complexity: 100)
   isAdmin: Boolean

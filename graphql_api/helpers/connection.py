@@ -1,9 +1,10 @@
 import enum
+from base64 import b64decode
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, Dict, List, Optional
 
-from cursor_pagination import CursorPage, CursorPaginator
+from cursor_pagination import CursorPage, CursorPaginator, InvalidCursor
 from django.db.models import QuerySet
 
 from codecov.commands.exceptions import ValidationError
@@ -181,6 +182,7 @@ class ArrayConnection:
 
 
 class DictCursorPaginator(CursorPaginator):
+    NULL_VALUE_REPR = "\x1f"
     """
     WARNING: DictCursorPaginator does not work for dict objects where a key contains the following string: "__"
     TODO: if instance is a dictionary and not an object, don't split the ordering
@@ -205,6 +207,17 @@ class DictCursorPaginator(CursorPaginator):
     if the dict access fails then it throws an exception, although it would be a different
     """
 
+    def decode_cursor(self, cursor):
+        try:
+            orderings = b64decode(cursor.encode("ascii")).decode("utf8")
+            orderings = orderings.split(self.delimiter)
+            return [
+                None if ordering == self.NULL_VALUE_REPR else ordering
+                for ordering in orderings
+            ]
+        except (TypeError, ValueError):
+            raise InvalidCursor(self.invalid_cursor_message)
+
     def position_from_instance(self, instance):
         position = []
         for order in self.ordering:
@@ -219,7 +232,7 @@ class DictCursorPaginator(CursorPaginator):
                     except (KeyError, TypeError):
                         raise attr_err from None
                 parts.pop(0)
-            position.append(str(attr))
+            position.append(self.NULL_VALUE_REPR if attr is None else str(attr))
         return position
 
 
