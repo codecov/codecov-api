@@ -47,7 +47,7 @@ If you would like to use pytest directly (Either through an IDE like PyCharm or 
 
     RUN_ENV=TESTING DJANGO_SETTINGS_MODULE=codecov.settings_test pytest
 
-Make sure to have all the requirements from `requirements.txt` installed.
+Make sure to have all the latest dependencies installed via `uv sync`.
 
 ### Deploying
 

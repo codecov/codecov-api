@@ -10,7 +10,6 @@ dependencies = [
     "celery>=5.3.6",
     "cerberus",
     "certifi>=2024.7.4",
-    "ddtrace",
     "django-autocomplete-light",
     "django-better-admin-arrayfield",
     "django-cors-headers",
@@ -26,19 +25,21 @@ dependencies = [
     "drf-spectacular-sidecar",
     "elastic-apm",
     "freezegun",
-    "google-cloud-pubsub",
+    "google-cloud-pubsub>=2.10.0",
+    "grpcio>=1.66.2",
     "gunicorn>=22.0.0",
     "idna>=3.7",
     "minio",
+    "multidict>=6.1.0",
     "oauth2==1.9.0.post1",
     "opentelemetry-instrumentation-django>=0.45b0",
     "opentelemetry-sdk>=1.24.0",
     "opentracing",
     "polars==1.12.0",
     "pre-commit",
-    "psycopg2",
-    "pydantic",
-    "pyjwt",
+    "psycopg2-binary>=2.9.10",
+    "pydantic>=2.9.0",
+    "pyjwt>=2.4.0",
     "python-dateutil",
     "python-json-logger",
     "python-redis-lock",
@@ -52,25 +53,31 @@ dependencies = [
     "simplejson",
     "starlette==0.40.0",
     "stripe>=11.4.1",
-    "urllib3>=1.26.19",
-    "vcrpy",
     "whitenoise",
     "ruff>=0.9.6",
 ]
 
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+
 [tool.uv]
 dev-dependencies = [
-    "factory-boy",
+    "factory-boy>=3.2.0",
     "fakeredis",
     "freezegun",
-    "pre-commit",
-    "pytest>=7.2.0",
-    "pytest-cov",
-    "pytest-asyncio",
+    "pre-commit>=3.4.0",
+    "pytest>=8.1.1",
+    "pytest-cov>=6.0.0",
+    "pytest-asyncio>=0.14.0",
     "pytest-django",
     "pytest-mock",
     "pytest-split",
-    "vcrpy",
+    "urllib3==1.26.19",
+    "vcrpy==4.1.*",
 ]
 
 [tool.uv.sources]

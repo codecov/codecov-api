@@ -6,8 +6,9 @@ ARG BERGLAS_VERSION=2.0.6
 FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 
 FROM $REQUIREMENTS_IMAGE as app
-COPY . /app
+
 WORKDIR /app
+ADD . /app
 # RUN python manage.py collectstatic --no-input
 
 FROM app as local
