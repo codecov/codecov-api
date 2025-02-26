@@ -53,7 +53,7 @@ lint:
 
 lint.install:
 	echo "Installing..."
-	uv add ruff
+	uv add --dev ruff
 
 lint.run:
 	ruff check

@@ -288,7 +288,6 @@ dependencies = [
     { name = "redis" },
     { name = "regex" },
     { name = "requests" },
-    { name = "ruff" },
     { name = "sentry-sdk", extra = ["celery"] },
     { name = "setproctitle" },
     { name = "simplejson" },
@@ -309,6 +308,7 @@ dev = [
     { name = "pytest-django" },
     { name = "pytest-mock" },
     { name = "pytest-split" },
+    { name = "ruff" },
     { name = "urllib3" },
     { name = "vcrpy" },
 ]
@@ -359,7 +359,6 @@ requires-dist = [
     { name = "redis" },
     { name = "regex" },
     { name = "requests" },
-    { name = "ruff", specifier = ">=0.9.6" },
     { name = "sentry-sdk", specifier = ">=2.13.0" },
     { name = "sentry-sdk", extras = ["celery"] },
     { name = "setproctitle" },
@@ -381,6 +380,7 @@ dev = [
     { name = "pytest-django" },
     { name = "pytest-mock" },
     { name = "pytest-split" },
+    { name = "ruff", specifier = ">=0.9.6" },
     { name = "urllib3", specifier = "==1.26.19" },
     { name = "vcrpy", specifier = "==4.1.*" },
 ]

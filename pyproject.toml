@@ -55,7 +55,6 @@ dependencies = [
     "starlette==0.40.0",
     "stripe>=11.4.1",
     "whitenoise",
-    "ruff>=0.9.6",
 ]
 
 [build-system]
@@ -79,6 +78,7 @@ dev-dependencies = [
     "pytest-split",
     "urllib3==1.26.19",
     "vcrpy==4.1.*",
+    "ruff>=0.9.6",
 ]
 
 [tool.uv.sources]
