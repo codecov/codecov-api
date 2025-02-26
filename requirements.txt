@@ -202,6 +202,8 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 graphql-core==3.2.3
     # via ariadne
+greenlet==3.1.1
+    # via sqlalchemy
 grpc-google-iam-v1==0.12.6
     # via google-cloud-pubsub
 grpcio==1.62.1
@@ -419,7 +421,7 @@ sentry-sdk[celery]==2.13.0
     #   shared
 setproctitle==1.1.10
     # via -r requirements.in
-shared @ https://github.com/codecov/shared/archive/47fa7fd405cd4a37ab6df9f200d6b600795f2786.tar.gz
+shared @ https://github.com/codecov/shared/archive/4de8f9e843fa146bf39ad32633b09a42cc1b5102.tar.gz
     # via -r requirements.in
 simplejson==3.17.2
     # via -r requirements.in
