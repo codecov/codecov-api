@@ -925,13 +925,17 @@ class ComparisonTests(TestCase):
         fc = self.comparison.has_different_number_of_head_and_base_sessions
         assert fc == False
 
+    @patch(
+        "services.comparison.Comparison.head_report_without_applied_diff",
+        new_callable=PropertyMock,
+    )
     def test_head_and_base_reports_have_different_number_of_reports(
-        self, base_report_mock, head_report_mock, _
+        self, head_report_no_diff_mock, base_report_mock, head_report_mock, _
     ):
         # Only relevant files keys to the session object
         head_report_sessions = {"0": {"st": "uploaded"}, "1": {"st": "uploaded"}}
         head_report = SerializableReport(sessions=head_report_sessions)
-        head_report_mock.return_value = head_report
+        head_report_no_diff_mock.return_value = head_report
         base_report_sessions = {"0": {"st": "uploaded"}}
         base_report = SerializableReport(sessions=base_report_sessions)
         base_report_mock.return_value = base_report
