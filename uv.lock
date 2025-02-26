@@ -242,7 +242,7 @@ wheels = [
 [[package]]
 name = "codecov-api"
 version = "0.0.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aiodataloader" },
     { name = "ariadne" },
@@ -255,6 +255,7 @@ dependencies = [
     { name = "django-better-admin-arrayfield" },
     { name = "django-cors-headers" },
     { name = "django-csp" },
+    { name = "django-cursor-pagination" },
     { name = "django-dynamic-fixture" },
     { name = "django-filter" },
     { name = "django-model-utils" },
@@ -325,6 +326,7 @@ requires-dist = [
     { name = "django-better-admin-arrayfield" },
     { name = "django-cors-headers" },
     { name = "django-csp" },
+    { name = "django-cursor-pagination" },
     { name = "django-dynamic-fixture" },
     { name = "django-filter" },
     { name = "django-model-utils" },
@@ -485,6 +487,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/68/16/c3c65ad59997284402e54d00797c7aca96572df911aede3e1f2cc2e029f8/django_csp-3.8.tar.gz", hash = "sha256:ef0f1a9f7d8da68ae6e169c02e9ac661c0ecf04db70e0d1d85640512a68471c0", size = 13341 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/14/ff/2c7a4b6706125a17bd0071802e4894c28772cfcdea20a086a2be3c5fafda/django_csp-3.8-py3-none-any.whl", hash = "sha256:19b2978b03fcd73517d7d67acbc04fbbcaec0facc3e83baa502965892d1e0719", size = 17410 },
+]
+
+[[package]]
+name = "django-cursor-pagination"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/91/73adf878757d3f10c8882e532cbcf1feda4a788bfe8088a03475486ff97c/django_cursor_pagination-0.3.0.tar.gz", hash = "sha256:b09293ea9aa93cd0f3a9f4197e1f11f09283678e6c991cf4d4517a0fe90244c1", size = 7907 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/ae/da7b25f23c97cdc05f97f83555653b5e4b69dee20ed0da5e9cce136d4e00/django_cursor_pagination-0.3.0-py3-none-any.whl", hash = "sha256:ce88147adc1e41c58427217cf54d7cbb4d04d5cf0a3a2c794d81602ad347658e", size = 6822 },
 ]
 
 [[package]]
