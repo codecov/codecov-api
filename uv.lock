@@ -264,8 +264,6 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "drf-spectacular" },
     { name = "drf-spectacular-sidecar" },
-    { name = "elastic-apm" },
-    { name = "freezegun" },
     { name = "google-cloud-pubsub" },
     { name = "grpcio" },
     { name = "gunicorn" },
@@ -275,9 +273,7 @@ dependencies = [
     { name = "oauth2" },
     { name = "opentelemetry-instrumentation-django" },
     { name = "opentelemetry-sdk" },
-    { name = "opentracing" },
     { name = "polars" },
-    { name = "pre-commit" },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "pyjwt" },
@@ -289,7 +285,6 @@ dependencies = [
     { name = "regex" },
     { name = "requests" },
     { name = "sentry-sdk", extra = ["celery"] },
-    { name = "setproctitle" },
     { name = "simplejson" },
     { name = "starlette" },
     { name = "stripe" },
@@ -315,71 +310,66 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiodataloader" },
-    { name = "ariadne", specifier = "==0.23" },
+    { name = "aiodataloader", specifier = "==0.4.0" },
+    { name = "ariadne", specifier = "==0.23.0" },
     { name = "ariadne-django", specifier = "==0.3.0" },
     { name = "celery", specifier = ">=5.3.6" },
-    { name = "cerberus" },
+    { name = "cerberus", specifier = "==1.3.5" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "django", specifier = ">=4.2.16" },
-    { name = "django-autocomplete-light" },
-    { name = "django-better-admin-arrayfield" },
-    { name = "django-cors-headers" },
-    { name = "django-csp" },
-    { name = "django-cursor-pagination" },
-    { name = "django-dynamic-fixture" },
-    { name = "django-filter" },
-    { name = "django-model-utils" },
+    { name = "django-autocomplete-light", specifier = "==3.11.0" },
+    { name = "django-better-admin-arrayfield", specifier = "==1.4.2" },
+    { name = "django-cors-headers", specifier = "==3.7.0" },
+    { name = "django-csp", specifier = "==3.8.0" },
+    { name = "django-cursor-pagination", specifier = "==0.3.0" },
+    { name = "django-dynamic-fixture", specifier = "==3.1.1" },
+    { name = "django-filter", specifier = "==2.4.0" },
+    { name = "django-model-utils", specifier = "==4.5.1" },
     { name = "django-postgres-extra", specifier = ">=2.0.8" },
-    { name = "django-prometheus" },
+    { name = "django-prometheus", specifier = "==2.3.1" },
     { name = "djangorestframework", specifier = "==3.15.2" },
-    { name = "drf-spectacular" },
-    { name = "drf-spectacular-sidecar" },
-    { name = "elastic-apm" },
-    { name = "freezegun" },
-    { name = "google-cloud-pubsub", specifier = ">=2.10.0" },
+    { name = "drf-spectacular", specifier = "==0.26.2" },
+    { name = "drf-spectacular-sidecar", specifier = "==2023.3.1" },
+    { name = "google-cloud-pubsub", specifier = ">=2.18.4" },
     { name = "grpcio", specifier = ">=1.66.2" },
     { name = "gunicorn", specifier = ">=22.0.0" },
     { name = "idna", specifier = ">=3.7" },
-    { name = "minio" },
+    { name = "minio", specifier = "==7.1.13" },
     { name = "multidict", specifier = ">=6.1.0" },
     { name = "oauth2", specifier = "==1.9.0.post1" },
     { name = "opentelemetry-instrumentation-django", specifier = ">=0.45b0" },
     { name = "opentelemetry-sdk", specifier = ">=1.24.0" },
-    { name = "opentracing" },
     { name = "polars", specifier = "==1.12.0" },
-    { name = "pre-commit" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pyjwt", specifier = ">=2.4.0" },
-    { name = "python-dateutil" },
-    { name = "python-json-logger" },
-    { name = "python-redis-lock" },
-    { name = "pytz" },
-    { name = "redis" },
-    { name = "regex" },
-    { name = "requests" },
+    { name = "python-dateutil", specifier = "==2.9.0.post0" },
+    { name = "python-json-logger", specifier = "==2.0.7" },
+    { name = "python-redis-lock", specifier = "==4.0.0" },
+    { name = "pytz", specifier = "==2022.1" },
+    { name = "redis", specifier = "==4.4.4" },
+    { name = "regex", specifier = "==2023.12.25" },
+    { name = "requests", specifier = "==2.32.3" },
     { name = "sentry-sdk", specifier = ">=2.13.0" },
-    { name = "sentry-sdk", extras = ["celery"] },
-    { name = "setproctitle" },
-    { name = "simplejson" },
+    { name = "sentry-sdk", extras = ["celery"], specifier = "==2.13.0" },
+    { name = "simplejson", specifier = "==3.17.2" },
     { name = "starlette", specifier = "==0.40.0" },
     { name = "stripe", specifier = ">=11.4.1" },
-    { name = "whitenoise" },
+    { name = "whitenoise", specifier = "==5.2.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "factory-boy", specifier = ">=3.2.0" },
-    { name = "fakeredis" },
-    { name = "freezegun" },
+    { name = "fakeredis", specifier = "==2.10.3" },
+    { name = "freezegun", specifier = "==1.1.0" },
     { name = "pre-commit", specifier = ">=3.4.0" },
     { name = "pytest", specifier = ">=8.1.1" },
     { name = "pytest-asyncio", specifier = ">=0.14.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "pytest-django" },
-    { name = "pytest-mock" },
-    { name = "pytest-split" },
+    { name = "pytest-django", specifier = "==4.8.0" },
+    { name = "pytest-mock", specifier = "==3.14.0" },
+    { name = "pytest-split", specifier = "==0.10.0" },
     { name = "ruff", specifier = ">=0.9.6" },
     { name = "urllib3", specifier = "==1.26.19" },
     { name = "vcrpy", specifier = "==4.1.*" },
@@ -595,20 +585,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e4/91/054e90af66573d2795480811b0766b253c68c26978a214251069af9f88bd/drf-spectacular-sidecar-2023.3.1.tar.gz", hash = "sha256:ceb78fd59971bb79e90de38bf89afa50a60b043953f72b3cdeb4ca6a34623f92", size = 2472749 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/15/b2/5f3e768a183e0927b893b8010b02798c6d3cdc8d8ae40a480fbe5367bfb4/drf_spectacular_sidecar-2023.3.1-py3-none-any.whl", hash = "sha256:2b5ea98d976a4ba023d03cd9dfc2506892e0f26e2ba2869b58ddf344ab69f40f", size = 2494623 },
-]
-
-[[package]]
-name = "elastic-apm"
-version = "6.13.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "certifi" },
-    { name = "urllib3" },
-    { name = "wrapt" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/bd/774d13fed438cbf90aa8f076acc935d08dd9efca56b6f5146658a54cb798/elastic-apm-6.13.2.tar.gz", hash = "sha256:815ee9838f6db2db3ee83a31b8ff36ff291aac03c6ed24534280ced45a9cb3dc", size = 154025 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/91/d3/00c2177fcc2bcc87185e69207680b68fc9d37a3c58c876fd94a997b6e78d/elastic_apm-6.13.2-py2.py3-none-any.whl", hash = "sha256:d672e51ef2dffa1a08d814e6b47d8d17144256d887dbc1734b2b9ce298f1208b", size = 311998 },
 ]
 
 [[package]]
@@ -1063,12 +1039,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/03/99/6784a4f7fea0d2ef8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/e4/f62b2b098481c093d87095454360ab2dce1bc967c6220096e3d10207045a/opentelemetry_util_http-0.45b0-py3-none-any.whl", hash = "sha256:6628868b501b3004e1860f976f410eeb3d3499e009719d818000f24ce17b6e33", size = 6921 },
 ]
-
-[[package]]
-name = "opentracing"
-version = "2.4.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/51/28/2dba4e3efb64cc59d4311081a5ddad1dde20a19b69cd0f677cdb2f2c29a6/opentracing-2.4.0.tar.gz", hash = "sha256:a173117e6ef580d55874734d1fa7ecb6f3655160b8b8974a2a1e98e5ec9c840d", size = 46228 }
 
 [[package]]
 name = "packaging"
@@ -1539,12 +1509,6 @@ wheels = [
 celery = [
     { name = "celery" },
 ]
-
-[[package]]
-name = "setproctitle"
-version = "1.1.10"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5a/0d/dc0d2234aacba6cf1a729964383e3452c52096dc695581248b548786f2b3/setproctitle-1.1.10.tar.gz", hash = "sha256:6283b7a58477dd8478fbb9e76defb37968ee4ba47b05ec1c053cb39638bd7398", size = 24042 }
 
 [[package]]
 name = "setuptools"
