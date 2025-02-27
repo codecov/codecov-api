@@ -46,6 +46,7 @@ dependencies = [
     "requests==2.32.3",
     "sentry-sdk>=2.13.0",
     "sentry-sdk[celery]==2.13.0",
+    "shared",
     "simplejson==3.17.2",
     "starlette==0.40.0",
     "stripe>=11.4.1",
