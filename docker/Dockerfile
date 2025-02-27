@@ -6,8 +6,8 @@ ARG BERGLAS_VERSION=2.0.6
 FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 
 FROM $REQUIREMENTS_IMAGE as app
-COPY . /app
-WORKDIR /app
+COPY . /app/apps/codecov-api
+WORKDIR /app/apps/codecov-api
 RUN pip install setuptools==71.1.0
 RUN python manage.py collectstatic --no-input
 
@@ -25,27 +25,27 @@ RUN pip uninstall -y typing
 ENV DJANGO_SETTINGS_MODULE="codecov.settings_enterprise"
 # Remove the settings dev and enterprise files.
 # These should *never* make it to enterprise.
-RUN rm /app/codecov/settings_dev.py && \
-    rm /app/codecov/settings_prod.py && \
-    rm /app/codecov/settings_test.py && \
-    rm /app/codecov/settings_staging.py && \
-    rm /app/dev.sh && \
-    rm /app/migrate.sh && \
-    rm /app/prod.sh && \
-    rm /app/staging.sh && \
-    rm /app/production.yml && \
-    rm /app/development.yml
+RUN rm /app/apps/codecov-api/codecov/settings_dev.py && \
+    rm /app/apps/codecov-api/codecov/settings_prod.py && \
+    rm /app/apps/codecov-api/codecov/settings_test.py && \
+    rm /app/apps/codecov-api/codecov/settings_staging.py && \
+    rm /app/apps/codecov-api/dev.sh && \
+    rm /app/apps/codecov-api/migrate.sh && \
+    rm /app/apps/codecov-api/prod.sh && \
+    rm /app/apps/codecov-api/staging.sh && \
+    rm /app/apps/codecov-api/production.yml && \
+    rm /app/apps/codecov-api/development.yml
 # Remove unneeded folders
-RUN rm -rf /app/.github
-RUN rm -rf /app/.circleci
+RUN rm -rf /app/apps/codecov-api/.github
+RUN rm -rf /app/apps/codecov-api/.circleci
 # Create the codecov user to run the container as
 RUN addgroup --system application \
     && adduser --system codecov --ingroup application --home /home/codecov
 RUN mkdir -p /config && chown codecov:application /config
 # copy the enterprise settings module.
-WORKDIR /app
+WORKDIR /app/apps/codecov-api
 RUN chmod +x enterprise.sh && \
-    chown codecov:application /app
+    chown codecov:application /app/apps/codecov-api
 ARG RELEASE_VERSION
 ENV RUN_ENV="ENTERPRISE"
 ENV RELEASE_VERSION=$RELEASE_VERSION
