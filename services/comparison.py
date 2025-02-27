@@ -773,12 +773,9 @@ class Comparison(object):
     # I feel this method should belong to the API Report class, but we're thinking of getting rid of that class soon
     # In truth, this should be in the shared.Report class
     def _has_cff_sessions(self, sessions) -> bool:
-        log.info(f"_has_cff_sessions - sessions count {len(sessions)}")
         for session in sessions.values():
             if session.session_type.value == "carriedforward":
-                log.info("_has_cff_sessions - Found carriedforward")
                 return True
-        log.info("_has_cff_sessions - No carriedforward")
         return False
 
     @property
