@@ -29,6 +29,7 @@ jobs:
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+      cache_file: "uv.lock"
 
   codecovstartup:
     name: Codecov Startup
@@ -52,6 +53,7 @@ jobs:
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+      cache_file: "uv.lock"
 
   staging:
     name: Push Staging Image
