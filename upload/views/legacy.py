@@ -388,6 +388,7 @@ class UploadDownloadHandler(View):
             raise Http404("Requested report could not be found")
         return repo
 
+    @sync_to_async
     def validate_path(self, repo):
         msg = "Requested report could not be found"
         if not self.path:
@@ -435,7 +436,7 @@ class UploadDownloadHandler(View):
 
         self.read_params()
         repo = await self.get_repo()
-        self.validate_path(repo)
+        await self.validate_path(repo)
 
         response = HttpResponse(status=302)
         response["Location"] = await self.get_presigned_url(repo)
