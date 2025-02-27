@@ -56,7 +56,7 @@ FROM self-hosted as self-hosted-runtime
 USER root
 ARG EXTERNAL_DEPS_FOLDER=./external_deps
 RUN mkdir $EXTERNAL_DEPS_FOLDER
-RUN uv add --target $EXTERNAL_DEPS_FOLDER psycopg2-binary tlslite-ng
+RUN pip install --target $EXTERNAL_DEPS_FOLDER psycopg2-binary tlslite-ng
 RUN chown codecov:application $EXTERNAL_DEPS_FOLDER
 USER codecov
 
