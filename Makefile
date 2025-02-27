@@ -53,6 +53,14 @@ lint:
 
 lint.install:
 	echo "Installing..."
+	pip install -Iv ruff
+
+lint.local:
+	make lint.install.local
+	make lint.run
+
+lint.install.local:
+	echo "Installing..."
 	uv add --dev ruff
 
 lint.run:

@@ -74,7 +74,7 @@ This repository uses `uv` to manage dependencies, so make sure you've installed 
 ### Formatting
 
 This project uses `ruff` for formatting.  
-You can run the linter using the command `make lint`.
+You can run the linter using the command `make lint_local`.
 
 ### Migrations
 
