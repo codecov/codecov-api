@@ -250,7 +250,7 @@ jsonschema==4.14.0
     # via drf-spectacular
 kombu==5.3.6
     # via celery
-minio==7.1.13
+minio==7.2.11
     # via
     #   -r requirements.in
     #   shared
