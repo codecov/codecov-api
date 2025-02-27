@@ -3535,3 +3535,42 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
             "errorCode": "UNKNOWN_PROCESSING",
             "errorMessage": "Unknown processing error",
         }
+
+    @patch('graphql_api.types.commit.commit.Commit')
+    def test_resolve_path_contents_with_flags_filter(self, mock_commit):
+        mock_commit_report = MagicMock()
+        mock_commit_report.flags = {'flag1': True, 'flag2': True}
+        mock_commit.report.return_value = mock_commit_report
+
+        from graphql_api.types.commit.commit import resolve_path_contents
+
+        info = MagicMock()
+        flags_filter = ['flag1']
+
+        result = resolve_path_contents(mock_commit, info, flags=flags_filter)
+
+        mock_commit_report.filter.assert_called_once_with(flags=flags_filter)
+        self.assertEqual(result, mock_commit_report.filter.return_value)
+
+    @patch('graphql_api.types.commit.commit.Commit')
+    def test_resolve_path_contents_without_flags_filter(self, mock_commit):
+        mock_commit_report = MagicMock()
+        mock_commit_report.flags = {'flag1': True, 'flag2': True}
+        mock_commit.report.return_value = mock_commit_report
+
+        from graphql_api.types.commit.commit import resolve_path_contents
+
+        info = MagicMock()
+
+        result = resolve_path_contents(mock_commit, info)
+
+        mock_commit_report.filter.assert_not_called()
+        self.assertEqual(result, mock_commit_report)
+
+    @patch('graphql_api.types.commit.commit.Commit')
+    def test_resolve_path_contents_with_empty_flags(self, mock_commit):
+        mock_commit.report.return_value = None
+
+        from graphql_api.types.commit.commit import resolve_path_contents, UnknownFlags
+
+        self.assertIsInstance(resolve_path_contents(mock_commit, MagicMock(), flags=[]), UnknownFlags)
