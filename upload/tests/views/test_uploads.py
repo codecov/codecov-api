@@ -207,7 +207,7 @@ def test_uploads_post(db, mocker, mock_redis):
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
     presigned_put_mock = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
@@ -307,7 +307,7 @@ def test_uploads_post(db, mocker, mock_redis):
 )
 def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_sent):
     presigned_put_mock = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
@@ -452,7 +452,7 @@ def test_uploads_post_token_required_auth_check(
     upload_token_required_for_public_repos,
 ):
     presigned_put_mock = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
@@ -600,7 +600,7 @@ def test_uploads_post_github_oidc_auth(
     mock_redis,
 ):
     presigned_put_mock = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     upload_task_mock = mocker.patch(
@@ -726,7 +726,7 @@ def test_uploads_post_shelter(db, mocker, mock_redis):
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
     presigned_put_mock = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
     )
     mocker.patch("upload.views.uploads.trigger_upload_task", return_value=True)
@@ -883,7 +883,7 @@ class TestGitlabEnterpriseOIDC(APITestCase):
         analytics_service_mock,
     ):
         self.mocker.patch(
-            "shared.api_archive.archive.StorageService.create_presigned_put",
+            "shared.storage.MinioStorageService.create_presigned_put",
             return_value="presigned put",
         )
         self.mocker.patch("upload.views.uploads.trigger_upload_task", return_value=True)
@@ -941,7 +941,7 @@ class TestGitlabEnterpriseOIDC(APITestCase):
     ):
         mock_config_helper(self.mocker, configs={"github_enterprise.url": None})
         self.mocker.patch(
-            "shared.api_archive.archive.StorageService.create_presigned_put",
+            "shared.storage.MinioStorageService.create_presigned_put",
             return_value="presigned put",
         )
         self.mocker.patch("upload.views.uploads.trigger_upload_task", return_value=True)

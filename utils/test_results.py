@@ -1,6 +1,6 @@
 import polars as pl
 from django.conf import settings
-from shared.api_archive.storage import StorageService
+from shared.storage import get_appropriate_storage_service
 from shared.storage.exceptions import FileNotInStorageError
 
 from services.redis_configuration import get_redis_connection
@@ -55,7 +55,7 @@ def get_results(
 
     if result is None:
         # try storage
-        storage_service = StorageService()
+        storage_service = get_appropriate_storage_service()
         key = storage_key(repoid, branch, interval_start, interval_end)
         try:
             result = storage_service.read_file(

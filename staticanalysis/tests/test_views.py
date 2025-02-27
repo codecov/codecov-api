@@ -16,7 +16,7 @@ from staticanalysis.tests.factories import StaticAnalysisSuiteFactory
 def test_simple_static_analysis_call_no_uploads_yet(db, mocker):
     mocked_task_service = mocker.patch.object(TaskService, "schedule_task")
     mocked_presigned_put = mocker.patch(
-        "shared.api_archive.archive.StorageService.create_presigned_put",
+        "shared.storage.MinioStorageService.create_presigned_put",
         return_value="banana.txt",
     )
     commit = CommitFactory.create(repository__active=True)
