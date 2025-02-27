@@ -564,7 +564,10 @@ class FetchImpactedFilesTest(TransactionTestCase):
         impacted_files = self.execute(None, self.comparison_report, comparison, filters)
         assert [file.head_name for file in impacted_files] == ["fileA", "fileB"]
 
-    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    @patch(
+        "services.comparison.Comparison.head_report_without_applied_diff",
+        new_callable=PropertyMock,
+    )
     @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_flags_and_commit_comparison_for_pull(
         self, read_file, build_report_from_commit_mock
@@ -605,7 +608,10 @@ class FetchImpactedFilesTest(TransactionTestCase):
         assert len(impacted_files) == 1
         assert impacted_files[0].head_name == "fileA"
 
-    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    @patch(
+        "services.comparison.Comparison.head_report_without_applied_diff",
+        new_callable=PropertyMock,
+    )
     @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_flags_and_commit_comparison_for_parent_commit(
         self, read_file, build_report_from_commit_mock
@@ -639,7 +645,10 @@ class FetchImpactedFilesTest(TransactionTestCase):
         assert impacted_files[0].head_name == "fileA"
 
     @patch("services.components.commit_components")
-    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    @patch(
+        "services.comparison.Comparison.head_report_without_applied_diff",
+        new_callable=PropertyMock,
+    )
     @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_components_and_commit_comparison_for_parent_commit(
         self, read_file, build_report_from_commit_mock, commit_components_mock
@@ -682,7 +691,10 @@ class FetchImpactedFilesTest(TransactionTestCase):
         assert impacted_files[0].head_name == "fileA.py"
 
     @patch("services.components.commit_components")
-    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    @patch(
+        "services.comparison.Comparison.head_report_without_applied_diff",
+        new_callable=PropertyMock,
+    )
     @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_components_using_flags(
         self, read_file, build_report_from_commit_mock, commit_components_mock
@@ -731,7 +743,10 @@ class FetchImpactedFilesTest(TransactionTestCase):
         assert impacted_files[1].head_name == "fileB.js"
 
     @patch("services.components.commit_components")
-    @patch("services.comparison.Comparison.head_report", new_callable=PropertyMock)
+    @patch(
+        "services.comparison.Comparison.head_report_without_applied_diff",
+        new_callable=PropertyMock,
+    )
     @patch("shared.api_archive.archive.ArchiveService.read_file")
     def test_impacted_files_filtered_by_components_and_flags_commit_comparison_for_parent_commit(
         self, read_file, build_report_from_commit_mock, commit_components_mock

@@ -40,7 +40,7 @@ class FetchImpactedFiles(BaseInteractor):
         components_paths = []
         components_flags = []
 
-        head_commit_report = comparison.head_report
+        head_commit_report = comparison.head_report_without_applied_diff
         if components_filter:
             all_components = components.commit_components(
                 comparison.head_commit, comparison.user
