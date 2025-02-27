@@ -252,10 +252,6 @@ def resolve_has_different_number_of_head_and_base_reports(
     if "comparison" not in info.context:
         return False
     comparison: Comparison = info.context["comparison"]
-    try:
-        comparison.validate()
-    except Exception:
-        return False
     return comparison.has_different_number_of_head_and_base_sessions
 
 

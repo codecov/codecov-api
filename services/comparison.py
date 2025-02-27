@@ -729,13 +729,40 @@ class Comparison(object):
         return report
 
     @cached_property
+    def head_report_without_applied_diff(self):
+        """
+        This is a variant to the head_report property without having an applied diff.
+        This is created because applying the diff calls the provider, which adds a
+        diff_totals key to the head_report object as well as adjusting the diff_total
+        values in each session. This variant should only be used if you are not using
+        any diff related data, as it saves an unnecessary request to the provider otherwise.
+        """
+        try:
+            report = report_service.build_report_from_commit(self.head_commit)
+        except minio.error.S3Error as e:
+            if e.code == "NoSuchKey":
+                raise MissingComparisonReport("Missing head report")
+            else:
+                raise e
+
+        return report
+
+    @cached_property
     def has_different_number_of_head_and_base_sessions(self):
-        log.info("has_different_number_of_head_and_base_sessions - Start")
-        head_sessions = self.head_report.sessions
-        base_sessions = self.base_report.sessions
-        log.info(
-            f"has_different_number_of_head_and_base_sessions - Retrieved sessions - head {len(head_sessions)} / base {len(base_sessions)}"
-        )
+        """
+        This method checks if the head and the base have different number of sessions.
+        It makes use of the head_report_without_applied_diff property instead of the
+        head_report one as it doesn't need diff related data for this computation (see
+        the description of that property above for more context).
+        This method should be replaced with a direct call to the report_uploads table instead,
+        but leaving the implementation the same for now for consistency.
+        """
+        try:
+            head_sessions = self.head_report_without_applied_diff.sessions
+            base_sessions = self.base_report.sessions
+        except Exception:
+            return False
+
         # We're treating this case as false since considering CFF's complicates the logic
         if self._has_cff_sessions(head_sessions) or self._has_cff_sessions(
             base_sessions
@@ -746,12 +773,9 @@ class Comparison(object):
     # I feel this method should belong to the API Report class, but we're thinking of getting rid of that class soon
     # In truth, this should be in the shared.Report class
     def _has_cff_sessions(self, sessions) -> bool:
-        log.info(f"_has_cff_sessions - sessions count {len(sessions)}")
         for session in sessions.values():
             if session.session_type.value == "carriedforward":
-                log.info("_has_cff_sessions - Found carriedforward")
                 return True
-        log.info("_has_cff_sessions - No carriedforward")
         return False
 
     @property
