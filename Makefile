@@ -205,7 +205,7 @@ test_env.install_cli:
 
 test_env.container_prepare:
 	apt-get -y install git build-essential netcat-traditional
-	git config --global --add safe.directory /app || true
+	git config --global --add safe.directory /app/apps/codecov-api || true
 
 test_env.container_check_db:
 	while ! nc -vz postgres 5432; do sleep 1; echo "waiting for postgres"; done
