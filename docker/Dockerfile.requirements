@@ -42,7 +42,6 @@ FROM $PYTHON_IMAGE
 # Our postgres driver psycopg2 requires libpq-dev as a runtime dependency
 RUN apt-get update
 RUN apt-get install -y \
-    git \
     libpq-dev \
     make \
     curl \
