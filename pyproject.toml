@@ -78,4 +78,4 @@ dev-dependencies = [
 
 [tool.uv.sources]
 codecovopentelem = { git = "https://github.com/codecov/opentelem-python", rev = "df1e241927d4794fc0e24f96431f0fb730edac21" }
-shared = { git = "https://github.com/codecov/shared", rev = "9c31870de026a8a3f026f0753b1991e8c832fadb" }
+shared = { git = "https://github.com/codecov/shared", rev = "fd58134d9f15bce28917f68bda9e740dd9fe32ff" }
