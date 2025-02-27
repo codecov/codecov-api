@@ -212,7 +212,6 @@ test_env.install_cli:
 	pip install codecov-cli==$(CODECOV_CLI_VERSION)
 
 test_env.container_prepare:
-	apt-get update
 	apt-get -y install git build-essential netcat-traditional
 	git config --global --add safe.directory /app/apps/codecov-api || true
 
