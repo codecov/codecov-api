@@ -207,6 +207,7 @@ class UploadViews(ListCreateAPIView, GetterMixin):
         RepositoryLegacyTokenAuthentication,
         TokenlessAuthentication,
     ]
+
     throttle_classes = [UploadsPerCommitThrottle, UploadsPerWindowThrottle]
 
     def get_exception_handler(self) -> Callable[[Exception, Dict[str, Any]], Response]:
