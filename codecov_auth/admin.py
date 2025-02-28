@@ -92,11 +92,13 @@ def impersonate_owner(self, request, queryset):
 
     # this cookie is read by the `ImpersonationMiddleware` and
     # will reset `request.current_owner` to the impersonated owner
+    max_age = 900  # 15 minutes
     response.set_cookie(
         "staff_user",
         owner.ownerid,
         domain=settings.COOKIES_DOMAIN,
         samesite=settings.COOKIE_SAME_SITE,
+        max_age=max_age,
     )
     History.log(
         Owner.objects.get(ownerid=owner.ownerid),
@@ -583,6 +585,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "student_created_at",
         "student_updated_at",
         "user",
+        "trial_fired_by",
     )
 
     fields = readonly_fields + (
