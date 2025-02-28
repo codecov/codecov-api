@@ -84,3 +84,4 @@ jobs:
     with:
       push_rolling: true
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+      cache_file: "uv.lock"
