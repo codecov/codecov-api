@@ -3,7 +3,7 @@ from unittest.mock import call, patch
 
 import pytest
 from django.conf import settings
-from django.test import TransactionTestCase
+from django.test import TestCase
 from freezegun import freeze_time
 from freezegun.api import FakeDatetime
 from shared.django_apps.core.tests.factories import (
@@ -55,7 +55,7 @@ def sample_report():
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class RefreshMeasurementSummariesTest(TransactionTestCase):
+class RefreshMeasurementSummariesTest(TestCase):
     databases = {"timeseries"}
 
     @patch("django.db.backends.utils.CursorWrapper.execute")
@@ -77,7 +77,7 @@ class RefreshMeasurementSummariesTest(TransactionTestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class RepositoryCoverageMeasurementsTest(TransactionTestCase):
+class RepositoryCoverageMeasurementsTest(TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -154,7 +154,7 @@ class RepositoryCoverageMeasurementsTest(TransactionTestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class FillSparseMeasurementsTest(TransactionTestCase):
+class FillSparseMeasurementsTest(TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -389,7 +389,7 @@ class FillSparseMeasurementsTest(TransactionTestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
+class RepositoryCoverageMeasurementsWithFallbackTest(TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -803,7 +803,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TransactionTestCase):
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class OwnerCoverageMeasurementsWithFallbackTest(TransactionTestCase):
+class OwnerCoverageMeasurementsWithFallbackTest(TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):

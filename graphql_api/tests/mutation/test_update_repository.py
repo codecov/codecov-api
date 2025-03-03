@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     BranchFactory,
     OwnerFactory,
@@ -35,7 +35,7 @@ repo_query = """{
 """
 
 
-class UpdateRepositoryTests(GraphQLTestHelper, TransactionTestCase):
+class UpdateRepositoryTests(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", activated=False)

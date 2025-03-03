@@ -1,10 +1,10 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
 
 
-class OnboardingTest(GraphQLTestHelper, TransactionTestCase):
+class OnboardingTest(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.params = {

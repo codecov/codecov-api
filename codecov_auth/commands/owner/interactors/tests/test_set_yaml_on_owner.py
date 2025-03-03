@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from codecov.commands.exceptions import (
@@ -59,7 +59,7 @@ codecov:  # comment 2
 """
 
 
-class SetYamlOnOwnerInteractorTest(TransactionTestCase):
+class SetYamlOnOwnerInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.current_owner = OwnerFactory(

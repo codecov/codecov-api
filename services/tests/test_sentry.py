@@ -2,7 +2,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import jwt
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from services.sentry import (
@@ -36,7 +36,7 @@ class DecodeStateTests(TestCase):
         assert res is None
 
 
-class SaveSentryStateTests(TransactionTestCase):
+class SaveSentryStateTests(TestCase):
     def setUp(self):
         self.owner = OwnerFactory()
 

@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import OwnerFactory
@@ -11,7 +11,7 @@ from billing.helpers import mock_all_plans_and_tiers
 from .helper import GraphQLTestHelper
 
 
-class TestPlanRepresentationsType(GraphQLTestHelper, TransactionTestCase):
+class TestPlanRepresentationsType(GraphQLTestHelper, TestCase):
     def setUp(self):
         mock_all_plans_and_tiers()
         self.current_org = OwnerFactory(

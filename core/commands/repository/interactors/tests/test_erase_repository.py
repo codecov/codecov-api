@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthorized
@@ -7,7 +7,7 @@ from codecov.commands.exceptions import Unauthorized
 from ..erase_repository import EraseRepositoryInteractor
 
 
-class UpdateRepositoryInteractorTest(TransactionTestCase):
+class UpdateRepositoryInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov")
         self.random_user = OwnerFactory(organizations=[])

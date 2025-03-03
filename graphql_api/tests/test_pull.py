@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from freezegun import freeze_time
 from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import StoragePaths
@@ -144,7 +144,7 @@ query_pull_request_detail = """{
 """
 
 
-class TestPullRequestList(GraphQLTestHelper, TransactionTestCase):
+class TestPullRequestList(GraphQLTestHelper, TestCase):
     def fetch_list_pull_request(self):
         data = self.gql_request(query_list_pull_request, owner=self.owner)
         return paginate_connection(data["me"]["owner"]["repository"]["pulls"])

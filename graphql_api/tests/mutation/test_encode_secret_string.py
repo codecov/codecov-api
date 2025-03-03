@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.encryption.yaml_secret import yaml_secret_encryptor
 
@@ -19,7 +19,7 @@ mutation($input: EncodeSecretStringInput!) {
 """
 
 
-class TestEncodeSecretString(TransactionTestCase, GraphQLTestHelper):
+class TestEncodeSecretString(TestCase, GraphQLTestHelper):
     def _request(self):
         data = self.gql_request(
             query,

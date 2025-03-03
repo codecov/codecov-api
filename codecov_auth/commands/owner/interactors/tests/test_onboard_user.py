@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
@@ -7,7 +7,7 @@ from codecov_auth.commands.owner.interactors.onboard_user import OnboardUserInte
 from codecov_auth.models import OwnerProfile
 
 
-class OnboardUserInteractorTest(TransactionTestCase):
+class OnboardUserInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.already_onboarded_owner = OwnerFactory(

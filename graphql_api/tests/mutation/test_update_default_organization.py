@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov_auth.models import OwnerProfile
@@ -15,7 +15,7 @@ mutation($input: UpdateDefaultOrganizationInput!) {
 """
 
 
-class UpdateProfileTestCase(GraphQLTestHelper, TransactionTestCase):
+class UpdateProfileTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.default_organization_username = "sample-default-org-username"
         self.default_organization = OwnerFactory(

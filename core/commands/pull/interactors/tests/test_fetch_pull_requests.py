@@ -1,5 +1,5 @@
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     PullFactory,
@@ -11,7 +11,7 @@ from core.models import PullStates
 from ..fetch_pull_requests import FetchPullRequestsInteractor
 
 
-class FetchPullRequestsInteractorTest(TransactionTestCase):
+class FetchPullRequestsInteractorTest(TestCase):
     def setUp(self):
         self.pull_id = 10
         self.pull_title = "test-open-pr-1"
