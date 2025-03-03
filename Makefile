@@ -11,7 +11,6 @@ REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum requirements.txt | cut -d ' 
 VERSION := release-${sha}
 CODECOV_UPLOAD_TOKEN ?= "notset"
 CODECOV_STATIC_TOKEN ?= "notset"
-TIMESERIES_ENABLED ?= "true"
 CODECOV_URL ?= "https://api.codecov.io"
 export DOCKER_BUILDKIT=1
 export API_DOCKER_REPO=${AR_REPO}
@@ -191,7 +190,7 @@ shell:
 	
 test_env.up:
 	env | grep GITHUB > .testenv; true
-	TIMESERIES_ENABLED=${TIMESERIES_ENABLED} docker-compose up -d
+	docker-compose up -d
 
 test_env.prepare:
 	docker-compose exec api make test_env.container_prepare
