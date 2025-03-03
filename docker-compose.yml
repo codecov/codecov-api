@@ -38,11 +38,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_PASSWORD=password
-    volumes:
-      - type: tmpfs
-        target: /home/postgres/pgdata/data
-        tmpfs:
-          size: 2048M
 
   redis:
     image: redis:6-alpine
