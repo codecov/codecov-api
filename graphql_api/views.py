@@ -11,6 +11,7 @@ from ariadne import format_error
 from ariadne.types import Extension
 from ariadne.validation import cost_validator
 from ariadne_django.views import GraphQLAsyncView
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import (
@@ -25,7 +26,6 @@ from shared.metrics import Counter, Histogram, inc_counter
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
-from codecov.db import sync_to_async
 from services import ServiceException
 from services.redis_configuration import get_redis_connection
 

@@ -3,10 +3,10 @@ from typing import List, Optional
 
 import sentry_sdk
 from ariadne import ObjectType, UnionType
+from asgiref.sync import sync_to_async
 from graphql.type.definition import GraphQLResolveInfo
 
 import services.components as components_service
-from codecov.db import sync_to_async
 from compare.commands.compare.compare import CompareCommands
 from compare.models import ComponentComparison, FlagComparison
 from graphql_api.actions.flags import get_flag_comparisons

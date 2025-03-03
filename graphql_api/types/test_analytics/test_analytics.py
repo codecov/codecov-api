@@ -6,11 +6,11 @@ from typing import Any, TypedDict
 
 import polars as pl
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from graphql.type.definition import GraphQLResolveInfo
 from shared.django_apps.core.models import Repository
 
 from codecov.commands.exceptions import ValidationError
-from codecov.db import sync_to_async
 from graphql_api.types.enums import (
     OrderingDirection,
     TestResultsFilterParameter,

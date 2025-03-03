@@ -4,10 +4,10 @@ from typing import Dict, List, Mapping, Optional, Union
 
 import sentry_sdk
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
 
 from codecov.commands.exceptions import ValidationError
-from codecov.db import sync_to_async
 from graphql_api.types.enums import AssetOrdering, OrderingDirection
 from services.bundle_analysis import (
     AssetReport,

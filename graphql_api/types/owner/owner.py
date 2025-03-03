@@ -6,6 +6,7 @@ import shared.rate_limits as rate_limits
 import stripe
 import yaml
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from graphql import GraphQLResolveInfo
 from shared.plan.constants import DEFAULT_FREE_PLAN
@@ -13,7 +14,6 @@ from shared.plan.service import PlanService
 
 import services.activation as activation
 import timeseries.helpers as timeseries_helpers
-from codecov.db import sync_to_async
 from codecov_auth.constants import OWNER_YAML_TO_STRING_KEY
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import (

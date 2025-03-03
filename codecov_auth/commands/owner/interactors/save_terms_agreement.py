@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from asgiref.sync import sync_to_async
 from django.utils import timezone
 
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
-from codecov.db import sync_to_async
 from services.analytics import AnalyticsService
 
 
