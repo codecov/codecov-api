@@ -1,11 +1,10 @@
-Codecov API
------------
+## Codecov API
 
 > We believe that everyone should have access to quality software (like Sentry), that’s why we have always offered Codecov for free to open source maintainers.
 >
 > By making our code public, we’re not only joining the community that’s supported us from the start — but also want to make sure that every developer can contribute to and build on the Codecov experience.
 
-A private Django REST Framework API intended to serve Codecov's front end. 
+A private Django REST Framework API intended to serve Codecov's front end.
 
 ## Getting Started
 
@@ -21,7 +20,7 @@ Note, you'll need to install Rust to build `ribs` which is a dependency of `shar
 
 ### Running Standalone
 
-This project contains a `docker-compose.yml` file that is intended to run the api standalone. In this configuration it **does not** share codecov.io's development database; so don't expect parity there. 
+This project contains a `docker-compose.yml` file that is intended to run the api standalone. In this configuration it **does not** share codecov.io's development database; so don't expect parity there.
 
 To start the service, do
 
@@ -33,7 +32,7 @@ Once running, the api will be available at `http://localhost:5100`
 
 ### Running with codecov.io
 
-This service will startup when you run codecov.io normally. It is under that `api` block of codecov.io's `docker-compose.yml` file. 
+This service will startup when you run codecov.io normally. It is under that `api` block of codecov.io's `docker-compose.yml` file.
 
 ### Testing
 
@@ -48,7 +47,7 @@ If you would like to use pytest directly (Either through an IDE like PyCharm or 
 
     RUN_ENV=TESTING DJANGO_SETTINGS_MODULE=codecov.settings_test pytest
 
-Make sure to have all the requirements from `requirements.txt` installed.
+Make sure to have all the latest dependencies installed via `uv sync`.
 
 ### Deploying
 
@@ -69,18 +68,13 @@ Steps 2 and 3 are important to limit interaction between features not yet merged
 This project should store no secrets or credentials in its source. If you need to add to / modify / setup secrets for this project, contact Eli and he'll get you started..
 
 ### Adding dependencies
-This repository uses `pip-tools` to manage dependencies, so make sure you've installed it with `pip install pip-tools`. To add or update dependencies, change `requirements.in`,  Then run
 
-```
-pip-compile requirements.in
-```
-
-Do not change `requirements.txt` directly.
+This repository uses `uv` to manage dependencies, so make sure you've installed it with `pip install uv`. To add or update dependencies, simply run `uv add __package_name__` or `uv sync`.
 
 ### Formatting
 
-This project uses `ruff` for formatting.      
-You can run the linter using the command `make lint`.
+This project uses `ruff` for formatting.  
+You can run the linter using the command `make lint_local`.
 
 ### Migrations
 
@@ -88,4 +82,4 @@ We leverage Django's migration system to keep the state of our models in sync wi
 
 ## Contributing
 
-This repository, like all of Codecov's repositories, strives to follow our general [Contributing guidlines](https://github.com/codecov/contributing). If you're considering making a contribution to this repository, we encourage review of our Contributing guidelines first. 
+This repository, like all of Codecov's repositories, strives to follow our general [Contributing guidlines](https://github.com/codecov/contributing). If you're considering making a contribution to this repository, we encourage review of our Contributing guidelines first.

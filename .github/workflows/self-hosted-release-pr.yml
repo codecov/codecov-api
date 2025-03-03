@@ -10,5 +10,5 @@ on:
 jobs:
   create-release-pr:
     name: Create PR for Release ${{ github.event.inputs.versionName }}
-    uses: codecov/gha-workflows/.github/workflows/create-release-pr.yml@v1.2.21
+    uses: codecov/gha-workflows/.github/workflows/create-release-pr.yml@v1.2.33
     secrets: inherit

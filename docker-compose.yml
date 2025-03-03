@@ -14,14 +14,14 @@ services:
       - ./dev.sh
     environment:
       - RUN_ENV=DEV
-      - SETUP__TIMESERIES__ENABLED=${TIMESERIES_ENABLED-true}
       # Improves pytest-cov performance in python 3.12
       # https://github.com/nedbat/coveragepy/issues/1665#issuecomment-1937075835
       - COVERAGE_CORE=sysmon 
     env_file:
       - .testenv
+
   postgres:
-    image: postgres:14.7-alpine
+    image: postgres:14-alpine
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_HOST_AUTH_METHOD=trust
@@ -31,17 +31,14 @@ services:
         target: /var/lib/postgresql/data
         tmpfs:
           size: 2048M
+
   timescale:
     image: timescale/timescaledb-ha:pg14-latest
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_PASSWORD=password
-    volumes:
-      - type: tmpfs
-        target: /var/lib/postgresql/data
-        tmpfs:
-          size: 2048M
+
   redis:
     image: redis:6-alpine
 

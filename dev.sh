@@ -23,7 +23,8 @@ _start_gunicorn() {
     python manage.py insert_data_to_db_from_csv core/management/commands/codecovPlans-Jan25.csv --model plans
   fi
   if [[ "$DEBUGPY" ]]; then
-      pip install debugpy
+      uv add debugpy
+      uv sync
       python -m debugpy --listen 0.0.0.0:12345 -m gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
   fi
   gunicorn codecov.wsgi:application --reload --bind 0.0.0.0:8000 --access-logfile '-' --timeout "${GUNICORN_TIMEOUT:-600}" $suffix
