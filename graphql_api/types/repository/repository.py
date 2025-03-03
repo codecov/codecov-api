@@ -165,12 +165,6 @@ def resolve_default_branch(repository: Repository, info: GraphQLResolveInfo) -> 
     return repository.branch
 
 
-@repository_bindable.field("profilingToken")
-def resolve_profiling_token(repository: Repository, info: GraphQLResolveInfo) -> str:
-    """DEPRECATED"""
-    return ""
-
-
 @repository_bindable.field("staticAnalysisToken")
 def resolve_static_analysis_token(
     repository: Repository, info: GraphQLResolveInfo

@@ -47,9 +47,6 @@ query_files = """
                                         partials
                                         lines
                                         percentCovered
-                                        ... on PathContentFile {
-                                            isCriticalFile
-                                        }
                                     }
                                 }
                                 ... on MissingHeadReport {
@@ -94,9 +91,6 @@ query_files_connection = """
                                             partials
                                             lines
                                             percentCovered
-                                            ... on PathContentFile {
-                                                isCriticalFile
-                                            }
                                         }
                                     }
                                     totalCount
@@ -390,7 +384,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentFile",
@@ -401,7 +394,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                 ],
                             }
@@ -449,7 +441,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentDir",
@@ -504,7 +495,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentFile",
@@ -515,7 +505,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                 ],
                             }
@@ -557,7 +546,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentFile",
@@ -568,7 +556,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentFile",
@@ -579,7 +566,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentFile",
@@ -590,7 +576,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentFile",
@@ -601,7 +586,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                 ],
                             }
@@ -1165,7 +1149,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentFile",
@@ -1176,7 +1159,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                         "partials": 0,
                                         "lines": 10,
                                         "percentCovered": 80.0,
-                                        "isCriticalFile": False,
                                     },
                                     {
                                         "__typename": "PathContentDir",
@@ -1232,7 +1214,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                             "partials": 0,
                                             "lines": 10,
                                             "percentCovered": 80.0,
-                                            "isCriticalFile": False,
                                         },
                                     },
                                     {
@@ -1246,7 +1227,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                             "partials": 0,
                                             "lines": 10,
                                             "percentCovered": 80.0,
-                                            "isCriticalFile": False,
                                         },
                                     },
                                 ],
@@ -1492,7 +1472,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                             "partials": 0,
                                             "lines": 10,
                                             "percentCovered": 80.0,
-                                            "isCriticalFile": False,
                                         },
                                     },
                                     {
@@ -1506,7 +1485,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                             "partials": 0,
                                             "lines": 10,
                                             "percentCovered": 80.0,
-                                            "isCriticalFile": False,
                                         },
                                     },
                                     {
@@ -1520,7 +1498,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                             "partials": 0,
                                             "lines": 10,
                                             "percentCovered": 80.0,
-                                            "isCriticalFile": False,
                                         },
                                     },
                                     {
@@ -1534,7 +1511,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                             "partials": 0,
                                             "lines": 10,
                                             "percentCovered": 80.0,
-                                            "isCriticalFile": False,
                                         },
                                     },
                                     {
@@ -1548,7 +1524,6 @@ class TestBranch(GraphQLTestHelper, TransactionTestCase):
                                             "partials": 0,
                                             "lines": 10,
                                             "percentCovered": 80.0,
-                                            "isCriticalFile": False,
                                         },
                                     },
                                 ],

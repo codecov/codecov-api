@@ -60,7 +60,6 @@ default_fields = """
     uploadToken
     defaultBranch
     author { username }
-    profilingToken
     graphToken
     yaml
     isATSConfigured
@@ -136,7 +135,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "main",
             "author": {"username": "codecov-user"},
-            "profilingToken": "",
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,
@@ -198,7 +196,6 @@ class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
             "uploadToken": repo.upload_token,
             "defaultBranch": "main",
             "author": {"username": "codecov-user"},
-            "profilingToken": "",
             "graphToken": graphToken,
             "yaml": "test: test\n",
             "isATSConfigured": False,

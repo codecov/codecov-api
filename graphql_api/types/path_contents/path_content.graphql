@@ -16,7 +16,6 @@ type PathContentFile implements PathContent {
   partials: Int!
   lines: Int!
   percentCovered: Float!
-  isCriticalFile: Boolean! @deprecated(reason: "Impact Analysis is deprecated.")
 }
 
 type PathContentDir implements PathContent {
@@ -45,14 +44,14 @@ type PathContentConnection {
 }
 
 union PathContentsResult =
-  PathContents
+    PathContents
   | MissingHeadReport
   | MissingCoverage
   | UnknownPath
   | UnknownFlags
 
 union DeprecatedPathContentsResult =
-  PathContentConnection
+    PathContentConnection
   | MissingHeadReport
   | MissingCoverage
   | UnknownPath

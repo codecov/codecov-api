@@ -2,7 +2,6 @@ from typing import List, Union
 
 from ariadne import InterfaceType, ObjectType, UnionType
 
-from codecov.db import sync_to_async
 from graphql_api.helpers.connection import (
     ArrayConnection,
     Connection,
@@ -57,13 +56,6 @@ def resolve_lines(item: Union[File, Dir], info) -> int:
 @path_content_bindable.field("percentCovered")
 def resolve_percent_covered(item: Union[File, Dir], info) -> float:
     return item.coverage
-
-
-@path_content_file_bindable.field("isCriticalFile")
-@sync_to_async
-def resolve_is_critical_file(item: Union[File, Dir], info) -> bool:
-    """DEPRECATED. Returning dummy value"""
-    return False
 
 
 path_contents_result_bindable = UnionType("PathContentsResult")
