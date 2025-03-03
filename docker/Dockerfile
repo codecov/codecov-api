@@ -6,10 +6,10 @@ ARG BERGLAS_VERSION=2.0.6
 FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 
 FROM $REQUIREMENTS_IMAGE as app
-COPY . /app/apps/codecov-api
+
 WORKDIR /app/apps/codecov-api
-RUN pip install setuptools==71.1.0
-RUN python manage.py collectstatic --no-input
+ADD . /app/apps/codecov-api
+
 
 FROM app as local
 
@@ -20,7 +20,6 @@ COPY --chmod=755 --from=berglas /bin/berglas /usr/local/bin/berglas
 
 FROM app as self-hosted
 
-RUN pip uninstall -y typing
 # set settings module
 ENV DJANGO_SETTINGS_MODULE="codecov.settings_enterprise"
 # Remove the settings dev and enterprise files.

@@ -21,25 +21,26 @@ permissions:
 jobs:
   lint:
     name: Run Lint
-    uses: codecov/gha-workflows/.github/workflows/lint.yml@v1.2.26
+    uses: codecov/gha-workflows/.github/workflows/lint.yml@v1.2.33
 
   build:
     name: Build API
-    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.2.26
+    uses: codecov/gha-workflows/.github/workflows/build-app.yml@v1.2.33
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+      cache_file: "uv.lock"
 
   codecovstartup:
     name: Codecov Startup
     needs: build
-    uses: codecov/gha-workflows/.github/workflows/codecov-startup.yml@v1.2.26
+    uses: codecov/gha-workflows/.github/workflows/codecov-startup.yml@v1.2.33
     secrets: inherit
 
   test:
     name: Test
     needs: [build]
-    uses: codecov/gha-workflows/.github/workflows/run-tests-split.yml@v1.2.30
+    uses: codecov/gha-workflows/.github/workflows/run-tests-split.yml@v1.2.33
     secrets: inherit
     with:
       run_integration: false
@@ -48,16 +49,17 @@ jobs:
   build-self-hosted:
     name: Build Self Hosted API
     needs: [build, test]
-    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.2.27
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.2.33
     secrets: inherit
     with:
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+      cache_file: "uv.lock"
 
   staging:
     name: Push Staging Image
     needs: [build, test]
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/staging' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.27
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.33
     secrets: inherit
     with:
       environment: staging
@@ -67,7 +69,7 @@ jobs:
     name: Push Production Image
     needs: [build, test]
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.27
+    uses: codecov/gha-workflows/.github/workflows/push-env.yml@v1.2.33
     secrets: inherit
     with:
       environment: production
@@ -78,7 +80,8 @@ jobs:
     needs: [build-self-hosted, test]
     secrets: inherit
     if: ${{ github.event_name == 'push' && github.event.ref == 'refs/heads/main' && github.repository_owner == 'codecov' }}
-    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.2.27
+    uses: codecov/gha-workflows/.github/workflows/self-hosted.yml@v1.2.33
     with:
       push_rolling: true
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
+      cache_file: "uv.lock"
