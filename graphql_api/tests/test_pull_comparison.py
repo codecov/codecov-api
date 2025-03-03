@@ -57,6 +57,13 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
         self.head_report = self.head_report_patcher.start()
         self.head_report.return_value = None
         self.addCleanup(self.head_report_patcher.stop)
+        self.head_report_without_diff_patcher = patch(
+            "services.comparison.Comparison.head_report_without_applied_diff",
+            new_callable=PropertyMock,
+        )
+        self.head_report_without_diff = self.head_report_without_diff_patcher.start()
+        self.head_report_without_diff.return_value = None
+        self.addCleanup(self.head_report_without_diff_patcher.stop)
         self.base_report_patcher = patch(
             "services.comparison.Comparison.base_report", new_callable=PropertyMock
         )
@@ -504,146 +511,6 @@ class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
                     ]
                 },
             },
-        }
-
-    @patch(
-        "services.comparison.ComparisonReport.files",
-        new_callable=PropertyMock,
-    )
-    def test_pull_comparison_is_critical_file(self, files_mock):
-        TestImpactedFile = namedtuple("TestImpactedFile", ["base_name", "head_name"])
-
-        files_mock.return_value = [
-            TestImpactedFile(
-                base_name="foo.py",
-                head_name="bar.py",
-            ),
-            TestImpactedFile(
-                base_name=None,
-                head_name="baz.py",
-            ),
-        ]
-
-        query = """
-            pullId
-            compareWithBase {
-                ... on Comparison {
-                    impactedFiles(filters:{}) {
-                        ... on ImpactedFiles {
-                            results {
-                                baseName
-                                headName
-                                isCriticalFile
-                            }
-                        }
-                        ... on UnknownFlags {
-                            message
-                        }
-                    }
-                }
-            }
-        """
-
-        res = self._request(query)
-        assert res == {
-            "pullId": self.pull.pullid,
-            "compareWithBase": {
-                "impactedFiles": {
-                    "results": [
-                        {
-                            "baseName": "foo.py",
-                            "headName": "bar.py",
-                            "isCriticalFile": False,
-                        },
-                        {
-                            "baseName": None,
-                            "headName": "baz.py",
-                            "isCriticalFile": False,
-                        },
-                    ]
-                },
-            },
-        }
-
-    @patch(
-        "services.comparison.ComparisonReport.files",
-        new_callable=PropertyMock,
-    )
-    def test_pull_comparison_is_critical_file_returns_false_through_repositories(
-        self, files_mock
-    ):
-        TestImpactedFile = namedtuple("TestImpactedFile", ["base_name", "head_name"])
-
-        files_mock.return_value = [
-            TestImpactedFile(
-                base_name="foo.py",
-                head_name="bar.py",
-            ),
-        ]
-
-        query = """
-            query {
-                me {
-                    owner {
-                        repositories (first: 1) {
-                            edges {
-                                node {
-                                    pull (id: %s) {
-                                        pullId
-                                        compareWithBase {
-                                            ... on Comparison {
-                                                impactedFiles(filters:{}) {
-                                                    ... on ImpactedFiles {
-                                                        results {
-                                                            baseName
-                                                            headName
-                                                            isCriticalFile
-                                                        }
-                                                    }
-                                                    ... on UnknownFlags {
-                                                        message
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        """
-
-        data = self.gql_request(query % (self.pull.pullid), owner=self.owner)
-
-        assert data == {
-            "me": {
-                "owner": {
-                    "repositories": {
-                        "edges": [
-                            {
-                                "node": {
-                                    "pull": {
-                                        "pullId": 2,
-                                        "compareWithBase": {
-                                            "impactedFiles": {
-                                                "results": [
-                                                    {
-                                                        "baseName": "foo.py",
-                                                        "headName": "bar.py",
-                                                        "isCriticalFile": False,
-                                                    }
-                                                ]
-                                            },
-                                        },
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
         }
 
     @patch(

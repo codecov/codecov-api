@@ -5,7 +5,6 @@ type ImpactedFile {
   isNewFile: Boolean!
   isRenamedFile: Boolean!
   isDeletedFile: Boolean!
-  isCriticalFile: Boolean! @deprecated(reason: "Impact Analysis is deprecated.")
   baseCoverage: CoverageTotals
   headCoverage: CoverageTotals
   patchCoverage: CoverageTotals

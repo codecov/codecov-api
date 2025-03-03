@@ -133,14 +133,6 @@ def resolve_misses_count(impacted_file: ImpactedFile, info) -> int:
     return impacted_file.misses_count
 
 
-@sentry_sdk.trace
-@impacted_file_bindable.field("isCriticalFile")
-@sync_to_async
-def resolve_is_critical_file(impacted_file: ImpactedFile, info) -> bool:
-    """DEPRECATED. Returning False for all responses."""
-    return False
-
-
 impacted_files_result_bindable = UnionType("ImpactedFilesResult")
 
 

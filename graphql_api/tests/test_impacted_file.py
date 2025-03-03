@@ -46,7 +46,6 @@ query ImpactedFiles(
                                         isNewFile
                                         isRenamedFile
                                         isDeletedFile
-                                        isCriticalFile
                                         baseCoverage {
                                             percentCovered
                                         }
@@ -422,7 +421,6 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                         "isNewFile": False,
                                         "isRenamedFile": False,
                                         "isDeletedFile": False,
-                                        "isCriticalFile": False,
                                         "baseCoverage": {
                                             "percentCovered": 41.666666666666664
                                         },
@@ -440,7 +438,6 @@ class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
                                         "isNewFile": False,
                                         "isRenamedFile": False,
                                         "isDeletedFile": False,
-                                        "isCriticalFile": False,
                                         "baseCoverage": {
                                             "percentCovered": 41.666666666666664
                                         },
