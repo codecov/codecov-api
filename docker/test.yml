@@ -3,6 +3,8 @@ setup:
   debug: no
   loglvl: INFO
   encryption_secret: "zp^P9*i8aR3"
+  timeseries:
+    enabled: true
   okta:
     iss: "https://example.okta.com"
   http:
@@ -11,18 +13,6 @@ setup:
     timeouts:
       connect: 10
       receive: 15
-  tasks:
-    celery:
-      soft_timelimit: 200
-      hard_timelimit: 240
-    upload:
-      queue: uploads
-  cache:
-    yaml: 600 # 10 minutes
-    tree: 600 # 10 minutes
-    diff: 300 # 5 minutes
-    chunks: 300 # 5 minutes
-    uploads: 86400 # 1 day
 
 services:
   database_url: postgres://postgres:password@postgres:5432/postgres
