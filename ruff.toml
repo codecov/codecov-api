@@ -53,7 +53,7 @@ ignore = ["F405", "F403", "E501", "E712", "C408"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 # The preferred method (for now) w.r.t. fixable rules is to manually update the makefile
-# with --fix and re-run 'make lint'
+# with --fix and re-run 'make lint_local'
 fixable = ["ALL"]
 unfixable = []
 
