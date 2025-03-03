@@ -1,9 +1,9 @@
 import pytest
+from asgiref.sync import sync_to_async
 from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
 from codecov.commands.exceptions import Unauthenticated
-from codecov.db import sync_to_async
 from codecov_auth.models import DjangoSession, Session
 from codecov_auth.tests.factories import DjangoSessionFactory
 

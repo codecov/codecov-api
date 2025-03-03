@@ -1,8 +1,8 @@
 from typing import List, Union
 
 from ariadne import InterfaceType, ObjectType, UnionType
+from asgiref.sync import sync_to_async
 
-from codecov.db import sync_to_async
 from graphql_api.helpers.connection import (
     ArrayConnection,
     Connection,

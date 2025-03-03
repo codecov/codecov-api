@@ -3,10 +3,10 @@ from typing import List, Union
 
 import sentry_sdk
 from ariadne import ObjectType, UnionType
+from asgiref.sync import sync_to_async
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
-from codecov.db import sync_to_async
 from graphql_api.types.errors import ProviderError, UnknownPath
 from graphql_api.types.errors.errors import UnknownFlags
 from graphql_api.types.segment_comparison.segment_comparison import SegmentComparisons

@@ -1,9 +1,9 @@
 from typing import List, Optional
 
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from shared.plan.service import PlanService
 
-from codecov.db import sync_to_async
 from codecov_auth.models import Plan
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 

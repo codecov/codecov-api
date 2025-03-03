@@ -5,10 +5,10 @@ from typing import Any, Dict, List, Optional
 import shared.rate_limits as rate_limits
 import yaml
 from ariadne import ObjectType, UnionType
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from graphql.type.definition import GraphQLResolveInfo
 
-from codecov.db import sync_to_async
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE, Owner
 from core.models import Branch, Commit, Pull, Repository
 from graphql_api.actions.commits import repo_commits

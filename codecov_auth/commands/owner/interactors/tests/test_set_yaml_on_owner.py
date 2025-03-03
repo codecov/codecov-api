@@ -1,4 +1,5 @@
 import pytest
+from asgiref.sync import sync_to_async
 from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
@@ -8,7 +9,6 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-from codecov.db import sync_to_async
 
 from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 
