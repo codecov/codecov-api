@@ -33,14 +33,14 @@ services:
           size: 2048M
 
   timescale:
-    image: timescale/timescaledb:latest-pg14
+    image: timescale/timescaledb-ha:pg14-latest
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_PASSWORD=password
     volumes:
       - type: tmpfs
-        target: /var/lib/postgresql/data
+        target: /home/postgres/pgdata/data
         tmpfs:
           size: 2048M
 
