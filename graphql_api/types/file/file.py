@@ -3,7 +3,6 @@ import hashlib
 from ariadne import ObjectType
 from shared.utils.merge import LineType, line_type
 
-from codecov.db import sync_to_async
 from graphql_api.types.enums import CoverageLine
 
 file_bindable = ObjectType("File")
@@ -43,13 +42,6 @@ def resolve_coverage(data, info):
 def resolve_totals(data, info):
     file_report = data.get("file_report")
     return file_report.totals if file_report else None
-
-
-@file_bindable.field("isCriticalFile")
-@sync_to_async
-def resolve_is_critical_file(data, info):
-    """DEPRECATED. Returning dummy value"""
-    return False
 
 
 @file_bindable.field("hashedPath")

@@ -529,7 +529,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageAnalytics { coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } } }'
+            % 'coverageAnalytics { coverageFile(path: "path") { hashedPath, content, coverage { line,coverage }, totals { percentCovered } } }'
         )
         variables = {
             "org": self.org.username,
@@ -556,7 +556,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
-        assert coverageFile["isCriticalFile"] == False
         assert coverageFile["hashedPath"] == hashlib.md5("path".encode()).hexdigest()
 
     @patch("services.components.component_filtered_report")
@@ -609,7 +608,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         commit(id: $commit) {
                             coverageAnalytics {
                                 coverageFile(path: "path", components: $components) {
-                                    hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered }
+                                    hashedPath, content, coverage { line,coverage }, totals { percentCovered }
                                 }
                             }
                         }
@@ -634,7 +633,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                     {"coverage": "M", "line": 2},
                                 ],
                                 "hashedPath": "d6fe1d0be6347b8ef2427fa629c04485",
-                                "isCriticalFile": False,
                                 "totals": {"percentCovered": 83.0},
                             }
                         }
@@ -652,7 +650,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageAnalytics { coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } } }'
+            % 'coverageAnalytics { coverageFile(path: "path") { content, coverage { line,coverage }, totals { percentCovered } } }'
         )
         variables = {
             "org": self.org.username,
@@ -671,7 +669,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
-        assert coverageFile["isCriticalFile"] == False
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_flag_names(self, report_mock):
@@ -2627,7 +2624,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageAnalytics { coverageFile(path: "path") { hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } } }'
+            % 'coverageAnalytics { coverageFile(path: "path") { hashedPath, content, coverage { line,coverage }, totals { percentCovered } } }'
         )
         variables = {
             "org": self.org.username,
@@ -2654,7 +2651,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
-        assert coverageFile["isCriticalFile"] == False
         assert coverageFile["hashedPath"] == hashlib.md5("path".encode()).hexdigest()
 
     @patch("services.components.component_filtered_report")
@@ -2707,7 +2703,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                         commit(id: $commit) {
                             coverageAnalytics {
                                 coverageFile(path: "path", components: $components) {
-                                    hashedPath, content, isCriticalFile, coverage { line,coverage }, totals { percentCovered }
+                                    hashedPath, content, coverage { line,coverage }, totals { percentCovered }
                                 }
                             }
                         }
@@ -2732,7 +2728,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
                                     {"coverage": "M", "line": 2},
                                 ],
                                 "hashedPath": "d6fe1d0be6347b8ef2427fa629c04485",
-                                "isCriticalFile": False,
                                 "totals": {"percentCovered": 83.0},
                             }
                         }
@@ -2750,7 +2745,7 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
     ):
         query = (
             query_commit
-            % 'coverageAnalytics { coverageFile(path: "path") { content, isCriticalFile, coverage { line,coverage }, totals { percentCovered } }}'
+            % 'coverageAnalytics { coverageFile(path: "path") { content, coverage { line,coverage }, totals { percentCovered } }}'
         )
         variables = {
             "org": self.org.username,
@@ -2769,7 +2764,6 @@ class TestCommit(GraphQLTestHelper, TransactionTestCase):
         assert coverageFile["content"] == fake_coverage["content"]
         assert coverageFile["coverage"] == fake_coverage["coverage"]
         assert coverageFile["totals"] == fake_coverage["totals"]
-        assert coverageFile["isCriticalFile"] == False
 
     @patch("shared.reports.api_report_service.build_report_from_commit")
     def test_coverage_flag_names(self, report_mock):
