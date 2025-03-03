@@ -1,5 +1,5 @@
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitErrorFactory,
     CommitFactory,
@@ -11,7 +11,7 @@ from graphql_api.types.enums import CommitErrorGeneralType
 from ..get_commit_errors import GetCommitErrorsInteractor
 
 
-class GetCommitErrorsInteractorTest(TransactionTestCase):
+class GetCommitErrorsInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory()
         self.commit = CommitFactory()

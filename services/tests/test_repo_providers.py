@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from django.conf import settings
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.torngit import Bitbucket, Github, Gitlab
 
@@ -114,7 +114,7 @@ def test_token_refresh_callback_none_cases(should_have_owner, service, db):
     assert get_token_refresh_callback(owner, service) is None
 
 
-class TestRepoProviderService(TransactionTestCase):
+class TestRepoProviderService(TestCase):
     def setUp(self):
         self.repo_gh = RepositoryFactory.create(
             author__unencrypted_oauth_token="testaaft3ituvli790m1yajovjv5eg0r4j0264iw",

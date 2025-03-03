@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -46,7 +46,7 @@ mutation UpdateBundleCacheConfig(
 """
 
 
-class UpdateBundleCacheConfigTestCase(GraphQLTestHelper, TransactionTestCase):
+class UpdateBundleCacheConfigTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory()
 

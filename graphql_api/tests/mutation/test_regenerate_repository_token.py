@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     RepositoryFactory,
@@ -22,7 +22,7 @@ mutation($input: RegenerateRepositoryTokenInput!) {
 """
 
 
-class RegeneratRepositoryTokenTests(GraphQLTestHelper, TransactionTestCase):
+class RegeneratRepositoryTokenTests(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", active=True)

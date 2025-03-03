@@ -1,5 +1,5 @@
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import CommitFactory
 
 from reports.tests.factories import UploadFactory
@@ -7,7 +7,7 @@ from reports.tests.factories import UploadFactory
 from ..get_uploads_number import GetUploadsNumberInteractor
 
 
-class GetUploadsNumberInteractorTest(TransactionTestCase):
+class GetUploadsNumberInteractorTest(TestCase):
     def setUp(self):
         self.commit_with_no_upload = CommitFactory()
         self.upload_one = UploadFactory()

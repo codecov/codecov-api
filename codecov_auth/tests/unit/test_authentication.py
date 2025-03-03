@@ -4,7 +4,7 @@ from unittest.mock import call, patch
 
 import pytest
 from django.conf import settings
-from django.test import TestCase, TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.urls import ResolverMatch
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.test import APIRequestFactory
@@ -178,7 +178,7 @@ class InternalTokenAuthenticationTests(TestCase):
             authenticator.authenticate(request)
 
 
-class ImpersonationTests(TransactionTestCase):
+class ImpersonationTests(TestCase):
     def setUp(self):
         self.owner_to_impersonate = OwnerFactory(
             username="impersonateme", service="github", user=UserFactory(is_staff=False)

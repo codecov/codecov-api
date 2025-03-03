@@ -2,7 +2,7 @@ import datetime
 from http.cookies import SimpleCookie
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
@@ -19,7 +19,7 @@ from codecov_auth.models import OwnerProfile
 from .helper import GraphQLTestHelper, paginate_connection
 
 
-class ArianeTestCase(GraphQLTestHelper, TransactionTestCase):
+class ArianeTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         random_owner = OwnerFactory(username="random-user")

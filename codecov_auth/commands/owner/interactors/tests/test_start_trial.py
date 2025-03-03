@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from freezegun import freeze_time
 from shared.django_apps.codecov.commands.exceptions import ValidationError
 from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
@@ -22,7 +22,7 @@ from codecov_auth.models import Owner
 from ..start_trial import StartTrialInteractor
 
 
-class StartTrialInteractorTest(TransactionTestCase):
+class StartTrialInteractorTest(TestCase):
     def setUp(self):
         self.tier = TierFactory(tier_name=TierName.BASIC.value)
         self.plan = PlanFactory(tier=self.tier, is_active=True)

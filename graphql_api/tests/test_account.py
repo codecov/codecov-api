@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     AccountsUsersFactory,
@@ -9,7 +9,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
 from .helper import GraphQLTestHelper
 
 
-class AccountTestCase(GraphQLTestHelper, TransactionTestCase):
+class AccountTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.account = AccountFactory(
             name="Test Account", plan_seat_count=10, free_seat_count=1

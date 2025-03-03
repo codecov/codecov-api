@@ -1,6 +1,6 @@
 from collections import Counter
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
@@ -12,7 +12,7 @@ from reports.models import CommitReport
 from reports.tests.factories import CommitReportFactory, UploadFactory
 
 
-class RepoCommitsTests(TransactionTestCase):
+class RepoCommitsTests(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)

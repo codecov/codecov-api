@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import AccountFactory, OwnerFactory
 
 from codecov_auth.models import OktaSettings
@@ -15,7 +15,7 @@ mutation($input: SaveOktaConfigInput!) {
 """
 
 
-class SaveOktaConfigTestCase(GraphQLTestHelper, TransactionTestCase):
+class SaveOktaConfigTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.current_user = OwnerFactory(username="codecov-user")
         self.owner = OwnerFactory(

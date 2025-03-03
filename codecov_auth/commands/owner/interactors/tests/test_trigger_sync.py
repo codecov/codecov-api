@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated
@@ -9,7 +9,7 @@ from codecov.commands.exceptions import Unauthenticated
 from ..trigger_sync import TriggerSyncInteractor
 
 
-class IsSyncingInteractorTest(TransactionTestCase):
+class IsSyncingInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
 

@@ -1,12 +1,12 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from ..pull import PullCommands
 
 
-class PullCommandsTest(TransactionTestCase):
+class PullCommandsTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.repository = RepositoryFactory()

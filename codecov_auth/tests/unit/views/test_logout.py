@@ -1,10 +1,10 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from utils.test_utils import Client
 
 
-class LogoutViewTest(TransactionTestCase):
+class LogoutViewTest(TestCase):
     def _get(self, url):
         return self.client.get(url, content_type="application/json")
 

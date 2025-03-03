@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
 from codecov.commands.exceptions import Unauthenticated
@@ -15,7 +15,7 @@ def get_session(id):
     return Session.objects.get(sessionid=id)
 
 
-class DeleteSessionInteractorTest(TransactionTestCase):
+class DeleteSessionInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.django_session = DjangoSessionFactory()

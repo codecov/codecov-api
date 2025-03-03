@@ -1,7 +1,7 @@
 from collections import namedtuple
 from unittest.mock import PropertyMock, patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitWithReportFactory,
     OwnerFactory,
@@ -41,7 +41,7 @@ MockLineComparison = namedtuple(
 )
 
 
-class TestPullComparison(TransactionTestCase, GraphQLTestHelper):
+class TestPullComparison(TestCase, GraphQLTestHelper):
     def _request(self, query):
         data = self.gql_request(
             base_query % (self.repository.name, self.pull.pullid, query),

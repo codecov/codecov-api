@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
@@ -8,7 +8,7 @@ from shared.django_apps.codecov_auth.tests.factories import (
 from .helper import GraphQLTestHelper
 
 
-class OktaConfigTestCase(GraphQLTestHelper, TransactionTestCase):
+class OktaConfigTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.account = AccountFactory(name="Test Account")
         self.owner = OwnerFactory(

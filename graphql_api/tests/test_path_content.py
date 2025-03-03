@@ -1,6 +1,6 @@
 from unittest.mock import Mock, PropertyMock, patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import CommitFactory
 from shared.reports.resources import Report, ReportFile
 from shared.reports.types import ReportLine, ReportTotals
@@ -55,7 +55,7 @@ class TestResolvePathContent:
         assert type is None
 
 
-class TestPathContents(TransactionTestCase):
+class TestPathContents(TestCase):
     def setUp(self):
         request = Mock()
         request.user = Mock()

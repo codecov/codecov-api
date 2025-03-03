@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from django.forms import ValidationError
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
@@ -37,7 +37,7 @@ def test_token_is_deleted_when_changing_user_plan(mocked_org_can_have_upload_tok
     assert OrganizationLevelToken.objects.filter(owner=owner).count() == 0
 
 
-class TestOrgWideUploadTokenService(TransactionTestCase):
+class TestOrgWideUploadTokenService(TestCase):
     def setUp(self):
         self.enterprise_tier = TierFactory(tier_name=TierName.ENTERPRISE.value)
         self.enterprise_plan = PlanFactory(

@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
@@ -19,7 +19,7 @@ from reports.tests.factories import (
 )
 
 
-class GetLatestUploadErrorInteractorTest(TransactionTestCase):
+class GetLatestUploadErrorInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org)

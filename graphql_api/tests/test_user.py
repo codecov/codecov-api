@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from prometheus_client import REGISTRY
@@ -13,7 +13,7 @@ from .helper import GraphQLTestHelper
 
 
 @freeze_time("2023-06-19")
-class UserTestCase(GraphQLTestHelper, TransactionTestCase):
+class UserTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.service_id = 1
         self.user = OwnerFactory(
