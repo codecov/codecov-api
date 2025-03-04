@@ -87,22 +87,19 @@ jobs:
       cache_file: "uv.lock"
 
   upload-overwatch:
-    runs-on: ubuntu-latest
     steps:
       - name: Install Static Analysis Tools
         run: |
           pip install mypy==1.15.0
           pip install ruff==0.3.3
-      - name: Install OpenSSL 1.1
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget
-          wget http://security.ubuntu.com/ubuntu/pool/main/o/openssl1.1/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
       - name: Install Overwatch CLI
         run: |
           curl -o overwatch-cli https://overwatch.codecov.dev/linux/cli
           chmod +x overwatch-cli
       - name: Run Overwatch CLI
         run: |
-          ./overwatch-cli
+          ./overwatch-cli \
+            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
+            --organization-slug codecov \
+            python \
+            --python-path $(which python3)
