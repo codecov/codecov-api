@@ -66,6 +66,16 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             organizations=[self.org.ownerid], service=self.org.service
         )
         self.random_owner = OwnerFactory(service=self.org.service)
+        self.codecov_bot = OwnerFactory(
+            username="codecov",
+            organizations=[self.org.ownerid],
+            private_access=True,
+        )
+        self.codecov2_bot = OwnerFactory(
+            username="codecov-2",
+            organizations=[self.org.ownerid],
+            private_access=True,
+        )
 
     # helper to execute the interactor
     def execute(self, owner, *args):
@@ -159,6 +169,7 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
 
     async def test_user_changes_yaml_bot_and_branch(self):
         await sync_to_async(RepositoryFactory)(author=self.org, branch="fake-branch")
+        assert self.current_owner.bot_id is None
         owner_updated = await self.execute(
             self.current_owner, self.org.username, yaml_with_changed_branch_and_bot
         )
@@ -168,3 +179,4 @@ class SetYamlOnOwnerInteractorTest(TransactionTestCase):
             "codecov": {"branch": "test-2", "bot": "codecov-2"},
             "to_string": "\ncodecov:\n  branch: 'test-2'\n  bot: 'codecov-2'\n",
         }
+        assert owner_updated.bot_id == self.codecov2_bot.ownerid
