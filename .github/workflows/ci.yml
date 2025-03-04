@@ -93,6 +93,10 @@ jobs:
         run: |
           pip install mypy==1.15.0
           pip install ruff==0.3.3
+      - name: Install OpenSSL 1.1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl1.1
       - name: Install Overwatch CLI
         run: |
           curl -o overwatch-cli https://overwatch.codecov.dev/linux/cli
