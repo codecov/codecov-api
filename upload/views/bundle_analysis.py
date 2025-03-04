@@ -11,7 +11,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis.storage import StoragePaths, get_bucket_name
-from shared.events.amplitude import UNKNOWN_USER_OWNERID, AmplitudeEventPublisher
 from shared.metrics import Counter, inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -220,19 +219,5 @@ class BundleAnalysisView(APIView, ShelterMixin):
                             measurement_type=measurement_type,
                         ),
                     )
-
-        AmplitudeEventPublisher().publish(
-            "Upload Sent",
-            {
-                "user_ownerid": commit.author.ownerid
-                if commit.author
-                else UNKNOWN_USER_OWNERID,
-                "ownerid": repo.author.ownerid,
-                "repoid": repo.repoid,
-                "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
-                "pullid": commit.pullid,
-                "upload_type": "Bundle",
-            },
-        )
 
         return Response({"url": url}, status=201)
