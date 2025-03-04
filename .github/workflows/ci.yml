@@ -106,10 +106,7 @@ jobs:
       - name: Run Overwatch CLI
         run: |
           ./overwatch-cli \
-            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
+            --auth-token ${{ secrets.CODECOV_SENTRY_RELEASE_TOKEN }} \
             --organization-slug codecov \
             python \
             --python-path $(which python3)
-
-      - name: Run Overwatch CLI
-        run: cli --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} python
