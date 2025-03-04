@@ -106,7 +106,7 @@ jobs:
           chmod +x overwatch-cli
       - name: Print Current Working Directory
         run: pwd
-      - name: List Contents of Current Working Directory
+      - name: List Contents of Current Working Directory 2
         run: ls -la
       - name: List Directories Under Root
         run: ls -d /*/
