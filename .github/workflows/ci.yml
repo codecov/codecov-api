@@ -101,6 +101,4 @@ jobs:
         run: |
           ./overwatch-cli \
             --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
-            --organization-slug codecov \
-            python \
-            --python-path $(which python3)
+            --organization-slug codecov
