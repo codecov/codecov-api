@@ -88,9 +88,6 @@ jobs:
 
   upload-overwatch:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ inputs.working_directory }}
     steps:
       - name: Install Static Analysis Tools
         run: |
@@ -119,3 +116,18 @@ jobs:
             --organization-slug codecov \
             python \
             --python-path $(which python3)
+
+  patch-typing-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install mypy==1.13.0
+      - run: mypy . --ignore-missing-imports ${{ inputs.extra_config }}
