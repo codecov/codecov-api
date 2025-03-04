@@ -99,4 +99,4 @@ jobs:
           chmod +x overwatch-cli
       - name: Run Overwatch CLI
         run: |
-          ./overwatch-cli --help
+          ./overwatch-cli
