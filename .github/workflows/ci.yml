@@ -103,6 +103,10 @@ jobs:
         run: |
           curl -o overwatch-cli https://overwatch.codecov.dev/linux/cli
           chmod +x overwatch-cli
+      - name: Print Current Working Directory
+        run: pwd
+      - name: List Contents of Current Working Directory
+        run: ls -la
       - name: Run Overwatch CLI
         run: |
           ./overwatch-cli \
