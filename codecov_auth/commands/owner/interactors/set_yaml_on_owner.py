@@ -68,9 +68,9 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
         old_yaml_bot = old_yaml and old_yaml.get("codecov", {}).get("bot")
         new_yaml_bot = new_yaml and new_yaml.get("codecov", {}).get("bot")
 
-        # Update owner's bot column if bot is updated in yaml
-        if new_yaml_bot != old_yaml_bot:
-            new_bot = (
+        # Update owner's bot column if bot is updated in yaml or if bot is not configured.
+        if new_yaml_bot != old_yaml_bot or self.owner.bot is None:
+            new_bot_id = (
                 get_ownerid_if_member(
                     service=self.owner.service,
                     owner_username=new_yaml_bot,
@@ -79,7 +79,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
                 or old_yaml_bot
                 or None
             )
-            self.owner.bot = new_bot
+            self.owner.bot_id = new_bot_id
             self.owner.save()
 
     @sync_to_async
