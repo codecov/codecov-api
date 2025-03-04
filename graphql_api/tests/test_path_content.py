@@ -2,8 +2,8 @@ from unittest.mock import Mock, PropertyMock, patch
 
 from django.test import TransactionTestCase
 from shared.django_apps.core.tests.factories import CommitFactory
-from shared.reports.resources import Report, ReportFile, ReportLine
-from shared.reports.types import ReportTotals
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine, ReportTotals
 from shared.utils.sessions import Session
 
 from services.path import Dir, File

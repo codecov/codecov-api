@@ -173,6 +173,9 @@ class MockReport(object):
         for name in self.files:
             yield MockFile(name)
 
+    def get_flag_names(self):
+        return ["flag_a"]
+
     @property
     def flags(self):
         return {"flag-a": MockFlag()}
