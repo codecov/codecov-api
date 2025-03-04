@@ -127,4 +127,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install mypy==1.13.0
+      - name: Print Current Working Directory
+        run: pwd
+      - name: List Contents of Current Working Directory
+        run: ls -la
+      - name: List Directories Under Root
+        run: ls -d /*/
       - run: mypy .
