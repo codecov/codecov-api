@@ -119,9 +119,6 @@ jobs:
 
   patch-typing-check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ inputs.working_directory }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -130,4 +127,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install mypy==1.13.0
-      - run: mypy . --ignore-missing-imports ${{ inputs.extra_config }}
+      - run: mypy .
