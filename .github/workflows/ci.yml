@@ -107,6 +107,8 @@ jobs:
         run: pwd
       - name: List Contents of Current Working Directory
         run: ls -la
+      - name: List Directories Under Root
+        run: ls -d /*/
       - name: Run Overwatch CLI
         run: |
           ./overwatch-cli \
