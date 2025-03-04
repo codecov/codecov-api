@@ -85,3 +85,40 @@ jobs:
       push_rolling: true
       repo: ${{ vars.CODECOV_IMAGE_V2 || 'codecov/self-hosted-api' }}
       cache_file: "uv.lock"
+
+  upload-overwatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+      uses: actions/checkout@v4
+
+      - name: Install Requirements
+        run: |
+          pip install -r requirements.txt
+
+      - name: Install Overwatch CLI
+        run: |
+          curl -o cli https://overwatch.codecov.io/cli
+          chmod +x cli
+
+      - name: Run Overwatch CLI
+        run: cli --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} python
+
+  upload-overwatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Static Analysis Tools
+        run: |
+          pip install mypy==1.15.0
+          pip install ruff==0.3.3
+      - name: Install Overwatch CLI
+        run: |
+          curl -o overwatch-cli https://overwatch.codecov.dev/linux/cli
+          chmod +x overwatch-cli
+      - name: Run Overwatch CLI
+        run: |
+          ./overwatch-cli \
+            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
+            --organization-slug codecov \
+            python \
+            --python-path $(which python3)
