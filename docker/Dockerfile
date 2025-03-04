@@ -9,6 +9,7 @@ FROM $REQUIREMENTS_IMAGE as app
 
 WORKDIR /app/apps/codecov-api
 ADD . /app/apps/codecov-api
+RUN python manage.py collectstatic --no-input
 
 
 FROM app as local
