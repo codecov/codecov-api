@@ -7,8 +7,9 @@ FROM us-docker.pkg.dev/berglas/berglas/berglas:$BERGLAS_VERSION as berglas
 
 FROM $REQUIREMENTS_IMAGE as app
 
+COPY . /app/apps/codecov-api
 WORKDIR /app/apps/codecov-api
-ADD . /app/apps/codecov-api
+RUN python manage.py collectstatic --no-input
 
 
 FROM app as local
