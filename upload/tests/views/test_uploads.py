@@ -314,6 +314,9 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
         "upload.views.uploads.trigger_upload_task", return_value=True
     )
     analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
+    amplitude_mock = mocker.patch(
+        "shared.events.amplitude.AmplitudeEventPublisher.publish"
+    )
 
     repository = RepositoryFactory(
         name="the_repo",
@@ -431,6 +434,17 @@ def test_uploads_post_tokenless(db, mocker, mock_redis, private, branch, branch_
                 "uploader_type": "CLI",
             },
         )
+        amplitude_mock.assert_called_with(
+            "Upload Sent",
+            {
+                "user_ownerid": commit.author.ownerid,
+                "ownerid": commit.repository.author.ownerid,
+                "repoid": commit.repository.repoid,
+                "commitid": commit.id,
+                "pullid": commit.pullid,
+                "upload_type": "Coverage report",
+            },
+        )
     else:
         assert response.status_code == 401
         assert response.json().get("detail") == "Not valid tokenless upload"
@@ -459,6 +473,9 @@ def test_uploads_post_token_required_auth_check(
         "upload.views.uploads.trigger_upload_task", return_value=True
     )
     analytics_service_mock = mocker.patch("upload.views.uploads.AnalyticsService")
+    amplitude_mock = mocker.patch(
+        "shared.events.amplitude.AmplitudeEventPublisher.publish"
+    )
 
     repository = RepositoryFactory(
         name="the_repo",
@@ -583,11 +600,23 @@ def test_uploads_post_token_required_auth_check(
                 "uploader_type": "CLI",
             },
         )
+        amplitude_mock.assert_called_with(
+            "Upload Sent",
+            {
+                "user_ownerid": commit.author.ownerid,
+                "ownerid": commit.repository.author.ownerid,
+                "repoid": commit.repository.repoid,
+                "commitid": commit.id,
+                "pullid": commit.pullid,
+                "upload_type": "Coverage report",
+            },
+        )
     else:
         assert response.status_code == 401
         assert response.json().get("detail") == "Not valid tokenless upload"
 
 
+@patch("shared.events.amplitude.AmplitudeEventPublisher.publish")
 @patch("upload.views.uploads.AnalyticsService")
 @patch("upload.helpers.jwt.decode")
 @patch("upload.helpers.PyJWKClient")
@@ -595,6 +624,7 @@ def test_uploads_post_github_oidc_auth(
     mock_jwks_client,
     mock_jwt_decode,
     analytics_service_mock,
+    amplitude_mock,
     db,
     mocker,
     mock_redis,
@@ -715,6 +745,17 @@ def test_uploads_post_github_oidc_auth(
             "token": "oidc_token_upload",
             "version": "version",
             "uploader_type": "CLI",
+        },
+    )
+    amplitude_mock.assert_called_with(
+        "Upload Sent",
+        {
+            "user_ownerid": commit.author.ownerid,
+            "ownerid": commit.repository.author.ownerid,
+            "repoid": commit.repository.repoid,
+            "commitid": commit.id,
+            "pullid": commit.pullid,
+            "upload_type": "Coverage report",
         },
     )
 
