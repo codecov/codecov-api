@@ -99,6 +99,4 @@ jobs:
           chmod +x overwatch-cli
       - name: Run Overwatch CLI
         run: |
-          ./overwatch-cli \
-            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
-            --organization-slug codecov
+          ./overwatch-cli --help
