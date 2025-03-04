@@ -41,6 +41,7 @@ class FetchImpactedFiles(BaseInteractor):
         components_flags = []
 
         head_commit_report = comparison.head_report_without_applied_diff
+        report_flags = head_commit_report and head_commit_report.get_flag_names()
         if components_filter:
             all_components = components.commit_components(
                 comparison.head_commit, comparison.user
@@ -50,9 +51,7 @@ class FetchImpactedFiles(BaseInteractor):
             )
             for component in filtered_components:
                 components_paths.extend(component.paths)
-                components_flags.extend(
-                    component.get_matching_flags(head_commit_report.flags.keys())
-                )
+                components_flags.extend(component.get_matching_flags(report_flags))
 
         # Flags & Components intersection
         if components_flags:
@@ -62,7 +61,7 @@ class FetchImpactedFiles(BaseInteractor):
                 flags_filter = components_flags
 
         if flags_filter:
-            if set(flags_filter) & set(head_commit_report.flags):
+            if set(flags_filter) & set(report_flags):
                 files = files_belonging_to_flags(
                     commit_report=head_commit_report, flags=flags_filter
                 )

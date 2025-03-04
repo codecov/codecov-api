@@ -12,8 +12,8 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.reports.api_report_service import SerializableReport
-from shared.reports.resources import Report, ReportFile, ReportLine
-from shared.reports.types import ReportTotals
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine, ReportTotals
 from shared.utils.merge import LineType
 from shared.utils.sessions import Session
 

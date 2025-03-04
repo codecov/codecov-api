@@ -13,7 +13,8 @@ from shared.django_apps.core.tests.factories import (
     CommitFactory,
     RepositoryFactory,
 )
-from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine
 from shared.utils.sessions import Session
 
 from services.components import Component
