@@ -105,7 +105,7 @@ class ReportServiceTest(TestCase):
         }
 
         res = build_report(**data)
-        assert len(res._chunks) == 3
+        assert len(res.files) == 3
 
     @patch("shared.api_archive.archive.ArchiveService.read_chunks")
     def test_build_report_from_commit(self, read_chunks_mock):
@@ -123,7 +123,6 @@ class ReportServiceTest(TestCase):
         )
 
         res = build_report_from_commit(commit)
-        assert len(res._chunks) == 3
         assert len(res.files) == 3
         file_1, file_2, file_3 = sorted_files(res)
         assert file_1.name == "awesome/__init__.py"
@@ -187,7 +186,6 @@ class ReportServiceTest(TestCase):
         upload = commit.reports.first().sessions.first()
         upload.uploadleveltotals.delete()
         res = build_report_from_commit(commit)
-        assert len(res._chunks) == 3
         assert len(res.files) == 3
         file_1, file_2, file_3 = sorted_files(res)
         assert file_1.name == "awesome/__init__.py"
@@ -220,7 +218,6 @@ class ReportServiceTest(TestCase):
         commit = CommitWithReportFactory.create(message="aaaaa", commitid="abf6d4d")
         report = build_report_from_commit(commit)
         res = report.flags["integrations"].report
-        assert len(res.report._chunks) == 3
         assert len(res.files) == 3
         file_1, file_2, file_3 = sorted_files(res)
         assert file_1.name == "awesome/__init__.py"
@@ -260,7 +257,6 @@ class ReportServiceTest(TestCase):
 
         report = build_report_from_commit(commit)
         res = report.flags["integrations"].report
-        assert len(res.report._chunks) == 3
         assert len(res.files) == 3
         file_1, file_2, file_3 = sorted_files(res)
         assert file_1.name == "awesome/__init__.py"
@@ -345,7 +341,6 @@ class ReportServiceTest(TestCase):
         )
         res = build_report_from_commit(commit)
 
-        assert len(res._chunks) == 3
         assert len(res.files) == 3
         file_1, file_2, file_3 = sorted_files(res)
         assert file_1.name == "awesome/__init__.py"
