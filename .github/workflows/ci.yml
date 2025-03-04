@@ -87,6 +87,7 @@ jobs:
       cache_file: "uv.lock"
 
   upload-overwatch:
+    runs-on: ubuntu-latest
     steps:
       - name: Install Static Analysis Tools
         run: |
@@ -97,9 +98,4 @@ jobs:
           curl -o overwatch-cli https://overwatch.codecov.dev/linux/cli
           chmod +x overwatch-cli
       - name: Run Overwatch CLI
-        run: |
-          ./overwatch-cli \
-            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
-            --organization-slug codecov \
-            python \
-            --python-path $(which python3)
+        run: cli --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} python
