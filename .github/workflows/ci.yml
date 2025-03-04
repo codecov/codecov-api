@@ -115,17 +115,23 @@ jobs:
             python \
             --python-path $(which python3)
 
-  static-type-check:
-      runs-on: ubuntu-latest
-      defaults:
-        run:
-          working-directory: ${{ inputs.working_directory }}
-      steps:
-        - uses: actions/checkout@v4
-          with:
-            submodules: 'recursive'
-        - uses: actions/setup-python@v5
-          with:
-            python-version: "3.12"
-        - run: pip install mypy==1.13.0
-        - run: mypy .
+  mypy:
+    name: Run Mypy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mypy==1.15.0
+          # Add any other dependencies your project requires
+
+      - name: Run Mypy
+        run: mypy /app/apps/codecov-api
