@@ -26,7 +26,7 @@ def commit_components(commit: Commit, owner: Owner | None) -> List[Component]:
 
 
 def component_filtered_report(
-    report: Report, components: List[Component]
+    report: Report | None, components: List[Component]
 ) -> FilteredReport:
     """
     Filter a report such that the totals, etc. are only pertaining to the given component.
