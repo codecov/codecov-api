@@ -32,7 +32,7 @@ def component_filtered_report(
     Filter a report such that the totals, etc. are only pertaining to the given component.
     """
 
-    report.flags + "string"
+    report: Report | None = report
 
     flags, paths = [], []
     for component in components:
