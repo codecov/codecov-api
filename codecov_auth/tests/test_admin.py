@@ -1005,6 +1005,23 @@ class PlanAdminTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Monthly uploads limit cannot be negative.")
 
+    def test_export_to_csv(self):
+        response = self.client.post(
+            reverse("admin:codecov_auth_plan_changelist"),
+            data={"action": "export_to_csv", ACTION_CHECKBOX_NAME: [self.plan.pk]},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_export_to_csv_with_multiple_selected_items(self):
+        response = self.client.post(
+            reverse("admin:codecov_auth_plan_changelist"),
+            data={
+                "action": "export_to_csv",
+                ACTION_CHECKBOX_NAME: [self.plan.pk, self.tier.pk],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
 
 class TierAdminTest(TestCase):
     def setUp(self):
@@ -1049,3 +1066,27 @@ class TierAdminTest(TestCase):
             "private_repo_support",
         ]:
             self.assertContains(response, f"id_{field}")
+
+    def test_export_to_csv(self):
+        response = self.client.post(
+            reverse("admin:codecov_auth_tier_changelist"),
+            data={"action": "export_to_csv", ACTION_CHECKBOX_NAME: [self.tier.pk]},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_export_to_csv_with_multiple_selected_items(self):
+        response = self.client.post(
+            reverse("admin:codecov_auth_tier_changelist"),
+            data={
+                "action": "export_to_csv",
+                ACTION_CHECKBOX_NAME: [self.tier.pk, self.plan.pk],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_export_to_csv_with_no_selected_items(self):
+        response = self.client.post(
+            reverse("admin:codecov_auth_tier_changelist"),
+            data={"action": "export_to_csv"},
+        )
+        self.assertEqual(response.status_code, 200)
