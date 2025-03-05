@@ -1,0 +1,34 @@
+name: Upload Overwatch
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  upload-overwatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Static Analysis Tools
+        run: |
+          pip install mypy==1.15.0
+          pip install ruff==0.3.3
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          # Install libssl1.1 from Ubuntu 20.04 repositories
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+      - name: Install Overwatch CLI
+        run: |
+          curl -o overwatch-cli https://overwatch.codecov.dev/linux/cli
+          chmod +x overwatch-cli
+      - name: Run Overwatch CLI
+        run: |
+          ./overwatch-cli \
+            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
+            --organization-slug codecov \
+            python \
+            --python-path $(which python3)
