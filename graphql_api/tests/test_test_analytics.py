@@ -75,6 +75,53 @@ base_gql_query = """
 rows = [RowFactory()(datetime.datetime(2024, 1, 1 + i)) for i in range(5)]
 
 
+rows_with_duplicate_names = [
+    RowFactory()(datetime.datetime(2024, 1, 1 + i)) for i in range(5)
+]
+for i in range(0, len(rows_with_duplicate_names) - 1, 2):
+    rows_with_duplicate_names[i]["name"] = rows_with_duplicate_names[i + 1]["name"]
+
+
+def dedup(rows: list[dict]) -> list[dict]:
+    by_name = {}
+    for row in rows:
+        if row["name"] not in by_name:
+            by_name[row["name"]] = []
+        by_name[row["name"]].append(row)
+
+    result = []
+    for name, group in by_name.items():
+        if len(group) == 1:
+            result.append(group[0])
+            continue
+
+        weights = [r["total_pass_count"] + r["total_fail_count"] for r in group]
+        total_weight = sum(weights)
+
+        merged = {
+            "name": name,
+            "testsuite": sorted({r["testsuite"] for r in group}),
+            "flags": sorted({flag for r in group for flag in r["flags"]}),
+            "test_id": group[0]["test_id"],  # Keep first test_id
+            "failure_rate": sum(r["failure_rate"] * w for r, w in zip(group, weights))
+            / total_weight,
+            "flake_rate": sum(r["flake_rate"] * w for r, w in zip(group, weights))
+            / total_weight,
+            "updated_at": max(r["updated_at"] for r in group),
+            "avg_duration": sum(r["avg_duration"] * w for r, w in zip(group, weights))
+            / total_weight,
+            "total_fail_count": sum(r["total_fail_count"] for r in group),
+            "total_flaky_fail_count": sum(r["total_flaky_fail_count"] for r in group),
+            "total_pass_count": sum(r["total_pass_count"] for r in group),
+            "total_skip_count": sum(r["total_skip_count"] for r in group),
+            "commits_where_fail": sum(r["commits_where_fail"] for r in group),
+            "last_duration": max(r["last_duration"] for r in group),
+        }
+        result.append(merged)
+
+    return sorted(result, key=lambda x: x["updated_at"], reverse=True)
+
+
 def row_to_camel_case(row: dict) -> dict:
     return {
         "commitsFailed"
@@ -89,6 +136,7 @@ def row_to_camel_case(row: dict) -> dict:
 
 
 test_results_table = pl.DataFrame(rows)
+test_results_table_with_duplicate_names = pl.DataFrame(rows_with_duplicate_names)
 
 
 def base64_encode_string(x: str) -> str:
@@ -140,6 +188,21 @@ def store_in_storage(repository, mock_storage):
     mock_storage.delete_file(
         "codecov",
         f"test_results/rollups/{repository.repoid}/{repository.branch}/30",
+    )
+
+
+@pytest.fixture
+def store_in_redis_with_duplicate_names(repository):
+    redis = get_redis_connection()
+    redis.set(
+        f"test_results:{repository.repoid}:{repository.branch}:30",
+        test_results_table_with_duplicate_names.write_ipc(None).getvalue(),
+    )
+
+    yield
+
+    redis.delete(
+        f"test_results:{repository.repoid}:{repository.branch}:30",
     )
 
 
@@ -581,6 +644,51 @@ class TestAnalyticsTestCase(
                 "node": row_to_camel_case(row),
             }
             for row in reversed(rows)
+        ]
+
+    def test_gql_query_with_duplicate_names(
+        self, repository, store_in_redis_with_duplicate_names, mock_storage
+    ):
+        query = base_gql_query % (
+            repository.author.username,
+            repository.name,
+            """
+            testResults(ordering: { parameter: UPDATED_AT, direction: DESC } ) {
+                totalCount
+                edges {
+                    cursor
+                    node {
+                        name
+                        failureRate
+                        flakeRate
+                        updatedAt
+                        avgDuration
+                        totalFailCount
+                        totalFlakyFailCount
+                        totalPassCount
+                        totalSkipCount
+                        commitsFailed
+                        lastDuration
+                    }
+                }
+            }
+            """,
+        )
+
+        result = self.gql_request(query, owner=repository.author)
+
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["totalCount"]
+            == 3
+        )
+        assert result["owner"]["repository"]["testAnalytics"]["testResults"][
+            "edges"
+        ] == [
+            {
+                "cursor": cursor(row),
+                "node": row_to_camel_case(row),
+            }
+            for row in dedup(rows_with_duplicate_names)
         ]
 
     def test_gql_query_aggregates(self, repository, store_in_redis, mock_storage):

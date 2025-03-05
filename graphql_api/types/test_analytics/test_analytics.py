@@ -197,6 +197,38 @@ def generate_test_results(
             },
         )
 
+    failure_rate_expr = (
+        pl.col("failure_rate")
+        * (pl.col("total_fail_count") + pl.col("total_pass_count"))
+    ).sum() / (pl.col("total_fail_count") + pl.col("total_pass_count")).sum()
+
+    flake_rate_expr = (
+        pl.col("flake_rate") * (pl.col("total_fail_count") + pl.col("total_pass_count"))
+    ).sum() / (pl.col("total_fail_count") + pl.col("total_pass_count")).sum()
+
+    # dedup
+    table = table.group_by("name").agg(
+        pl.col("test_id").first().alias("test_id"),
+        pl.col("testsuite").implode().alias("testsuite"),
+        pl.col("flags").explode().unique().alias("flags"),
+        failure_rate_expr.alias("failure_rate"),
+        flake_rate_expr.alias("flake_rate"),
+        pl.col("updated_at").max().alias("updated_at"),
+        (
+            (
+                pl.col("avg_duration")
+                * (pl.col("total_pass_count") + pl.col("total_fail_count"))
+            ).sum()
+            / (pl.col("total_pass_count") + pl.col("total_fail_count")).sum()
+        ).alias("avg_duration"),
+        pl.col("total_fail_count").sum().alias("total_fail_count"),
+        pl.col("total_flaky_fail_count").sum().alias("total_flaky_fail_count"),
+        pl.col("total_pass_count").sum().alias("total_pass_count"),
+        pl.col("total_skip_count").sum().alias("total_skip_count"),
+        pl.col("commits_where_fail").sum().alias("commits_where_fail"),
+        pl.col("last_duration").max().alias("last_duration"),
+    )
+
     if term:
         table = table.filter(pl.col("name").str.contains(term))
 
