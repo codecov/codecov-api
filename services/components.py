@@ -26,12 +26,13 @@ def commit_components(commit: Commit, owner: Owner | None) -> List[Component]:
 
 
 def component_filtered_report(
-    report, components
+    report: Report, components: List[Component]
 ) -> FilteredReport:
     """
     Filter a report such that the totals, etc. are only pertaining to the given component.
     """
     print(report)
+    
     flags, paths = [], []
     for component in components:
         flags.extend(component.get_matching_flags(report.flags.keys()))
