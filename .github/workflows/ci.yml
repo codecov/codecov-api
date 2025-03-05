@@ -116,6 +116,7 @@ jobs:
             --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
             --organization-slug codecov \
             python \
-            --python-path $(which python3)
+            --python-path $(which python3) \
+            --tool ruff
 
             
