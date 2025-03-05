@@ -32,6 +32,7 @@ def component_filtered_report(
     Filter a report such that the totals, etc. are only pertaining to the given component.
     """
     print(report)
+    print(components)
     
     flags, paths = [], []
     for component in components:
