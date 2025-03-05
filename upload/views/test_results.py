@@ -14,7 +14,7 @@ from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     OrgLevelTokenAuthentication,
     RepositoryLegacyTokenAuthentication,
-    TokenlessAuthentication,
+    TestAnalyticsTokenlessAuthentication,
     UploadTokenRequiredGetFromBodyAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
@@ -64,7 +64,7 @@ class TestResultsView(
         OrgLevelTokenAuthentication,
         GitHubOIDCTokenAuthentication,
         RepositoryLegacyTokenAuthentication,
-        TokenlessAuthentication,
+        TestAnalyticsTokenlessAuthentication,
     ]
 
     def get_exception_handler(self):

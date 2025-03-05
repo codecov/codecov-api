@@ -447,3 +447,157 @@ def test_upload_test_results_file_not_found(db, client, mocker, mock_redis):
         arguments=args,
         countdown=4,
     )
+
+
+def test_upload_test_results_tokenless_authentication(db, client, mocker, mock_redis):
+    upload = mocker.patch.object(TaskService, "upload")
+    _ = mocker.patch(
+        "shared.storage.MinioStorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    owner = OwnerFactory(service="github", username="codecov")
+    repository = RepositoryFactory.create(author=owner, private=False)
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+
+    client = APIClient()
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "github",
+            "branch": "fork:branch",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+    assert res.status_code == 201
+
+    assert res.data == {"raw_upload_location": "test-presigned-put"}
+
+    commit = Commit.objects.get(commitid=commit_sha)
+    assert commit
+    assert commit.branch is not None
+
+    # triggers upload task
+    upload.assert_called_with(
+        commitid=commit_sha,
+        repoid=repository.repoid,
+        report_code=None,
+        report_type="test_results",
+        arguments=mocker.ANY,
+        countdown=4,
+    )
+
+
+def test_upload_test_results_tokenless_authentication_private_repo(
+    db, client, mocker, mock_redis
+):
+    _ = mocker.patch.object(TaskService, "upload")
+    _ = mocker.patch(
+        "shared.storage.MinioStorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    owner = OwnerFactory(service="github", username="codecov")
+    repository = RepositoryFactory.create(author=owner, private=True)
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+
+    client = APIClient()
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "github",
+            "branch": "fork:branch",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+    assert res.status_code == 401
+    assert res.json().get("detail") == "Not valid tokenless upload"
+
+
+def test_upload_test_results_tokenless_authentication_invalid_branch(
+    db, client, mocker, mock_redis
+):
+    _ = mocker.patch.object(TaskService, "upload")
+    _ = mocker.patch(
+        "shared.storage.MinioStorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    owner = OwnerFactory(service="github", username="codecov")
+    owner.upload_token_required_for_public_repos = True
+    owner.save()
+
+    repository = RepositoryFactory.create(author=owner, private=False)
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+
+    client = APIClient()
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "github",
+            "branch": "branch",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+    assert res.status_code == 401
+    assert res.json().get("detail") == "Not valid tokenless upload"
+
+
+def test_upload_test_results_tokenless_authentication_invalid_branch_existing_commits(
+    db, client, mocker, mock_redis
+):
+    _ = mocker.patch.object(TaskService, "upload")
+    _ = mocker.patch(
+        "shared.storage.MinioStorageService.create_presigned_put",
+        return_value="test-presigned-put",
+    )
+
+    owner = OwnerFactory(service="github", username="codecov")
+    owner.upload_token_required_for_public_repos = True
+    owner.save()
+
+    repository = RepositoryFactory.create(author=owner, private=False)
+    commit_sha = "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef"
+    CommitFactory.create(repository=repository, commitid=commit_sha, branch="branch")
+    client = APIClient()
+
+    res = client.post(
+        reverse("upload-test-results"),
+        {
+            "commit": commit_sha,
+            "slug": f"{repository.author.username}::::{repository.name}",
+            "build": "test-build",
+            "buildURL": "test-build-url",
+            "job": "test-job",
+            "service": "github",
+            "branch": "branch",
+        },
+        format="json",
+        headers={"User-Agent": "codecov-cli/0.4.7"},
+    )
+    assert res.status_code == 401
+    assert res.json().get("detail") == "Not valid tokenless upload"
+    commit = Commit.objects.get(commitid=commit_sha)
+    assert commit
+    assert commit.branch == "branch"
