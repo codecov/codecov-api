@@ -1,7 +1,7 @@
 import json
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from utils.test_utils import Client
@@ -9,7 +9,7 @@ from utils.test_utils import Client
 from .helper import GraphQLTestHelper
 
 
-class TestInvoiceType(GraphQLTestHelper, TransactionTestCase):
+class TestInvoiceType(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.service = "gitlab"
         self.current_owner = OwnerFactory(stripe_customer_id="1000")

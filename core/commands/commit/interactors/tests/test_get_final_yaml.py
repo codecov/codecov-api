@@ -2,7 +2,7 @@ import asyncio
 from unittest.mock import patch
 
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
@@ -13,7 +13,7 @@ from shared.torngit.exceptions import TorngitObjectNotFoundError
 from ..get_final_yaml import GetFinalYamlInteractor
 
 
-class GetFinalYamlInteractorTest(TransactionTestCase):
+class GetFinalYamlInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)

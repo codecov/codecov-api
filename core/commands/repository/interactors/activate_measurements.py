@@ -1,8 +1,8 @@
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import ValidationError
-from codecov.db import sync_to_async
 from timeseries.helpers import trigger_backfill
 from timeseries.models import Dataset, MeasurementName
 

@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -21,7 +21,7 @@ query = """
 
 
 @patch("services.sentry.save_sentry_state")
-class SaveSentryStateMutationTest(GraphQLTestHelper, TransactionTestCase):
+class SaveSentryStateMutationTest(GraphQLTestHelper, TestCase):
     def _request(self, owner=None):
         return self.gql_request(
             query,

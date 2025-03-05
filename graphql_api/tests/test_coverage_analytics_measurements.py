@@ -1,7 +1,7 @@
 import datetime
 from unittest.mock import patch
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from shared.django_apps.core.tests.factories import (
     OwnerFactory,
@@ -14,7 +14,7 @@ from .helper import GraphQLTestHelper
 
 
 @patch("timeseries.helpers.repository_coverage_measurements_with_fallback")
-class TestMeasurement(TransactionTestCase, GraphQLTestHelper):
+class TestMeasurement(TestCase, GraphQLTestHelper):
     def _request(self, variables=None):
         query = f"""
             query Measurements($branch: String) {{

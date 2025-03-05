@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -17,7 +17,7 @@ mutation($input: SetUploadTokenRequiredInput!) {
 """
 
 
-class SetUploadTokenRequiredTests(GraphQLTestHelper, TransactionTestCase):
+class SetUploadTokenRequiredTests(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
 

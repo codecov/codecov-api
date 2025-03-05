@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from asgiref.sync import async_to_sync
 from django.conf import settings
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import (
@@ -22,7 +22,7 @@ from ..activate_measurements import ActivateMeasurementsInteractor
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class ActivateMeasurementsInteractorTest(TransactionTestCase):
+class ActivateMeasurementsInteractorTest(TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):

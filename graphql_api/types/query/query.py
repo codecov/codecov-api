@@ -1,12 +1,12 @@
 from typing import Any, Optional
 
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from graphql import GraphQLResolveInfo
 from sentry_sdk import Scope
 
 from codecov.commands.exceptions import UnauthorizedGuestAccess
-from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from graphql_api.actions.owner import get_owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql

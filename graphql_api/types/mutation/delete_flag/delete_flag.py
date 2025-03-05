@@ -1,6 +1,6 @@
 from ariadne import UnionType
+from asgiref.sync import sync_to_async
 
-from codecov.db import sync_to_async
 from core.commands.flag import FlagCommands
 from graphql_api.helpers.mutation import (
     resolve_union_error_type,

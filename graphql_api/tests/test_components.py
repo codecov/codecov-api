@@ -2,7 +2,7 @@ from unittest.mock import PropertyMock, patch
 
 import pytest
 from django.conf import settings
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
@@ -137,7 +137,7 @@ query_commit_coverage_components = """
 """
 
 
-class TestCommitCoverageComponents(GraphQLTestHelper, TransactionTestCase):
+class TestCommitCoverageComponents(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)
@@ -473,7 +473,7 @@ query_components_comparison = """
 """
 
 
-class TestComponentsComparison(GraphQLTestHelper, TransactionTestCase):
+class TestComponentsComparison(GraphQLTestHelper, TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):
@@ -905,7 +905,7 @@ query ComponentMeasurements(
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class TestComponentMeasurements(GraphQLTestHelper, TransactionTestCase):
+class TestComponentMeasurements(GraphQLTestHelper, TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):

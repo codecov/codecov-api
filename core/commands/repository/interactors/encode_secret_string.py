@@ -1,6 +1,7 @@
+from asgiref.sync import sync_to_async
+
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
-from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from core.commands.repository.interactors.utils import encode_secret_string
 from core.models import Repository

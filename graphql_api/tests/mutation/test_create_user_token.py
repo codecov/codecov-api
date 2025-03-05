@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov_auth.models import UserToken
@@ -22,7 +22,7 @@ mutation($input: CreateUserTokenInput!) {
 """
 
 
-class CreateApiTokenTestCase(GraphQLTestHelper, TransactionTestCase):
+class CreateApiTokenTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
 

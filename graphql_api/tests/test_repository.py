@@ -1,7 +1,7 @@
 import datetime
 from unittest.mock import patch
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
@@ -77,7 +77,7 @@ def mock_get_config_global_upload_tokens(*args):
         return True
 
 
-class TestFetchRepository(GraphQLTestHelper, TransactionTestCase):
+class TestFetchRepository(GraphQLTestHelper, TestCase):
     def fetch_repository(self, name, fields=None):
         data = self.gql_request(
             query_repository % (fields or default_fields),

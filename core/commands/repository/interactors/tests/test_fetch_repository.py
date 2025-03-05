@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
@@ -8,7 +8,7 @@ from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFact
 from ..fetch_repository import FetchRepositoryInteractor
 
 
-class FetchRepositoryInteractorTest(TransactionTestCase):
+class FetchRepositoryInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
 

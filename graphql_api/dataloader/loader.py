@@ -1,6 +1,5 @@
 from aiodataloader import DataLoader
-
-from codecov.db import sync_to_async
+from asgiref.sync import sync_to_async
 
 
 class BaseLoader(DataLoader):

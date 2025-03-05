@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
@@ -11,7 +11,7 @@ from codecov_auth.models import OwnerProfile
 from ..update_default_organization import UpdateDefaultOrganizationInteractor
 
 
-class UpdateDefaultOrganizationInteractorTest(TransactionTestCase):
+class UpdateDefaultOrganizationInteractorTest(TestCase):
     def setUp(self):
         self.default_organization_username = "sample-default-org-username"
         self.default_organization = OwnerFactory(

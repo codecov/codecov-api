@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -17,7 +17,7 @@ query = """
 """
 
 
-class UpdateSelfHostedSettingsTest(GraphQLTestHelper, TransactionTestCase):
+class UpdateSelfHostedSettingsTest(GraphQLTestHelper, TestCase):
     def _request(self, owner=None):
         return self.gql_request(
             query,

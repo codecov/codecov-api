@@ -1,11 +1,11 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from legacy_migrations.models import YamlHistory
 from legacy_migrations.tests.factories import YamlHistoryFactory
 
 
-class TestYamlHistory(TransactionTestCase):
+class TestYamlHistory(TestCase):
     def test_get_pieces_of_model(self):
         owner = OwnerFactory()
         author = OwnerFactory()

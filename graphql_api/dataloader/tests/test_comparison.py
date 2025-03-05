@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
 from compare.models import CommitComparison
@@ -21,7 +21,7 @@ async def load_comparisons(repoid, keys):
 
 
 @patch("services.task.TaskService.compute_comparisons")
-class ComparisonLoaderTestCase(TransactionTestCase):
+class ComparisonLoaderTestCase(TestCase):
     def setUp(self):
         self.repository = RepositoryFactory(name="test-repo-1")
 

@@ -1,5 +1,6 @@
 import pytest
-from django.test import TransactionTestCase
+from asgiref.sync import sync_to_async
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from codecov.commands.exceptions import (
@@ -8,7 +9,6 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-from codecov.db import sync_to_async
 
 from ..set_yaml_on_owner import SetYamlOnOwnerInteractor
 
@@ -59,7 +59,7 @@ codecov:  # comment 2
 """
 
 
-class SetYamlOnOwnerInteractorTest(TransactionTestCase):
+class SetYamlOnOwnerInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.current_owner = OwnerFactory(

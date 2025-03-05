@@ -1,10 +1,10 @@
 from typing import Optional
 
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from django.urls import reverse
 from shared.django_apps.utils.services import get_short_service_name
 
-from codecov.db import sync_to_async
 from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.enums import (
     OrderingDirection,

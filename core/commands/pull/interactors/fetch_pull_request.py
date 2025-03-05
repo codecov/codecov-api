@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
+from asgiref.sync import sync_to_async
 from shared.django_apps.core.models import Pull, Repository
 
 from codecov.commands.base import BaseInteractor
-from codecov.db import sync_to_async
 from services.task.task import TaskService
 
 
