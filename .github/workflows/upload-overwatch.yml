@@ -14,6 +14,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Install Project Dependencies
+        run: |
+          uv export --format requirements-txt > requirements.txt
+          uv pip install -r requirements.txt --system
       - name: Install Static Analysis Tools
         run: |
           pip install mypy==1.15.0
