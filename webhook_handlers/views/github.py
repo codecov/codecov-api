@@ -103,10 +103,10 @@ class GithubWebhookHandler(APIView):
     def unhandled_webhook_event(self, request, *args, **kwargs):
         return Response(data=WebhookHandlerErrorMessages.UNSUPPORTED_EVENT)
 
-    def _get_repo(self, request):
+    def _get_repo(self):
         """
-        Attempts to fetch the repo first via the index on o(wnerid, service_id),
-        then naively on service, service_id if that fails.
+        Attempts to fetch the repo first via the index on (ownerid, service_id),
+        then naively on (service, service_id) if that fails.
         """
         repo_data = self.request.data.get("repository", {})
         repo_service_id = repo_data.get("id")
@@ -119,49 +119,40 @@ class GithubWebhookHandler(APIView):
             )
         except Owner.DoesNotExist:
             log.info(
-                f"Error fetching owner with service_id {owner_service_id}, "
-                f"using repository service id to get repo",
+                f"Error fetching owner with service_id {owner_service_id}, using repository service id to get repo",
                 extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
             )
             try:
-                log.info(
-                    "Unable to find repository owner, fetching repo with service, service_id",
-                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
-                )
                 return Repository.objects.get(
                     author__service=self.service_name, service_id=repo_service_id
                 )
             except Repository.DoesNotExist:
                 log.info(
-                    "Received event for non-existent repository",
+                    "Received event for non-existent owner and repository",
                     extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
                 )
-                self._inc_err("repo_not_found")
+                self._inc_err("owner_and_repo_not_found")
                 raise NotFound("Repository does not exist")
         else:
             try:
-                log.debug(
-                    "Found repository owner, fetching repo with ownerid, service_id",
-                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
-                )
                 return Repository.objects.get(
                     author__ownerid=owner.ownerid, service_id=repo_service_id
                 )
             except Repository.DoesNotExist:
+                log.info(
+                    "Received event for non-existent repository",
+                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
+                )
                 default_ghapp_installation = owner.github_app_installations.filter(
                     name=GITHUB_APP_INSTALLATION_DEFAULT_NAME
                 ).first()
                 if default_ghapp_installation or owner.integration_id:
                     log.info(
-                        "Repository no found but owner is using integration, creating repository"
+                        "Repository not found but owner is using integration, creating repository"
                     )
                     return Repository.objects.get_or_create_from_git_repo(
                         repo_data, owner
                     )[0]
-                log.info(
-                    "Received event for non-existent repository",
-                    extra=dict(repo_service_id=repo_service_id, repo_slug=repo_slug),
-                )
                 self._inc_err("repo_not_found")
                 raise NotFound("Repository does not exist")
 
@@ -169,17 +160,33 @@ class GithubWebhookHandler(APIView):
         return Response(data="pong")
 
     def repository(self, request, *args, **kwargs):
-        action, repo = self.request.data.get("action"), self._get_repo(request)
+        action = self.request.data.get("action")
+
+        # Repo created event, separate from other actions because we know
+        # that the repo will not exist in our DB yet
+        if action == "created":
+            repo_data = self.request.data.get("repository", {})
+            repo_service_id = repo_data.get("id")
+            owner_service_id = repo_data.get("owner", {}).get("id")
+            owner, _ = Owner.objects.get_or_create(
+                service=self.service_name, service_id=owner_service_id
+            )
+            repo, _ = Repository.objects.get_or_create(
+                author__ownerid=owner.ownerid, service_id=repo_service_id
+            )
+            return Response()
+
+        repo = self._get_repo()
         if action == "publicized":
             repo.private, repo.activated = False, False
-            repo.save()
+            repo.save(update_fields=["private", "activated"])
             log.info(
                 "Repository publicized",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
         elif action == "privatized":
             repo.private = True
-            repo.save()
+            repo.save(update_fields=["private"])
             log.info(
                 "Repository privatized",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
@@ -195,15 +202,62 @@ class GithubWebhookHandler(APIView):
                 "Repository soft-deleted",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
             )
+        elif action == "edited":
+            default_branch = (
+                self.request.data.get("changes", {})
+                .get("default_branch", {})
+                .get("from")
+            )
+            if default_branch and default_branch != repo.branch:
+                repo.branch = default_branch
+                repo.save(update_fields=["branch"])
+                log.info(
+                    "Repository default branch updated",
+                    extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
+                )
+        elif action == "renamed":
+            repo.name = self.request.data.get("repository", {}).get("name")
+            repo.save(update_fields=["name"])
+            log.info(
+                "Repository renamed",
+                extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
+            )
+        elif action == "transferred":
+            repo.author = Owner.objects.get(
+                service=self.service_name,
+                service_id=self.request.data.get("repository", {})
+                .get("owner", {})
+                .get("id"),
+            )
+            repo.save(update_fields=["author"])
+            log.info(
+                "Repository transferred",
+                extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
+            )
+        elif action == "archived":
+            repo.activated = False
+            repo.save(update_fields=["activated"])
+            log.info(
+                "Repository archived",
+                extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
+            )
+        elif action == "unarchived":
+            repo.activated = True
+            repo.save(update_fields=["activated"])
+            log.info(
+                "Repository unarchived",
+                extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
+            )
         else:
             log.warning(
-                f"Unknown repository action: {action}", extra=dict(repoid=repo.repoid)
+                "Unknown repository action",
+                extra=dict(action=action, repoid=repo.repoid),
             )
         return Response()
 
     def delete(self, request, *args, **kwargs):
         ref_type = request.data.get("ref_type", "")
-        repo = self._get_repo(request)
+        repo = self._get_repo()
         if ref_type != "branch":
             log.info(
                 f"Unsupported ref type: {ref_type}, exiting",
@@ -211,9 +265,7 @@ class GithubWebhookHandler(APIView):
             )
             return Response("Unsupported ref type")
         branch_name = self.request.data.get("ref")[11:]
-        Branch.objects.filter(
-            repository=self._get_repo(request), name=branch_name
-        ).delete()
+        Branch.objects.filter(repository=repo, name=branch_name).delete()
         log.info(
             f"Branch '{branch_name}' deleted",
             extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
@@ -221,7 +273,7 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def public(self, request, *args, **kwargs):
-        repo = self._get_repo(request)
+        repo = self._get_repo()
         repo.private, repo.activated = False, False
         repo.save()
         log.info(
@@ -232,7 +284,7 @@ class GithubWebhookHandler(APIView):
 
     def push(self, request, *args, **kwargs):
         ref_type = "branch" if request.data.get("ref", "")[5:10] == "heads" else "tag"
-        repo = self._get_repo(request)
+        repo = self._get_repo()
         if ref_type != "branch":
             log.debug(
                 "Ref is tag, not branch, ignoring push event",
@@ -320,7 +372,7 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def status(self, request, *args, **kwargs):
-        repo = self._get_repo(request)
+        repo = self._get_repo()
         commitid = request.data.get("sha")
 
         if not repo.active:
@@ -365,7 +417,7 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def pull_request(self, request, *args, **kwargs):
-        repo = self._get_repo(request)
+        repo = self._get_repo()
 
         if not repo.active:
             log.info(
@@ -703,7 +755,7 @@ class GithubWebhookHandler(APIView):
     def member(self, request, *args, **kwargs):
         action = request.data["action"]
         if action == "removed":
-            repo = self._get_repo(request)
+            repo = self._get_repo()
             log.info(
                 "Request to remove read permissions for user",
                 extra=dict(repoid=repo.repoid, github_webhook_event=self.event),
