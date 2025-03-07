@@ -31,6 +31,14 @@ def component_filtered_report(
     """
     Filter a report such that the totals, etc. are only pertaining to the given component.
     """
+    print(report)
+    print(components)
+
+    # This will fail mypy with "Item "None" of "Optional[Report]" has no attribute "filter""
+    # Because we're not checking if report is None before accessing filter()
+    report: Optional[Report] = report
+    filtered_report = report.filter(flags=flags, paths=paths)
+
     flags, paths = [], []
     for component in components:
         flags.extend(component.get_matching_flags(report.flags.keys()))
