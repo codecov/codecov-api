@@ -10,7 +10,8 @@ from shared.reports.api_report_service import (
     build_report,
     build_report_from_commit,
 )
-from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine
 from shared.storage.exceptions import FileNotInStorageError
 from shared.utils.sessions import Session
 

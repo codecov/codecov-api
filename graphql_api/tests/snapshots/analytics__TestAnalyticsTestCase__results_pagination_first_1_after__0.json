@@ -1,0 +1,22 @@
+[
+  {
+    "name": "test4",
+    "test_id": "test_id4",
+    "testsuite": [
+      "testsuite4"
+    ],
+    "flags": [
+      "flag4"
+    ],
+    "failure_rate": 0.1,
+    "flake_rate": 0.0,
+    "updated_at": "2024-01-04T00:00:00",
+    "avg_duration": 100.0,
+    "total_fail_count": 1,
+    "total_flaky_fail_count": 0,
+    "total_pass_count": 1,
+    "total_skip_count": 1,
+    "commits_where_fail": 1,
+    "last_duration": 100.0
+  }
+]

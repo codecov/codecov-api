@@ -10,7 +10,8 @@ from shared.django_apps.core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
-from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine
 from shared.torngit.exceptions import (
     TorngitClientGeneralError,
     TorngitObjectNotFoundError,

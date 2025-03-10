@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '4' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
@@ -348,6 +347,7 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "pyjwt" },
+    { name = "pytest-insta" },
     { name = "python-dateutil" },
     { name = "python-json-logger" },
     { name = "python-redis-lock" },
@@ -415,6 +415,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pyjwt", specifier = ">=2.4.0" },
+    { name = "pytest-insta", specifier = ">=0.3.0" },
     { name = "python-dateutil", specifier = "==2.9.0.post0" },
     { name = "python-json-logger", specifier = "==2.0.7" },
     { name = "python-redis-lock", specifier = "==4.0.0" },
@@ -1702,6 +1703,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/bd/cf/44510ac5479f281d6663a08dff0d93f56b21f4ee091980ea4d4b64491ad6/pytest-django-4.8.0.tar.gz", hash = "sha256:5d054fe011c56f3b10f978f41a8efb2e5adfc7e680ef36fb571ada1f24779d90", size = 83291 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/5b/29555191e903881d05e1f7184205ec534c7021e0ee077d1e6a1ee8f1b1eb/pytest_django-4.8.0-py3-none-any.whl", hash = "sha256:ca1ddd1e0e4c227cf9e3e40a6afc6d106b3e70868fd2ac5798a22501271cd0c7", size = 23432 },
+]
+
+[[package]]
+name = "pytest-insta"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/5b/6ca4baca60c3f8361415501668cde3abd94dbad44293325833fd89d1a7c1/pytest_insta-0.3.0.tar.gz", hash = "sha256:9e6e1c70a021f68ccc4643360b2c2f8326cf3befba85f942c1da17b9caf713f7", size = 14960 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/d5/1459b2861cf703cf49d96b6f29731ee74f4ac7e34b0c60b0ff75bdd318bc/pytest_insta-0.3.0-py3-none-any.whl", hash = "sha256:93a105e3850f2887b120a581923b10bb313d722e00d369377a1d91aa535df704", size = 13660 },
 ]
 
 [[package]]

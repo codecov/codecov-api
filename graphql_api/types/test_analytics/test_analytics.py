@@ -52,6 +52,24 @@ class TestResultsRow:
     commits_where_fail: int
     last_duration: float
 
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "test_id": self.test_id,
+            "testsuite": self.testsuite,
+            "flags": self.flags,
+            "failure_rate": self.failure_rate,
+            "flake_rate": self.flake_rate,
+            "updated_at": self.updated_at.isoformat(),
+            "avg_duration": self.avg_duration,
+            "total_fail_count": self.total_fail_count,
+            "total_flaky_fail_count": self.total_flaky_fail_count,
+            "total_pass_count": self.total_pass_count,
+            "total_skip_count": self.total_skip_count,
+            "commits_where_fail": self.commits_where_fail,
+            "last_duration": self.last_duration,
+        }
+
 
 @dataclass
 class TestResultConnection:
@@ -69,9 +87,7 @@ class CursorValue:
     name: str
 
 
-def decode_cursor(
-    value: str | None, ordering: TestResultsOrderingParameter
-) -> CursorValue | None:
+def decode_cursor(value: str | None, ordering: TestResultsOrderingParameter) -> CursorValue | None:
     if value is None:
         return None
 
@@ -89,19 +105,13 @@ def decode_cursor(
         case TestResultsOrderingParameter.COMMITS_WHERE_FAIL:
             return CursorValue(ordered_value=int(ordered_value), name=name)
         case TestResultsOrderingParameter.UPDATED_AT:
-            return CursorValue(
-                ordered_value=dt.datetime.fromisoformat(ordered_value), name=name
-            )
+            return CursorValue(ordered_value=dt.datetime.fromisoformat(ordered_value), name=name)
 
     raise ValueError(f"Invalid ordering field: {ordering}")
 
 
 def encode_cursor(row: TestResultsRow, ordering: TestResultsOrderingParameter) -> str:
-    return b64encode(
-        DELIMITER.join([str(getattr(row, ordering.value)), str(row.name)]).encode(
-            "utf-8"
-        )
-    ).decode("ascii")
+    return b64encode(DELIMITER.join([str(getattr(row, ordering.value)), str(row.name)]).encode("utf-8")).decode("ascii")
 
 
 def validate(
@@ -129,18 +139,14 @@ def validate(
         raise ValidationError("After and before can not be used at the same time")
 
 
-def ordering_expression(
-    ordering: TestResultsOrderingParameter, cursor_value: CursorValue, is_forward: bool
-) -> pl.Expr:
+def ordering_expression(ordering: TestResultsOrderingParameter, cursor_value: CursorValue, is_forward: bool) -> pl.Expr:
     if is_forward:
         ordering_expression = (pl.col(ordering.value) > cursor_value.ordered_value) | (
-            (pl.col(ordering.value) == cursor_value.ordered_value)
-            & (pl.col("name") > cursor_value.name)
+            (pl.col(ordering.value) == cursor_value.ordered_value) & (pl.col("name") > cursor_value.name)
         )
     else:
         ordering_expression = (pl.col(ordering.value) < cursor_value.ordered_value) | (
-            (pl.col(ordering.value) == cursor_value.ordered_value)
-            & (pl.col("name") > cursor_value.name)
+            (pl.col(ordering.value) == cursor_value.ordered_value) & (pl.col("name") > cursor_value.name)
         )
     return ordering_expression
 
@@ -197,18 +203,46 @@ def generate_test_results(
             },
         )
 
+    failure_rate_expr = (pl.col("failure_rate") * (pl.col("total_fail_count") + pl.col("total_pass_count"))).sum() / (
+        pl.col("total_fail_count") + pl.col("total_pass_count")
+    ).sum()
+
+    flake_rate_expr = (pl.col("flake_rate") * (pl.col("total_fail_count") + pl.col("total_pass_count"))).sum() / (
+        pl.col("total_fail_count") + pl.col("total_pass_count")
+    ).sum()
+
+    avg_duration_expr = (pl.col("avg_duration") * (pl.col("total_pass_count") + pl.col("total_fail_count"))).sum() / (
+        pl.col("total_pass_count") + pl.col("total_fail_count")
+    ).sum()
+
+    # dedup
+    table = table.group_by("name").agg(
+        pl.col("test_id").first().alias("test_id"),
+        pl.col("testsuite").alias("testsuite"),
+        pl.col("flags").explode().unique().alias("flags"),
+        failure_rate_expr.alias("failure_rate"),
+        flake_rate_expr.alias("flake_rate"),
+        pl.col("updated_at").max().alias("updated_at"),
+        avg_duration_expr.alias("avg_duration"),
+        pl.col("total_fail_count").sum().alias("total_fail_count"),
+        pl.col("total_flaky_fail_count").sum().alias("total_flaky_fail_count"),
+        pl.col("total_pass_count").sum().alias("total_pass_count"),
+        pl.col("total_skip_count").sum().alias("total_skip_count"),
+        pl.col("commits_where_fail").sum().alias("commits_where_fail"),
+        pl.col("last_duration").max().alias("last_duration"),
+    )
+
     if term:
         table = table.filter(pl.col("name").str.contains(term))
 
     if testsuites:
         table = table.filter(
-            pl.col("testsuite").is_not_null() & pl.col("testsuite").is_in(testsuites)
+            pl.col("testsuite").is_not_null() & pl.col("testsuite").list.eval(pl.element().is_in(testsuites)).list.any()
         )
 
     if flags:
         table = table.filter(
-            pl.col("flags").is_not_null()
-            & pl.col("flags").list.eval(pl.element().is_in(flags)).list.any()
+            pl.col("flags").is_not_null() & pl.col("flags").list.eval(pl.element().is_in(flags)).list.any()
         )
 
     match parameter:
@@ -217,9 +251,7 @@ def generate_test_results(
         case TestResultsFilterParameter.FLAKY_TESTS:
             table = table.filter(pl.col("total_flaky_fail_count") > 0)
         case TestResultsFilterParameter.SKIPPED_TESTS:
-            table = table.filter(
-                (pl.col("total_skip_count") > 0) & (pl.col("total_pass_count") == 0)
-            )
+            table = table.filter((pl.col("total_skip_count") > 0) & (pl.col("total_pass_count") == 0))
         case TestResultsFilterParameter.SLOWEST_TESTS:
             table = table.filter(
                 pl.col("avg_duration") >= pl.col("avg_duration").quantile(0.95)
@@ -230,16 +262,10 @@ def generate_test_results(
     total_count = table.height
 
     if after or before:
-        comparison_direction = (ordering_direction == OrderingDirection.ASC) == (
-            bool(after)
-        )
-        cursor_value = (
-            decode_cursor(after, ordering) if after else decode_cursor(before, ordering)
-        )
+        comparison_direction = (ordering_direction == OrderingDirection.ASC) == (bool(after))
+        cursor_value = decode_cursor(after, ordering) if after else decode_cursor(before, ordering)
         if cursor_value:
-            table = table.filter(
-                ordering_expression(ordering, cursor_value, comparison_direction)
-            )
+            table = table.filter(ordering_expression(ordering, cursor_value, comparison_direction))
 
     table = table.sort(
         [ordering.value, "name"],
@@ -271,9 +297,7 @@ def generate_test_results(
     )
 
 
-def get_test_suites(
-    repoid: int, term: str | None = None, interval: int = 30
-) -> list[str]:
+def get_test_suites(repoid: int, term: str | None = None, interval: int = 30) -> list[str]:
     repo = Repository.objects.get(repoid=repoid)
 
     table = get_results(repoid, repo.branch, interval)
@@ -336,13 +360,9 @@ async def resolve_test_results(
         ordering=ordering.get("parameter", TestResultsOrderingParameter.AVG_DURATION)
         if ordering
         else TestResultsOrderingParameter.AVG_DURATION,
-        ordering_direction=ordering.get("direction", OrderingDirection.DESC)
-        if ordering
-        else OrderingDirection.DESC,
+        ordering_direction=ordering.get("direction", OrderingDirection.DESC) if ordering else OrderingDirection.DESC,
         repoid=repository.repoid,
-        measurement_interval=filters.get(
-            "interval", MeasurementInterval.INTERVAL_30_DAY
-        )
+        measurement_interval=filters.get("interval", MeasurementInterval.INTERVAL_30_DAY)
         if filters
         else MeasurementInterval.INTERVAL_30_DAY,
         first=first,
