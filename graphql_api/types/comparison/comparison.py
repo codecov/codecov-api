@@ -45,7 +45,9 @@ def resolve_impacted_files(
 
     if filters and comparison:
         flags = filters.get("flags", [])
-        if flags and set(flags).isdisjoint(set(comparison.head_report.flags)):
+        if flags and set(flags).isdisjoint(
+            set(comparison.head_report.get_flag_names())
+        ):
             return UnknownFlags()
 
     return {

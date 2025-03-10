@@ -15,7 +15,8 @@ from shared.django_apps.timeseries.tests.factories import (
     DatasetFactory,
     MeasurementFactory,
 )
-from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine
 from shared.utils.sessions import Session
 
 from timeseries.helpers import (

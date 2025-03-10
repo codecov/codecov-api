@@ -33,7 +33,7 @@ def component_filtered_report(
     """
     flags, paths = [], []
     for component in components:
-        flags.extend(component.get_matching_flags(report.flags.keys()))
+        flags.extend(component.get_matching_flags(report.get_flag_names()))
         paths.extend(component.paths)
     filtered_report = report.filter(flags=flags, paths=paths)
     return filtered_report
