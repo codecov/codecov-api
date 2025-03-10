@@ -136,6 +136,20 @@ class TestResultsView(
             },
         )
 
+        AmplitudeEventPublisher().publish(
+            "Upload Received",
+            {
+                "user_ownerid": commit.author.ownerid
+                if commit.author
+                else UNKNOWN_USER_OWNERID,
+                "ownerid": repo.author.ownerid,
+                "repoid": repo.repoid,
+                "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
+                "pullid": commit.pullid,
+                "upload_type": "Test results",
+            },
+        )
+
         upload_external_id = str(uuid.uuid4())
 
         url = None
@@ -186,20 +200,6 @@ class TestResultsView(
             repo,
             get_redis_connection(),
             report_type=CommitReport.ReportType.TEST_RESULTS,
-        )
-
-        AmplitudeEventPublisher().publish(
-            "Upload Sent",
-            {
-                "user_ownerid": commit.author.ownerid
-                if commit.author
-                else UNKNOWN_USER_OWNERID,
-                "ownerid": repo.author.ownerid,
-                "repoid": repo.repoid,
-                "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
-                "pullid": commit.pullid,
-                "upload_type": "Test results",
-            },
         )
 
         if url is None:
