@@ -141,6 +141,20 @@ class BundleAnalysisView(APIView, ShelterMixin):
             },
         )
 
+        AmplitudeEventPublisher().publish(
+            "Upload Received",
+            {
+                "user_ownerid": commit.author.ownerid
+                if commit.author
+                else UNKNOWN_USER_OWNERID,
+                "ownerid": repo.author.ownerid,
+                "repoid": repo.repoid,
+                "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
+                "pullid": commit.pullid,
+                "upload_type": "Bundle",
+            },
+        )
+
         storage_path = data.get("storage_path", None)
         upload_external_id = data.get("upload_external_id", None)
         url = None
@@ -220,19 +234,5 @@ class BundleAnalysisView(APIView, ShelterMixin):
                             measurement_type=measurement_type,
                         ),
                     )
-
-        AmplitudeEventPublisher().publish(
-            "Upload Sent",
-            {
-                "user_ownerid": commit.author.ownerid
-                if commit.author
-                else UNKNOWN_USER_OWNERID,
-                "ownerid": repo.author.ownerid,
-                "repoid": repo.repoid,
-                "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
-                "pullid": commit.pullid,
-                "upload_type": "Bundle",
-            },
-        )
 
         return Response({"url": url}, status=201)
