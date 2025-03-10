@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from freezegun import freeze_time
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
@@ -24,7 +24,7 @@ query MySession {
 """
 
 
-class SessionTestCase(GraphQLTestHelper, TransactionTestCase):
+class SessionTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.session = SessionFactory(

@@ -1,5 +1,6 @@
+from asgiref.sync import sync_to_async
+
 from codecov.commands.exceptions import MissingService
-from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from utils.services import get_long_service_name
 

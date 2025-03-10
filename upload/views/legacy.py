@@ -5,6 +5,7 @@ from json import dumps
 from uuid import uuid4
 
 import minio
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 from django.http import Http404, HttpResponse, HttpResponseServerError
@@ -19,7 +20,6 @@ from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService
 from shared.metrics import inc_counter
 
-from codecov.db import sync_to_async
 from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
 from services.analytics import AnalyticsService

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 from unittest.mock import PropertyMock, patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
@@ -250,7 +250,7 @@ def sample_report():
     return report
 
 
-class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
+class TestImpactedFileFiltering(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)
@@ -356,7 +356,7 @@ class TestImpactedFileFiltering(GraphQLTestHelper, TransactionTestCase):
         ] == {"message": "No coverage with chosen flags"}
 
 
-class TestImpactedFile(GraphQLTestHelper, TransactionTestCase):
+class TestImpactedFile(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)

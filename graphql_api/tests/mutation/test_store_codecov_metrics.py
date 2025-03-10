@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_metrics.models import UserOnboardingLifeCycleMetrics
 from shared.django_apps.core.tests.factories import OwnerFactory
 
@@ -18,7 +18,7 @@ query = """
 """
 
 
-class StoreEventMetricMutationTest(GraphQLTestHelper, TransactionTestCase):
+class StoreEventMetricMutationTest(GraphQLTestHelper, TestCase):
     def _request(self, org_username: str, event: str, json_payload: str, owner=None):
         return self.gql_request(
             query,

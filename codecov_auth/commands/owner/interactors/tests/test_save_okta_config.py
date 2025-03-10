@@ -1,7 +1,7 @@
 import pytest
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import AnonymousUser
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     AccountFactory,
     OktaSettingsFactory,
@@ -14,7 +14,7 @@ from codecov_auth.models import OktaSettings
 from ..save_okta_config import SaveOktaConfigInteractor
 
 
-class SaveOktaConfigInteractorTest(TransactionTestCase):
+class SaveOktaConfigInteractorTest(TestCase):
     def setUp(self):
         self.current_user = OwnerFactory(username="codecov-user")
         self.service = "github"

@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
@@ -7,7 +7,7 @@ from codecov.commands.exceptions import Unauthenticated, Unauthorized, Validatio
 from ..regenerate_org_upload_token import RegenerateOrgUploadTokenInteractor
 
 
-class RegenerateOrgUploadTokenInteractorTest(TransactionTestCase):
+class RegenerateOrgUploadTokenInteractorTest(TestCase):
     def setUp(self):
         self.random_user = OwnerFactory()
         self.owner = OwnerFactory(username="codecovv", plan="users-enterprisem")

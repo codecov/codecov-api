@@ -1,5 +1,5 @@
 from django.contrib import auth
-from django.test import TransactionTestCase
+from django.test import TestCase
 from django.utils import timezone
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, UserFactory
 
@@ -17,7 +17,7 @@ mutation($input: DeleteSessionInput!) {
 """
 
 
-class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
+class DeleteSessionTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
 

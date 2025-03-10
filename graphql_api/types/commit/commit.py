@@ -5,6 +5,7 @@ import sentry_sdk
 import shared.reports.api_report_service as report_service
 import yaml
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
 from shared.reports.api_report_service import ReadOnlyReport
 from shared.reports.filtered import FilteredReportFile
@@ -13,7 +14,6 @@ from shared.reports.types import ReportTotals
 
 import services.components as components_service
 import services.path as path_service
-from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from core.models import Commit
 from graphql_api.actions.commits import commit_status, commit_uploads

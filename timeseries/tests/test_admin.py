@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from django.conf import settings
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
-from django.test import TransactionTestCase
+from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from shared.django_apps.codecov_auth.tests.factories import UserFactory
@@ -14,7 +14,7 @@ from shared.django_apps.timeseries.tests.factories import DatasetFactory
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class DatasetAdminTest(TransactionTestCase):
+class DatasetAdminTest(TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):

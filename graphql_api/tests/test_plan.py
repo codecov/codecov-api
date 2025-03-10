@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.django_apps.codecov_auth.tests.factories import AccountFactory
@@ -16,7 +16,7 @@ from billing.helpers import mock_all_plans_and_tiers
 from .helper import GraphQLTestHelper
 
 
-class TestPlanType(GraphQLTestHelper, TransactionTestCase):
+class TestPlanType(GraphQLTestHelper, TestCase):
     @pytest.fixture(scope="function", autouse=True)
     def inject_mocker(request, mocker):
         request.mocker = mocker

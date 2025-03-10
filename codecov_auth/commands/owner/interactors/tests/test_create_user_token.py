@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated, ValidationError
@@ -8,7 +8,7 @@ from codecov_auth.models import UserToken
 from ..create_user_token import CreateUserTokenInteractor
 
 
-class CreateUserTokenInteractorTest(TransactionTestCase):
+class CreateUserTokenInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
 

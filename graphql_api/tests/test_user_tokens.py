@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     OwnerFactory,
     UserTokenFactory,
@@ -25,7 +25,7 @@ query {
 """
 
 
-class UserTokensTestCase(GraphQLTestHelper, TransactionTestCase):
+class UserTokensTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
 

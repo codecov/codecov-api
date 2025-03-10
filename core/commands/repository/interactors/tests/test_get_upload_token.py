@@ -1,10 +1,10 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from ..get_upload_token import GetUploadTokenInteractor
 
 
-class GetUploadTokenInteractorTest(TransactionTestCase):
+class GetUploadTokenInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo_in_org = RepositoryFactory(author=self.org)

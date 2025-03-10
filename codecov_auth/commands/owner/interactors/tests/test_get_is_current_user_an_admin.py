@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from shared.django_apps.codecov_auth.tests.factories import (
     GetAdminProviderAdapter,
     OwnerFactory,
@@ -13,7 +13,7 @@ from ..get_is_current_user_an_admin import (
 )
 
 
-class GetIsCurrentUserAnAdminInteractorTest(TransactionTestCase):
+class GetIsCurrentUserAnAdminInteractorTest(TestCase):
     def setUp(self):
         self.owner_has_admins = OwnerFactory(ownerid=0, admins=[2])
         self.owner_has_no_admins = OwnerFactory(ownerid=1, admins=[])

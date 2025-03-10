@@ -1,8 +1,8 @@
+from asgiref.sync import sync_to_async
 from shared.django_apps.codecov_auth.models import Owner
 from shared.django_apps.core.models import Repository
 
 from codecov.commands.base import BaseInteractor
-from codecov.db import sync_to_async
 
 
 class FetchRepositoryInteractor(BaseInteractor):

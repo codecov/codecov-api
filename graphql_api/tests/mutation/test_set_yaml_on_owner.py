@@ -1,7 +1,7 @@
 import asyncio
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -20,7 +20,7 @@ mutation($input: SetYamlOnOwnerInput!) {
 """
 
 
-class SetYamlOnOwnerMutationTest(GraphQLTestHelper, TransactionTestCase):
+class SetYamlOnOwnerMutationTest(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         asyncio.set_event_loop(asyncio.new_event_loop())
