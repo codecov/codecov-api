@@ -10,7 +10,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
-from shared.events.amplitude import AmplitudeEventPublisher
+from shared.events.amplitude import UNKNOWN_USER_OWNERID, AmplitudeEventPublisher
 from shared.metrics import inc_counter
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
@@ -171,7 +171,9 @@ def send_analytics_data(
     AmplitudeEventPublisher().publish(
         "Upload Sent",
         {
-            "user_ownerid": commit.author.ownerid,
+            "user_ownerid": commit.author.ownerid
+            if commit.author
+            else UNKNOWN_USER_OWNERID,
             "ownerid": commit.repository.author.ownerid,
             "repoid": commit.repository.repoid,
             "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here.
