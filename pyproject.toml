@@ -79,4 +79,4 @@ dev-dependencies = [
 ]
 
 [tool.uv.sources]
-shared = { git = "https://github.com/codecov/shared", rev = "ec1378b2b03904f63a5c55b51cb24a2a86eccce0" }
+shared = { git = "https://github.com/codecov/shared", rev = "0e628785869c8ce4492a3f83bc0b445dee00150a" }

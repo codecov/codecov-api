@@ -425,7 +425,7 @@ requires-dist = [
     { name = "requests", specifier = "==2.32.3" },
     { name = "sentry-sdk", specifier = ">=2.13.0" },
     { name = "sentry-sdk", extras = ["celery"], specifier = "==2.13.0" },
-    { name = "shared", git = "https://github.com/codecov/shared?rev=ec1378b2b03904f63a5c55b51cb24a2a86eccce0" },
+    { name = "shared", git = "https://github.com/codecov/shared?rev=0e628785869c8ce4492a3f83bc0b445dee00150a" },
     { name = "simplejson", specifier = "==3.17.2" },
     { name = "starlette", specifier = "==0.40.0" },
     { name = "stripe", specifier = ">=11.4.1" },
@@ -1928,7 +1928,7 @@ wheels = [
 [[package]]
 name = "shared"
 version = "0.1.0"
-source = { git = "https://github.com/codecov/shared?rev=ec1378b2b03904f63a5c55b51cb24a2a86eccce0#ec1378b2b03904f63a5c55b51cb24a2a86eccce0" }
+source = { git = "https://github.com/codecov/shared?rev=0e628785869c8ce4492a3f83bc0b445dee00150a#0e628785869c8ce4492a3f83bc0b445dee00150a" }
 dependencies = [
     { name = "amplitude-analytics" },
     { name = "boto3" },
