@@ -32,7 +32,6 @@ class FetchPullRequestInteractorTest(TestCase):
         assert pr == self.pr
 
 
-# Not part of the class because TestCase cannot be parametrized
 @freeze_time("2024-07-01 12:00:00")
 @pytest.mark.parametrize(
     "pr_state, updatestamp, expected",

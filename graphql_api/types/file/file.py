@@ -1,7 +1,6 @@
 import hashlib
 
 from ariadne import ObjectType
-from asgiref.sync import sync_to_async
 from shared.utils.merge import LineType, line_type
 
 from graphql_api.types.enums import CoverageLine
