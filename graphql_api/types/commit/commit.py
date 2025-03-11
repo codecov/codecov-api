@@ -160,6 +160,8 @@ def get_sorted_path_contents(
     component_paths = []
     component_flags = []
 
+    report_flags = report.get_flag_names()
+
     if component_filter:
         all_components = components_service.commit_components(commit, current_owner)
         filtered_components = components_service.filter_components_by_name_or_id(
@@ -173,10 +175,8 @@ def get_sorted_path_contents(
 
         for component in filtered_components:
             component_paths.extend(component.paths)
-            if report.flags:
-                component_flags.extend(
-                    component.get_matching_flags(report.flags.keys())
-                )
+            if report_flags:
+                component_flags.extend(component.get_matching_flags(report_flags))
 
     if component_flags:
         if flags_filter:
@@ -184,7 +184,7 @@ def get_sorted_path_contents(
         else:
             flags_filter = component_flags
 
-    if flags_filter and not report.flags:
+    if flags_filter and not report_flags:
         return UnknownFlags(f"No coverage with chosen flags: {flags_filter}")
 
     report_paths = ReportPaths(
@@ -325,8 +325,8 @@ def resolve_coverage_totals(
 @sentry_sdk.trace
 @commit_coverage_analytics_bindable.field("flagNames")
 @sync_to_async
-def resolve_coverage_flags(commit: Commit, info: GraphQLResolveInfo) -> List[str]:
-    return commit.full_report.flags.keys()
+def resolve_coverage_flags(commit: Commit, info: GraphQLResolveInfo) -> list[str]:
+    return commit.full_report.get_flag_names()
 
 
 @sentry_sdk.trace

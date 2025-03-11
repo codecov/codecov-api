@@ -9,7 +9,8 @@ from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     RepositoryFactory,
 )
-from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine
 from shared.utils.sessions import Session
 
 from core.models import Branch

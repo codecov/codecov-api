@@ -8,7 +8,8 @@ from shared.django_apps.core.tests.factories import (
     PullFactory,
     RepositoryFactory,
 )
-from shared.reports.resources import Report, ReportFile, ReportLine
+from shared.reports.resources import Report, ReportFile
+from shared.reports.types import ReportLine
 from shared.utils.sessions import Session
 
 from compare.commands.compare.interactors.fetch_impacted_files import (
