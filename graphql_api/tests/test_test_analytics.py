@@ -15,7 +15,6 @@ from graphql_api.types.enums import (
 )
 from graphql_api.types.enums.enum_types import MeasurementInterval
 from graphql_api.types.test_analytics.test_analytics import (
-    TestResultConnection,
     TestResultsRow,
     encode_cursor,
     generate_test_results,
@@ -75,6 +74,53 @@ base_gql_query = """
 rows = [RowFactory()(datetime.datetime(2024, 1, 1 + i)) for i in range(5)]
 
 
+rows_with_duplicate_names = [
+    RowFactory()(datetime.datetime(2024, 1, 1 + i)) for i in range(5)
+]
+for i in range(0, len(rows_with_duplicate_names) - 1, 2):
+    rows_with_duplicate_names[i]["name"] = rows_with_duplicate_names[i + 1]["name"]
+
+
+def dedup(rows: list[dict]) -> list[dict]:
+    by_name = {}
+    for row in rows:
+        if row["name"] not in by_name:
+            by_name[row["name"]] = []
+        by_name[row["name"]].append(row)
+
+    result = []
+    for name, group in by_name.items():
+        if len(group) == 1:
+            result.append(group[0])
+            continue
+
+        weights = [r["total_pass_count"] + r["total_fail_count"] for r in group]
+        total_weight = sum(weights)
+
+        merged = {
+            "name": name,
+            "testsuite": sorted({r["testsuite"] for r in group}),
+            "flags": sorted({flag for r in group for flag in r["flags"]}),
+            "test_id": group[0]["test_id"],  # Keep first test_id
+            "failure_rate": sum(r["failure_rate"] * w for r, w in zip(group, weights))
+            / total_weight,
+            "flake_rate": sum(r["flake_rate"] * w for r, w in zip(group, weights))
+            / total_weight,
+            "updated_at": max(r["updated_at"] for r in group),
+            "avg_duration": sum(r["avg_duration"] * w for r, w in zip(group, weights))
+            / total_weight,
+            "total_fail_count": sum(r["total_fail_count"] for r in group),
+            "total_flaky_fail_count": sum(r["total_flaky_fail_count"] for r in group),
+            "total_pass_count": sum(r["total_pass_count"] for r in group),
+            "total_skip_count": sum(r["total_skip_count"] for r in group),
+            "commits_where_fail": sum(r["commits_where_fail"] for r in group),
+            "last_duration": max(r["last_duration"] for r in group),
+        }
+        result.append(merged)
+
+    return sorted(result, key=lambda x: x["updated_at"], reverse=True)
+
+
 def row_to_camel_case(row: dict) -> dict:
     return {
         "commitsFailed"
@@ -89,6 +135,7 @@ def row_to_camel_case(row: dict) -> dict:
 
 
 test_results_table = pl.DataFrame(rows)
+test_results_table_with_duplicate_names = pl.DataFrame(rows_with_duplicate_names)
 
 
 def base64_encode_string(x: str) -> str:
@@ -143,6 +190,21 @@ def store_in_storage(repository, mock_storage):
     )
 
 
+@pytest.fixture
+def store_in_redis_with_duplicate_names(repository):
+    redis = get_redis_connection()
+    redis.set(
+        f"test_results:{repository.repoid}:{repository.branch}:30",
+        test_results_table_with_duplicate_names.write_ipc(None).getvalue(),
+    )
+
+    yield
+
+    redis.delete(
+        f"test_results:{repository.repoid}:{repository.branch}:30",
+    )
+
+
 class TestAnalyticsTestCase(
     GraphQLTestHelper,
 ):
@@ -174,7 +236,7 @@ class TestAnalyticsTestCase(
         m.assert_called_once_with(repository.repoid, repository.branch)
 
     def test_test_results(
-        self, transactional_db, repository, store_in_redis, mock_storage
+        self, transactional_db, repository, store_in_redis, mock_storage, snapshot
     ):
         test_results = generate_test_results(
             repoid=repository.repoid,
@@ -183,25 +245,21 @@ class TestAnalyticsTestCase(
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
         )
         assert test_results is not None
-        assert test_results == TestResultConnection(
-            total_count=5,
-            edges=[
-                {
-                    "cursor": cursor(row),
-                    "node": TestResultsRow(**row),
-                }
-                for row in reversed(rows)
-            ],
-            page_info={
-                "has_next_page": False,
-                "has_previous_page": False,
-                "start_cursor": cursor(rows[4]),
-                "end_cursor": cursor(rows[0]),
-            },
-        )
+        assert test_results.total_count == 5
+        assert test_results.page_info == {
+            "has_next_page": False,
+            "has_previous_page": False,
+            "start_cursor": cursor(rows[4]),
+            "end_cursor": cursor(rows[0]),
+        }
+        assert snapshot("json") == [
+            row["node"].to_dict()
+            for row in test_results.edges
+            if isinstance(row["node"], TestResultsRow)
+        ]
 
     def test_test_results_asc(
-        self, transactional_db, repository, store_in_redis, mock_storage
+        self, transactional_db, repository, store_in_redis, mock_storage, snapshot
     ):
         test_results = generate_test_results(
             repoid=repository.repoid,
@@ -210,22 +268,18 @@ class TestAnalyticsTestCase(
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
         )
         assert test_results is not None
-        assert test_results == TestResultConnection(
-            total_count=5,
-            edges=[
-                {
-                    "cursor": cursor(row),
-                    "node": TestResultsRow(**row),
-                }
-                for row in rows
-            ],
-            page_info={
-                "has_next_page": False,
-                "has_previous_page": False,
-                "start_cursor": cursor(rows[0]),
-                "end_cursor": cursor(rows[4]),
-            },
-        )
+        assert test_results.total_count == 5
+        assert test_results.page_info == {
+            "has_next_page": False,
+            "has_previous_page": False,
+            "start_cursor": cursor(rows[0]),
+            "end_cursor": cursor(rows[4]),
+        }
+        assert snapshot("json") == [
+            row["node"].to_dict()
+            for row in test_results.edges
+            if isinstance(row["node"], TestResultsRow)
+        ]
 
     @pytest.mark.parametrize(
         "first, after, last, before, has_next_page, has_previous_page, start_cursor, end_cursor, expected_rows",
@@ -318,6 +372,7 @@ class TestAnalyticsTestCase(
         repository,
         store_in_redis,
         mock_storage,
+        snapshot,
     ):
         test_results = generate_test_results(
             repoid=repository.repoid,
@@ -329,22 +384,18 @@ class TestAnalyticsTestCase(
             before=before,
             last=last,
         )
-        assert test_results == TestResultConnection(
-            total_count=5,
-            edges=[
-                {
-                    "cursor": cursor(row),
-                    "node": TestResultsRow(**row),
-                }
-                for row in expected_rows
-            ],
-            page_info={
-                "has_next_page": has_next_page,
-                "has_previous_page": has_previous_page,
-                "start_cursor": start_cursor,
-                "end_cursor": end_cursor,
-            },
-        )
+        assert test_results.total_count == 5
+        assert test_results.page_info == {
+            "has_next_page": has_next_page,
+            "has_previous_page": has_previous_page,
+            "start_cursor": start_cursor,
+            "end_cursor": end_cursor,
+        }
+        assert snapshot("json") == [
+            row["node"].to_dict()
+            for row in test_results.edges
+            if isinstance(row["node"], TestResultsRow)
+        ]
 
     @pytest.mark.parametrize(
         "first, after, last, before, has_next_page, has_previous_page, start_cursor, end_cursor, expected_rows",
@@ -437,6 +488,7 @@ class TestAnalyticsTestCase(
         repository,
         store_in_redis,
         mock_storage,
+        snapshot,
     ):
         test_results = generate_test_results(
             repoid=repository.repoid,
@@ -448,24 +500,22 @@ class TestAnalyticsTestCase(
             before=before,
             last=last,
         )
-        assert test_results == TestResultConnection(
-            total_count=5,
-            edges=[
-                {
-                    "cursor": cursor(row),
-                    "node": TestResultsRow(**row),
-                }
-                for row in expected_rows
-            ],
-            page_info={
-                "has_next_page": has_next_page,
-                "has_previous_page": has_previous_page,
-                "start_cursor": start_cursor,
-                "end_cursor": end_cursor,
-            },
-        )
+        assert test_results.total_count == 5
+        assert test_results.page_info == {
+            "has_next_page": has_next_page,
+            "has_previous_page": has_previous_page,
+            "start_cursor": start_cursor,
+            "end_cursor": end_cursor,
+        }
+        assert snapshot("json") == [
+            row["node"].to_dict()
+            for row in test_results.edges
+            if isinstance(row["node"], TestResultsRow)
+        ]
 
-    def test_test_analytics_term_filter(self, repository, store_in_redis, mock_storage):
+    def test_test_analytics_term_filter(
+        self, repository, store_in_redis, mock_storage, snapshot
+    ):
         test_results = generate_test_results(
             repoid=repository.repoid,
             term=rows[0]["name"][2:],
@@ -474,23 +524,22 @@ class TestAnalyticsTestCase(
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
         )
         assert test_results is not None
-        assert test_results == TestResultConnection(
-            total_count=1,
-            edges=[
-                {
-                    "cursor": cursor(rows[0]),
-                    "node": TestResultsRow(**rows[0]),
-                },
-            ],
-            page_info={
-                "has_next_page": False,
-                "has_previous_page": False,
-                "start_cursor": cursor(rows[0]),
-                "end_cursor": cursor(rows[0]),
-            },
-        )
+        assert test_results.total_count == 1
+        assert test_results.page_info == {
+            "has_next_page": False,
+            "has_previous_page": False,
+            "start_cursor": cursor(rows[0]),
+            "end_cursor": cursor(rows[0]),
+        }
+        assert snapshot("json") == [
+            row["node"].to_dict()
+            for row in test_results.edges
+            if isinstance(row["node"], TestResultsRow)
+        ]
 
-    def test_test_analytics_testsuite_filter(self, repository, store_in_redis):
+    def test_test_analytics_testsuite_filter(
+        self, repository, store_in_redis, snapshot
+    ):
         test_results = generate_test_results(
             repoid=repository.repoid,
             testsuites=[rows[0]["testsuite"]],
@@ -499,23 +548,22 @@ class TestAnalyticsTestCase(
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
         )
         assert test_results is not None
-        assert test_results == TestResultConnection(
-            total_count=1,
-            edges=[
-                {
-                    "cursor": cursor(rows[0]),
-                    "node": TestResultsRow(**rows[0]),
-                },
-            ],
-            page_info={
-                "has_next_page": False,
-                "has_previous_page": False,
-                "start_cursor": cursor(rows[0]),
-                "end_cursor": cursor(rows[0]),
-            },
-        )
+        assert test_results.total_count == 1
+        assert test_results.page_info == {
+            "has_next_page": False,
+            "has_previous_page": False,
+            "start_cursor": cursor(rows[0]),
+            "end_cursor": cursor(rows[0]),
+        }
+        assert snapshot("json") == [
+            row["node"].to_dict()
+            for row in test_results.edges
+            if isinstance(row["node"], TestResultsRow)
+        ]
 
-    def test_test_analytics_flag_filter(self, repository, store_in_redis, mock_storage):
+    def test_test_analytics_flag_filter(
+        self, repository, store_in_redis, mock_storage, snapshot
+    ):
         test_results = generate_test_results(
             repoid=repository.repoid,
             flags=[rows[0]["flags"][0]],
@@ -524,21 +572,19 @@ class TestAnalyticsTestCase(
             measurement_interval=MeasurementInterval.INTERVAL_30_DAY,
         )
         assert test_results is not None
-        assert test_results == TestResultConnection(
-            total_count=1,
-            edges=[
-                {
-                    "cursor": cursor(rows[0]),
-                    "node": TestResultsRow(**rows[0]),
-                },
-            ],
-            page_info={
-                "has_next_page": False,
-                "has_previous_page": False,
-                "start_cursor": cursor(rows[0]),
-                "end_cursor": cursor(rows[0]),
-            },
-        )
+        # rows = dedup(rows)
+        assert test_results.total_count == 1
+        assert test_results.page_info == {
+            "has_next_page": False,
+            "has_previous_page": False,
+            "start_cursor": cursor(rows[0]),
+            "end_cursor": cursor(rows[0]),
+        }
+        assert snapshot("json") == [
+            row["node"].to_dict()
+            for row in test_results.edges
+            if isinstance(row["node"], TestResultsRow)
+        ]
 
     def test_gql_query(self, repository, store_in_redis, mock_storage):
         query = base_gql_query % (
@@ -580,7 +626,52 @@ class TestAnalyticsTestCase(
                 "cursor": cursor(row),
                 "node": row_to_camel_case(row),
             }
-            for row in reversed(rows)
+            for row in dedup(rows)
+        ]
+
+    def test_gql_query_with_duplicate_names(
+        self, repository, store_in_redis_with_duplicate_names, mock_storage
+    ):
+        query = base_gql_query % (
+            repository.author.username,
+            repository.name,
+            """
+            testResults(ordering: { parameter: UPDATED_AT, direction: DESC } ) {
+                totalCount
+                edges {
+                    cursor
+                    node {
+                        name
+                        failureRate
+                        flakeRate
+                        updatedAt
+                        avgDuration
+                        totalFailCount
+                        totalFlakyFailCount
+                        totalPassCount
+                        totalSkipCount
+                        commitsFailed
+                        lastDuration
+                    }
+                }
+            }
+            """,
+        )
+
+        result = self.gql_request(query, owner=repository.author)
+
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["totalCount"]
+            == 3
+        )
+        assert result["owner"]["repository"]["testAnalytics"]["testResults"][
+            "edges"
+        ] == [
+            {
+                "cursor": cursor(row),
+                "node": row_to_camel_case(row),
+            }
+            for row in dedup(rows_with_duplicate_names)
         ]
 
     def test_gql_query_aggregates(self, repository, store_in_redis, mock_storage):
