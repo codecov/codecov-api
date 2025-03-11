@@ -173,6 +173,9 @@ class MockReport(object):
         for name in self.files:
             yield MockFile(name)
 
+    def get_flag_names(self):
+        return ["flag_a"]
+
     @property
     def flags(self):
         return {"flag-a": MockFlag()}
@@ -198,6 +201,9 @@ class MockNoFlagsReport(object):
     @property
     def flags(self):
         return None
+
+    def get_flag_names(self):
+        return []
 
 
 class TestBranch(GraphQLTestHelper, TransactionTestCase):
