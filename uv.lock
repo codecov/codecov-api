@@ -347,7 +347,6 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "pyjwt" },
-    { name = "pytest-insta" },
     { name = "python-dateutil" },
     { name = "python-json-logger" },
     { name = "python-redis-lock" },
@@ -373,6 +372,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
+    { name = "pytest-insta" },
     { name = "pytest-mock" },
     { name = "pytest-split" },
     { name = "ruff" },
@@ -415,7 +415,6 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pyjwt", specifier = ">=2.4.0" },
-    { name = "pytest-insta", specifier = ">=0.3.0" },
     { name = "python-dateutil", specifier = "==2.9.0.post0" },
     { name = "python-json-logger", specifier = "==2.0.7" },
     { name = "python-redis-lock", specifier = "==4.0.0" },
@@ -425,7 +424,7 @@ requires-dist = [
     { name = "requests", specifier = "==2.32.3" },
     { name = "sentry-sdk", specifier = ">=2.13.0" },
     { name = "sentry-sdk", extras = ["celery"], specifier = "==2.13.0" },
-    { name = "shared", git = "https://github.com/codecov/shared?rev=079d368c402758bc7ccb47572425237a9ebd9f9b" },
+    { name = "shared", git = "https://github.com/codecov/shared?rev=82e98e56baee294be3e183a4411161fec8b67928" },
     { name = "simplejson", specifier = "==3.17.2" },
     { name = "starlette", specifier = "==0.40.0" },
     { name = "stripe", specifier = ">=11.4.1" },
@@ -442,6 +441,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.14.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-django", specifier = "==4.8.0" },
+    { name = "pytest-insta", specifier = ">=0.3.0" },
     { name = "pytest-mock", specifier = "==3.14.0" },
     { name = "pytest-split", specifier = "==0.10.0" },
     { name = "ruff", specifier = ">=0.9.6" },
@@ -1928,7 +1928,7 @@ wheels = [
 [[package]]
 name = "shared"
 version = "0.1.0"
-source = { git = "https://github.com/codecov/shared?rev=079d368c402758bc7ccb47572425237a9ebd9f9b#079d368c402758bc7ccb47572425237a9ebd9f9b" }
+source = { git = "https://github.com/codecov/shared?rev=82e98e56baee294be3e183a4411161fec8b67928#82e98e56baee294be3e183a4411161fec8b67928" }
 dependencies = [
     { name = "amplitude-analytics" },
     { name = "boto3" },
