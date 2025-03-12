@@ -1,4 +1,5 @@
-name: Upload Overwatch - TEST
+# Created on 2025-03-12 09:39:33
+name: Upload Overwatch - 2025-03-12 09:39:33
 
 on:
   pull_request:
@@ -39,9 +40,9 @@ jobs:
           chmod +x overwatch-cli
       - name: Run Overwatch CLI
         run: |
-          ./overwatch-cli \\
-            --auth-token \${{ secrets.SENTRY_AUTH_TOKEN }} \\
-            --organization-slug codecov \\
-            --pullid 1204 \\
-            python \\
-            --python-path \$(which python3)
+          ./overwatch-cli \
+            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
+            --organization-slug codecov \
+            --pullid 1204 \
+            python \
+            --python-path $(which python3)
