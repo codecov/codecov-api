@@ -326,7 +326,7 @@ def resolve_coverage_totals(
 @commit_coverage_analytics_bindable.field("flagNames")
 @sync_to_async
 def resolve_coverage_flags(commit: Commit, info: GraphQLResolveInfo) -> list[str]:
-    return commit.full_report.get_flag_names()
+    return commit.full_report.get_flag_names() if commit.full_report else []
 
 
 @sentry_sdk.trace
