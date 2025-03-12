@@ -1,10 +1,13 @@
-name: Upload Overwatch
+name: Upload Overwatch - TEST
 
 on:
   pull_request:
     types:
       - opened
       - synchronize
+  push:
+    branches-ignore:
+      - main
 
 jobs:
   upload-overwatch:
@@ -36,8 +39,9 @@ jobs:
           chmod +x overwatch-cli
       - name: Run Overwatch CLI
         run: |
-          ./overwatch-cli \
-            --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
-            --organization-slug codecov \
-            python \
-            --python-path $(which python3)
+          ./overwatch-cli \\
+            --auth-token \${{ secrets.SENTRY_AUTH_TOKEN }} \\
+            --organization-slug codecov \\
+            --pullid 1204 \\
+            python \\
+            --python-path \$(which python3)
