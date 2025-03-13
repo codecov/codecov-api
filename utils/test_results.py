@@ -55,7 +55,7 @@ def get_results(
 
     if result is None:
         # try storage
-        storage_service = get_appropriate_storage_service()
+        storage_service = get_appropriate_storage_service(repoid)
         key = storage_key(repoid, branch, interval_start, interval_end)
         try:
             result = storage_service.read_file(

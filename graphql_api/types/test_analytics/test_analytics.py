@@ -52,6 +52,24 @@ class TestResultsRow:
     commits_where_fail: int
     last_duration: float
 
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "test_id": self.test_id,
+            "testsuite": self.testsuite,
+            "flags": self.flags,
+            "failure_rate": self.failure_rate,
+            "flake_rate": self.flake_rate,
+            "updated_at": self.updated_at.isoformat(),
+            "avg_duration": self.avg_duration,
+            "total_fail_count": self.total_fail_count,
+            "total_flaky_fail_count": self.total_flaky_fail_count,
+            "total_pass_count": self.total_pass_count,
+            "total_skip_count": self.total_skip_count,
+            "commits_where_fail": self.commits_where_fail,
+            "last_duration": self.last_duration,
+        }
+
 
 @dataclass
 class TestResultConnection:
@@ -197,12 +215,44 @@ def generate_test_results(
             },
         )
 
+    failure_rate_expr = (
+        pl.col("failure_rate")
+        * (pl.col("total_fail_count") + pl.col("total_pass_count"))
+    ).sum() / (pl.col("total_fail_count") + pl.col("total_pass_count")).sum()
+
+    flake_rate_expr = (
+        pl.col("flake_rate") * (pl.col("total_fail_count") + pl.col("total_pass_count"))
+    ).sum() / (pl.col("total_fail_count") + pl.col("total_pass_count")).sum()
+
+    avg_duration_expr = (
+        pl.col("avg_duration")
+        * (pl.col("total_pass_count") + pl.col("total_fail_count"))
+    ).sum() / (pl.col("total_pass_count") + pl.col("total_fail_count")).sum()
+
+    # dedup
+    table = table.group_by("name").agg(
+        pl.col("test_id").first().alias("test_id"),
+        pl.col("testsuite").alias("testsuite"),
+        pl.col("flags").explode().unique().alias("flags"),
+        failure_rate_expr.alias("failure_rate"),
+        flake_rate_expr.alias("flake_rate"),
+        pl.col("updated_at").max().alias("updated_at"),
+        avg_duration_expr.alias("avg_duration"),
+        pl.col("total_fail_count").sum().alias("total_fail_count"),
+        pl.col("total_flaky_fail_count").sum().alias("total_flaky_fail_count"),
+        pl.col("total_pass_count").sum().alias("total_pass_count"),
+        pl.col("total_skip_count").sum().alias("total_skip_count"),
+        pl.col("commits_where_fail").sum().alias("commits_where_fail"),
+        pl.col("last_duration").max().alias("last_duration"),
+    )
+
     if term:
         table = table.filter(pl.col("name").str.contains(term))
 
     if testsuites:
         table = table.filter(
-            pl.col("testsuite").is_not_null() & pl.col("testsuite").is_in(testsuites)
+            pl.col("testsuite").is_not_null()
+            & pl.col("testsuite").list.eval(pl.element().is_in(testsuites)).list.any()
         )
 
     if flags:

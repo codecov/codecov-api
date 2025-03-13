@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '4' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
@@ -373,6 +372,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
+    { name = "pytest-insta" },
     { name = "pytest-mock" },
     { name = "pytest-split" },
     { name = "ruff" },
@@ -424,7 +424,7 @@ requires-dist = [
     { name = "requests", specifier = "==2.32.3" },
     { name = "sentry-sdk", specifier = ">=2.13.0" },
     { name = "sentry-sdk", extras = ["celery"], specifier = "==2.13.0" },
-    { name = "shared", git = "https://github.com/codecov/shared?rev=4755e7f77efc711c6ca34c2fb284edce71836402" },
+    { name = "shared", git = "https://github.com/codecov/shared?rev=82e98e56baee294be3e183a4411161fec8b67928" },
     { name = "simplejson", specifier = "==3.17.2" },
     { name = "starlette", specifier = "==0.40.0" },
     { name = "stripe", specifier = ">=11.4.1" },
@@ -441,6 +441,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.14.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-django", specifier = "==4.8.0" },
+    { name = "pytest-insta", specifier = ">=0.3.0" },
     { name = "pytest-mock", specifier = "==3.14.0" },
     { name = "pytest-split", specifier = "==0.10.0" },
     { name = "ruff", specifier = ">=0.9.6" },
@@ -1705,6 +1706,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-insta"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/5b/6ca4baca60c3f8361415501668cde3abd94dbad44293325833fd89d1a7c1/pytest_insta-0.3.0.tar.gz", hash = "sha256:9e6e1c70a021f68ccc4643360b2c2f8326cf3befba85f942c1da17b9caf713f7", size = 14960 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/d5/1459b2861cf703cf49d96b6f29731ee74f4ac7e34b0c60b0ff75bdd318bc/pytest_insta-0.3.0-py3-none-any.whl", hash = "sha256:93a105e3850f2887b120a581923b10bb313d722e00d369377a1d91aa535df704", size = 13660 },
+]
+
+[[package]]
 name = "pytest-mock"
 version = "3.14.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1914,7 +1928,7 @@ wheels = [
 [[package]]
 name = "shared"
 version = "0.1.0"
-source = { git = "https://github.com/codecov/shared?rev=4755e7f77efc711c6ca34c2fb284edce71836402#4755e7f77efc711c6ca34c2fb284edce71836402" }
+source = { git = "https://github.com/codecov/shared?rev=82e98e56baee294be3e183a4411161fec8b67928#82e98e56baee294be3e183a4411161fec8b67928" }
 dependencies = [
     { name = "amplitude-analytics" },
     { name = "boto3" },

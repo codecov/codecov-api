@@ -30,7 +30,7 @@ def load_bundle_analysis_comparison(
         return MissingBaseReport()
 
     loader = BundleAnalysisReportLoader(
-        storage_service=get_appropriate_storage_service(),
+        storage_service=get_appropriate_storage_service(head_commit.repository.repoid),
         repo_key=ArchiveService.get_archive_hash(head_commit.repository),
     )
 
@@ -57,7 +57,7 @@ def load_bundle_analysis_report(
         return MissingHeadReport()
 
     loader = BundleAnalysisReportLoader(
-        storage_service=get_appropriate_storage_service(),
+        storage_service=get_appropriate_storage_service(commit.repository.repoid),
         repo_key=ArchiveService.get_archive_hash(commit.repository),
     )
     report = loader.load(report.external_id)

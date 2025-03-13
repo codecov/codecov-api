@@ -38,7 +38,7 @@ from timeseries.models import Interval, MeasurementName
 def load_report(
     commit: Commit, report_code: Optional[str] = None
 ) -> Optional[SharedBundleAnalysisReport]:
-    storage = get_appropriate_storage_service()
+    storage = get_appropriate_storage_service(commit.repository.repoid)
 
     commit_report = commit.reports.filter(
         report_type=CommitReport.ReportType.BUNDLE_ANALYSIS,

@@ -112,7 +112,7 @@ class BaseReportViewSet(
                 # empty report since the path is not part of the component
                 return Report()
 
-            component_flags = component.get_matching_flags(report.flags.keys())
+            component_flags = component.get_matching_flags(report.get_flag_names())
             if flag and len(component.flag_regexes) > 0 and flag not in component_flags:
                 # empty report since the flag is not part of the component
                 return Report()

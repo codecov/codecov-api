@@ -97,9 +97,8 @@ class MockReport(object):
     def filter(self, **kwargs):
         return self
 
-    @property
-    def flags(self):
-        return {"flag_a": True, "flag_b": True}
+    def get_flag_names(self):
+        return ["flag_a", "flag_b"]
 
 
 class EmptyReport(MockReport):
