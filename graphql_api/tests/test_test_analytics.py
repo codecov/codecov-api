@@ -21,6 +21,7 @@ from graphql_api.types.test_analytics.test_analytics import (
     get_results,
 )
 from services.redis_configuration import get_redis_connection
+from utils.test_results import dedup_table
 
 from .helper import GraphQLTestHelper
 
@@ -218,7 +219,8 @@ class TestAnalyticsTestCase(
     ):
         results = get_results(repository.repoid, repository.branch, 30)
         assert results is not None
-        assert results.equals(test_results_table)
+
+        assert results.equals(dedup_table(test_results_table))
 
     def test_get_test_results_no_storage(
         self, transactional_db, repository, mock_storage
@@ -231,7 +233,7 @@ class TestAnalyticsTestCase(
         m = mocker.patch("services.task.TaskService.cache_test_results_redis")
         results = get_results(repository.repoid, repository.branch, 30)
         assert results is not None
-        assert results.equals(test_results_table)
+        assert results.equals(dedup_table(test_results_table))
 
         m.assert_called_once_with(repository.repoid, repository.branch)
 
