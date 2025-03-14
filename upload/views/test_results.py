@@ -8,6 +8,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
+from shared.events.amplitude import UNKNOWN_USER_OWNERID, AmplitudeEventPublisher
 from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -132,6 +133,20 @@ class TestResultsView(
                 "pullid": data.get("pr"),
                 "merged": False if data.get("pr") is not None else None,
                 "state": "pending",
+            },
+        )
+
+        AmplitudeEventPublisher().publish(
+            "Upload Received",
+            {
+                "user_ownerid": commit.author.ownerid
+                if commit.author
+                else UNKNOWN_USER_OWNERID,
+                "ownerid": repo.author.ownerid,
+                "repoid": repo.repoid,
+                "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here!
+                "pullid": commit.pullid,
+                "upload_type": "Test results",
             },
         )
 
