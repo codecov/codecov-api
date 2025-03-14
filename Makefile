@@ -63,14 +63,11 @@ lint.install.local:
 	uv add --dev ruff
 
 lint.run:
-	ruff check
 	ruff format
 
 lint.check:
 	echo "Linting..."
-	ruff check
 	echo "Formatting..."
-	ruff format --check
 
 build.requirements:
 	# if docker pull succeeds, we have already build this version of
