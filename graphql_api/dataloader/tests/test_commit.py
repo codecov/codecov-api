@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     PullFactory,
@@ -13,7 +13,7 @@ class GraphQLResolveInfo:
         self.context = {}
 
 
-class CommitLoaderTestCase(TransactionTestCase):
+class CommitLoaderTestCase(TestCase):
     def setUp(self):
         self.repository = RepositoryFactory(name="test-repo-1")
         self.pull_1_commit = CommitFactory(

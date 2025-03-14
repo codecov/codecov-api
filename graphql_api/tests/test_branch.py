@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from unittest.mock import PropertyMock, patch
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from shared.django_apps.core.tests.factories import (
     BranchFactory,
     CommitFactory,
@@ -206,7 +206,7 @@ class MockNoFlagsReport(object):
         return []
 
 
-class TestBranch(GraphQLTestHelper, TransactionTestCase):
+class TestBranch(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov")
         self.repo = RepositoryFactory(author=self.org, name="gazebo", private=False)

@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from django.conf import settings
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
@@ -98,7 +98,7 @@ query Repo(
 @pytest.mark.skipif(
     not settings.TIMESERIES_ENABLED, reason="requires timeseries data storage"
 )
-class TestFlags(GraphQLTestHelper, TransactionTestCase):
+class TestFlags(GraphQLTestHelper, TestCase):
     databases = {"default", "timeseries"}
 
     def setUp(self):

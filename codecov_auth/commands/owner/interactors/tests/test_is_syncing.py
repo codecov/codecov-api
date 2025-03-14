@@ -1,13 +1,13 @@
 from unittest.mock import patch
 
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from ..is_syncing import IsSyncingInteractor
 
 
-class IsSyncingInteractorTest(TransactionTestCase):
+class IsSyncingInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
 

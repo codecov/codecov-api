@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 from django.test import SimpleTestCase
 
 from codecov.commands.exceptions import (
@@ -6,7 +7,6 @@ from codecov.commands.exceptions import (
     Unauthorized,
     ValidationError,
 )
-from codecov.db import sync_to_async
 
 from ..mutation import resolve_union_error_type, wrap_error_handling_mutation
 

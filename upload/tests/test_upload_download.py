@@ -2,13 +2,13 @@ from unittest.mock import patch
 
 import minio
 from ddf import G
-from rest_framework.test import APITransactionTestCase
+from rest_framework.test import APITestCase
 
 from codecov_auth.models import Owner
 from core.models import Repository
 
 
-class UploadDownloadHelperTest(APITransactionTestCase):
+class UploadDownloadHelperTest(APITestCase):
     def _get(self, kwargs={}, data={}):
         path = f"/upload/{kwargs.get('service')}/{kwargs.get('owner_username')}/{kwargs.get('repo_name')}/download"
         return self.client.get(path, data=data)

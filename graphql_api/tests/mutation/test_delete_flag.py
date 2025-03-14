@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 
 from codecov.commands.exceptions import (
     NotFound,
@@ -24,7 +24,7 @@ query = """
 """
 
 
-class DeleteFlagTest(GraphQLTestHelper, TransactionTestCase):
+class DeleteFlagTest(GraphQLTestHelper, TestCase):
     @patch("core.commands.flag.interactors.delete_flag.DeleteFlagInteractor.execute")
     def test_delete_flag(self, execute_mock):
         data = self.gql_request(

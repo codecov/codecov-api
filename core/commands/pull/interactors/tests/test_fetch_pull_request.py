@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import (
     OwnerFactory,
@@ -12,7 +12,7 @@ from shared.django_apps.core.tests.factories import (
 from ..fetch_pull_request import FetchPullRequestInteractor
 
 
-class FetchPullRequestInteractorTest(TransactionTestCase):
+class FetchPullRequestInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)
@@ -32,7 +32,6 @@ class FetchPullRequestInteractorTest(TransactionTestCase):
         assert pr == self.pr
 
 
-# Not part of the class because TransactionTestCase cannot be parametrized
 @freeze_time("2024-07-01 12:00:00")
 @pytest.mark.parametrize(
     "pr_state, updatestamp, expected",

@@ -1,7 +1,7 @@
 from unittest.mock import PropertyMock, patch
 
 from django.contrib.auth.models import AnonymousUser
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.components import Component
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
@@ -46,7 +46,7 @@ def sample_report():
     return report
 
 
-class ComponentServiceTest(TransactionTestCase):
+class ComponentServiceTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.repo = RepositoryFactory(author=self.org, private=False)
@@ -138,7 +138,7 @@ class ComponentServiceTest(TransactionTestCase):
         assert report_py.totals.coverage == report.get("file_2.py").totals.coverage
 
 
-class ComponentComparisonTest(TransactionTestCase):
+class ComponentComparisonTest(TestCase):
     def setUp(self):
         self.user = OwnerFactory()
         self.repo = RepositoryFactory(author=self.user)

@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import CommitFactory
 
 from graphql_api.dataloader.loader import BaseLoader
@@ -10,7 +10,7 @@ class GraphQLResolveInfo:
         self.context = {}
 
 
-class BaseLoaderTestCase(TransactionTestCase):
+class BaseLoaderTestCase(TestCase):
     def setUp(self):
         # record type is irrelevant here
         self.record = CommitFactory(message="test commit", commitid="123")

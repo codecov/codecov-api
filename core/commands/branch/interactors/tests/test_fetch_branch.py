@@ -1,10 +1,10 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import BranchFactory, OwnerFactory
 
 from ..fetch_branch import FetchBranchInteractor
 
 
-class FetchBranchInteractorTest(TransactionTestCase):
+class FetchBranchInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory()
         self.branch = BranchFactory()

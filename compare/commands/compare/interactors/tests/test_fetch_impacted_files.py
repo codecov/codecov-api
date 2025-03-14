@@ -1,7 +1,7 @@
 import enum
 from unittest.mock import PropertyMock, patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
@@ -343,7 +343,7 @@ mocked_component_files_with_direct_and_indirect_changes = """
 """
 
 
-class FetchImpactedFilesTest(TransactionTestCase):
+class FetchImpactedFilesTest(TestCase):
     def setUp(self):
         self.user = OwnerFactory(username="codecov-user")
         self.parent_commit = CommitFactory()

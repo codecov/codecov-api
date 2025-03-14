@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -19,7 +19,7 @@ mutation($input: EraseRepositoryInput!) {
 """
 
 
-class EraseRepositoryTests(GraphQLTestHelper, TransactionTestCase):
+class EraseRepositoryTests(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.org = OwnerFactory(username="codecov", service="github")
         self.non_admin_user = OwnerFactory(organizations=[self.org.ownerid])
