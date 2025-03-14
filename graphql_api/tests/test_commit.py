@@ -90,7 +90,7 @@ class MockLines(object):
 
 
 class MockReport(object):
-    def get(self, file, _else):
+    def get(self, filename):
         MockLines()
         return MockLines()
 
@@ -102,7 +102,7 @@ class MockReport(object):
 
 
 class EmptyReport(MockReport):
-    def get(self, file, _else):
+    def get(self, filename):
         return None
 
 

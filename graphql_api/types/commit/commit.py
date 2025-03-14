@@ -333,7 +333,7 @@ def resolve_coverage_flags(commit: Commit, info: GraphQLResolveInfo) -> list[str
 @commit_coverage_analytics_bindable.field("coverageFile")
 @sync_to_async
 def resolve_coverage_file(commit, info, path, flags=None, components=None):
-    _else, paths = None, []
+    fallback_file, paths = None, []
     if components:
         all_components = components_service.commit_components(
             commit, info.context["request"].current_owner
@@ -343,10 +343,10 @@ def resolve_coverage_file(commit, info, path, flags=None, components=None):
         )
         for fc in filtered_components:
             paths.extend(fc.paths)
-        _else = FilteredReportFile(ReportFile(path), [])
+        fallback_file = FilteredReportFile(ReportFile(path), [])
 
     commit_report = commit.full_report.filter(flags=flags, paths=paths)
-    file_report = commit_report.get(path, _else=_else)
+    file_report = commit_report.get(path) or fallback_file
 
     return {
         "commit_report": commit_report,
