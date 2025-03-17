@@ -104,6 +104,9 @@ def test_upload_coverage_post(db, mocker):
     upload_task_mock = mocker.patch(
         "upload.views.uploads.trigger_upload_task", return_value=True
     )
+    amplitude_mock = mocker.patch(
+        "shared.events.amplitude.AmplitudeEventPublisher.publish"
+    )
 
     repository = RepositoryFactory(
         name="the_repo1", author__username="codecov", author__service="github"
@@ -150,6 +153,17 @@ def test_upload_coverage_post(db, mocker):
     assert (
         response_json.get("url")
         == f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
+    )
+    amplitude_mock.assert_called_with(
+        "Upload Received",
+        {
+            "user_ownerid": commit.author.ownerid,
+            "ownerid": commit.repository.author.ownerid,
+            "repoid": commit.repository.repoid,
+            "commitid": commit.id,
+            "pullid": commit.pullid,
+            "upload_type": "Coverage report",
+        },
     )
 
     assert ReportSession.objects.filter(

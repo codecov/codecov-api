@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService
+from shared.events.amplitude import UNKNOWN_USER_OWNERID, AmplitudeEventPublisher
 from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -90,6 +91,20 @@ class UploadCoverageView(APIView, GetterMixin):
                 repo=repository.name,
                 commit=commit.commitid,
             ),
+        )
+
+        AmplitudeEventPublisher().publish(
+            "Upload Received",
+            {
+                "user_ownerid": commit.author.ownerid
+                if commit.author
+                else UNKNOWN_USER_OWNERID,
+                "ownerid": commit.repository.author.ownerid,
+                "repoid": commit.repository.repoid,
+                "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here.
+                "pullid": commit.pullid,
+                "upload_type": "Coverage report",
+            },
         )
 
         # Create report
