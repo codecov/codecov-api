@@ -20,19 +20,18 @@ mutation($input: DeleteSessionInput!) {
 class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
+        user = self.user = UserFactory()
+        self.owner.user = user
+        self.owner.save()
+
+        # clear pre-existing login sessions, as some testcase seems to leak these
+        DjangoSession.objects.all().delete()
 
     def test_when_unauthenticated(self):
         data = self.gql_request(query, variables={"input": {"sessionid": 1}})
         assert data["deleteSession"]["error"]["__typename"] == "UnauthenticatedError"
 
     def test_when_authenticated(self):
-        user = UserFactory()
-        self.owner.user = user
-        self.owner.save()
-
-        django_session_id = DjangoSession.objects.all()
-        assert len(django_session_id) == 0
-
         login_query = "{ me { user { username }} }"
         self.gql_request(login_query, owner=self.owner)
 
@@ -59,10 +58,6 @@ class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
         assert len(Session.objects.filter(sessionid=sessionid)) == 0
 
     def test_when_authenticated_session_not_valid(self):
-        user = UserFactory()
-        self.owner.user = user
-        self.owner.save()
-
         login_query = "{ me { user { username }} }"
         self.gql_request(login_query, owner=self.owner)
 
