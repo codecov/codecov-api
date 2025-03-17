@@ -1,6 +1,6 @@
 import asyncio
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.dataloader.owner import OwnerLoader
@@ -11,7 +11,7 @@ class GraphQLResolveInfo:
         self.context = {}
 
 
-class OnwerLoaderTestCase(TransactionTestCase):
+class OnwerLoaderTestCase(TestCase):
     def setUp(self):
         self.users = [
             OwnerFactory(username="codecov-1"),

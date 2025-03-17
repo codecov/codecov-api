@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -17,7 +17,7 @@ query = """
 """
 
 
-class SaveTermsAgreementMutationTest(GraphQLTestHelper, TransactionTestCase):
+class SaveTermsAgreementMutationTest(GraphQLTestHelper, TestCase):
     def _request_deprecated(self, owner=None):
         return self.gql_request(
             query,

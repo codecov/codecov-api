@@ -1,13 +1,13 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory
 from stripe.api_resources import PaymentIntent, SetupIntent
 
 from .helper import GraphQLTestHelper
 
 
-class BillingTestCase(GraphQLTestHelper, TransactionTestCase):
+class BillingTestCase(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(stripe_customer_id="test-customer-id")
 

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 import yaml
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import StoragePaths
 from shared.bundle_analysis.storage import get_bucket_name
@@ -106,7 +106,7 @@ class EmptyReport(MockReport):
         return None
 
 
-class TestCommit(GraphQLTestHelper, TransactionTestCase):
+class TestCommit(GraphQLTestHelper, TestCase):
     def setUp(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
         self.org = OwnerFactory(username="codecov")

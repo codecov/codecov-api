@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFactory
 
 from graphql_api.dataloader.bundle_analysis import (
@@ -44,7 +44,7 @@ class MockBundleAnalysisLoaderServiceMissingBaseReport:
         raise MissingBaseReportError()
 
 
-class BundleAnalysisComparisonLoader(TransactionTestCase):
+class BundleAnalysisComparisonLoader(TestCase):
     def setUp(self):
         self.repo = RepositoryFactory()
 
@@ -126,7 +126,7 @@ class BundleAnalysisComparisonLoader(TransactionTestCase):
             assert loader.message == MissingBaseReport.message
 
 
-class BundleAnalysisReportLoader(TransactionTestCase):
+class BundleAnalysisReportLoader(TestCase):
     def setUp(self):
         self.repo = RepositoryFactory()
 

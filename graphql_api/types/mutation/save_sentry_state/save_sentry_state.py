@@ -1,8 +1,8 @@
 from ariadne import UnionType
+from asgiref.sync import sync_to_async
 
 import services.sentry as sentry
 from codecov.commands.exceptions import ValidationError
-from codecov.db import sync_to_async
 from graphql_api.helpers.mutation import (
     require_authenticated,
     resolve_union_error_type,

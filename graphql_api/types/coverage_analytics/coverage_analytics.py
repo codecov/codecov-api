@@ -5,13 +5,13 @@ from typing import Any, Iterable, List, Mapping, Optional, Union
 
 import sentry_sdk
 from ariadne import ObjectType, UnionType
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.forms.utils import from_current_timezone
 from graphql.type.definition import GraphQLResolveInfo
 from shared.yaml import UserYaml
 
 import timeseries.helpers as timeseries_helpers
-from codecov.db import sync_to_async
 from core.models import Repository
 from graphql_api.actions.components import (
     component_measurements,

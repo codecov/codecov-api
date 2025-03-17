@@ -2,9 +2,9 @@ from typing import Any, Optional, Union
 
 import sentry_sdk
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
 
-from codecov.db import sync_to_async
 from codecov_auth.models import Owner
 from compare.models import CommitComparison
 from core.models import Commit, Pull

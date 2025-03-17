@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from graphql_api.tests.helper import GraphQLTestHelper
@@ -15,7 +15,7 @@ mutation($input: RegenerateOrgUploadTokenInput!) {
 """
 
 
-class RegenerateOrgUploadToken(GraphQLTestHelper, TransactionTestCase):
+class RegenerateOrgUploadToken(GraphQLTestHelper, TestCase):
     def setUp(self):
         self.owner = OwnerFactory(
             username="codecov", plan="users-enterprisem", service="github"

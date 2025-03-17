@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 
 from codecov.commands.exceptions import (
     NotFound,
@@ -24,7 +24,7 @@ query = """
 """
 
 
-class DeleteComponentMeasurementsTest(GraphQLTestHelper, TransactionTestCase):
+class DeleteComponentMeasurementsTest(GraphQLTestHelper, TestCase):
     @patch(
         "core.commands.component.interactors.delete_component_measurements.DeleteComponentMeasurementsInteractor.execute"
     )

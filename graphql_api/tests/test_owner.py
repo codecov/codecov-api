@@ -2,7 +2,7 @@ import asyncio
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 from graphql import GraphQLError
@@ -57,7 +57,7 @@ query_repositories = """{
 """
 
 
-class TestOwnerType(GraphQLTestHelper, TransactionTestCase):
+class TestOwnerType(GraphQLTestHelper, TestCase):
     def setUp(self):
         mock_all_plans_and_tiers()
         self.account = AccountFactory()

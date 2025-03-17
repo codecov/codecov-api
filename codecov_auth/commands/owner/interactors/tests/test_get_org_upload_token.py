@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import (
     OrganizationLevelTokenFactory,
     OwnerFactory,
@@ -10,7 +10,7 @@ from codecov.commands.exceptions import Unauthenticated, Unauthorized
 from ..get_org_upload_token import GetOrgUploadToken
 
 
-class GetOrgUploadTokenInteractorTest(TransactionTestCase):
+class GetOrgUploadTokenInteractorTest(TestCase):
     def setUp(self):
         self.owner_with_no_upload_token = OwnerFactory()
         self.owner_with_upload_token = OwnerFactory(plan="users-enterprisem")

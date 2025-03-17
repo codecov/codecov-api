@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import sentry_sdk
+from asgiref.sync import sync_to_async
 from django.utils.functional import cached_property
 from shared.api_archive.archive import ArchiveService
 from shared.bundle_analysis import AssetReport as SharedAssetReport
@@ -23,7 +24,6 @@ from shared.django_apps.bundle_analysis.service.bundle_analysis import (
 )
 from shared.storage import get_appropriate_storage_service
 
-from codecov.db import sync_to_async
 from core.models import Commit, Repository
 from graphql_api.actions.measurements import (
     measurements_by_ids,

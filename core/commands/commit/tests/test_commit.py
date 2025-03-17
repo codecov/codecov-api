@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
@@ -11,7 +11,7 @@ from shared.django_apps.core.tests.factories import (
 from ..commit import CommitCommands
 
 
-class CommitCommandsTest(TransactionTestCase):
+class CommitCommandsTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.repository = RepositoryFactory()
