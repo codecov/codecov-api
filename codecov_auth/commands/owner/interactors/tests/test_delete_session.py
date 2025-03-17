@@ -1,9 +1,9 @@
 import pytest
-from django.test import TransactionTestCase
+from asgiref.sync import sync_to_async
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory, SessionFactory
 
 from codecov.commands.exceptions import Unauthenticated
-from codecov.db import sync_to_async
 from codecov_auth.models import DjangoSession, Session
 from codecov_auth.tests.factories import DjangoSessionFactory
 
@@ -15,7 +15,7 @@ def get_session(id):
     return Session.objects.get(sessionid=id)
 
 
-class DeleteSessionInteractorTest(TransactionTestCase):
+class DeleteSessionInteractorTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.django_session = DjangoSessionFactory()

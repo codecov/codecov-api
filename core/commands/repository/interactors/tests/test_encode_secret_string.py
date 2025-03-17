@@ -1,6 +1,6 @@
 import pytest
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 from shared.encryption.yaml_secret import yaml_secret_encryptor
 
@@ -9,7 +9,7 @@ from codecov.commands.exceptions import Unauthenticated, ValidationError
 from ..encode_secret_string import EncodeSecretStringInteractor
 
 
-class EncodeSecretStringInteractorTest(TransactionTestCase):
+class EncodeSecretStringInteractorTest(TestCase):
     @async_to_sync
     def execute(self, owner, repo_name, value):
         return EncodeSecretStringInteractor(owner, "github").execute(

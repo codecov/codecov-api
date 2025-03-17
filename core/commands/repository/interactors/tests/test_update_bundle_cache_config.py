@@ -1,6 +1,6 @@
 import pytest
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.bundle_analysis.models import CacheConfig
 from shared.django_apps.core.tests.factories import (
     OwnerFactory,
@@ -12,7 +12,7 @@ from codecov.commands.exceptions import ValidationError
 from ..update_bundle_cache_config import UpdateBundleCacheConfigInteractor
 
 
-class UpdateBundleCacheConfigInteractorTest(TransactionTestCase):
+class UpdateBundleCacheConfigInteractorTest(TestCase):
     databases = {"default"}
 
     def setUp(self):

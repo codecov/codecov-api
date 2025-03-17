@@ -1,7 +1,7 @@
 import datetime
 from typing import Any, Dict, Optional
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import (
@@ -20,7 +20,7 @@ from graphql_api.types.coverage_analytics.coverage_analytics import (
 from graphql_api.types.errors.errors import NotFoundError
 
 
-class TestFetchCoverageAnalytics(GraphQLTestHelper, TransactionTestCase):
+class TestFetchCoverageAnalytics(GraphQLTestHelper, TestCase):
     # SETUP
     def setUp(self) -> None:
         self.owner = OwnerFactory(username="codecov-user")

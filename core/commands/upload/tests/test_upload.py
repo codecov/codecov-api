@@ -1,12 +1,12 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import CommitFactory, OwnerFactory
 
 from ..upload import UploadCommands
 
 
-class UploadCommandsTest(TransactionTestCase):
+class UploadCommandsTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="codecov-user")
         self.report_session = CommitFactory()

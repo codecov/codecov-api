@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, Dict, List, Optional
 
+from asgiref.sync import sync_to_async
 from cursor_pagination import CursorPage, CursorPaginator, InvalidCursor
 from django.db.models import QuerySet
 
 from codecov.commands.exceptions import ValidationError
-from codecov.db import sync_to_async
 from graphql_api.types.enums import OrderingDirection
 
 

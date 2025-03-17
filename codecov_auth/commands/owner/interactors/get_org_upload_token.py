@@ -1,6 +1,7 @@
+from asgiref.sync import sync_to_async
+
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, Unauthorized
-from codecov.db import sync_to_async
 from codecov_auth.helpers import current_user_part_of_org
 from codecov_auth.models import OrganizationLevelToken
 

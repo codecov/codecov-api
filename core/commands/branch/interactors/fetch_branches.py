@@ -1,10 +1,10 @@
 from typing import Any
 
+from asgiref.sync import sync_to_async
 from django.db.models import OuterRef, Q, QuerySet, Subquery
 from shared.django_apps.core.models import Repository
 
 from codecov.commands.base import BaseInteractor
-from codecov.db import sync_to_async
 from core.models import Commit
 
 

@@ -1,4 +1,4 @@
-from django.test import TransactionTestCase
+from django.test import TestCase
 from prometheus_client import REGISTRY
 from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import OwnerFactory
@@ -21,7 +21,7 @@ query = """
 """
 
 
-class CancelTrialMutationTest(GraphQLTestHelper, TransactionTestCase):
+class CancelTrialMutationTest(GraphQLTestHelper, TestCase):
     def _request(self, owner=None, org_username: str = None):
         return self.gql_request(
             query,

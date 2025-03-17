@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
@@ -16,7 +16,7 @@ from reports.tests.factories import CommitReportFactory, UploadFactory
 from ..get_uploads_number_per_user import GetUploadsNumberPerUserInteractor
 
 
-class GetUploadsNumberPerUserInteractorTest(TransactionTestCase):
+class GetUploadsNumberPerUserInteractorTest(TestCase):
     def setUp(self):
         self.tier = TierFactory(tier_name=TierName.BASIC.value)
         self.plan = PlanFactory(tier=self.tier, monthly_uploads_limit=250)

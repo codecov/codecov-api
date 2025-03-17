@@ -30,6 +30,9 @@ class DeleteSessionTestCase(GraphQLTestHelper, TransactionTestCase):
         self.owner.user = user
         self.owner.save()
 
+        django_session_id = DjangoSession.objects.all()
+        assert len(django_session_id) == 0
+
         login_query = "{ me { user { username }} }"
         self.gql_request(login_query, owner=self.owner)
 

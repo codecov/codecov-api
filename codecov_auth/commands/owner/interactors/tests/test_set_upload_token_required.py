@@ -1,6 +1,6 @@
 import pytest
 from asgiref.sync import async_to_sync
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import OwnerFactory
 
 from codecov.commands.exceptions import Unauthenticated, Unauthorized, ValidationError
@@ -8,7 +8,7 @@ from codecov.commands.exceptions import Unauthenticated, Unauthorized, Validatio
 from ..set_upload_token_required import SetUploadTokenRequiredInteractor
 
 
-class SetUploadTokenRequiredInteractorTest(TransactionTestCase):
+class SetUploadTokenRequiredInteractorTest(TestCase):
     def setUp(self):
         self.service = "github"
         self.current_user = OwnerFactory(username="codecov-user")

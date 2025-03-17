@@ -1,5 +1,5 @@
 import pytest
-from django.test import TransactionTestCase
+from django.test import TestCase
 from shared.django_apps.core.tests.factories import (
     OwnerFactory,
     RepositoryFactory,
@@ -11,7 +11,7 @@ from codecov.commands.exceptions import Unauthenticated
 from ..get_repository_token import GetRepositoryTokenInteractor
 
 
-class GetRepositoryTokenInteractorTest(TransactionTestCase):
+class GetRepositoryTokenInteractorTest(TestCase):
     def setUp(self):
         self.org = OwnerFactory(name="codecov")
         self.active_repo = RepositoryFactory(

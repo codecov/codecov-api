@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
 import services.self_hosted as self_hosted
 from codecov.commands.base import BaseInteractor
 from codecov.commands.exceptions import Unauthenticated, ValidationError
-from codecov.db import sync_to_async
 
 
 @dataclass

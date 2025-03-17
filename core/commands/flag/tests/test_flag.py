@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from django.test import TransactionTestCase, override_settings
+from django.test import TestCase, override_settings
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
 
 from codecov.commands.exceptions import (
@@ -14,7 +14,7 @@ from reports.tests.factories import RepositoryFlagFactory
 from ..flag import FlagCommands
 
 
-class FlagCommandsTest(TransactionTestCase):
+class FlagCommandsTest(TestCase):
     def setUp(self):
         self.owner = OwnerFactory(username="test-user")
         self.org = OwnerFactory(username="test-org", admins=[self.owner.pk])

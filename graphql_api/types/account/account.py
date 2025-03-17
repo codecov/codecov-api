@@ -1,9 +1,9 @@
 from typing import Any, Coroutine, Optional
 
 from ariadne import ObjectType
+from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
 
-from codecov.db import sync_to_async
 from codecov_auth.models import Account, OktaSettings, Owner
 from graphql_api.helpers.ariadne import ariadne_load_local_graphql
 from graphql_api.helpers.connection import (
