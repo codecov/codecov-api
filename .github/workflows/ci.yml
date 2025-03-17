@@ -40,7 +40,7 @@ jobs:
   test:
     name: Test
     needs: [build]
-    uses: codecov/gha-workflows/.github/workflows/run-tests-split.yml@v1.2.33
+    uses: codecov/gha-workflows/.github/workflows/run-tests.yml@v1.2.33
     secrets: inherit
     with:
       run_integration: false

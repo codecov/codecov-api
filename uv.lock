@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '4' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
@@ -374,7 +375,6 @@ dev = [
     { name = "pytest-django" },
     { name = "pytest-insta" },
     { name = "pytest-mock" },
-    { name = "pytest-split" },
     { name = "ruff" },
     { name = "urllib3" },
     { name = "vcrpy" },
@@ -443,7 +443,6 @@ dev = [
     { name = "pytest-django", specifier = "==4.8.0" },
     { name = "pytest-insta", specifier = ">=0.3.0" },
     { name = "pytest-mock", specifier = "==3.14.0" },
-    { name = "pytest-split", specifier = "==0.10.0" },
     { name = "ruff", specifier = ">=0.9.6" },
     { name = "urllib3", specifier = "==1.26.19" },
     { name = "vcrpy", specifier = ">=6.0.1" },
@@ -1728,18 +1727,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c6/90/a955c3ab35ccd41ad4de556596fa86685bf4fc5ffcc62d22d856cfd4e29a/pytest-mock-3.14.0.tar.gz", hash = "sha256:2719255a1efeceadbc056d6bf3df3d1c5015530fb40cf347c0f9afac88410bd0", size = 32814 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f2/3b/b26f90f74e2986a82df6e7ac7e319b8ea7ccece1caec9f8ab6104dc70603/pytest_mock-3.14.0-py3-none-any.whl", hash = "sha256:0b72c38033392a5f4621342fe11e9219ac11ec9d375f8e2a0c164539e0d70f6f", size = 9863 },
-]
-
-[[package]]
-name = "pytest-split"
-version = "0.10.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pytest" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/46/d7/e30ba44adf83f15aee3f636daea54efadf735769edc0f0a7d98163f61038/pytest_split-0.10.0.tar.gz", hash = "sha256:adf80ba9fef7be89500d571e705b4f963dfa05038edf35e4925817e6b34ea66f", size = 13903 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d6/a7/cad88e9c1109a5c2a320d608daa32e5ee008ccbc766310f54b1cd6b3d69c/pytest_split-0.10.0-py3-none-any.whl", hash = "sha256:466096b086a7147bcd423c6e6c2e57fc62af1c5ea2e256b4ed50fc030fc3dddc", size = 11961 },
 ]
 
 [[package]]
