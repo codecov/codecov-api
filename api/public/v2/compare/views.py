@@ -1,4 +1,3 @@
-from distutils.util import strtobool
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins
@@ -15,6 +14,7 @@ from api.shared.compare.serializers import (
 )
 from services.components import ComponentComparison, commit_components
 from services.decorators import torngit_safe
+from utils import strtobool
 
 from .serializers import ComparisonSerializer, ComponentComparisonSerializer
 
