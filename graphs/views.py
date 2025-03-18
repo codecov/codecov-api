@@ -124,19 +124,13 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if repo.yaml and repo.yaml.get("coverage", {}).get("range") is not None:
             coverage_range = repo.yaml.get("coverage", {}).get("range")
 
-        log.error("hi qp", extra=self.request.query_params)
-
         flag = self.request.query_params.get("flag")
         if flag:
             return self.flag_coverage(flag, commit), coverage_range
 
-        log.error("no flag")
-
         component = self.request.query_params.get("component")
         if component:
             return self.component_coverage(component, commit), coverage_range
-
-        log.error("no component")
 
         coverage = (
             commit.totals.get("c")
@@ -175,8 +169,8 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         component_id (string): id or name of component
         commit (obj): commit object containing report
         """
-
         report = commit.full_report
+        log.warning("report", extra={"report": report})
         if report is None:
             log.warning(
                 "Commit's report not found",
@@ -192,11 +186,17 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             )
         except StopIteration:
             # Component not found
+            log.warning("stopiteration")
             return None
+        log.warning("component", extra={"component": component})
 
         component_flags = component.get_matching_flags(report.get_flag_names())
 
+        log.warning("component_flags", extra={"component_flags": component_flags})
+
         report.filter(flags=component_flags, paths=component.paths)
+
+        log.warning("report_filtered", extra={"report": report})
 
         return report.totals.coverage
 
