@@ -4,6 +4,7 @@ from .settings_dev import *
 
 ALLOWED_HOSTS = ["localhost"]
 CORS_ALLOWED_ORIGINS = ["http://localhost:9000", "http://localhost"]
+SHELTER_ENABLED = True
 SHELTER_PUBSUB_PROJECT_ID = "test-project-id"
 SHELTER_PUBSUB_SYNC_REPO_TOPIC_ID = "test-topic-id"
 

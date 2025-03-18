@@ -259,14 +259,14 @@ class TestCompareViewSetRetrieve(APITestCase):
         self.base_file = ReportFile(
             name=self.file_name, totals=[46, 46, 0, 0, 100, 0, 0, 0, 1, 0, 0, 0]
         )
-        self.base_file._lines = [[1, "", [[1, 1, 0, 0, 0]], 0, 0]] * 46
+        self.base_file._parsed_lines = [[1, "", [[1, 1, 0, 0, 0]], 0, 0]] * 46
         self.base_report = MockSerializableReport()
         self.base_report.mocked_files = {self.file_name: self.base_file}
 
         self.head_file = ReportFile(
             name=self.file_name, totals=[6, 6, 0, 0, 100, 0, 0, 0, 1, 0, 0, 0]
         )
-        self.head_file._lines = [[1, "", [[1, 1, 0, 0, 0]], 0, 0]] * 6
+        self.head_file._parsed_lines = [[1, "", [[1, 1, 0, 0, 0]], 0, 0]] * 6
         self.head_file.totals.diff = ReportTotals.default_totals()
         self.head_report = MockSerializableReport()
         self.head_report.mocked_files = {self.file_name: self.head_file}
