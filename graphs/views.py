@@ -124,19 +124,19 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if repo.yaml and repo.yaml.get("coverage", {}).get("range") is not None:
             coverage_range = repo.yaml.get("coverage", {}).get("range")
 
-        log.debug("hi qp", extra=self.request.query_params)
+        log.error("hi qp", extra=self.request.query_params)
 
         flag = self.request.query_params.get("flag")
         if flag:
             return self.flag_coverage(flag, commit), coverage_range
 
-        log.debug("no flag")
+        log.error("no flag")
 
         component = self.request.query_params.get("component")
         if component:
             return self.component_coverage(component, commit), coverage_range
 
-        log.debug("no component")
+        log.error("no component")
 
         coverage = (
             commit.totals.get("c")
