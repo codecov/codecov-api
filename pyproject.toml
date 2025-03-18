@@ -15,7 +15,6 @@ dependencies = [
     "django-cors-headers==3.7.0",
     "django-csp==3.8.0",
     "django-cursor-pagination==0.3.0",
-    "django-dynamic-fixture==3.1.1",
     "django-filter==2.4.0",
     "django-model-utils==4.5.1",
     "django-postgres-extra>=2.0.8",

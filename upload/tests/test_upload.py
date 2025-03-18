@@ -7,7 +7,6 @@ from urllib.parse import urlencode
 import pytest
 import requests
 import rest_framework
-from ddf import G
 from django.core.exceptions import MultipleObjectsReturned
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -17,7 +16,13 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 from shared.api_archive.archive import ArchiveService
-from shared.django_apps.core.tests.factories import OwnerFactory
+from shared.django_apps.codecov_auth.tests.factories import PlanFactory, TierFactory
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
+from shared.plan.constants import TierName
 from shared.torngit.exceptions import (
     TorngitClientGeneralError,
     TorngitObjectNotFoundError,
@@ -25,8 +30,7 @@ from shared.torngit.exceptions import (
 )
 from simplejson import JSONDecodeError
 
-from codecov_auth.models import Owner
-from core.models import Commit, Repository
+from core.models import Commit
 from reports.tests.factories import CommitReportFactory, UploadFactory
 from upload.helpers import (
     determine_repo_for_upload,
@@ -297,8 +301,8 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_determine_repo_upload(self):
         with self.subTest("token found"):
-            org = G(Owner)
-            repo = G(Repository, author=org)
+            org = OwnerFactory()
+            repo = RepositoryFactory(author=org)
 
             params = {
                 "version": "v4",
@@ -309,8 +313,8 @@ class UploadHandlerHelpersTest(TestCase):
             assert repo == determine_repo_for_upload(params)
 
         with self.subTest("token not found"):
-            org = G(Owner)
-            repo = G(Repository, author=org)
+            org = OwnerFactory()
+            repo = RepositoryFactory(author=org)
 
             params = {
                 "version": "v4",
@@ -329,8 +333,8 @@ class UploadHandlerHelpersTest(TestCase):
 
     @patch.object(requests, "get")
     def test_determine_repo_upload_tokenless(self, mock_get):
-        org = G(Owner, username="codecov", service="github")
-        repo = G(Repository, author=org)
+        org = OwnerFactory(username="codecov", service="github")
+        repo = RepositoryFactory(author=org)
         expected_response = {
             "id": 732059764,
             "finishTime": f"{datetime.now()}",
@@ -498,12 +502,11 @@ class UploadHandlerHelpersTest(TestCase):
         }
 
         with self.subTest("not a github commit"):
-            org = G(
-                Owner,
+            org = OwnerFactory(
                 service="bitbucket",
                 oauth_token=encryptor.encode("hahahahaha").decode(),
             )
-            repo = G(Repository, author=org)
+            repo = RepositoryFactory(author=org)
             upload_params = {
                 "service": "bitbucket",
                 "commit": "3be5c52bd748c508a7e96993c02cf3518c816e84",
@@ -514,12 +517,11 @@ class UploadHandlerHelpersTest(TestCase):
             )
 
         with self.subTest("merge commit"):
-            org = G(
-                Owner,
+            org = OwnerFactory(
                 service="github",
                 oauth_token=encryptor.encode("hahahahaha").decode(),
             )
-            repo = G(Repository, author=org)
+            repo = RepositoryFactory(author=org)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -531,8 +533,8 @@ class UploadHandlerHelpersTest(TestCase):
             )
 
         with self.subTest("just no bot available"):
-            org = G(Owner, service="github", oauth_token=None)
-            repo = G(Repository, author=org, private=True)
+            org = OwnerFactory(service="github", oauth_token=None)
+            repo = RepositoryFactory(author=org, private=True)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -544,12 +546,11 @@ class UploadHandlerHelpersTest(TestCase):
             )
 
         with self.subTest("merge commit with did_change_merge_commit argument"):
-            org = G(
-                Owner,
+            org = OwnerFactory(
                 service="github",
                 oauth_token=encryptor.encode("hahahahaha").decode(),
             )
-            repo = G(Repository, author=org)
+            repo = RepositoryFactory(author=org)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -563,8 +564,8 @@ class UploadHandlerHelpersTest(TestCase):
 
         with self.subTest("use repo bot token when available"):
             bot = OwnerFactory()
-            org = G(Owner, service="github")
-            repo = G(Repository, author=org, bot=bot)
+            org = OwnerFactory(service="github")
+            repo = RepositoryFactory(author=org, bot=bot)
 
             upload_params = {
                 "service": "github",
@@ -581,8 +582,8 @@ class UploadHandlerHelpersTest(TestCase):
         mock_async.side_effect = [TorngitClientGeneralError(500, None, None)]
 
         with self.subTest("HTTP error"):
-            org = G(Owner, service="github")
-            repo = G(Repository, author=org)
+            org = OwnerFactory(service="github")
+            repo = RepositoryFactory(author=org)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -596,8 +597,8 @@ class UploadHandlerHelpersTest(TestCase):
         mock_async.side_effect = [TorngitObjectNotFoundError(500, None)]
 
         with self.subTest("HTTP error"):
-            org = G(Owner, service="github")
-            repo = G(Repository, author=org)
+            org = OwnerFactory(service="github")
+            repo = RepositoryFactory(author=org)
             upload_params = {
                 "service": "github",
                 "commit": "3084886b7ff869dcf327ad1d28a8b7d34adc7584",
@@ -609,8 +610,8 @@ class UploadHandlerHelpersTest(TestCase):
             )
 
     def test_insert_commit(self):
-        org = G(Owner)
-        repo = G(Repository, author=org)
+        org = OwnerFactory()
+        repo = RepositoryFactory(author=org)
 
         with self.subTest("newly created"):
             insert_commit(
@@ -628,8 +629,7 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.parent_commit_id is None
 
         with self.subTest("commit already in database"):
-            G(
-                Commit,
+            CommitFactory(
                 commitid="1c78206f1a46dc6db8412a491fc770eb7d0f8a47",
                 branch="apples",
                 pullid="456",
@@ -656,7 +656,7 @@ class UploadHandlerHelpersTest(TestCase):
             assert commit.parent_commit_id == "different_parent_commit"
 
         with self.subTest("parent provided"):
-            parent = G(Commit)
+            parent = CommitFactory()
             insert_commit(
                 "8458a8c72aafb5fb4c5cd58f467a2f71298f1b61",
                 "test",
@@ -715,9 +715,9 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_repository_moved(self):
         redis = MockRedis()
-        owner = G(Owner, plan="users-free")
-        repo = G(Repository, author=owner, name="")
-        commit = G(Commit)
+        owner = OwnerFactory(plan="users-free")
+        repo = RepositoryFactory(author=owner, name="")
+        commit = CommitFactory()
 
         with self.assertRaises(ValidationError) as err:
             validate_upload({"commit": commit.commitid}, repo, redis)
@@ -729,9 +729,9 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_empty_totals(self):
         redis = MockRedis()
-        owner = G(Owner, plan="5m")
-        repo = G(Repository, author=owner)
-        commit = G(Commit, totals=None, repository=repo)
+        owner = OwnerFactory(plan="5m")
+        repo = RepositoryFactory(author=owner)
+        commit = CommitFactory(totals=None, repository=repo)
 
         validate_upload({"commit": commit.commitid}, repo, redis)
         repo.refresh_from_db()
@@ -741,9 +741,9 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_too_many_uploads_for_commit(self):
         redis = MockRedis()
-        owner = G(Owner, plan="users-free")
-        repo = G(Repository, author=owner)
-        commit = G(Commit, totals={"s": 151}, repository=repo)
+        owner = OwnerFactory(plan="users-free")
+        repo = RepositoryFactory(author=owner)
+        commit = CommitFactory(totals={"s": 151}, repository=repo)
         report = CommitReportFactory.create(commit=commit)
         for i in range(151):
             UploadFactory.create(report=report)
@@ -754,9 +754,9 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_repository_blacklisted(self):
         redis = MockRedis(blacklisted=True)
-        owner = G(Owner, plan="users-free")
-        repo = G(Repository, author=owner)
-        commit = G(Commit)
+        owner = OwnerFactory(plan="users-free")
+        repo = RepositoryFactory(author=owner)
+        commit = CommitFactory()
 
         with self.assertRaises(ValidationError) as err:
             validate_upload({"commit": commit.commitid}, repo, redis)
@@ -767,10 +767,12 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_per_repo_billing_invalid(self):
         redis = MockRedis()
-        owner = G(Owner, plan="1m")
-        G(Repository, author=owner, private=True, activated=True, active=True)
-        repo = G(Repository, author=owner, private=True, activated=False, active=False)
-        commit = G(Commit)
+        owner = OwnerFactory(plan="1m")
+        RepositoryFactory(author=owner, private=True, activated=True, active=True)
+        repo = RepositoryFactory(
+            author=owner, private=True, activated=False, active=False
+        )
+        commit = CommitFactory()
 
         with self.assertRaises(ValidationError) as err:
             validate_upload({"commit": commit.commitid}, repo, redis)
@@ -781,22 +783,22 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_gitlab_subgroups(self):
         redis = MockRedis()
-        parent_group = G(Owner, plan="1m", parent_service_id=None, service="gitlab")
-        top_subgroup = G(
-            Owner,
+        parent_group = OwnerFactory(plan="1m", parent_service_id=None, service="gitlab")
+        top_subgroup = OwnerFactory(
             plan="1m",
             parent_service_id=parent_group.service_id,
             service="gitlab",
         )
-        bottom_subgroup = G(
-            Owner,
+        bottom_subgroup = OwnerFactory(
             plan="1m",
             parent_service_id=top_subgroup.service_id,
             service="gitlab",
         )
-        G(Repository, author=parent_group, private=True, activated=True, active=True)
-        repo = G(Repository, author=bottom_subgroup, private=True, activated=False)
-        commit = G(Commit)
+        RepositoryFactory(
+            author=parent_group, private=True, activated=True, active=True
+        )
+        repo = RepositoryFactory(author=bottom_subgroup, private=True, activated=False)
+        commit = CommitFactory()
 
         with self.assertRaises(ValidationError) as err:
             validate_upload({"commit": commit.commitid}, repo, redis)
@@ -807,16 +809,15 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_valid_upload_repo_not_activated(self):
         redis = MockRedis()
-        owner = G(Owner, plan="users-free")
-        repo = G(
-            Repository,
+        owner = OwnerFactory(plan="users-free")
+        repo = RepositoryFactory(
             author=owner,
             private=True,
             activated=False,
             deleted=False,
             active=False,
         )
-        commit = G(Commit)
+        commit = CommitFactory()
 
         with patch(
             "services.analytics.AnalyticsService.account_activated_repository_on_upload"
@@ -831,9 +832,9 @@ class UploadHandlerHelpersTest(TestCase):
 
     def test_validate_upload_valid_upload_repo_activated(self):
         redis = MockRedis()
-        owner = G(Owner, plan="5m")
-        repo = G(Repository, author=owner, private=True, activated=True)
-        commit = G(Commit)
+        owner = OwnerFactory(plan="5m")
+        repo = RepositoryFactory(author=owner, private=True, activated=True)
+        commit = CommitFactory()
 
         with patch(
             "services.analytics.AnalyticsService.account_activated_repository_on_upload"
@@ -849,7 +850,7 @@ class UploadHandlerHelpersTest(TestCase):
     @freeze_time("2023-01-01T00:00:00")
     @patch("services.task.TaskService.upload")
     def test_dispatch_upload_task(self, upload):
-        repo = G(Repository)
+        repo = RepositoryFactory()
         task_arguments = {
             "commit": "commit123",
             "version": "v4",
@@ -914,9 +915,12 @@ class UploadHandlerRouteTest(APITestCase):
         return self.client.post(url, data=data, content_type=content_type, **headers)
 
     def setUp(self):
-        self.org = G(Owner, username="codecovtest", service="github")
-        self.repo = G(
-            Repository,
+        tier = TierFactory(tier_name=TierName.BASIC.value)
+        plan = PlanFactory(tier=tier, is_active=True)
+        self.org = OwnerFactory(
+            plan=plan.name, username="codecovtest", service="github"
+        )
+        self.repo = RepositoryFactory(
             author=self.org,
             name="upload-test-repo",
             upload_token="a03e5d02-9495-4413-b0d8-05651bb2e842",

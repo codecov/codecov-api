@@ -1,11 +1,11 @@
 from unittest.mock import patch
 
 import minio
-from ddf import G
 from rest_framework.test import APITestCase
+from shared.django_apps.codecov_auth.tests.factories import OwnerFactory
+from shared.django_apps.core.tests.factories import RepositoryFactory
 
-from codecov_auth.models import Owner
-from core.models import Repository
+from utils.test_utils import Client
 
 
 class UploadDownloadHelperTest(APITestCase):
@@ -14,16 +14,17 @@ class UploadDownloadHelperTest(APITestCase):
         return self.client.get(path, data=data)
 
     def setUp(self):
-        self.org = G(Owner, username="codecovtest", service="github")
-        self.repo = G(
-            Repository,
+        self.org = OwnerFactory(username="codecovtest", service="github")
+        self.repo = RepositoryFactory(
             author=self.org,
             name="upload-test-repo",
             upload_token="a03e5d02-9495-4413-b0d8-05651bb2e842",
         )
-        self.repo = G(
-            Repository, author=self.org, name="private-upload-test-repo", private=True
+        self.repo = RepositoryFactory(
+            author=self.org, name="private-upload-test-repo", private=True
         )
+        self.client = Client()
+        self.client.force_login_owner(self.org)
 
     def test_no_path_param(self):
         response = self._get(

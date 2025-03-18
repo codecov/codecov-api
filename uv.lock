@@ -327,7 +327,6 @@ dependencies = [
     { name = "django-cors-headers" },
     { name = "django-csp" },
     { name = "django-cursor-pagination" },
-    { name = "django-dynamic-fixture" },
     { name = "django-filter" },
     { name = "django-model-utils" },
     { name = "django-postgres-extra" },
@@ -392,7 +391,6 @@ requires-dist = [
     { name = "django-cors-headers", specifier = "==3.7.0" },
     { name = "django-csp", specifier = "==3.8.0" },
     { name = "django-cursor-pagination", specifier = "==0.3.0" },
-    { name = "django-dynamic-fixture", specifier = "==3.1.1" },
     { name = "django-filter", specifier = "==2.4.0" },
     { name = "django-model-utils", specifier = "==4.5.1" },
     { name = "django-postgres-extra", specifier = ">=2.0.8" },
@@ -606,15 +604,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/09/91/73adf878757d3f10c
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f7/ae/da7b25f23c97cdc05f97f83555653b5e4b69dee20ed0da5e9cce136d4e00/django_cursor_pagination-0.3.0-py3-none-any.whl", hash = "sha256:ce88147adc1e41c58427217cf54d7cbb4d04d5cf0a3a2c794d81602ad347658e", size = 6822 },
 ]
-
-[[package]]
-name = "django-dynamic-fixture"
-version = "3.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/19/af/53a7acd99ea6b0260c519882bdbbb295a70320fc1c7aeb70c6160443178a/django-dynamic-fixture-3.1.1.tar.gz", hash = "sha256:90d9d68ec373dce97a4a9ba3ec6a39cf10918e9c222fdf231074cfb668d14ea2", size = 43202 }
 
 [[package]]
 name = "django-filter"

@@ -6,14 +6,17 @@ from unittest.mock import patch
 
 import pytest
 from dateutil.relativedelta import relativedelta
-from ddf import G
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from factory.faker import faker
 from pytz import UTC
 from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
-from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
+from shared.django_apps.core.tests.factories import (
+    CommitFactory,
+    OwnerFactory,
+    RepositoryFactory,
+)
 
 from api.internal.chart.filters import apply_default_filters, apply_simple_filters
 from api.internal.chart.helpers import (
@@ -84,8 +87,7 @@ def setup_commits(
         ci_passed = True if meets_default_filters else False
         deleted = False if meets_default_filters else True
 
-        G(
-            Commit,
+        CommitFactory(
             repository=repo,
             branch=branch,
             timestamp=timestamp,
@@ -340,8 +342,7 @@ class CoverageChartHelpersTest(TestCase):
 
     def test_annotate_commits_with_totals(self):
         with_complexity_commitid = "i230tky2"
-        G(
-            Commit,
+        CommitFactory(
             commitid=with_complexity_commitid,
             totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 1},
         )
@@ -361,8 +362,7 @@ class CoverageChartHelpersTest(TestCase):
 
     def test_annotate_commit_with_totals_no_complexity_sets_ratio_to_None(self):
         no_complexity_commitid = "sdfkjwepj42"
-        G(
-            Commit,
+        CommitFactory(
             commitid=no_complexity_commitid,
             totals={"n": 0, "h": 0, "p": 0, "m": 0, "c": 0, "C": 0, "N": 0},
         )
@@ -524,22 +524,19 @@ class TestChartQueryRunnerQuery(TestCase):
                 self.repo4.repoid,
             ]
         )
-        self.commit1 = G(
-            model=Commit,
+        self.commit1 = CommitFactory(
             repository=self.repo1,
             totals={"h": 100, "n": 120, "p": 10, "m": 10},
             branch=self.repo1.branch,
             state="complete",
         )
-        self.commit2 = G(
-            model=Commit,
+        self.commit2 = CommitFactory(
             repository=self.repo2,
             totals={"h": 14, "n": 25, "p": 6, "m": 5},
             branch=self.repo2.branch,
             state="complete",
         )
-        self.commit3 = G(
-            model=Commit,
+        self.commit3 = CommitFactory(
             repository=self.repo3,
             totals={"h": 14, "n": 25, "p": 6, "m": 5},
             branch=self.repo3.branch,
@@ -751,21 +748,19 @@ class TestChartQueryRunnerHelperMethods(TestCase):
         )
         self.user.permission = [repo1.repoid, repo2.repoid]
         self.user.save()
-        G(
-            model=Commit,
+        CommitFactory(
             repository=repo1,
             branch=repo1.branch,
             state="pending",
             timestamp=timezone.now() - timedelta(days=7),
         )
-        commit1 = G(
-            model=Commit,
+        commit1 = CommitFactory(
             repository=repo1,
             branch=repo1.branch,
             state="complete",
             timestamp=timezone.now() - timedelta(days=3),
         )
-        G(model=Commit, repository=repo2, branch=repo2.branch, state="complete")
+        CommitFactory(repository=repo2, branch=repo2.branch, state="complete")
 
         qr = ChartQueryRunner(
             self.user,
@@ -795,8 +790,7 @@ class TestChartQueryRunnerHelperMethods(TestCase):
             repo = RepositoryFactory(author=self.org, active=True)
             self.user.permission = [repo.repoid]
             self.user.save()
-            commit = G(
-                model=Commit,
+            commit = CommitFactory(
                 repository=repo,
                 branch=repo.branch,
                 state="complete",
@@ -957,15 +951,13 @@ class TestOrganizationChartHandler(InternalAPITest):
         self.current_owner = OwnerFactory(
             permission=[self.repo1.repoid, self.repo2.repoid]
         )
-        self.commit1 = G(
-            model=Commit,
+        self.commit1 = CommitFactory(
             repository=self.repo1,
             totals={"h": 100, "n": 120, "p": 10, "m": 10},
             branch=self.repo1.branch,
             state="complete",
         )
-        self.commit2 = G(
-            model=Commit,
+        self.commit2 = CommitFactory(
             repository=self.repo2,
             totals={"h": 14, "n": 25, "p": 6, "m": 5},
             branch=self.repo2.branch,
