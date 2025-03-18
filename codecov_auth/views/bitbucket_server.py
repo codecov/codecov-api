@@ -3,7 +3,6 @@ import logging
 import threading
 from urllib.parse import urlencode
 
-import oauth2 as oauth
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.shortcuts import redirect
@@ -28,7 +27,7 @@ class BitbucketServerLoginView(View, LoginMixin):
                 key=settings.BITBUCKET_SERVER_CLIENT_ID,
                 secret=settings.BITBUCKET_SERVER_CLIENT_SECRET,
             ),
-            token=oauth.Token(token["key"], token["secret"]),
+            token=token,
         )
         # Whoami? Get the user
         # https://answers.atlassian.com/questions/9379031/answers/9379803
@@ -103,7 +102,7 @@ class BitbucketServerLoginView(View, LoginMixin):
         cookie_key, cookie_secret = [
             base64.b64decode(i).decode() for i in request_cookie.split("|")
         ]
-        token = oauth.Token(cookie_key, cookie_secret)
+        token = {"key": cookie_key, "secret": cookie_secret}
         repo_service = BitbucketServer(
             oauth_consumer_token=dict(
                 key=settings.BITBUCKET_SERVER_CLIENT_ID,

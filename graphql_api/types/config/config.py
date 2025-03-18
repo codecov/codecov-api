@@ -2,12 +2,12 @@ from typing import List, Optional
 
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
-from distutils.util import strtobool
 from django.conf import settings
 from graphql.type.definition import GraphQLResolveInfo
 
 import services.self_hosted as self_hosted
 from graphql_api.types.enums.enums import LoginProvider, SyncProvider
+from utils import strtobool
 
 config_bindable = ObjectType("Config")
 
