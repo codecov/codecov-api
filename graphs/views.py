@@ -170,7 +170,6 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         commit (obj): commit object containing report
         """
         report = commit.full_report
-        log.warning("report", extra={"report": report})
         if report is None:
             log.warning(
                 "Commit's report not found",
@@ -188,17 +187,12 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             # Component not found
             log.warning("stopiteration")
             return None
-        log.warning("component", extra={"component": component})
 
         component_flags = component.get_matching_flags(report.get_flag_names())
 
-        log.warning("component_flags", extra={"component_flags": component_flags})
+        filtered_report = report.filter(flags=component_flags, paths=component.paths)
 
-        report.filter(flags=component_flags, paths=component.paths)
-
-        log.warning("report_filtered", extra={"report": report})
-
-        return report.totals.coverage
+        return filtered_report.totals.coverage
 
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
