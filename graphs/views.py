@@ -177,6 +177,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             )
             return None
         components = commit_components(commit, None)
+
         try:
             component = next(
                 c
@@ -185,7 +186,6 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             )
         except StopIteration:
             # Component not found
-            log.warning("stopiteration")
             return None
 
         component_flags = component.get_matching_flags(report.get_flag_names())
