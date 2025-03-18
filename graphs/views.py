@@ -13,6 +13,7 @@ from shared.metrics import Counter, inc_counter
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
 from graphs.settings import settings
+from services.components import commit_components
 
 from .helpers.badge import format_coverage_precision, get_badge
 from .helpers.graphs import icicle, sunburst, tree
@@ -127,6 +128,10 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if flag:
             return self.flag_coverage(flag, commit), coverage_range
 
+        component = self.request.query_params.get("component")
+        if component:
+            return self.component_coverage(component, commit), coverage_range
+
         coverage = (
             commit.totals.get("c")
             if commit is not None and commit.totals is not None
@@ -155,6 +160,39 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if flag:
             return flag.totals.coverage
         return None
+
+    def component_coverage(self, component_id, commit):
+        """
+        Looks into a commit's report sessions and returns the coverage for a particular component.
+
+        Parameters
+        component_id (string): id or name of component
+        commit (obj): commit object containing report
+        """
+
+        report = commit.full_report
+        if report is None:
+            log.warning(
+                "Commit's report not found",
+                extra=dict(commit=commit, component=component_id),
+            )
+            return None
+        components = commit_components(commit, None)
+        try:
+            component = next(
+                c
+                for c in components
+                if c.component_id == component_id or c.name == component_id
+            )
+        except StopIteration:
+            # Component not found
+            return None
+
+        component_flags = component.get_matching_flags(report.get_flag_names())
+
+        report.filter(flags=component_flags, paths=component.paths)
+
+        return report.totals.coverage
 
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
