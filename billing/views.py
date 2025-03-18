@@ -74,14 +74,6 @@ class StripeWebhookHandler(APIView):
                     **template_vars,
                 )
 
-        # temporary just making sure these look okay in the real world
-        task_service.send_email(
-            to_addr="spencer.murray@sentry.io",
-            subject="You're all set",
-            template_name="success-after-failed-payment",
-            **template_vars,
-        )
-
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
         """
         Stripe invoice.payment_failed webhook event is emitted when an invoice payment fails
@@ -152,15 +144,6 @@ class StripeWebhookHandler(APIView):
                     name=admin.username,
                     **template_vars,
                 )
-
-        # temporary just making sure these look okay in the real world
-        task_service.send_email(
-            to_addr="spencer.murray@sentry.io",
-            subject="Your Codecov payment failed",
-            template_name="failed-payment",
-            name="spalmurray-codecov",
-            **template_vars,
-        )
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
         """
