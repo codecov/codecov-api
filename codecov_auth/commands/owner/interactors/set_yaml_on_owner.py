@@ -79,6 +79,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
                 or old_yaml_bot
                 or None
             )
+            print("testing overwatch")
             self.owner.bot_id = new_bot_id
             self.owner.save()
 
