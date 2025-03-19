@@ -1,10 +1,14 @@
-name: Upload Overwatch
+# Created on 2025-03-19 14:08:30
+name: Upload Overwatch - 2025-03-19 14:08:30
 
 on:
   pull_request:
     types:
       - opened
       - synchronize
+  push:
+    branches-ignore:
+      - main
 
 jobs:
   upload-overwatch:
@@ -39,5 +43,6 @@ jobs:
           ./overwatch-cli \
             --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} \
             --organization-slug codecov \
+            --pullid 1207 \
             python \
             --python-path $(which python3)
