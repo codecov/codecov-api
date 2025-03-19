@@ -70,7 +70,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
 
         # Update owner's bot column if bot is updated in yaml or if bot is not configured.
         if new_yaml_bot != old_yaml_bot or self.owner.bot is None:
-            new_bot_id = (
+            new_bot_id: int | None = (
                 get_ownerid_if_member(
                     service=self.owner.service,
                     owner_username=new_yaml_bot,
