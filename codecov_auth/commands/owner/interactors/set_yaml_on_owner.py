@@ -65,7 +65,7 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
                 branch=new_yaml_branch or old_yaml_branch
             )  # Keeps old_branch if new_branch is None
 
-        old_yaml_bot = old_yaml and old_yaml.get("codecov", {}).get("bot")
+        old_yaml_bot: str | None = old_yaml and old_yaml.get("codecov", {}).get("bot")
         new_yaml_bot = new_yaml and new_yaml.get("codecov", {}).get("bot")
 
         # Update owner's bot column if bot is updated in yaml or if bot is not configured.
@@ -76,10 +76,9 @@ class SetYamlOnOwnerInteractor(BaseInteractor):
                     owner_username=new_yaml_bot,
                     owner_id=self.owner.ownerid,
                 )
-                or old_yaml_bot
+                or old_yaml_bot  # This should trigger a type error since old_yaml_bot is str
                 or None
             )
-            print("testing overwatch")
             self.owner.bot_id = new_bot_id
             self.owner.save()
 
