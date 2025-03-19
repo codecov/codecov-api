@@ -58,8 +58,8 @@ def create_upload(
             "user_ownerid": commit.author.ownerid
             if commit.author
             else UNKNOWN_USER_OWNERID,
-            "ownerid": commit.repository.author.ownerid,
-            "repoid": commit.repository.repoid,
+            "ownerid": repository.author.ownerid,
+            "repoid": repository.repoid,
             "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here.
             "pullid": commit.pullid,
             "upload_type": "Coverage report",

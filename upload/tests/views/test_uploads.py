@@ -269,8 +269,8 @@ def test_uploads_post(db, mocker, mock_redis):
         "Upload Received",
         {
             "user_ownerid": commit.author.ownerid,
-            "ownerid": commit.repository.author.ownerid,
-            "repoid": commit.repository.repoid,
+            "ownerid": repository.author.ownerid,
+            "repoid": repository.repoid,
             "commitid": commit.id,
             "pullid": commit.pullid,
             "upload_type": "Coverage report",
