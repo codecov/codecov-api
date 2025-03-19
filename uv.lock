@@ -1,5 +1,4 @@
 version = 1
-revision = 1
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '4' and platform_python_implementation == 'PyPy' and sys_platform == 'win32'",
@@ -416,7 +415,7 @@ requires-dist = [
     { name = "requests", specifier = "==2.32.3" },
     { name = "sentry-sdk", specifier = ">=2.13.0" },
     { name = "sentry-sdk", extras = ["celery"], specifier = "==2.13.0" },
-    { name = "shared", git = "https://github.com/codecov/shared?rev=284b92c74f0bc7ca5c4f6f139f3b26fe64fe9c1a" },
+    { name = "shared", git = "https://github.com/codecov/shared?rev=290557e977c4ff60d5d9dcb9ee54afea1c1df83f" },
     { name = "simplejson", specifier = "==3.17.2" },
     { name = "starlette", specifier = "==0.40.0" },
     { name = "stripe", specifier = ">=11.4.1" },
@@ -1751,7 +1750,7 @@ celery = [
 [[package]]
 name = "shared"
 version = "0.1.0"
-source = { git = "https://github.com/codecov/shared?rev=284b92c74f0bc7ca5c4f6f139f3b26fe64fe9c1a#284b92c74f0bc7ca5c4f6f139f3b26fe64fe9c1a" }
+source = { git = "https://github.com/codecov/shared?rev=290557e977c4ff60d5d9dcb9ee54afea1c1df83f#290557e977c4ff60d5d9dcb9ee54afea1c1df83f" }
 dependencies = [
     { name = "amplitude-analytics" },
     { name = "boto3" },
