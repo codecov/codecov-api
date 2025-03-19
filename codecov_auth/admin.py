@@ -25,7 +25,7 @@ from shared.plan.service import PlanService
 
 from codecov.admin import AdminMixin
 from codecov.commands.exceptions import ValidationError
-from codecov_auth.helpers import History
+from codecov_auth.helpers import History, export_to_csv
 from codecov_auth.models import OrganizationLevelToken, Owner, SentryUser, Session, User
 from codecov_auth.services.org_level_token_service import OrgLevelTokenService
 from services.task import TaskService
@@ -740,6 +740,7 @@ class PlansInline(admin.TabularInline):
 
 @admin.register(Tier)
 class TierAdmin(admin.ModelAdmin):
+    actions = [export_to_csv]
     list_display = (
         "tier_name",
         "bundle_analysis",
@@ -794,6 +795,8 @@ class PlanAdminForm(forms.ModelForm):
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
     form = PlanAdminForm
+    actions = [export_to_csv]
+
     list_display = (
         "name",
         "marketing_name",
