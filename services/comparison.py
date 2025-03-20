@@ -1,4 +1,3 @@
-import asyncio
 import copy
 import functools
 import json
@@ -17,6 +16,7 @@ from django.utils.functional import cached_property
 from shared.api_archive.archive import ArchiveService
 from shared.helpers.yaml import walk
 from shared.reports.types import ReportTotals
+from shared.torngit.base import TorngitBaseAdapter
 from shared.utils.merge import LineType, line_type
 
 from compare.models import CommitComparison
@@ -646,6 +646,12 @@ class Comparison(object):
         self._base_commit = base_commit
         self._head_commit = head_commit
 
+    @cached_property
+    def _adapter(self) -> TorngitBaseAdapter:
+        return RepoProviderService().get_adapter(
+            owner=self.user, repo=self.base_commit.repository
+        )
+
     def validate(self):
         # make sure head and base reports exist (will throw an error if not)
         self.head_report
@@ -676,10 +682,7 @@ class Comparison(object):
             base_file = None
 
         if with_src:
-            adapter = RepoProviderService().get_adapter(
-                owner=self.user, repo=self.base_commit.repository
-            )
-            file_content = async_to_sync(adapter.get_source)(
+            file_content = async_to_sync(self._adapter.get_source)(
                 file_name, self.head_commit.commitid
             )["content"]
             # make sure the file is str utf-8
@@ -697,9 +700,14 @@ class Comparison(object):
             bypass_max_diff=bypass_max_diff,
         )
 
-    @property
-    def git_comparison(self):
-        return self._fetch_comparison[0]
+    @cached_property
+    def git_comparison(self) -> dict:
+        """
+        Fetches comparison, and caches the result.
+        """
+        return async_to_sync(self._adapter.get_compare)(
+            self.base_commit.commitid, self.head_commit.commitid
+        )
 
     @cached_property
     def base_report(self):
@@ -802,23 +810,6 @@ class Comparison(object):
         )
         commits_queryset.exclude(deleted=True)
         return commits_queryset
-
-    @cached_property
-    def _fetch_comparison(self):
-        """
-        Fetches comparison, and caches the result.
-        """
-        adapter = RepoProviderService().get_adapter(
-            self.user, self.base_commit.repository
-        )
-        comparison_coro = adapter.get_compare(
-            self.base_commit.commitid, self.head_commit.commitid
-        )
-
-        async def runnable():
-            return await asyncio.gather(comparison_coro)
-
-        return async_to_sync(runnable)()
 
     def flag_comparison(self, flag_name):
         return FlagComparison(self, flag_name)
