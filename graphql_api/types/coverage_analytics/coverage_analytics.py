@@ -53,8 +53,8 @@ def resolve_coverage_analytics_result_type(
     return None
 
 
-@sentry_sdk.trace
 @coverage_analytics_bindable.field("percentCovered")
+@sentry_sdk.trace
 def resolve_percent_covered(
     parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
 ) -> Optional[float]:
@@ -118,9 +118,9 @@ async def resolve_measurements(
     return measurements
 
 
-@sentry_sdk.trace
 @coverage_analytics_bindable.field("components")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_components_measurements(
     parent: CoverageAnalyticsProps,
     info: GraphQLResolveInfo,
@@ -253,9 +253,9 @@ def resolve_components_count(
     return len(repo_yaml_components)
 
 
-@sentry_sdk.trace
 @coverage_analytics_bindable.field("flags")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_flags(
     parent: CoverageAnalyticsProps,
     info: GraphQLResolveInfo,

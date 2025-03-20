@@ -59,8 +59,8 @@ def is_first_pull_request(pull: Pull) -> bool:
     return pull.repository.pull_requests.order_by("id").first() == pull
 
 
-@sentry_sdk.trace
 @pull_bindable.field("compareWithBase")
+@sentry_sdk.trace
 async def resolve_compare_with_base(
     pull: Pull, info: GraphQLResolveInfo, **kwargs: Any
 ) -> Union[CommitComparison, Any]:
@@ -90,9 +90,9 @@ async def resolve_compare_with_base(
         return ComparisonReport(commit_comparison)
 
 
-@sentry_sdk.trace
 @pull_bindable.field("bundleAnalysisCompareWithBase")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_bundle_analysis_compare_with_base(
     pull: Pull, info: GraphQLResolveInfo, **kwargs: Any
 ) -> Union[BundleAnalysisComparison, Any]:

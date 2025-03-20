@@ -156,8 +156,8 @@ async def resolve_head_totals(
         return head_commit.commitreport.reportleveltotals
 
 
-@sentry_sdk.trace
 @comparison_bindable.field("patchTotals")
+@sentry_sdk.trace
 def resolve_patch_totals(
     comparison: ComparisonReport, info: GraphQLResolveInfo
 ) -> dict:
@@ -174,9 +174,9 @@ def resolve_patch_totals(
     return {**totals, "coverage": coverage}
 
 
-@sentry_sdk.trace
 @comparison_bindable.field("flagComparisons")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_flag_comparisons(
     comparison: ComparisonReport, info: GraphQLResolveInfo, filters=None
 ) -> List[FlagComparison]:
@@ -193,9 +193,9 @@ def resolve_flag_comparisons(
     return list(all_flags)
 
 
-@sentry_sdk.trace
 @comparison_bindable.field("componentComparisons")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_component_comparisons(
     comparison_report: ComparisonReport, info: GraphQLResolveInfo, filters=None
 ) -> List[ComponentComparison]:
@@ -242,9 +242,9 @@ def resolve_flag_comparisons_count(
     return get_flag_comparisons(comparison.commit_comparison).count()
 
 
-@sentry_sdk.trace
 @comparison_bindable.field("hasDifferentNumberOfHeadAndBaseReports")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_has_different_number_of_head_and_base_reports(
     comparison: ComparisonReport,
     info: GraphQLResolveInfo,
