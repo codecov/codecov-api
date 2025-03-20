@@ -77,7 +77,7 @@ def try_auto_activate(org: Owner, owner: Owner) -> bool:
 
     if activator.is_autoactivation_enabled():
         log.info(
-            f"Attemping to auto-activate user",
+            "Attemping to auto-activate user",
             extra=dict(
                 owner_id=owner.ownerid,
                 org_id=org.ownerid
