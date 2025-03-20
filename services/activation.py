@@ -76,12 +76,24 @@ def try_auto_activate(org: Owner, owner: Owner) -> bool:
     activator = _get_activator(org, owner)
 
     if activator.is_autoactivation_enabled():
-        log.info(f"Attemping to auto-activate user {owner.ownerid} in {org.ownerid}")
+        log.info(
+            "Attemping to auto-activate user",
+            extra=dict(
+                owner_id=owner.ownerid,
+                org_id=org.ownerid
+            ),
+        )
         if activator.can_activate_user():
             activator.activate_user()
             return True
         else:
-            log.info("Auto-activation failed -- not enough seats remaining")
+            log.info(
+                "Auto-activation failed -- not enough seats remaining",
+                extra=dict(
+                    owner_id=owner.ownerid,
+                    org_id=org.ownerid
+                ),
+            )
     return False
 
 
