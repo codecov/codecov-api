@@ -569,8 +569,8 @@ class FileComparisonTests(TestCase):
         }
         src = [first_line_val, "this is an added line", last_line_val]
 
-        self.file_comparison.head_file._lines = head_lines
-        self.file_comparison.base_file._lines = base_lines
+        self.file_comparison.head_file._parsed_lines = head_lines
+        self.file_comparison.base_file._parsed_lines = base_lines
         self.file_comparison.diff_data = {"segments": [segment]}
         self.file_comparison.src = src
 
@@ -665,8 +665,8 @@ class FileComparisonTests(TestCase):
         }
         src = [first_line_val, "this is an added line", last_line_val]
 
-        self.file_comparison.head_file._lines = head_lines
-        self.file_comparison.base_file._lines = base_lines
+        self.file_comparison.head_file._parsed_lines = head_lines
+        self.file_comparison.base_file._parsed_lines = base_lines
         self.file_comparison.diff_data = {"segments": [segment]}
         self.file_comparison.src = src
 
@@ -1311,10 +1311,10 @@ class SegmentTests(TestCase):
 
     def test_single_segment(self):
         self.file_comparison.src = self._src(12)
-        self.file_comparison.head_file._lines = self._report_lines(
+        self.file_comparison.head_file._parsed_lines = self._report_lines(
             [1 for _ in range(12)]
         )
-        self.file_comparison.base_file._lines = self._report_lines(
+        self.file_comparison.base_file._parsed_lines = self._report_lines(
             [
                 1,
                 1,  # first line of segment
@@ -1341,10 +1341,10 @@ class SegmentTests(TestCase):
 
     def test_multiple_segments(self):
         self.file_comparison.src = self._src(25)
-        self.file_comparison.head_file._lines = self._report_lines(
+        self.file_comparison.head_file._parsed_lines = self._report_lines(
             [1 for _ in range(25)]
         )
-        self.file_comparison.base_file._lines = self._report_lines(
+        self.file_comparison.base_file._parsed_lines = self._report_lines(
             [
                 1,
                 1,  # first line of segment 1

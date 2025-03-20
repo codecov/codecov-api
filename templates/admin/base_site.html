@@ -1,0 +1,60 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        {% trans 'Django administration' %}
+        <span id="impersonation-notice" style="display: none;">
+            - Impersonating (return to codecov.io and log out)
+        </span>
+    </a>
+</h1>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Custom styling when cookie is present */
+    html[data-theme="light"].impersonation, :root.impersonation {
+      --primary: #ff9800;
+      --secondary: #ff9800;
+      --link-fg: #ff9800;
+      --link-selected-fg: #ff9800;
+    }
+    
+    #header.impersonation {
+        background-color: #ff9800 !important;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Check for the "staff_user" cookie
+        const staffUserCookie = getCookie('staff_user');
+
+        if (staffUserCookie) {
+            // Modify the header appearance
+            const headerElement = document.querySelector('#header');
+            if (headerElement) {
+                headerElement.classList.add('impersonation');
+            }
+            
+            // Add class to html element for theme variables
+            document.documentElement.classList.add('impersonation');
+            
+            // Show the impersonation notice
+            const impersonationNotice = document.getElementById('impersonation-notice');
+            if (impersonationNotice) {
+                impersonationNotice.style.display = 'inline';
+            }
+        }
+    });
+</script>
+{% endblock %}

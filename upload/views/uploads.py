@@ -10,6 +10,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
+from shared.events.amplitude import UNKNOWN_USER_OWNERID, AmplitudeEventPublisher
 from shared.metrics import inc_counter
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
@@ -51,6 +52,20 @@ def create_upload(
     is_shelter_request: bool,
     analytics_token: str,
 ) -> ReportSession:
+    AmplitudeEventPublisher().publish(
+        "Upload Received",
+        {
+            "user_ownerid": commit.author.ownerid
+            if commit.author
+            else UNKNOWN_USER_OWNERID,
+            "ownerid": repository.author.ownerid,
+            "repoid": repository.repoid,
+            "commitid": commit.id,  # Not commit.commitid, we do not want a commit SHA here.
+            "pullid": commit.pullid,
+            "upload_type": "Coverage report",
+        },
+    )
+
     version = (
         serializer.validated_data["version"]
         if "version" in serializer.validated_data

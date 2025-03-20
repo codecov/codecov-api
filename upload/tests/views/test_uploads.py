@@ -206,6 +206,9 @@ def test_uploads_post(db, mocker, mock_redis):
     mocker.patch.object(
         CanDoCoverageUploadsPermission, "has_permission", return_value=True
     )
+    amplitude_mock = mocker.patch(
+        "shared.events.amplitude.AmplitudeEventPublisher.publish"
+    )
     presigned_put_mock = mocker.patch(
         "shared.storage.MinioStorageService.create_presigned_put",
         return_value="presigned put",
@@ -262,6 +265,17 @@ def test_uploads_post(db, mocker, mock_redis):
         == f"{settings.CODECOV_DASHBOARD_URL}/{repository.author.service}/{repository.author.username}/{repository.name}/commit/{commit.commitid}"
     )
 
+    amplitude_mock.assert_called_with(
+        "Upload Received",
+        {
+            "user_ownerid": commit.author.ownerid,
+            "ownerid": repository.author.ownerid,
+            "repoid": repository.repoid,
+            "commitid": commit.id,
+            "pullid": commit.pullid,
+            "upload_type": "Coverage report",
+        },
+    )
     assert ReportSession.objects.filter(
         report_id=commit_report.id,
         upload_extras={"format_version": "v1"},
