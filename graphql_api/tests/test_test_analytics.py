@@ -172,13 +172,15 @@ def store_in_redis(repository):
 
 @pytest.fixture
 def store_in_storage(repository, mock_storage):
+    from django.conf import settings
+
     try:
-        mock_storage.create_root_storage("codecov")
+        mock_storage.create_root_storage(settings.GCS_BUCKET_NAME)
     except BucketAlreadyExistsError:
         pass
 
     mock_storage.write_file(
-        "codecov",
+        settings.GCS_BUCKET_NAME,
         f"test_results/rollups/{repository.repoid}/{repository.branch}/30",
         test_results_table.write_ipc(None).getvalue(),
     )
@@ -186,7 +188,7 @@ def store_in_storage(repository, mock_storage):
     yield
 
     mock_storage.delete_file(
-        "codecov",
+        settings.GCS_BUCKET_NAME,
         f"test_results/rollups/{repository.repoid}/{repository.branch}/30",
     )
 
