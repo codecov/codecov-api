@@ -81,7 +81,7 @@ def try_auto_activate(org: Owner, owner: Owner) -> bool:
             activator.activate_user()
             return True
         else:
-            log.info("Auto-activation failed -- not enough seats remaining")
+            log.info("Auto-activation of user {owner.ownerid} in {org.ownerid} failed -- not enough seats remaining")
     return False
 
 
