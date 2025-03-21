@@ -63,9 +63,9 @@ def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
     return md5_path.hexdigest()
 
 
-@sentry_sdk.trace
 @impacted_file_bindable.field("segments")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_segments(
     impacted_file: ImpactedFile, info, filters=None
 ) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
