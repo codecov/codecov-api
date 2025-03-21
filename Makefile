@@ -19,6 +19,11 @@ export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
 API_DOMAIN ?= api
 PROXY_NETWORK ?= api_default
 
+# We allow this to be overridden so that we can run `pytest` from this directory
+# but have the junit file use paths relative to a parent directory. This will
+# help us move to a monorepo.
+PYTEST_ROOTDIR ?= "."
+
 # Codecov CLI version to use
 CODECOV_CLI_VERSION := 9.0.4
 
@@ -30,13 +35,13 @@ check-for-migration-conflicts:
 	python manage.py check_for_migration_conflicts
 
 test:
-	COVERAGE_CORE=sysmon pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy
+	COVERAGE_CORE=sysmon pytest --cov=./ --junitxml=junit.xml -o junit_family=legacy -c pytest.ini --rootdir=${PYTEST_ROOTDIR}
 
 test.unit:
-	COVERAGE_CORE=sysmon pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy
+	COVERAGE_CORE=sysmon pytest --cov=./ -m "not integration" --cov-report=xml:unit.coverage.xml --junitxml=unit.junit.xml -o junit_family=legacy -c pytest.ini --rootdir=${PYTEST_ROOTDIR}
 
 test.integration:
-	COVERAGE_CORE=sysmon pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy
+	COVERAGE_CORE=sysmon pytest --cov=./ -m "integration" --cov-report=xml:integration.coverage.xml --junitxml=integration.junit.xml -o junit_family=legacy -c pytest.ini --rootdir=${PYTEST_ROOTDIR}
 
 lint:
 	make lint.install
@@ -211,7 +216,7 @@ test_env.container_check_db:
 	while ! nc -vz timescale 5432; do sleep 1; echo "waiting for timescale"; done
 
 test_env.run_unit:
-	docker compose exec api make test.unit
+	docker compose exec api make test.unit PYTEST_ROOTDIR=${PYTEST_ROOTDIR}
 
 test_env.run_integration:
 	# docker compose exec api make test.integration
