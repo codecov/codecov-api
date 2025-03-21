@@ -32,22 +32,22 @@ exclude = [
 line-length = 88
 indent-width = 4
 
-# Assume Python 3.12
-target-version = "py312"
+# Assume Python 3.13
+target-version = "py313"
 
 [lint]
 # https://docs.astral.sh/ruff/rules/
 select = [
     "ASYNC", # flake8-async - async checks
-    "C4", # flake8-comprehensions - list/set/dict/generator comprehensions
-    "E", # pycodestyle - error rules
-    "F", # pyflakes - general Python errors, undefined names
-    "I", # isort - import sorting
-    "PERF", # perflint - performance anti-pattern rules
-    "PLC", # pylint - convention rules
-    "PLE", # pylint - error rules
-    "T20", # flake8-print - print statements
-    "W", # pycodestyle - warning rules
+    "C4",    # flake8-comprehensions - list/set/dict/generator comprehensions
+    "E",     # pycodestyle - error rules
+    "F",     # pyflakes - general Python errors, undefined names
+    "I",     # isort - import sorting
+    "PERF",  # perflint - performance anti-pattern rules
+    "PLC",   # pylint - convention rules
+    "PLE",   # pylint - error rules
+    "T20",   # flake8-print - print statements
+    "W",     # pycodestyle - warning rules
 ]
 ignore = ["F405", "F403", "E501", "E712", "C408"]
 
