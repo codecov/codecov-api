@@ -1,17 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load i18n %}
 
-{% block branding %}
-<h1 id="site-name">
-    <a href="{% url 'admin:index' %}">
-        {% trans 'Django administration' %}
-        <span id="impersonation-notice" style="display: none;">
-            - Impersonating (return to codecov.io and log out)
-        </span>
-    </a>
-</h1>
-{% endblock %}
-
 {% block extrahead %}
 {{ block.super }}
 <style>
@@ -49,10 +38,11 @@
             // Add class to html element for theme variables
             document.documentElement.classList.add('impersonation');
             
-            // Show the impersonation notice
-            const impersonationNotice = document.getElementById('impersonation-notice');
-            if (impersonationNotice) {
-                impersonationNotice.style.display = 'inline';
+            // Find and replace the header text
+            const siteNameLink = document.querySelector('#site-name a');
+            if (siteNameLink) {
+                const originalText = siteNameLink.textContent.trim();
+                siteNameLink.textContent = originalText + ' - Impersonating (return to codecov.io and log out)';
             }
         }
     });
