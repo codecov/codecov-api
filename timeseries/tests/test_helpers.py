@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 import pytest
 from django.conf import settings
@@ -731,7 +731,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TestCase):
             repository_id=self.repo.pk,
         ).first()
         assert dataset
-        trigger_backfill.assert_called_once_with(dataset)
+        trigger_backfill.assert_called_once_with([dataset])
 
     @patch("timeseries.models.Dataset.is_backfilled")
     @patch("timeseries.helpers.trigger_backfill")
@@ -766,7 +766,7 @@ class RepositoryCoverageMeasurementsWithFallbackTest(TestCase):
 
         # Ensure trigger_backfill was called when a new Dataset was created
         mock_trigger_backfill.assert_called_once_with(
-            mock_get_or_create.return_value[0]
+            [mock_get_or_create.return_value[0]]
         )
 
     @patch("timeseries.models.Dataset.is_backfilled")
@@ -1172,14 +1172,14 @@ class OwnerCoverageMeasurementsWithFallbackTest(TestCase):
             },
         ]
 
-        datasets = Dataset.objects.filter(
-            name=MeasurementName.COVERAGE.value,
-            repository_id__in=[self.repo1.pk, self.repo2.pk],
+        datasets = list(
+            Dataset.objects.filter(
+                name=MeasurementName.COVERAGE.value,
+                repository_id__in=[self.repo1.pk, self.repo2.pk],
+            )
         )
-        assert datasets.count() == 2
-        trigger_backfill.assert_has_calls(
-            [call(datasets[0]), call(datasets[1])], any_order=True
-        )
+        assert len(datasets) == 2
+        trigger_backfill.assert_called_once_with(datasets)
 
         res = owner_coverage_measurements_with_fallback(
             owner=self.owner,

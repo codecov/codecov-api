@@ -20,11 +20,9 @@ class ActivateMeasurementsInteractor(BaseInteractor):
         )
 
         dataset, created = Dataset.objects.get_or_create(
-            name=measurement_type.value,
-            repository_id=repo.pk,
+            name=measurement_type.value, repository_id=repo.pk
         )
-
         if created:
-            trigger_backfill(dataset)
+            trigger_backfill([dataset])
 
         return dataset

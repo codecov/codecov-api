@@ -145,33 +145,27 @@ def coverage_measurements(
         return aggregate_measurements(queryset).order_by("timestamp_bin")
 
 
-def trigger_backfill(dataset: Dataset):
+def trigger_backfill(datasets: list[Dataset]):
     """
     Triggers a backfill for the full timespan of the dataset's repo's commits.
     """
-    oldest_commit = (
-        Commit.objects.filter(repository_id=dataset.repository_id)
-        .order_by("timestamp")
-        .first()
+    repo_ids = {d.repository_id for d in datasets}
+    timeranges = (
+        Commit.objects.filter(repository_id__in=repo_ids)
+        .values_list("repository_id")
+        .annotate(start_date=Min("timestamp"), end_date=Max("timestamp"))
     )
 
-    newest_commit = (
-        Commit.objects.filter(repository_id=dataset.repository_id)
-        .order_by("-timestamp")
-        .first()
-    )
+    timerange_by_repo = {
+        repo_id: (start_date, end_date) for repo_id, start_date, end_date in timeranges
+    }
 
-    if oldest_commit and newest_commit:
-        # dates to span the entire range of commits
-        start_date = oldest_commit.timestamp.date()
-        start_date = datetime.fromordinal(start_date.toordinal())
-        end_date = newest_commit.timestamp.date() + timedelta(days=1)
-        end_date = datetime.fromordinal(end_date.toordinal())
-
+    for dataset in datasets:
+        if dataset.repository_id not in timerange_by_repo:
+            continue  # there are no commits, and thus nothing to backfill
+        start_date, end_date = timerange_by_repo[dataset.repository_id]
         TaskService().backfill_dataset(
-            dataset,
-            start_date=start_date,
-            end_date=end_date,
+            dataset, start_date=start_date, end_date=end_date
         )
 
 
@@ -340,42 +334,41 @@ def repository_coverage_measurements_with_fallback(
     If those are not available then we trigger a backfill and return computed results
     directly from the primary database (much slower to query).
     """
-    dataset = None
     if settings.TIMESERIES_ENABLED:
         dataset = Dataset.objects.filter(
             name=MeasurementName.COVERAGE.value,
             repository_id=repository.pk,
         ).first()
 
-    if settings.TIMESERIES_ENABLED and dataset and dataset.is_backfilled():
-        # timeseries data is ready
-        return coverage_measurements(
-            interval,
-            start_date=start_date,
-            end_date=end_date,
-            owner_id=repository.author_id,
-            repo_id=repository.pk,
-            measurable_id=str(repository.pk),
-            branch=branch or repository.branch,
-        )
-    else:
-        if settings.TIMESERIES_ENABLED and not dataset:
+        if dataset and dataset.is_backfilled():
+            # timeseries data is ready
+            return coverage_measurements(
+                interval,
+                start_date=start_date,
+                end_date=end_date,
+                owner_id=repository.author_id,
+                repo_id=repository.pk,
+                measurable_id=str(repository.pk),
+                branch=branch or repository.branch,
+            )
+
+        if not dataset:
             # we need to backfill
             dataset, created = Dataset.objects.get_or_create(
                 name=MeasurementName.COVERAGE.value,
                 repository_id=repository.pk,
             )
             if created:
-                trigger_backfill(dataset)
+                trigger_backfill([dataset])
 
-        # we're still backfilling or timeseries is disabled
-        return coverage_fallback_query(
-            interval,
-            start_date=start_date,
-            end_date=end_date,
-            repository_id=repository.pk,
-            branch=branch or repository.branch,
-        )
+    # we're still backfilling or timeseries is disabled
+    return coverage_fallback_query(
+        interval,
+        start_date=start_date,
+        end_date=end_date,
+        repository_id=repository.pk,
+        branch=branch or repository.branch,
+    )
 
 
 @sentry_sdk.trace
@@ -391,48 +384,44 @@ def owner_coverage_measurements_with_fallback(
     If those are not available then we trigger a backfill and return computed results
     directly from the primary database (much slower to query).
     """
-    datasets = []
+    # we can't join across databases so we need to load all this into memory.
+    # select just the needed columns to keep this manageable
+    repos = Repository.objects.filter(repoid__in=repo_ids).only("repoid", "branch")
+
     if settings.TIMESERIES_ENABLED:
         datasets = Dataset.objects.filter(
             name=MeasurementName.COVERAGE.value,
             repository_id__in=repo_ids,
         )
-
-    all_backfilled = len(datasets) == len(repo_ids) and all(
-        dataset.is_backfilled() for dataset in datasets
-    )
-
-    # we can't join across databases so we need to load all this into memory.
-    # select just the needed columns to keep this manageable
-    repos = Repository.objects.filter(repoid__in=repo_ids).only("repoid", "branch")
-
-    if settings.TIMESERIES_ENABLED and all_backfilled:
-        # timeseries data is ready
-        return coverage_measurements(
-            interval,
-            start_date=start_date,
-            end_date=end_date,
-            owner_id=owner.pk,
-            repos=repos,
+        all_backfilled = len(datasets) == len(repo_ids) and all(
+            dataset.is_backfilled() for dataset in datasets
         )
-    else:
-        if settings.TIMESERIES_ENABLED:
-            # we need to backfill some datasets
-            dataset_repo_ids = {dataset.repository_id for dataset in datasets}
-            missing_dataset_repo_ids = set(repo_ids) - dataset_repo_ids
-            created_datasets = Dataset.objects.bulk_create(
-                [
-                    Dataset(name=MeasurementName.COVERAGE.value, repository_id=repo_id)
-                    for repo_id in missing_dataset_repo_ids
-                ]
+
+        if all_backfilled:
+            # timeseries data is ready
+            return coverage_measurements(
+                interval,
+                start_date=start_date,
+                end_date=end_date,
+                owner_id=owner.pk,
+                repos=repos,
             )
-            for dataset in created_datasets:
-                trigger_backfill(dataset)
 
-        # we're still backfilling or timeseries is disabled
-        return coverage_fallback_query(
-            interval,
-            start_date=start_date,
-            end_date=end_date,
-            repos=repos,
+        # we need to backfill some datasets
+        dataset_repo_ids = {dataset.repository_id for dataset in datasets}
+        missing_dataset_repo_ids = set(repo_ids) - dataset_repo_ids
+        created_datasets = Dataset.objects.bulk_create(
+            [
+                Dataset(name=MeasurementName.COVERAGE.value, repository_id=repo_id)
+                for repo_id in missing_dataset_repo_ids
+            ]
         )
+        trigger_backfill(created_datasets)
+
+    # we're still backfilling or timeseries is disabled
+    return coverage_fallback_query(
+        interval,
+        start_date=start_date,
+        end_date=end_date,
+        repos=repos,
+    )

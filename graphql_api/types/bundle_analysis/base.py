@@ -139,9 +139,9 @@ def resolve_modules(
     return bundle_asset.modules
 
 
-@sentry_sdk.trace
 @bundle_asset_bindable.field("measurements")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_asset_report_measurements(
     bundle_asset: AssetReport,
     info: GraphQLResolveInfo,
@@ -188,8 +188,8 @@ def resolve_assets(
     return list(bundle_report.assets())
 
 
-@sentry_sdk.trace
 @bundle_report_bindable.field("assetsPaginated")
+@sentry_sdk.trace
 def resolve_assets_paginated(
     bundle_report: BundleReport,
     info: GraphQLResolveInfo,
@@ -283,9 +283,9 @@ def resolve_bundle_report_filtered(
     )
 
 
-@sentry_sdk.trace
 @bundle_report_bindable.field("measurements")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_bundle_report_measurements(
     bundle_report: BundleReport,
     info: GraphQLResolveInfo,
