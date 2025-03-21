@@ -5,8 +5,6 @@ import pytest
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.test import TestCase, override_settings
-from django.utils import timezone
-from freezegun import freeze_time
 from shared.django_apps.core.tests.factories import (
     CommitFactory,
     OwnerFactory,
@@ -98,7 +96,6 @@ class ActivateMeasurementsInteractorTest(TestCase):
         ).exists()
 
     @patch("services.task.TaskService.backfill_dataset")
-    @freeze_time("2022-01-01T00:00:00")
     def test_triggers_task(self, backfill_dataset):
         CommitFactory(repository=self.repo, timestamp=datetime(2000, 1, 1, 1, 1, 1))
         CommitFactory(repository=self.repo, timestamp=datetime(2021, 12, 31, 1, 1, 1))
@@ -109,8 +106,8 @@ class ActivateMeasurementsInteractorTest(TestCase):
         ).first()
         backfill_dataset.assert_called_once_with(
             dataset,
-            start_date=timezone.datetime(2000, 1, 1),
-            end_date=timezone.datetime(2022, 1, 1),
+            start_date=datetime(2000, 1, 1, 1, 1, 1),
+            end_date=datetime(2021, 12, 31, 1, 1, 1),
         )
 
     @patch("services.task.TaskService.backfill_dataset")
