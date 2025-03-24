@@ -45,8 +45,6 @@ services:
   minio:
     image: minio/minio:latest
     command: server /export
-    ports:
-      - "${MINIO_PORT:-9000}:9000"
     environment:
       - MINIO_ACCESS_KEY=codecov-default-key
       - MINIO_SECRET_KEY=codecov-default-secret
