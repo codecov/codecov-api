@@ -1,4 +1,9 @@
-from graphs.helpers.badge import format_coverage_precision, get_badge
+from graphs.helpers.badge import (
+    format_bundle_bytes,
+    format_coverage_precision,
+    get_badge,
+    get_bundle_badge,
+)
 
 
 class TestGraphsHelpers(object):
@@ -157,3 +162,246 @@ class TestGraphsHelpers(object):
         _badge = [line.strip() for line in _badge.split("\n")]
         expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == _badge
+
+    def test_bundle_badge_small(self):
+        bundle_size_bytes = 7
+        precision = 2
+
+        expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="71" height="20">
+              <linearGradient id="CodecovBadgeGradient" x2="0" y2="100%">
+                <stop offset="0" stop-color="#bbb" stop-opacity=".1" />
+                <stop offset="1" stop-opacity=".1" />
+              </linearGradient>
+              <mask id="CodecovBadgeMask71px">
+                <rect width="71" height="20" rx="3" fill="#fff" />
+              </mask>
+              <g mask="url(#CodecovBadgeMask71px)">
+                <path fill="#555" d="M0 0h47v20H0z" />
+                <path fill="#2C2433" d="M47 0h24v20H47z" />
+                <path fill="url(#CodecovBadgeGradient)" d="M0 0h71v20H0z" />
+              </g>
+              <g fill="#fff" text-anchor="left" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+                <text x="5" y="15" fill="#010101" fill-opacity=".3">bundle</text>
+                <text x="5" y="14">bundle</text>
+                <text x="52" y="15" fill="#010101" fill-opacity=".3">7B</text>
+                <text x="52" y="14">7B</text>
+              </g>
+            </svg>
+            """
+
+        _badge = get_bundle_badge(bundle_size_bytes, precision)
+        _badge = [line.strip() for line in _badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
+        assert expected_badge == _badge
+
+    def test_bundle_badge_medium(self):
+        bundle_size_bytes = 7777777
+        precision = 2
+
+        expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="99" height="20">
+                <linearGradient id="CodecovBadgeGradient" x2="0" y2="100%">
+                    <stop offset="0" stop-color="#bbb" stop-opacity=".1" />
+                    <stop offset="1" stop-opacity=".1" />
+                </linearGradient>
+                <mask id="CodecovBadgeMask99px">
+                    <rect width="99" height="20" rx="3" fill="#fff" />
+                </mask>
+                <g mask="url(#CodecovBadgeMask99px)">
+                    <path fill="#555" d="M0 0h47v20H0z" />
+                    <path fill="#2C2433" d="M47 0h52v20H47z" />
+                    <path fill="url(#CodecovBadgeGradient)" d="M0 0h99v20H0z" />
+                </g>
+                <g fill="#fff" text-anchor="left" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+                    <text x="5" y="15" fill="#010101" fill-opacity=".3">bundle</text>
+                    <text x="5" y="14">bundle</text>
+                    <text x="52" y="15" fill="#010101" fill-opacity=".3">7.78MB</text>
+                    <text x="52" y="14">7.78MB</text>
+                </g>
+            </svg>
+            """
+
+        _badge = get_bundle_badge(bundle_size_bytes, precision)
+        _badge = [line.strip() for line in _badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
+        assert expected_badge == _badge
+
+    def test_bundle_badge_large(self):
+        bundle_size_bytes = 7777777777777
+        precision = 2
+
+        expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="120" height="20">
+              <linearGradient id="CodecovBadgeGradient" x2="0" y2="100%">
+                  <stop offset="0" stop-color="#bbb" stop-opacity=".1" />
+                  <stop offset="1" stop-opacity=".1" />
+              </linearGradient>
+              <mask id="CodecovBadgeMask120px">
+                  <rect width="120" height="20" rx="3" fill="#fff" />
+              </mask>
+              <g mask="url(#CodecovBadgeMask120px)">
+                  <path fill="#555" d="M0 0h47v20H0z" />
+                  <path fill="#2C2433" d="M47 0h73v20H47z" />
+                  <path fill="url(#CodecovBadgeGradient)" d="M0 0h120v20H0z" />
+              </g>
+              <g fill="#fff" text-anchor="left" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+                  <text x="5" y="15" fill="#010101" fill-opacity=".3">bundle</text>
+                  <text x="5" y="14">bundle</text>
+                  <text x="52" y="15" fill="#010101" fill-opacity=".3">7777.78GB</text>
+                  <text x="52" y="14">7777.78GB</text>
+              </g>
+            </svg>
+            """
+
+        _badge = get_bundle_badge(bundle_size_bytes, precision)
+        _badge = [line.strip() for line in _badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
+        assert expected_badge == _badge
+
+    def test_format_bundle_bytes_0_precision(self):
+        bundle_sizes = [
+            7,
+            77,
+            777,
+            7777,
+            77777,
+            777777,
+            7777777,
+            77777777,
+            777777777,
+            7777777777,
+            77777777777,
+            777777777777,
+            7777777777777,
+        ]
+
+        expected = [
+            "7B",
+            "77B",
+            "777B",
+            "8KB",
+            "78KB",
+            "778KB",
+            "8MB",
+            "78MB",
+            "778MB",
+            "8GB",
+            "78GB",
+            "778GB",
+            "7778GB",
+        ]
+
+        for i in range(len(bundle_sizes)):
+            assert format_bundle_bytes(bundle_sizes[i], 0) == expected[i]
+
+    def test_format_bundle_bytes_1_precision(self):
+        bundle_sizes = [
+            7,
+            77,
+            777,
+            7777,
+            77777,
+            777777,
+            7777777,
+            77777777,
+            777777777,
+            7777777777,
+            77777777777,
+            777777777777,
+            7777777777777,
+        ]
+
+        expected = [
+            "7B",
+            "77B",
+            "777B",
+            "7.8KB",
+            "77.8KB",
+            "777.8KB",
+            "7.8MB",
+            "77.8MB",
+            "777.8MB",
+            "7.8GB",
+            "77.8GB",
+            "777.8GB",
+            "7777.8GB",
+        ]
+
+        for i in range(len(bundle_sizes)):
+            assert format_bundle_bytes(bundle_sizes[i], 1) == expected[i]
+
+    def test_format_bundle_bytes_2_precision(self):
+        bundle_sizes = [
+            7,
+            77,
+            777,
+            7777,
+            77777,
+            777777,
+            7777777,
+            77777777,
+            777777777,
+            7777777777,
+            77777777777,
+            777777777777,
+            7777777777777,
+        ]
+
+        expected = [
+            "7B",
+            "77B",
+            "777B",
+            "7.78KB",
+            "77.78KB",
+            "777.78KB",
+            "7.78MB",
+            "77.78MB",
+            "777.78MB",
+            "7.78GB",
+            "77.78GB",
+            "777.78GB",
+            "7777.78GB",
+        ]
+
+        for i in range(len(bundle_sizes)):
+            assert format_bundle_bytes(bundle_sizes[i], 2) == expected[i]
+
+    def test_format_bundle_strips_zeros(self):
+        bundle_sizes = [
+            0,
+            10,
+            100,
+            1000,
+            10000,
+            100000,
+            1000000,
+            10000000,
+            100000000,
+            1000000000,
+            10000000000,
+            100000000000,
+            1000000000000,
+            1100,
+            11100,
+            111100,
+        ]
+
+        expected = [
+            "0B",
+            "10B",
+            "100B",
+            "1KB",
+            "10KB",
+            "100KB",
+            "1MB",
+            "10MB",
+            "100MB",
+            "1GB",
+            "10GB",
+            "100GB",
+            "1000GB",
+            "1.1KB",
+            "11.1KB",
+            "111.1KB",
+        ]
+
+        for i in range(len(bundle_sizes)):
+            assert format_bundle_bytes(bundle_sizes[i], 2) == expected[i]
