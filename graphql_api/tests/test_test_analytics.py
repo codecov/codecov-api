@@ -808,3 +808,68 @@ class TestAnalyticsTestCase(
             settings.GCS_BUCKET_NAME,
             f"test_analytics/branch_rollups/{repository.repoid}/{repository.branch}.arrow",
         )
+
+    def test_gql_query_with_new_ta_all_branches(self, mocker, repository, snapshot):
+        # set the feature flag
+        mocker.patch("rollouts.READ_NEW_TA.check_value", return_value=True)
+
+        # read file from samples
+        storage = get_appropriate_storage_service()
+        try:
+            storage.create_root_storage(settings.GCS_BUCKET_NAME)
+        except BucketAlreadyExistsError:
+            pass
+        storage.write_file(
+            settings.GCS_BUCKET_NAME,
+            f"test_analytics/repo_rollups/{repository.repoid}.arrow",
+            test_results_table_no_version.write_ipc(None).getvalue(),
+        )
+
+        # run the GQL query
+        query = base_gql_query % (
+            repository.author.username,
+            repository.name,
+            """
+            testResults(filters: { branch: "All branches" }, ordering: { parameter: FAILURE_RATE, direction: DESC } ) {
+                totalCount
+                edges {
+                    cursor
+                    node {
+                        name
+                        failureRate
+                        flakeRate
+                        updatedAt
+                        avgDuration
+                        totalFailCount
+                        totalFlakyFailCount
+                        totalPassCount
+                        totalSkipCount
+                        commitsFailed
+                        lastDuration
+                    }
+                }
+            }
+            """,
+        )
+
+        result = self.gql_request(query, owner=repository.author)
+
+        # take a snapshot of the results
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["totalCount"]
+            == 5
+        )
+        assert snapshot("json") == [
+            {
+                **edge,
+                "node": {k: v for k, v in edge["node"].items() if k != "updatedAt"},
+            }
+            for edge in result["owner"]["repository"]["testAnalytics"]["testResults"][
+                "edges"
+            ]
+        ]
+
+        storage.delete_file(
+            settings.GCS_BUCKET_NAME,
+            f"test_analytics/repo_rollups/{repository.repoid}.arrow",
+        )

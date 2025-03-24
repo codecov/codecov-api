@@ -11,6 +11,8 @@ from shared.storage.exceptions import FileNotInStorageError
 from rollouts import READ_NEW_TA
 from services.task import TaskService
 
+ALL_BRANCHES = "All branches"
+
 get_results_summary = Summary(
     "test_results_get_results", "Time it takes to download results from GCS", ["impl"]
 )
@@ -144,10 +146,10 @@ def old_get_results(
     return table
 
 
-def rollup_blob_path(repoid: int, branch: str | None = None) -> str:
+def rollup_blob_path(repoid: int, branch: str) -> str:
     return (
         f"test_analytics/branch_rollups/{repoid}/{branch}.arrow"
-        if branch
+        if branch != ALL_BRANCHES
         else f"test_analytics/repo_rollups/{repoid}.arrow"
     )
 
@@ -223,7 +225,7 @@ def v1_agg_table(table: pl.LazyFrame) -> pl.LazyFrame:
 
 def new_get_results(
     repoid: int,
-    branch: str | None,
+    branch: str,
     interval_start: int,
     interval_end: int | None = None,
 ) -> pl.DataFrame | None:
