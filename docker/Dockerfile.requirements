@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-ARG PYTHON_IMAGE=ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+ARG PYTHON_IMAGE=ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 # BUILD STAGE - Download dependencies from GitHub that require SSH access
 FROM $PYTHON_IMAGE as build
