@@ -38,7 +38,6 @@ INTERVAL_1_DAY = 1
 class TestResultsRow:
     # the order here must match the order of the fields in the query
     name: str
-    test_id: str
     testsuite: str | None
     flags: list[str]
     failure_rate: float
@@ -55,7 +54,6 @@ class TestResultsRow:
     def to_dict(self) -> dict:
         return {
             "name": self.name,
-            "test_id": self.test_id,
             "testsuite": self.testsuite,
             "flags": self.flags,
             "failure_rate": self.failure_rate,
