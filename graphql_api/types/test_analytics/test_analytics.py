@@ -198,8 +198,7 @@ def generate_test_results(
 
     :param repoid: repoid of the repository we want to calculate aggregates for
     :param branch: optional name of the branch we want to filter on, if this is provided the aggregates calculated will only take into account
-        test instances generated on that branch. By default branches will not be filtered and test instances on all branches wil be taken into
-        account.
+        test instances generated on that branch.
     :param interval: timedelta for filtering test instances used to calculate the aggregates by time, the test instances used will be
         those with a created at larger than now - interval.
     :param testsuites: optional list of testsuite names to filter by, this is done via a union
