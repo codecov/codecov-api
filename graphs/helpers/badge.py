@@ -36,7 +36,7 @@ def get_badge(coverage: str | None, coverage_range: list[int], precision: str):
     )
 
 
-def format_coverage_precision(coverage, precision):
+def format_coverage_precision(coverage: float | None, precision: int):
     """
     Returns coverage as a string formatted with appropriate precision
 
