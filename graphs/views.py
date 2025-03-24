@@ -184,7 +184,7 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None
 
         # Gets the flags present in commit's report and reduces to only those
-        # that match one of the component's flag regexes.
+        # that match at least one of the component's flag regexes.
         component_flags = component.get_matching_flags(report.get_flag_names())
 
         # Filters the commit report on the component's flags and paths.
