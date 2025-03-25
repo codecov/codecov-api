@@ -179,7 +179,7 @@ CSP_DEFAULT_SRC = [
     "'sha256-jQoC6QpIonlMBPFbUGlJFRJFFWbbijMl7Z8XqWrb46o='",
     "'sha256-8bfsSkoReSu+APs9CT6QDx2VMgtiw9/lrZLMZNUmhc0='",
     "'sha256-WoezM4J4TynepdEmsbDslXjZN6zQbvY3M0cX0ujGGUo='",
-    "'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog='",
+    "'sha256-OdsouMbSygCsanIn5RN0skp0SiM8rjt4PqX+YWPG3d0='",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
     "https://cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
