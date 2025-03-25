@@ -14,6 +14,16 @@ urlpatterns = [
         name="default-badge",
     ),
     re_path(
+        "branch/(?P<branch>.+)/(graph|graphs)/bundle/badge.(?P<ext>[^/]+)",
+        BadgeHandler.as_view(),
+        "branch-bundle-badge",
+    ),
+    re_path(
+        "(graph|graphs)/bundle/badge.(?P<ext>[^/]+)",
+        BadgeHandler.as_view(),
+        "default-bundle-badge",
+    ),
+    re_path(
         "pull/(?P<pullid>[^/]+)/(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)",
         GraphHandler.as_view(),
         name="pull-graph",
