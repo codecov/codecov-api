@@ -13,10 +13,17 @@ from shared.metrics import Counter, inc_counter
 
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
+from graphql_api.dataloader.bundle_analysis import load_bundle_analysis_report
 from graphs.settings import settings
+from services.bundle_analysis import BundleAnalysisReport
 from services.components import commit_components
 
-from .helpers.badge import format_coverage_precision, get_badge
+from .helpers.badge import (
+    format_bundle_bytes,
+    format_coverage_precision,
+    get_badge,
+    get_bundle_badge,
+)
 from .helpers.graphs import icicle, sunburst, tree
 from .mixins import GraphBadgeAPIMixin
 
@@ -191,6 +198,72 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         filtered_report = report.filter(flags=component_flags, paths=component.paths)
 
         return filtered_report.totals.coverage
+
+
+class BundleBadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
+    content_negotiation_class = IgnoreClientContentNegotiation
+
+    permission_classes = [AllowAny]
+
+    extensions = ["svg", "txt"]
+    precisions = ["0", "1", "2"]
+    filename = "bundle-badge"
+
+    def get_object(self, request, *args, **kwargs):
+        # Validate coverage precision
+        precision = self.request.query_params.get("precision", "2")
+        if precision not in self.precisions:
+            raise NotFound("Bundle size precision should be one of [ 0 || 1 || 2 ]")
+        precision = int(precision)
+
+        bundle_size_bytes = self.get_bundle_size()
+
+        if self.kwargs.get("ext") == "txt":
+            return format_bundle_bytes(bundle_size_bytes, precision)
+
+        return get_bundle_badge(bundle_size_bytes, precision)
+
+    def get_bundle_size(self) -> int | None:
+        try:
+            repo = self.repo
+        except Http404:
+            log.warning("Repo not found", extra=dict(repo=self.kwargs.get("repo_name")))
+            return None
+
+        if repo.private and repo.image_token != self.request.query_params.get("token"):
+            log.warning(
+                "Token provided does not match repo's image token",
+                extra=dict(repo=repo),
+            )
+            return None
+
+        branch_name = self.kwargs.get("branch") or repo.branch
+        branch = Branch.objects.filter(
+            name=branch_name, repository_id=repo.repoid
+        ).first()
+
+        if branch is None:
+            log.warning(
+                "Branch not found", extra=dict(branch_name=branch_name, repo=repo)
+            )
+            return None
+
+        try:
+            commit: Commit = repo.commits.filter(commitid=branch.head).first()
+        except ObjectDoesNotExist:
+            log.warning("Commit not found", extra=dict(commit=branch.head))
+            return None
+
+        bundle_report = load_bundle_analysis_report(commit)
+
+        if not isinstance(bundle_report, BundleAnalysisReport):
+            log.warning(
+                "Bundle analysis report not found for commit",
+                extra=dict(commit=branch.head),
+            )
+            return None
+
+        return bundle_report.size_total
 
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
