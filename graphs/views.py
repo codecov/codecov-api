@@ -8,11 +8,13 @@ from rest_framework.exceptions import NotFound
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from shared.django_apps.core.models import Commit
 from shared.metrics import Counter, inc_counter
 
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
 from graphs.settings import settings
+from services.components import commit_components
 
 from .helpers.badge import format_coverage_precision, get_badge
 from .helpers.graphs import icicle, sunburst, tree
@@ -127,6 +129,10 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if flag:
             return self.flag_coverage(flag, commit), coverage_range
 
+        component = self.request.query_params.get("component")
+        if component:
+            return self.component_coverage(component, commit), coverage_range
+
         coverage = (
             commit.totals.get("c")
             if commit is not None and commit.totals is not None
@@ -135,17 +141,14 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
 
         return coverage, coverage_range
 
-    def flag_coverage(self, flag_name, commit):
+    def flag_coverage(self, flag_name: str, commit: Commit):
         """
-        Looks into a commit's report sessions and returns the coverage for a particular flag
-
-        Parameters
-        flag_name (string): name of flag
-        commit (obj): commit object containing report
+        Looks into a commit's report sessions and returns the coverage for a particular flag name.
         """
         if commit.full_report is None:
             log.warning(
-                "Commit's report not found", extra=dict(commit=commit, flag=flag_name)
+                "Commit's report not found",
+                extra=dict(commit=commit.commitid, flag=flag_name),
             )
             return None
         flags = commit.full_report.flags
@@ -155,6 +158,39 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         if flag:
             return flag.totals.coverage
         return None
+
+    def component_coverage(self, component_identifier: str, commit: Commit):
+        """
+        Looks into a commit's report sessions and returns the coverage for a particular component.
+        """
+        report = commit.full_report
+        if report is None:
+            log.warning(
+                "Commit's report not found",
+                extra=dict(commit=commit.commitid, component=component_identifier),
+            )
+            return None
+        components = commit_components(commit, None)
+
+        try:
+            component = next(
+                c
+                for c in components
+                if c.component_id == component_identifier
+                or c.name == component_identifier
+            )
+        except StopIteration:
+            # Component not found
+            return None
+
+        # Gets the flags present in commit's report and reduces to only those
+        # that match at least one of the component's flag regexes.
+        component_flags = component.get_matching_flags(report.get_flag_names())
+
+        # Filters the commit report on the component's flags and paths.
+        filtered_report = report.filter(flags=component_flags, paths=component.paths)
+
+        return filtered_report.totals.coverage
 
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
