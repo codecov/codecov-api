@@ -13,9 +13,8 @@ from shared.metrics import Counter, inc_counter
 
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
-from graphql_api.dataloader.bundle_analysis import load_bundle_analysis_report
 from graphs.settings import settings
-from services.bundle_analysis import BundleAnalysisReport
+from services.bundle_analysis import BundleAnalysisReport, load_report
 from services.components import commit_components
 
 from .helpers.badge import (
@@ -254,14 +253,16 @@ class BundleBadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             log.warning("Commit not found", extra=dict(commit=branch.head))
             return None
 
-        bundle_report = load_bundle_analysis_report(commit)
+        shared_bundle_report = load_report(commit)
 
-        if not isinstance(bundle_report, BundleAnalysisReport):
+        if shared_bundle_report is None:
             log.warning(
                 "Bundle analysis report not found for commit",
                 extra=dict(commit=branch.head),
             )
             return None
+
+        bundle_report = BundleAnalysisReport(shared_bundle_report)
 
         return bundle_report.size_total
 
