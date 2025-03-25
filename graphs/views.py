@@ -211,9 +211,7 @@ class BundleBadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     def get_object(self, request, *args, **kwargs):
         # Validate precision query param
         precision = self.request.query_params.get("precision", "2")
-        if precision not in self.precisions:
-            raise NotFound("Bundle size precision should be one of [ 0 || 1 || 2 ]")
-        precision = int(precision)
+        precision = int(precision) if precision in self.precisions else 2
 
         bundle_size_bytes = self.get_bundle_size()
 
@@ -251,9 +249,8 @@ class BundleBadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             )
             return None
 
-        try:
-            commit: Commit = repo.commits.filter(commitid=branch.head).first()
-        except ObjectDoesNotExist:
+        commit: Commit = repo.commits.filter(commitid=branch.head).first()
+        if commit is None:
             log.warning("Commit not found", extra=dict(commit=branch.head))
             return None
 
