@@ -52,7 +52,31 @@ def format_coverage_precision(coverage: float | None, precision: int):
     return ("%%.%sf" % precision) % coverage
 
 
-def get_bundle_badge(bundle_size_bytes: int, precision: int):
+def get_bundle_badge(bundle_size_bytes: int | None, precision: int):
+    if bundle_size_bytes is None:
+        # Returns text 'unknown' instead of bundle size
+        return """<svg xmlns="http://www.w3.org/2000/svg" width="106" height="20">
+    <linearGradient id="CodecovBadgeGradient" x2="0" y2="100%">
+        <stop offset="0" stop-color="#bbb" stop-opacity=".1" />
+        <stop offset="1" stop-opacity=".1" />
+    </linearGradient>
+    <mask id="CodecovBadgeMask106px">
+        <rect width="106" height="20" rx="3" fill="#fff" />
+    </mask>
+    <g mask="url(#CodecovBadgeMask106px)">
+        <path fill="#555" d="M0 0h47v20H0z" />
+        <path fill="#2C2433" d="M47 0h59v20H47z" />
+        <path fill="url(#CodecovBadgeGradient)" d="M0 0h106v20H0z" />
+    </g>
+    <g fill="#fff" text-anchor="left" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+        <text x="5" y="15" fill="#010101" fill-opacity=".3">bundle</text>
+        <text x="5" y="14">bundle</text>
+        <text x="52" y="15" fill="#010101" fill-opacity=".3">unknown</text>
+        <text x="52" y="14">unknown</text>
+    </g>
+</svg>
+"""
+
     bundle_size_string = format_bundle_bytes(bundle_size_bytes, precision)
     char_width = 7  # approximate, looks good on all reasonable inputs
     width_in_pixels = len(bundle_size_string) * char_width
@@ -60,7 +84,7 @@ def get_bundle_badge(bundle_size_bytes: int, precision: int):
 
     width = static_width + width_in_pixels
 
-    return f""" <svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="20">
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="20">
     <linearGradient id="CodecovBadgeGradient" x2="0" y2="100%">
         <stop offset="0" stop-color="#bbb" stop-opacity=".1" />
         <stop offset="1" stop-opacity=".1" />
@@ -70,7 +94,7 @@ def get_bundle_badge(bundle_size_bytes: int, precision: int):
     </mask>
     <g mask="url(#CodecovBadgeMask{width}px)">
         <path fill="#555" d="M0 0h47v20H0z" />
-        <path fill="#2C2433" d="M47 0h{width - static_width + 10}v20H47z" />
+        <path fill="#2C2433" d="M47 0h{width_in_pixels + 10}v20H47z" />
         <path fill="url(#CodecovBadgeGradient)" d="M0 0h{width}v20H0z" />
     </g>
     <g fill="#fff" text-anchor="left" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">

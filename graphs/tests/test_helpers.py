@@ -256,6 +256,37 @@ class TestGraphsHelpers(object):
         expected_badge = [line.strip() for line in expected_badge.split("\n")]
         assert expected_badge == _badge
 
+    def test_bundle_badge_unknown(self):
+        bundle_size_bytes = None
+        precision = 2
+
+        expected_badge = """<svg xmlns="http://www.w3.org/2000/svg" width="106" height="20">
+                <linearGradient id="CodecovBadgeGradient" x2="0" y2="100%">
+                    <stop offset="0" stop-color="#bbb" stop-opacity=".1" />
+                    <stop offset="1" stop-opacity=".1" />
+                </linearGradient>
+                <mask id="CodecovBadgeMask106px">
+                    <rect width="106" height="20" rx="3" fill="#fff" />
+                </mask>
+                <g mask="url(#CodecovBadgeMask106px)">
+                    <path fill="#555" d="M0 0h47v20H0z" />
+                    <path fill="#2C2433" d="M47 0h59v20H47z" />
+                    <path fill="url(#CodecovBadgeGradient)" d="M0 0h106v20H0z" />
+                </g>
+                <g fill="#fff" text-anchor="left" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+                    <text x="5" y="15" fill="#010101" fill-opacity=".3">bundle</text>
+                    <text x="5" y="14">bundle</text>
+                    <text x="52" y="15" fill="#010101" fill-opacity=".3">unknown</text>
+                    <text x="52" y="14">unknown</text>
+                </g>
+            </svg>
+            """
+
+        _badge = get_bundle_badge(bundle_size_bytes, precision)
+        _badge = [line.strip() for line in _badge.split("\n")]
+        expected_badge = [line.strip() for line in expected_badge.split("\n")]
+        assert expected_badge == _badge
+
     def test_format_bundle_bytes_0_precision(self):
         bundle_sizes = [
             7,
