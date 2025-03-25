@@ -14,7 +14,7 @@ from shared.metrics import Counter, inc_counter
 from api.shared.mixins import RepoPropertyMixin
 from core.models import Branch, Pull
 from graphs.settings import settings
-from services.bundle_analysis import BundleAnalysisReport, load_report
+from services.bundle_analysis import load_report
 from services.components import commit_components
 
 from .helpers.badge import (
@@ -209,7 +209,7 @@ class BundleBadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
     filename = "bundle-badge"
 
     def get_object(self, request, *args, **kwargs):
-        # Validate coverage precision
+        # Validate precision query param
         precision = self.request.query_params.get("precision", "2")
         if precision not in self.precisions:
             raise NotFound("Bundle size precision should be one of [ 0 || 1 || 2 ]")
@@ -218,7 +218,11 @@ class BundleBadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
         bundle_size_bytes = self.get_bundle_size()
 
         if self.kwargs.get("ext") == "txt":
-            return format_bundle_bytes(bundle_size_bytes, precision)
+            return (
+                "unknown"
+                if bundle_size_bytes is None
+                else format_bundle_bytes(bundle_size_bytes, precision)
+            )
 
         return get_bundle_badge(bundle_size_bytes, precision)
 
@@ -253,18 +257,26 @@ class BundleBadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             log.warning("Commit not found", extra=dict(commit=branch.head))
             return None
 
-        shared_bundle_report = load_report(commit)
+        commit_bundles = load_report(commit)
 
-        if shared_bundle_report is None:
+        if commit_bundles is None:
             log.warning(
                 "Bundle analysis report not found for commit",
                 extra=dict(commit=branch.head),
             )
             return None
 
-        bundle_report = BundleAnalysisReport(shared_bundle_report)
+        bundle_name = str(self.kwargs.get("bundle"))
+        bundle = commit_bundles.bundle_report(bundle_name)
 
-        return bundle_report.size_total
+        if bundle is None:
+            log.warning(
+                "Bundle with provided name not found for commit",
+                extra=dict(commit=branch.head),
+            )
+            return None
+
+        return bundle.total_size()
 
 
 class GraphHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):

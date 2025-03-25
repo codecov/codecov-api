@@ -14,12 +14,12 @@ urlpatterns = [
         name="default-badge",
     ),
     re_path(
-        "branch/(?P<branch>.+)/(graph|graphs)/bundle/badge.(?P<ext>[^/]+)",
+        "branch/(?P<branch>.+)/(graph|graphs)/bundle/(?P<bundle>.+)/badge.(?P<ext>[^/]+)",
         BundleBadgeHandler.as_view(),
         name="branch-bundle-badge",
     ),
     re_path(
-        "(graph|graphs)/bundle/badge.(?P<ext>[^/]+)",
+        "(graph|graphs)/bundle/(?P<bundle>.+)/badge.(?P<ext>[^/]+)",
         BundleBadgeHandler.as_view(),
         name="default-bundle-badge",
     ),
