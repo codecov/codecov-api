@@ -70,7 +70,7 @@ def get_bundle_badge(bundle_size_bytes: int, precision: int):
     </mask>
     <g mask="url(#CodecovBadgeMask{width}px)">
         <path fill="#555" d="M0 0h47v20H0z" />
-        <path fill="#2C2433" d="M47 0h{width - static_width + 10}v20H47z" />
+        <path fill="#2C2433" d="M47 0h{width_in_pixels + 10}v20H47z" />
         <path fill="url(#CodecovBadgeGradient)" d="M0 0h{width}v20H0z" />
     </g>
     <g fill="#fff" text-anchor="left" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
