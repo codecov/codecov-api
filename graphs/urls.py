@@ -1,6 +1,6 @@
 from django.urls import re_path
 
-from .views import BadgeHandler, GraphHandler
+from .views import BadgeHandler, BundleBadgeHandler, GraphHandler
 
 urlpatterns = [
     re_path(
@@ -12,6 +12,16 @@ urlpatterns = [
         "(graph|graphs)/badge.(?P<ext>[^/]+)",
         BadgeHandler.as_view(),
         name="default-badge",
+    ),
+    re_path(
+        "branch/(?P<branch>.+)/(graph|graphs)/bundle/(?P<bundle>.+)/badge.(?P<ext>[^/]+)",
+        BundleBadgeHandler.as_view(),
+        name="branch-bundle-badge",
+    ),
+    re_path(
+        "(graph|graphs)/bundle/(?P<bundle>.+)/badge.(?P<ext>[^/]+)",
+        BundleBadgeHandler.as_view(),
+        name="default-bundle-badge",
     ),
     re_path(
         "pull/(?P<pullid>[^/]+)/(graph|graphs)/(?P<graph>tree|icicle|sunburst|commits).(?P<ext>[^/]+)",
