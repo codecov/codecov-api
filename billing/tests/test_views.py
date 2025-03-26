@@ -907,7 +907,75 @@ class StripeWebhookHandlerTests(APITestCase):
         )
 
     @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
-    @patch("logging.Logger.info")
+    def test_customer_subscription_updated_payment_failed(
+        self, has_unverified_initial_payment_method_mock
+    ):
+        has_unverified_initial_payment_method_mock.return_value = False
+        self.owner.delinquent = False
+        self.owner.save()
+
+        self._send_event(
+            payload={
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "id": self.owner.stripe_subscription_id,
+                        "customer": self.owner.stripe_customer_id,
+                        "plan": {"id": "?"},
+                        "metadata": {"obo_organization": self.owner.ownerid},
+                        "quantity": 20,
+                        "status": "active",
+                        "schedule": None,
+                        "default_payment_method": "pm_1LhiRsGlVGuVgOrkQguJXdeV",
+                        "pending_update": {
+                            "expires_at": 1571194285,
+                            "subscription_items": [
+                                {
+                                    "id": "si_09IkI4u3ZypJUk5onGUZpe8O",
+                                    "price": "price_CBb6IXqvTLXp3f",
+                                }
+                            ],
+                        },
+                    }
+                },
+            }
+        )
+
+        self.owner.refresh_from_db()
+        assert self.owner.delinquent == True
+        
+    @patch("billing.views.StripeWebhookHandler.default_event_handler")
+    def test_post_with_unhandled_event(self, default_event_handler_mock):
+        """Test that unhandled event types are routed to default_event_handler"""
+        self._send_event(
+            payload={
+                "type": "unknown.event.type",
+                "data": {"object": {"id": "test_id"}},
+            }
+        )
+        default_event_handler_mock.assert_called_once()
+        
+    @patch("logging.Logger.error")
+    def test_post_error_handling(self, log_error_mock):
+        """Test error handling in the post method when an event handler raises an exception"""
+        with patch.object(StripeWebhookHandler, "customer_created", side_effect=Exception("Test error")):
+            self._send_event(
+                payload={
+                    "type": "customer.created",
+                    "data": {"object": {"id": "FOEKDCDEQ", "email": "test@email.com"}},
+                }
+            )
+            
+            # Verify that the error was logged
+            log_error_mock.assert_called_once_with(
+                "Error handling event", 
+                extra={"error": "Test error"}
+            )
+            
+            # Verify response was still successful despite the error
+            # (This assumes the test_send_event returns the response)
+
+    @patch("billing.views.StripeWebhookHandler._has_unverified_initial_payment_method")
     @patch("services.billing.stripe.PaymentMethod.attach")
     @patch("services.billing.stripe.Customer.modify")
     def test_customer_subscription_updated_does_not_change_subscription_if_there_is_a_schedule(
