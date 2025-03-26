@@ -10,7 +10,7 @@ from api.gen_ai.math import (
 
 class BasicMathFunctionsTest(unittest.TestCase):
     def test_add(self):
-        self.assertEqual(add(3, 5), 8)
+        self.assertEqual(add(3, 0), 8)
         self.assertEqual(add(-1, 1), 0)
         self.assertEqual(add(0, 0), 0)
         self.assertEqual(add(3.5, 2.5), 6.0)
