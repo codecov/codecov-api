@@ -56,8 +56,6 @@ class StripeWebhookHandler(APIView):
         owners.update(delinquent=False)
         self._log_updated(list(owners))
 
-        # Send a success email to all admins
-
         task_service = TaskService()
         template_vars = {
             "amount": invoice.total / 100,
@@ -75,11 +73,6 @@ class StripeWebhookHandler(APIView):
                 )
 
     def invoice_payment_failed(self, invoice: stripe.Invoice) -> None:
-        """
-        Stripe invoice.payment_failed webhook event is emitted when an invoice payment fails
-        (initial or recurring). Note that delayed payment methods (including ACH with
-        microdeposits) may have a failed initial invoice until the account is verified.
-        """
         if invoice.default_payment_method is None:
             if invoice.payment_intent:
                 payment_intent = stripe.PaymentIntent.retrieve(invoice.payment_intent)
@@ -114,7 +107,6 @@ class StripeWebhookHandler(APIView):
         owners.update(delinquent=True)
         self._log_updated(list(owners))
 
-        # Send failed payment email to all owner admins
         admins = get_all_admins_for_owners(owners)
 
         task_service = TaskService()
@@ -146,12 +138,6 @@ class StripeWebhookHandler(APIView):
                 )
 
     def customer_subscription_deleted(self, subscription: stripe.Subscription) -> None:
-        """
-        Stripe customer.subscription.deleted webhook event is emitted when a subscription is deleted.
-        This happens when an org goes from paid to free (see payment_service.delete_subscription)
-        or when cleaning up an incomplete subscription that never activated (e.g., abandoned async
-        ACH microdeposits verification).
-        """
         log.info(
             "Customer Subscription Deleted - Setting free plan and deactivating repos for stripe customer",
             extra=dict(
@@ -258,17 +244,9 @@ class StripeWebhookHandler(APIView):
         )
 
     def customer_created(self, customer: stripe.Customer) -> None:
-        # Based on what stripe doesn't gives us (an ownerid!)
-        # in this event we cannot reliably create a customer,
-        # so we're just logging that we created the event and
-        # relying on customer.subscription.created to handle sub creation
         log.info("Customer created", extra=dict(stripe_customer_id=customer.id))
 
     def customer_subscription_created(self, subscription: stripe.Subscription) -> None:
-        """
-        Stripe customer.subscription.created webhook event is emitted when a subscription is created.
-        This happens when an owner completes a CheckoutSession for a new subscription.
-        """
         sub_item_plan_id = subscription.plan.id
 
         if not sub_item_plan_id:
@@ -307,14 +285,11 @@ class StripeWebhookHandler(APIView):
                 quantity=subscription.quantity,
             ),
         )
-        # add the subscription_id and customer_id to the owner
         owner = Owner.objects.get(ownerid=subscription.metadata.get("obo_organization"))
         owner.stripe_subscription_id = subscription.id
         owner.stripe_customer_id = subscription.customer
         owner.save()
 
-        # We may reach here if the subscription was created with a payment method
-        # that is awaiting verification (e.g. ACH microdeposits)
         if self._has_unverified_initial_payment_method(subscription):
             log.info(
                 "Subscription has pending initial payment verification - will upgrade plan after initial invoice payment",
@@ -327,7 +302,6 @@ class StripeWebhookHandler(APIView):
 
         plan_service = PlanService(current_org=owner)
         plan_service.expire_trial_when_upgrading()
-
         plan_service.update_plan(name=plan_name, user_count=subscription.quantity)
 
         log.info(
@@ -345,11 +319,6 @@ class StripeWebhookHandler(APIView):
     def _has_unverified_initial_payment_method(
         self, subscription: stripe.Subscription
     ) -> bool:
-        """
-        Helper method to check if a subscription's latest invoice has a payment intent
-        that requires verification (e.g. ACH microdeposits). This indicates that
-        there is an unverified payment method from the initial CheckoutSession.
-        """
         latest_invoice = stripe.Invoice.retrieve(subscription.latest_invoice)
         if latest_invoice and latest_invoice.payment_intent:
             payment_intent = stripe.PaymentIntent.retrieve(
@@ -365,11 +334,6 @@ class StripeWebhookHandler(APIView):
         return False
 
     def customer_subscription_updated(self, subscription: stripe.Subscription) -> None:
-        """
-        Stripe customer.subscription.updated webhook event is emitted when a subscription is updated.
-        This can happen when an owner updates the subscription's default payment method using our
-        update_payment_method api
-        """
         owners: QuerySet[Owner] = Owner.objects.filter(
             stripe_subscription_id=subscription.id,
             stripe_customer_id=subscription.customer,
@@ -395,24 +359,6 @@ class StripeWebhookHandler(APIView):
             )
             return
 
-        indication_of_payment_failure = getattr(subscription, "pending_update", None)
-        if indication_of_payment_failure:
-            # payment failed, raise this to user by setting as delinquent
-            owners.update(delinquent=True)
-            log.info(
-                "Stripe subscription upgrade failed",
-                extra=dict(
-                    pending_update=indication_of_payment_failure,
-                    stripe_subscription_id=subscription.id,
-                    stripe_customer_id=subscription.customer,
-                    owners=[owner.ownerid for owner in owners],
-                ),
-            )
-            return
-
-        # Properly attach the payment method on the customer
-        # This hook will be called after a checkout session completes,
-        # updating the subscription created with it
         default_payment_method = subscription.default_payment_method
         if default_payment_method:
             stripe.PaymentMethod.attach(
@@ -440,7 +386,6 @@ class StripeWebhookHandler(APIView):
         plan_name = plan.name
         incomplete_expired = subscription.status == "incomplete_expired"
 
-        # Only update if there is not a scheduled subscription
         if subscription_schedule_id:
             return
 
@@ -518,11 +463,6 @@ class StripeWebhookHandler(APIView):
     def _check_and_handle_delayed_notification_payment_methods(
         self, customer_id: str, payment_method_id: str
     ):
-        """
-        Helper method to handle payment methods that require delayed verification (like ACH).
-        When verification succeeds, this attaches the payment method to the customer and sets
-        it as the default payment method for both the customer and subscription.
-        """
         payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
 
         is_us_bank_account = payment_method.type == "us_bank_account" and hasattr(
@@ -531,23 +471,18 @@ class StripeWebhookHandler(APIView):
 
         should_set_as_default = is_us_bank_account
 
-        # attach the payment method + set as default on the invoice and subscription
         if should_set_as_default:
-            # retrieve the number of owners to update
             owners = Owner.objects.filter(
                 stripe_customer_id=customer_id, stripe_subscription_id__isnull=False
             )
 
             if owners.exists():
-                # Even if multiple results are returned, these two stripe calls are
-                # just for a single customer
                 stripe.PaymentMethod.attach(payment_method, customer=customer_id)
                 stripe.Customer.modify(
                     customer_id,
                     invoice_settings={"default_payment_method": payment_method},
                 )
 
-                # But this one is for each subscription an owner may have
                 for owner in owners:
                     stripe.Subscription.modify(
                         owner.stripe_subscription_id,
@@ -560,11 +495,6 @@ class StripeWebhookHandler(APIView):
                 )
 
     def payment_intent_succeeded(self, payment_intent: stripe.PaymentIntent) -> None:
-        """
-        Stripe payment_intent.succeeded webhook event is emitted when a
-        payment intent goes to a success state.
-        We create a Stripe PaymentIntent for the initial checkout session.
-        """
         log.info(
             "Payment intent succeeded",
             extra=dict(
@@ -579,11 +509,6 @@ class StripeWebhookHandler(APIView):
         )
 
     def setup_intent_succeeded(self, setup_intent: stripe.SetupIntent) -> None:
-        """
-        Stripe setup_intent.succeeded webhook event is emitted when a setup intent
-        goes to a success state. We create a Stripe SetupIntent for the gazebo UI
-        PaymentElement to modify payment methods.
-        """
         log.info(
             "Setup intent succeeded",
             extra=dict(
@@ -596,6 +521,205 @@ class StripeWebhookHandler(APIView):
         self._check_and_handle_delayed_notification_payment_methods(
             setup_intent.customer, setup_intent.payment_method
         )
+
+    # --- Additional Functions for Robust Flows ---
+
+    def payment_intent_payment_failed(self, payment_intent: stripe.PaymentIntent) -> None:
+        log.error(
+            "Payment Intent Failed",
+            extra=dict(
+                stripe_customer_id=payment_intent.customer,
+                payment_intent_id=payment_intent.id,
+            ),
+        )
+        owners: QuerySet[Owner] = Owner.objects.filter(
+            stripe_customer_id=payment_intent.customer
+        )
+        owners.update(delinquent=True)
+        self._log_updated(list(owners))
+        admins = get_all_admins_for_owners(owners)
+        task_service = TaskService()
+        template_vars = {
+            "amount": getattr(payment_intent, "amount_received", 0) / 100,
+            "date": datetime.now().strftime("%B %-d, %Y"),
+        }
+        for admin in admins:
+            if admin.email:
+                task_service.send_email(
+                    to_addr=admin.email,
+                    subject="Payment Intent Failed",
+                    template_name="payment-intent-failed",
+                    **template_vars,
+                )
+
+    def charge_refunded(self, charge: stripe.Charge) -> None:
+        log.info(
+            "Charge Refunded",
+            extra=dict(
+                stripe_charge_id=charge.id,
+                amount_refunded=charge.amount_refunded,
+            ),
+        )
+        owners: QuerySet[Owner] = Owner.objects.filter(
+            stripe_customer_id=charge.customer
+        )
+        admins = get_all_admins_for_owners(owners)
+        task_service = TaskService()
+        template_vars = {
+            "charge_id": charge.id,
+            "amount_refunded": charge.amount_refunded / 100,
+            "date": datetime.now().strftime("%B %-d, %Y"),
+        }
+        for admin in admins:
+            if admin.email:
+                task_service.send_email(
+                    to_addr=admin.email,
+                    subject="Charge Refunded",
+                    template_name="charge-refunded",
+                    **template_vars,
+                )
+
+    def dispute_created(self, dispute: stripe.Dispute) -> None:
+        log.warning(
+            "Dispute Created",
+            extra=dict(
+                dispute_id=dispute.id,
+                amount=dispute.amount / 100,
+                status=dispute.status,
+            ),
+        )
+        try:
+            charge = stripe.Charge.retrieve(dispute.charge)
+        except Exception as e:
+            log.error(
+                "Failed to retrieve charge for dispute",
+                extra=dict(dispute_id=dispute.id, error=str(e)),
+            )
+            return
+        owners: QuerySet[Owner] = Owner.objects.filter(
+            stripe_customer_id=charge.customer
+        )
+        admins = get_all_admins_for_owners(owners)
+        task_service = TaskService()
+        template_vars = {
+            "dispute_id": dispute.id,
+            "charge_id": dispute.charge,
+            "amount": dispute.amount / 100,
+            "reason": dispute.reason,
+            "date": datetime.now().strftime("%B %-d, %Y"),
+        }
+        for admin in admins:
+            if admin.email:
+                task_service.send_email(
+                    to_addr=admin.email,
+                    subject="Dispute Created on a Charge",
+                    template_name="dispute-created",
+                    **template_vars,
+                )
+
+    def invoice_updated(self, invoice: stripe.Invoice) -> None:
+        log.info(
+            "Invoice Updated",
+            extra=dict(stripe_invoice_id=invoice.id, status=invoice.status),
+        )
+        if invoice.status == "open":
+            owners = Owner.objects.filter(stripe_customer_id=invoice.customer)
+            admins = get_all_admins_for_owners(owners)
+            task_service = TaskService()
+            template_vars = {
+                "amount": invoice.total / 100,
+                "date": datetime.now().strftime("%B %-d, %Y"),
+            }
+            for admin in admins:
+                if admin.email:
+                    task_service.send_email(
+                        to_addr=admin.email,
+                        subject="Invoice Updated",
+                        template_name="invoice-updated",
+                        **template_vars,
+                    )
+
+    def account_updated(self, account: stripe.Account) -> None:
+        log.info(
+            "Account Updated",
+            extra=dict(stripe_account_id=account.id, email=getattr(account, "email", None)),
+        )
+
+    def subscription_payment_retry(self, subscription: stripe.Subscription) -> None:
+        log.info(
+            "Subscription Payment Retry",
+            extra=dict(
+                stripe_subscription_id=subscription.id,
+                stripe_customer_id=subscription.customer,
+            ),
+        )
+        owners: QuerySet[Owner] = Owner.objects.filter(
+            stripe_subscription_id=subscription.id,
+            stripe_customer_id=subscription.customer,
+        )
+        owners.update(delinquent=True)
+        self._log_updated(list(owners))
+        admins = get_all_admins_for_owners(owners)
+        task_service = TaskService()
+        template_vars = {
+            "date": datetime.now().strftime("%B %-d, %Y"),
+            "subscription_id": subscription.id,
+        }
+        for admin in admins:
+            if admin.email:
+                task_service.send_email(
+                    to_addr=admin.email,
+                    subject="Subscription Payment Retry",
+                    template_name="subscription-payment-retry",
+                    **template_vars,
+                )
+
+    def default_event_handler(self, event_object: Any) -> None:
+        log.info(
+            "Default Event Handler: Unhandled event type",
+            extra=dict(event_object=event_object),
+        )
+
+    def simulate_event(self, event_type: str, event_data: dict) -> None:
+        fake_event = type("FakeEvent", (object,), {})()
+        fake_event.type = event_type
+        fake_event.data = type("FakeEventData", (object,), {"object": event_data})()
+        handler = getattr(self, event_type.replace(".", "_"), self.default_event_handler)
+        handler(fake_event.data.object)
+
+    def update_owner_metadata(self, owner: Owner, metadata: dict) -> None:
+        log.info(
+            "Updating owner metadata",
+            extra=dict(ownerid=owner.ownerid, metadata=metadata),
+        )
+        for key, value in metadata.items():
+            setattr(owner, key, value)
+        owner.save()
+
+    def revalidate_subscription(self, subscription: stripe.Subscription) -> None:
+        log.info(
+            "Revalidating subscription",
+            extra=dict(subscription_id=subscription.id),
+        )
+        owners: QuerySet[Owner] = Owner.objects.filter(
+            stripe_subscription_id=subscription.id,
+            stripe_customer_id=subscription.customer,
+        )
+        if not owners.exists():
+            log.error(
+                "Revalidate subscription: No owner found",
+                extra=dict(subscription_id=subscription.id),
+            )
+            return
+        for owner in owners:
+            plan_service = PlanService(current_org=owner)
+            plan_service.update_plan(name="Revalidated Plan", user_count=subscription.quantity)
+        self._log_updated(list(owners))
+
+    def simulate_delay(self, seconds: int) -> None:
+        log.info("Simulating delay", extra={"seconds": seconds})
+        import time
+        time.sleep(seconds)
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         if settings.STRIPE_ENDPOINT_SECRET is None:
@@ -622,9 +746,9 @@ class StripeWebhookHandler(APIView):
             "Stripe webhook event received",
             extra=dict(stripe_webhook_event=self.event.type),
         )
-
-        # Converts event names of the format X.Y.Z into X_Y_Z, and calls
-        # the relevant method in this class
-        getattr(self, self.event.type.replace(".", "_"))(self.event.data.object)
-
+        handler = getattr(self, self.event.type.replace(".", "_"), self.default_event_handler)
+        try:
+            handler(self.event.data.object)
+        except Exception as e:
+            log.error("Error handling event", extra={"error": str(e)})
         return Response(status=status.HTTP_204_NO_CONTENT)
