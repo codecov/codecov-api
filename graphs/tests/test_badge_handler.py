@@ -143,7 +143,7 @@ class TestBadgeHandler(APITestCase):
             response.data["detail"] == "File extension should be one of [ svg || txt ]"
         )
 
-    def test_unknown_bagde_incorrect_service(self):
+    def test_unknown_badge_incorrect_service(self):
         response = self._get(
             kwargs={
                 "service": "gih",
@@ -182,7 +182,7 @@ class TestBadgeHandler(APITestCase):
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
-    def test_unknown_bagde_incorrect_owner(self):
+    def test_unknown_badge_incorrect_owner(self):
         response = self._get(
             kwargs={
                 "service": "gh",
@@ -221,7 +221,7 @@ class TestBadgeHandler(APITestCase):
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
-    def test_unknown_bagde_incorrect_repo(self):
+    def test_unknown_badge_incorrect_repo(self):
         gh_owner = OwnerFactory(service="github")
         response = self._get(
             kwargs={
@@ -261,7 +261,7 @@ class TestBadgeHandler(APITestCase):
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
-    def test_unknown_bagde_no_branch(self):
+    def test_unknown_badge_no_branch(self):
         gh_owner = OwnerFactory(service="github")
         RepositoryFactory(author=gh_owner, active=True, private=False, name="repo1")
         response = self._get(
@@ -302,7 +302,7 @@ class TestBadgeHandler(APITestCase):
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
-    def test_unknown_bagde_no_commit(self):
+    def test_unknown_badge_no_commit(self):
         gh_owner = OwnerFactory(service="github")
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
@@ -346,7 +346,7 @@ class TestBadgeHandler(APITestCase):
         assert expected_badge == badge
         assert response.status_code == status.HTTP_200_OK
 
-    def test_unknown_bagde_no_totals(self):
+    def test_unknown_badge_no_totals(self):
         gh_owner = OwnerFactory(service="github")
         repo = RepositoryFactory(
             author=gh_owner, active=True, private=False, name="repo1"
