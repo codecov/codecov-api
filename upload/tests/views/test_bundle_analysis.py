@@ -810,3 +810,35 @@ def test_upload_bundle_analysis_tokenless_mismatched_branch(
     assert res.status_code == 401
     assert res.json() == {"detail": "Not valid tokenless upload"}
     assert not upload.called
+
+
+def test_bundle_analysis_view_exception_handling(db, client, mocker, mock_redis):
+    with patch(
+        "upload.views.bundle_analysis.BundleAnalysisView._handle_upload",
+        side_effect=Exception("Test Exception"),
+    ):
+        client = APIClient()
+        repository = RepositoryFactory.create()
+        client.credentials(HTTP_AUTHORIZATION=f"token {repository.upload_token}")
+
+        mock_inc_counter = mocker.patch("upload.views.bundle_analysis.inc_counter")
+
+        res = client.post(
+            reverse("upload-bundle-analysis"),
+            {
+                "commit": "6fd5b89357fc8cdf34d6197549ac7c6d7e5977ef",
+                "slug": f"{repository.author.username}::::{repository.name}",
+            },
+            format="json",
+        )
+
+        assert res.status_code == 201
+        assert res.json()["url"] is None
+
+        # Check that the labels["result"] is "error"
+        mock_inc_counter.assert_any_call(
+            ANY,
+            labels=mocker.ANY,
+        )
+        labels = mock_inc_counter.call_args[1]["labels"]
+        assert labels["result"] == "error"
