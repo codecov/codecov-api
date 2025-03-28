@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -86,10 +86,13 @@ class BundleAnalysisView(APIView, ShelterMixin):
     def get_exception_handler(self) -> Callable:
         return repo_auth_custom_exception_handler
 
-    def _handle_upload(self, request: HttpRequest) -> str | None:
+    def _handle_upload(self, request: HttpRequest) -> Tuple[str, Response]:
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return (
+                "bad_request",
+                Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST),
+            )
         data = serializer.validated_data
 
         if isinstance(request.user, Owner):
@@ -211,7 +214,7 @@ class BundleAnalysisView(APIView, ShelterMixin):
                         ),
                     )
 
-        return url
+        return ("success", Response({"url": url}, status=201))
 
     def post(self, request: HttpRequest) -> Response:
         labels = generate_upload_prometheus_metrics_labels(
@@ -223,15 +226,14 @@ class BundleAnalysisView(APIView, ShelterMixin):
             include_empty_labels=False,
         )
         labels["result"] = "pending"
-        url = None
         inc_counter(
             BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
             labels=labels,
         )
 
-        upload_result = "success"
         try:
-            url = self._handle_upload(request)
+            upload_result, response = self._handle_upload(request)
+            return response
         except Exception as e:
             log.error(
                 "Error handling bundle analysis upload",
@@ -241,11 +243,11 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 exc_info=True,
             )
             upload_result = "error"
-
-        labels["position"] = "end"
-        labels["result"] = upload_result
-        inc_counter(
-            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
-            labels=labels,
-        )
-        return Response({"url": url}, status=201)
+            raise
+        finally:
+            labels["position"] = "end"
+            labels["result"] = upload_result
+            inc_counter(
+                BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+                labels=labels,
+            )

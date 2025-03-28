@@ -104,6 +104,7 @@ def test_upload_bundle_analysis_success(db, client, mocker, mock_redis):
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
@@ -207,6 +208,7 @@ def test_upload_bundle_analysis_success_shelter(db, client, mocker, mock_redis):
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
@@ -245,6 +247,7 @@ def test_upload_bundle_analysis_org_token(db, client, mocker, mock_redis):
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
@@ -292,6 +295,7 @@ def test_upload_bundle_analysis_existing_commit(db, client, mocker, mock_redis):
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
@@ -340,7 +344,8 @@ def test_upload_bundle_analysis_missing_args(db, client, mocker, mock_redis):
             "action": "bundle_analysis",
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
-            "position": "start",
+            "position": "end",
+            "result": "bad_request",
         },
     )
 
@@ -412,6 +417,7 @@ def test_upload_bundle_analysis_github_oidc_auth(
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
@@ -472,6 +478,7 @@ def test_upload_bundle_analysis_measurement_datasets_created(
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
@@ -533,6 +540,7 @@ def test_upload_bundle_analysis_measurement_timeseries_disabled(
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
@@ -574,7 +582,8 @@ def test_upload_bundle_analysis_no_repo(db, client, mocker, mock_redis):
             "action": "bundle_analysis",
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
-            "position": "start",
+            "position": "end",
+            "result": "error",
         },
     )
 
@@ -629,6 +638,7 @@ def test_upload_bundle_analysis_tokenless_success(db, client, mocker, mock_redis
             "endpoint": "bundle_analysis",
             "is_using_shelter": "no",
             "position": "end",
+            "result": "success",
         },
     )
 
