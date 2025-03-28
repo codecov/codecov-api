@@ -513,6 +513,11 @@ class TestFetchRepository(GraphQLTestHelper, TestCase):
 
         assert data["me"]["owner"]["repository"]["isFirstPullRequest"] == True
 
+        assert (
+            repo.pull_requests.values("id")[:2].query
+            == 'SELECT "pull_requests"."id" FROM "pull_requests" WHERE "pull_requests"."repoid" = 1 ORDER BY "pull_requests"."pullid" DESC LIMIT 2'
+        )
+
     def test_repository_is_first_pull_request_compared_to_not_none(self) -> None:
         repo = RepositoryFactory(
             author=self.owner,
