@@ -1,7 +1,6 @@
 import uuid
 import datetime
 
-
 class BankAccountManager:
     def __init__(self):
         self.accounts = {}
