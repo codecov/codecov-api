@@ -35,7 +35,6 @@ class RowFactory:
             "name": f"test{RowFactory.idx}",
             "testsuite": f"testsuite{RowFactory.idx}",
             "flags": [f"flag{RowFactory.idx}"],
-            "test_id": f"test_id{RowFactory.idx}",
             "failure_rate": 0.1,
             "flake_rate": 0.0,
             "updated_at": updated_at,
@@ -102,7 +101,6 @@ def dedup(rows: list[dict]) -> list[dict]:
             "name": name,
             "testsuite": sorted({r["testsuite"] for r in group}),
             "flags": sorted({flag for r in group for flag in r["flags"]}),
-            "test_id": group[0]["test_id"],  # Keep first test_id
             "failure_rate": sum(r["failure_rate"] * w for r, w in zip(group, weights))
             / total_weight,
             "flake_rate": sum(r["flake_rate"] * w for r, w in zip(group, weights))
@@ -131,7 +129,7 @@ def row_to_camel_case(row: dict) -> dict:
             for i, part in enumerate(key.split("_"))
         ): value.isoformat() if key == "updated_at" else value
         for key, value in row.items()
-        if key not in ("test_id", "testsuite", "flags")
+        if key not in ("testsuite", "flags")
     }
 
 
