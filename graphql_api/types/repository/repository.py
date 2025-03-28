@@ -266,12 +266,15 @@ def resolve_is_first_pull_request(
     repository: Repository, info: GraphQLResolveInfo
 ) -> bool:
     try:
-        # SELECT "pull_requests"."id" FROM "pull_requests" WHERE "pull_requests"."repoid" = 1 ORDER BY "pull_requests"."pullid" DESC LIMIT 2
-        pull_requests = repository.pull_requests.values("id")[:2]
-        return len(pull_requests) == 1
+        # Get at most 2 PRs to determine if there's only one
+        pull_requests = repository.pull_requests.values("id", "compared_to")[:2]
+        if len(pull_requests) != 1:
+            return False
+        # For single PR, check if it's a valid first PR by verifying no compared_to
+        return pull_requests[0]["compared_to"] is None
     except Exception as e:
         log.error(
-            "Error checking is_first_pull_request",
+            "Error checking is_first_pull_request, assuming False",
             extra=dict(repo_id=repository.repoid, error=str(e)),
         )
         return False
