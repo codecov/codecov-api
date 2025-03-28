@@ -54,7 +54,6 @@ def resolve_coverage_analytics_result_type(
 
 
 @coverage_analytics_bindable.field("percentCovered")
-@sentry_sdk.trace
 def resolve_percent_covered(
     parent: CoverageAnalyticsProps, info: GraphQLResolveInfo
 ) -> Optional[float]:

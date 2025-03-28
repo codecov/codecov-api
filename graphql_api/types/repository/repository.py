@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import sentry_sdk
 import shared.rate_limits as rate_limits
 import yaml
 from ariadne import ObjectType, UnionType
@@ -74,9 +75,14 @@ def resolve_author(repository: Repository, info: GraphQLResolveInfo) -> Owner:
 
 
 @repository_bindable.field("commit")
-def resolve_commit(repository: Repository, info: GraphQLResolveInfo, id: int) -> Commit:
+def resolve_commit(repository: Repository, info: GraphQLResolveInfo, id: str) -> Commit:
     loader = CommitLoader.loader(info, repository.pk)
-    return loader.load(id)
+    commit = loader.load(id)
+
+    if commit:
+        sentry_sdk.set_tag("commit_sha", id)
+
+    return commit
 
 
 @repository_bindable.field("uploadToken")
@@ -305,12 +311,9 @@ def resolve_is_github_rate_limited(
 
 @repository_bindable.field("coverageAnalytics")
 def resolve_coverage_analytics(
-    repository: Repository,
-    info: GraphQLResolveInfo,
+    repository: Repository, info: GraphQLResolveInfo
 ) -> CoverageAnalyticsProps:
-    return CoverageAnalyticsProps(
-        repository=repository,
-    )
+    return CoverageAnalyticsProps(repository=repository)
 
 
 @repository_bindable.field("testAnalytics")

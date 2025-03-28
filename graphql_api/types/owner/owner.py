@@ -2,6 +2,7 @@ from datetime import datetime
 from hashlib import sha1
 from typing import Any, Coroutine, Iterable, List, Optional
 
+import sentry_sdk
 import shared.rate_limits as rate_limits
 import stripe
 import yaml
@@ -168,7 +169,7 @@ async def resolve_repository(
     # This means we do not want to filter out the Okta enforced repos
     exclude_okta_enforced_repos = not is_impersonation
 
-    repository: Optional[Repository] = await command.fetch_repository(
+    repository: Repository | None = await command.fetch_repository(
         owner,
         name,
         okta_authenticated_accounts,
@@ -177,6 +178,17 @@ async def resolve_repository(
 
     if repository is None:
         return NotFoundError()
+
+    sentry_sdk.set_tags(
+        {
+            "owner_username": repository.author.username,
+            "owner_service": repository.author.service,
+            "owner_plan": repository.author.plan,
+            "owner_id": repository.author.ownerid,
+            "repo_name": repository.name,
+            "repo_id": repository.repoid,
+        }
+    )
 
     current_owner = info.context["request"].current_owner
     has_products_enabled = (
