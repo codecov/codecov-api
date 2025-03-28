@@ -27,7 +27,7 @@ class RepositoryCommands(BaseCommand):
         name: str,
         okta_authenticated_accounts: list[int],
         exclude_okta_enforced_repos: bool = True,
-    ) -> Repository:
+    ) -> Repository | None:
         return self.get_interactor(FetchRepositoryInteractor).execute(
             owner,
             name,
