@@ -51,7 +51,6 @@ def dedup_table(table: pl.DataFrame) -> pl.DataFrame:
     table = (
         table.group_by("name")
         .agg(
-            pl.col("test_id").first().alias("test_id"),
             pl.col("testsuite").alias("testsuite"),
             pl.col("flags").explode().unique().alias("flags"),
             failure_rate_expr.fill_nan(0).alias("failure_rate"),

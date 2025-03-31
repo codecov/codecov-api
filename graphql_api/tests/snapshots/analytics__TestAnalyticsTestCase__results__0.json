@@ -1,7 +1,6 @@
 [
   {
     "name": "test5",
-    "test_id": "test_id5",
     "testsuite": [
       "testsuite5"
     ],
@@ -21,7 +20,6 @@
   },
   {
     "name": "test4",
-    "test_id": "test_id4",
     "testsuite": [
       "testsuite4"
     ],
@@ -41,7 +39,6 @@
   },
   {
     "name": "test3",
-    "test_id": "test_id3",
     "testsuite": [
       "testsuite3"
     ],
@@ -61,7 +58,6 @@
   },
   {
     "name": "test2",
-    "test_id": "test_id2",
     "testsuite": [
       "testsuite2"
     ],
@@ -81,7 +77,6 @@
   },
   {
     "name": "test1",
-    "test_id": "test_id1",
     "testsuite": [
       "testsuite1"
     ],

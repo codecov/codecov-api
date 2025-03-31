@@ -1,7 +1,6 @@
 [
   {
     "name": "test1",
-    "test_id": "test_id1",
     "testsuite": [
       "testsuite1"
     ],
