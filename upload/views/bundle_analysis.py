@@ -1,6 +1,6 @@
 import logging
 import uuid
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -48,6 +48,7 @@ BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER = Counter(
         "endpoint",
         "is_using_shelter",
         "position",
+        "result",
     ],
 )
 
@@ -85,23 +86,13 @@ class BundleAnalysisView(APIView, ShelterMixin):
     def get_exception_handler(self) -> Callable:
         return repo_auth_custom_exception_handler
 
-    def post(self, request: HttpRequest) -> Response:
-        labels = generate_upload_prometheus_metrics_labels(
-            action="bundle_analysis",
-            endpoint="bundle_analysis",
-            request=self.request,
-            is_shelter_request=self.is_shelter_request(),
-            position="start",
-            include_empty_labels=False,
-        )
-        inc_counter(
-            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
-            labels=labels,
-        )
-
+    def _handle_upload(self, request: HttpRequest) -> Tuple[str, Response]:
         serializer = UploadSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return (
+                "bad_request",
+                Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST),
+            )
         data = serializer.validated_data
 
         if isinstance(request.user, Owner):
@@ -191,18 +182,6 @@ class BundleAnalysisView(APIView, ShelterMixin):
                 task_arguments=task_arguments,
             ),
         )
-        labels = generate_upload_prometheus_metrics_labels(
-            action="bundle_analysis",
-            endpoint="bundle_analysis",
-            request=self.request,
-            is_shelter_request=self.is_shelter_request(),
-            position="end",
-            include_empty_labels=False,
-        )
-        inc_counter(
-            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
-            labels=labels,
-        )
 
         dispatch_upload_task(
             task_arguments,
@@ -235,4 +214,40 @@ class BundleAnalysisView(APIView, ShelterMixin):
                         ),
                     )
 
-        return Response({"url": url}, status=201)
+        return ("success", Response({"url": url}, status=201))
+
+    def post(self, request: HttpRequest) -> Response:
+        labels = generate_upload_prometheus_metrics_labels(
+            action="bundle_analysis",
+            endpoint="bundle_analysis",
+            request=self.request,
+            is_shelter_request=self.is_shelter_request(),
+            position="start",
+            include_empty_labels=False,
+        )
+        labels["result"] = "pending"
+        inc_counter(
+            BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+            labels=labels,
+        )
+
+        try:
+            upload_result, response = self._handle_upload(request)
+            return response
+        except Exception as e:
+            log.error(
+                "Error handling bundle analysis upload",
+                extra=dict(
+                    error=e,
+                ),
+                exc_info=True,
+            )
+            upload_result = "error"
+            raise
+        finally:
+            labels["position"] = "end"
+            labels["result"] = upload_result
+            inc_counter(
+                BUNDLE_ANALYSIS_UPLOAD_VIEWS_COUNTER,
+                labels=labels,
+            )
