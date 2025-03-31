@@ -15,9 +15,7 @@ from core.models import Branch, Commit, Pull, Repository
 from graphql_api.actions.commits import repo_commits
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
-from graphql_api.helpers.connection import (
-    queryset_to_connection,
-)
+from graphql_api.helpers.connection import queryset_to_connection
 from graphql_api.types.coverage_analytics.coverage_analytics import (
     CoverageAnalyticsProps,
 )
@@ -273,13 +271,12 @@ def resolve_repository_result_type(obj: Any, *_: Any) -> Optional[str]:
 def resolve_is_first_pull_request(
     repository: Repository, info: GraphQLResolveInfo
 ) -> bool:
-    has_one_pr = repository.pull_requests.count() == 1
-
-    if has_one_pr:
-        first_pr = repository.pull_requests.first()
-        return not first_pr.compared_to
-
-    return False
+    # Get at most 2 PRs to determine if there's only one
+    pull_requests = repository.pull_requests.values("id", "compared_to")[:2]
+    if len(pull_requests) != 1:
+        return False
+    # For single PR, check if it's a valid first PR by verifying no compared_to
+    return pull_requests[0]["compared_to"] is None
 
 
 @repository_bindable.field("isGithubRateLimited")
