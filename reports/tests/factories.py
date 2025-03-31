@@ -63,15 +63,6 @@ class UploadLevelTotalsFactory(DjangoModelFactory):
     report_session = factory.SubFactory(UploadFactory)
 
 
-class ReportDetailsFactory(DjangoModelFactory):
-    class Meta:
-        model = models.ReportDetails
-
-    report = factory.SubFactory(CommitReportFactory)
-    _files_array = factory.LazyAttribute(lambda _: [])
-    _files_array_storage_path = None
-
-
 class UploadErrorFactory(DjangoModelFactory):
     class Meta:
         model = models.UploadError
