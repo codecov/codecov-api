@@ -38,6 +38,7 @@ from graphql_api.helpers.mutation import (
     require_part_of_org,
     require_shared_account_or_part_of_org,
 )
+from graphql_api.helpers.requested_fields import selected_fields
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
@@ -155,6 +156,16 @@ def resolve_ownerid(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.ownerid
 
 
+COVERAGE_FIELDS = {
+    "coverageAnalytics.percentCovered",
+    "coverageAnalytics.commitSha",
+    "coverageAnalytics.hits",
+    "coverageAnalytics.misses",
+    "coverageAnalytics.lines",
+}
+COMMITS_FIELDS = {"oldestCommitAt"}
+
+
 @owner_bindable.field("repository")
 async def resolve_repository(
     owner: Owner, info: GraphQLResolveInfo, name: str
@@ -169,11 +180,17 @@ async def resolve_repository(
     # This means we do not want to filter out the Okta enforced repos
     exclude_okta_enforced_repos = not is_impersonation
 
+    requested_fields = selected_fields(info)
+    needs_coverage = not requested_fields.isdisjoint(COVERAGE_FIELDS)
+    needs_commits = not requested_fields.isdisjoint(COMMITS_FIELDS)
+
     repository: Repository | None = await command.fetch_repository(
         owner,
         name,
         okta_authenticated_accounts,
         exclude_okta_enforced_repos=exclude_okta_enforced_repos,
+        needs_coverage=needs_coverage,
+        needs_commits=needs_commits,
     )
 
     if repository is None:

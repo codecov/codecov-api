@@ -21,19 +21,8 @@ from .interactors.update_repository import UpdateRepositoryInteractor
 
 
 class RepositoryCommands(BaseCommand):
-    def fetch_repository(
-        self,
-        owner: Owner,
-        name: str,
-        okta_authenticated_accounts: list[int],
-        exclude_okta_enforced_repos: bool = True,
-    ) -> Repository | None:
-        return self.get_interactor(FetchRepositoryInteractor).execute(
-            owner,
-            name,
-            okta_authenticated_accounts,
-            exclude_okta_enforced_repos=exclude_okta_enforced_repos,
-        )
+    def fetch_repository(self, *args, **kwargs) -> Repository | None:
+        return self.get_interactor(FetchRepositoryInteractor).execute(*args, **kwargs)
 
     def regenerate_repository_upload_token(
         self,

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
-from unittest.mock import call, patch
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 from django.conf import settings
@@ -198,7 +198,9 @@ class ImpersonationTests(TestCase):
         assert res.json()["data"]["me"] == {"user": {"username": "impersonateme"}}
 
     @patch("core.commands.repository.repository.RepositoryCommands.fetch_repository")
-    def test_impersonation_with_okta(self, mock_call_to_fetch_repository):
+    def test_impersonation_with_okta(
+        self, mock_call_to_fetch_repository, new_callable=AsyncMock
+    ):
         repo = RepositoryFactory(author=self.owner_to_impersonate, private=True)
         query_repositories = """{ owner(username: "%s") { repository(name: "%s") { ... on Repository { name } } } }"""
         query = query_repositories % (repo.author.username, repo.name)
@@ -228,12 +230,16 @@ class ImpersonationTests(TestCase):
                     repo.name,
                     [],
                     exclude_okta_enforced_repos=True,
+                    needs_coverage=False,
+                    needs_commits=False,
                 ),
                 call(
                     self.owner_to_impersonate,
                     repo.name,
                     [],
                     exclude_okta_enforced_repos=False,
+                    needs_coverage=False,
+                    needs_commits=False,
                 ),
             ]
         )
