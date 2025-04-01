@@ -11,6 +11,15 @@ from graphql.language import (
 
 
 def selected_fields(info: GraphQLResolveInfo) -> set[str]:
+    """
+    Given a GraphQL "sub-query", this recursively collects all the queried fields.
+
+    For example, if the original GraphQL query looks like `owner { repository { name } }`,
+    this would resolve to `repository` and `repository.name`.
+
+    This function works by traversing the parts of the GraphQL Query AST which
+    are exposed to each "resolver".
+    """
     names: set[str] = set()
     for node in info.field_nodes:
         if node.selection_set is None:
