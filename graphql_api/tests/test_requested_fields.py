@@ -1,11 +1,11 @@
-from graphql_api.helpers.requested_fields import selected_fields
-from graphql.language import parse
-
 from graphql import GraphQLResolveInfo
 from graphql.language import (
-    OperationDefinitionNode,
     FragmentDefinitionNode,
+    OperationDefinitionNode,
+    parse,
 )
+
+from graphql_api.helpers.requested_fields import selected_fields
 
 
 def parse_into_resolveinfo(source: str) -> GraphQLResolveInfo:

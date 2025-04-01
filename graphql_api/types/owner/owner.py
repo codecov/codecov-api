@@ -2,7 +2,6 @@ from datetime import datetime
 from hashlib import sha1
 from typing import Any, Coroutine, Iterable, List, Optional
 
-from graphql_api.helpers.requested_fields import selected_fields
 import sentry_sdk
 import shared.rate_limits as rate_limits
 import stripe
@@ -39,6 +38,7 @@ from graphql_api.helpers.mutation import (
     require_part_of_org,
     require_shared_account_or_part_of_org,
 )
+from graphql_api.helpers.requested_fields import selected_fields
 from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE

@@ -17,9 +17,7 @@ class RepositoryCommandsTest(TestCase):
     @patch("core.commands.repository.repository.FetchRepositoryInteractor.execute")
     def test_fetch_repository_to_interactor(self, interactor_mock):
         self.command.fetch_repository(self.org, self.repo.name, [])
-        interactor_mock.assert_called_once_with(
-            self.org, self.repo.name, [], exclude_okta_enforced_repos=True
-        )
+        interactor_mock.assert_called_once_with(self.org, self.repo.name, [])
 
     @patch("core.commands.repository.repository.FetchRepositoryInteractor.execute")
     def test_fetch_repository_to_interactor_with_enforcing_okta(self, interactor_mock):

@@ -4,9 +4,9 @@ from collections.abc import Generator, Iterable
 from graphql import GraphQLResolveInfo
 from graphql.language import (
     FieldNode,
-    SelectionNode,
-    InlineFragmentNode,
     FragmentSpreadNode,
+    InlineFragmentNode,
+    SelectionNode,
 )
 
 
