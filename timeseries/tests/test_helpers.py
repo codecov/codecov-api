@@ -1178,6 +1178,7 @@ class OwnerCoverageMeasurementsWithFallbackTest(TestCase):
                 repository_id__in=[self.repo1.pk, self.repo2.pk],
             )
         )
+        datasets.reverse()
         assert len(datasets) == 2
         trigger_backfill.assert_called_once_with(datasets)
 
