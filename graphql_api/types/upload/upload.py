@@ -3,11 +3,11 @@ from typing import Optional
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 from django.urls import reverse
+from graphql import GraphQLResolveInfo
 from shared.django_apps.utils.services import get_short_service_name
 
-from graphql_api.helpers.connection import queryset_to_connection
+from graphql_api.helpers.connection import queryset_to_connection_sync
 from graphql_api.types.enums import (
-    OrderingDirection,
     UploadErrorEnum,
     UploadState,
     UploadType,
@@ -26,43 +26,36 @@ upload_error_bindable = ObjectType("UploadError")
 
 
 @upload_bindable.field("state")
-def resolve_state(upload, info):
+def resolve_state(upload: ReportSession, info: GraphQLResolveInfo) -> UploadState:
     if not upload.state:
         return UploadState.ERROR
     return UploadState(upload.state)
 
 
 @upload_bindable.field("id")
-def resolve_id(upload: ReportSession, info) -> Optional[int]:
+def resolve_id(upload: ReportSession, info: GraphQLResolveInfo) -> Optional[int]:
     return upload.order_number
 
 
 @upload_bindable.field("uploadType")
-def resolve_upload_type(upload, info) -> UploadType:
+def resolve_upload_type(upload: ReportSession, info: GraphQLResolveInfo) -> UploadType:
     return UploadType(upload.upload_type)
 
 
 @upload_bindable.field("errors")
-async def resolve_errors(report_session, info, **kwargs):
-    command = info.context["executor"].get_command("upload")
-    queryset = await command.get_upload_errors(report_session)
-    result = await queryset_to_connection(
-        queryset,
-        ordering=("updated_at",),
-        ordering_direction=OrderingDirection.ASC,
-        **kwargs,
-    )
-    return result
+@sync_to_async
+def resolve_errors(report_session: ReportSession, info: GraphQLResolveInfo, **kwargs):
+    return queryset_to_connection_sync(list(report_session.errors.all()))
 
 
 @upload_error_bindable.field("errorCode")
-def resolve_error_code(error, info):
+def resolve_error_code(error, info: GraphQLResolveInfo) -> UploadErrorEnum:
     return UploadErrorEnum(error.error_code)
 
 
 @upload_bindable.field("ciUrl")
 @sync_to_async
-def resolve_ci_url(upload, info):
+def resolve_ci_url(upload: ReportSession, info: GraphQLResolveInfo):
     return upload.ci_url
 
 

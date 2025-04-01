@@ -5,7 +5,7 @@ from django.db.models.functions import Lower, Substr
 
 from core.models import Commit, Pull, Repository
 from graphql_api.types.enums import CommitStatus
-from reports.models import CommitReport, ReportSession
+from reports.models import CommitReport
 
 
 def pull_commits(pull: Pull) -> QuerySet[Commit]:
@@ -21,29 +21,6 @@ def pull_commits(pull: Pull) -> QuerySet[Commit]:
     )
 
     return Commit.objects.filter(id__in=subquery).defer("_report")
-
-
-def commit_uploads(commit: Commit) -> QuerySet[ReportSession]:
-    if not commit.commitreport:
-        return ReportSession.objects.none()
-
-    sessions = commit.commitreport.sessions.prefetch_related("flags")
-
-    # # sessions w/ flags and type 'uploaded'
-    # uploaded = sessions.filter(upload_type="uploaded")
-
-    # # carry forward flags that do not have an equivalent uploaded flag
-    # carried_forward = sessions.filter(upload_type="carriedforward").exclude(
-    #     uploadflagmembership__flag_id__in=uploaded.values_list( <------------ FIXME: looks like `flag_id__in` is causing a seq scan in prod
-    #         "uploadflagmembership__flag_id", flat=True
-    #     )
-    # )
-
-    # return (uploaded.prefetch_related("flags")).union(
-    #     carried_forward.prefetch_related("flags")
-    # )
-
-    return sessions
 
 
 def commit_status(
