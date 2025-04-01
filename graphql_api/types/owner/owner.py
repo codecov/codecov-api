@@ -2,6 +2,7 @@ from datetime import datetime
 from hashlib import sha1
 from typing import Any, Coroutine, Iterable, List, Optional
 
+from graphql_api.helpers.requested_fields import selected_fields
 import sentry_sdk
 import shared.rate_limits as rate_limits
 import stripe
@@ -155,6 +156,16 @@ def resolve_ownerid(owner: Owner, info: GraphQLResolveInfo) -> int:
     return owner.ownerid
 
 
+COVERAGE_FIELDS = {
+    "coverageAnalytics.percentCovered",
+    "coverageAnalytics.commitSha",
+    "coverageAnalytics.hits",
+    "coverageAnalytics.misses",
+    "coverageAnalytics.lines",
+}
+COMMITS_FIELDS = {"oldestCommitAt"}
+
+
 @owner_bindable.field("repository")
 async def resolve_repository(
     owner: Owner, info: GraphQLResolveInfo, name: str
@@ -169,11 +180,17 @@ async def resolve_repository(
     # This means we do not want to filter out the Okta enforced repos
     exclude_okta_enforced_repos = not is_impersonation
 
+    requested_fields = selected_fields(info)
+    needs_coverage = not requested_fields.isdisjoint(COVERAGE_FIELDS)
+    needs_commits = not requested_fields.isdisjoint(COMMITS_FIELDS)
+
     repository: Repository | None = await command.fetch_repository(
         owner,
         name,
         okta_authenticated_accounts,
         exclude_okta_enforced_repos=exclude_okta_enforced_repos,
+        needs_coverage=needs_coverage,
+        needs_commits=needs_commits,
     )
 
     if repository is None:
