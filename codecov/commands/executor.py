@@ -7,7 +7,6 @@ from core.commands.component import ComponentCommands
 from core.commands.flag import FlagCommands
 from core.commands.pull import PullCommands
 from core.commands.repository import RepositoryCommands
-from core.commands.upload import UploadCommands
 from utils.services import get_long_service_name
 
 mapping = {
@@ -17,7 +16,6 @@ mapping = {
     "branch": BranchCommands,
     "compare": CompareCommands,
     "pull": PullCommands,
-    "upload": UploadCommands,
     "flag": FlagCommands,
     "component": ComponentCommands,
 }

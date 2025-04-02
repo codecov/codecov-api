@@ -16,7 +16,7 @@ import services.components as components_service
 import services.path as path_service
 from codecov_auth.models import Owner
 from core.models import Commit
-from graphql_api.actions.commits import commit_status, commit_uploads
+from graphql_api.actions.commits import commit_status
 from graphql_api.actions.comparison import validate_commit_comparison
 from graphql_api.actions.path_contents import sort_path_contents
 from graphql_api.dataloader.bundle_analysis import (
@@ -30,6 +30,7 @@ from graphql_api.helpers.connection import (
     queryset_to_connection,
     queryset_to_connection_sync,
 )
+from graphql_api.helpers.requested_fields import selected_fields
 from graphql_api.types.comparison.comparison import (
     MissingBaseCommit,
     MissingHeadReport,
@@ -93,7 +94,19 @@ async def resolve_yaml_state(commit: Commit, info) -> YamlStates:
 @commit_bindable.field("uploads")
 @sync_to_async
 def resolve_list_uploads(commit: Commit, info, **kwargs):
-    queryset = commit_uploads(commit)
+    if not commit.commitreport:
+        return queryset_to_connection_sync([])
+
+    queryset = commit.commitreport.sessions
+
+    requested_fields = selected_fields(info)
+
+    # the `requested_fields` here are prefixed with `edges.node`, as this is a `Connection`
+    # and using `uploads { edges { node { ... } } }` is the way this is queried.
+    if "edges.node.flags" in requested_fields:
+        queryset = queryset.prefetch_related("flags")
+    if "edges.node.errors" in requested_fields:
+        queryset = queryset.prefetch_related("errors")
 
     if not kwargs:  # temp to override kwargs -> return all current uploads
         kwargs["first"] = queryset.count()
