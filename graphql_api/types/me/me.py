@@ -1,5 +1,6 @@
 from typing import Optional
 
+import sentry_sdk
 from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
@@ -41,6 +42,7 @@ def resolve_owner(user, _):
 
 
 @me_bindable.field("viewableRepositories")
+@sentry_sdk.trace
 def resolve_viewable_repositories(
     current_user,
     info: GraphQLResolveInfo,

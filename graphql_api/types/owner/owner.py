@@ -56,6 +56,7 @@ AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 @owner_bindable.field("repositories")
 @sync_to_async
+@sentry_sdk.trace
 def resolve_repositories(
     owner: Owner,
     info: GraphQLResolveInfo,

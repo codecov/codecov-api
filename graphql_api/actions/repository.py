@@ -1,7 +1,6 @@
 import logging
 from typing import Any
 
-import sentry_sdk
 from django.db.models import QuerySet
 from shared.django_apps.codecov_auth.models import GithubAppInstallation, Owner
 from shared.django_apps.core.models import Repository
@@ -54,7 +53,6 @@ def filter_queryset_by_ai_enabled_repos(queryset: QuerySet, owner: Owner) -> Que
     return queryset
 
 
-@sentry_sdk.trace
 def list_repository_for_owner(
     current_owner: Owner,
     owner: Owner,
@@ -72,16 +70,13 @@ def list_repository_for_owner(
     if exclude_okta_enforced_repos:
         queryset = queryset.exclude_accounts_enforced_okta(okta_account_auths)
 
-    if not ai_enabled_filter:
-        queryset = (
-            queryset.with_recent_coverage().with_latest_commit_at().filter(author=owner)
-        )
-
+    queryset = (
+        queryset.with_recent_coverage().with_latest_commit_at().filter(author=owner)
+    )
     queryset = apply_filters_to_queryset(queryset, filters, owner)
     return queryset
 
 
-@sentry_sdk.trace
 def search_repos(
     current_owner: Owner,
     filters: dict[str, Any] | None,
