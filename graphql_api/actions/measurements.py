@@ -16,7 +16,7 @@ def measurements_by_ids(
     before: datetime,
     after: Optional[datetime] = None,
     branch: Optional[str] = None,
-) -> Dict[int, List[Dict[str, Any]]]:
+) -> Dict[Any, List[Dict[str, Any]]]:
     queryset = MeasurementSummary.agg_by(interval).filter(
         name=measurable_name,
         owner_id=repository.author_id,
