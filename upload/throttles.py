@@ -7,12 +7,12 @@ from django.http import HttpRequest
 from rest_framework.exceptions import ValidationError
 from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
+from shared.helpers.redis import get_redis_connection
 from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
 from shared.upload.utils import query_monthly_coverage_measurements
 
 from reports.models import ReportSession
-from services.redis_configuration import get_redis_connection
 from upload.helpers import _determine_responsible_owner
 
 log = logging.getLogger(__name__)
