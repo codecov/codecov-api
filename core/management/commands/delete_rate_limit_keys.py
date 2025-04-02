@@ -1,6 +1,5 @@
 from django.core.management.base import BaseCommand, CommandParser
-
-from services.redis_configuration import get_redis_connection
+from shared.helpers.redis import get_redis_connection
 
 
 class Command(BaseCommand):

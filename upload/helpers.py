@@ -15,7 +15,8 @@ from django.utils import timezone
 from jwt import PyJWKClient, PyJWTError
 from redis import Redis
 from rest_framework.exceptions import NotFound, Throttled, ValidationError
-from shared.github import InvalidInstallationError
+from shared.github import InvalidInstallationError, get_github_integration_token
+from shared.helpers.redis import get_redis_connection
 from shared.plan.service import PlanService
 from shared.reports.enums import UploadType
 from shared.torngit.base import TorngitBaseAdapter
@@ -34,14 +35,12 @@ from codecov_auth.models import (
 from core.models import Commit, Repository
 from reports.models import CommitReport, ReportSession
 from services.analytics import AnalyticsService
-from services.redis_configuration import get_redis_connection
 from services.repo_providers import RepoProviderService
 from services.task import TaskService
 from upload.tokenless.tokenless import TokenlessUploadHandler
 from utils import is_uuid
 from utils.config import get_config
 from utils.encryption import encryptor
-from utils.github import get_github_integration_token
 
 from .constants import ci, global_upload_token_providers
 

@@ -18,12 +18,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService
+from shared.helpers.redis import get_redis_connection
 from shared.metrics import inc_counter
 
 from codecov_auth.commands.owner import OwnerCommands
 from core.commands.repository import RepositoryCommands
 from services.analytics import AnalyticsService
-from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     check_commit_upload_constraints,
     determine_repo_for_upload,

@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory
 from shared.django_apps.core.tests.factories import RepositoryFactory
+from shared.helpers.redis import get_redis_connection
 from shared.storage.exceptions import BucketAlreadyExistsError
 from shared.storage.memory import MemoryStorageService
 
@@ -20,7 +21,6 @@ from graphql_api.types.test_analytics.test_analytics import (
     generate_test_results,
     get_results,
 )
-from services.redis_configuration import get_redis_connection
 from utils.test_results import dedup_table
 
 from .helper import GraphQLTestHelper

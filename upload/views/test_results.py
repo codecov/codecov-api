@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.api_archive.archive import ArchiveService, MinioEndpoints
 from shared.events.amplitude import UNKNOWN_USER_OWNERID, AmplitudeEventPublisher
+from shared.helpers.redis import get_redis_connection
 from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -23,7 +24,6 @@ from codecov_auth.authentication.types import RepositoryAsUser
 from codecov_auth.models import Owner, Service
 from core.models import Commit
 from reports.models import CommitReport
-from services.redis_configuration import get_redis_connection
 from upload.helpers import (
     dispatch_upload_task,
     generate_upload_prometheus_metrics_labels,

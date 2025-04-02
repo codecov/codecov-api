@@ -8,12 +8,12 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.django_apps.reports.models import ReportType
+from shared.helpers.redis import get_redis_connection
 from shared.plan.constants import DEFAULT_FREE_PLAN
 from shared.upload.utils import UploaderType, insert_coverage_measurement
 
 from billing.helpers import mock_all_plans_and_tiers
 from reports.tests.factories import CommitReportFactory, UploadFactory
-from services.redis_configuration import get_redis_connection
 from upload.throttles import UploadsPerCommitThrottle, UploadsPerWindowThrottle
 
 

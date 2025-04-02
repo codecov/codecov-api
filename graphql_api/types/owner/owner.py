@@ -10,6 +10,7 @@ from ariadne import ObjectType
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from graphql import GraphQLResolveInfo
+from shared.helpers.redis import get_redis_connection
 from shared.plan.constants import DEFAULT_FREE_PLAN
 from shared.plan.service import PlanService
 
@@ -43,7 +44,6 @@ from graphql_api.types.enums import OrderingDirection, RepositoryOrdering
 from graphql_api.types.errors.errors import NotFoundError
 from graphql_api.types.repository.repository import TOKEN_UNAVAILABLE
 from services.billing import BillingService
-from services.redis_configuration import get_redis_connection
 from timeseries.helpers import fill_sparse_measurements
 from timeseries.models import Interval
 from utils.config import get_config

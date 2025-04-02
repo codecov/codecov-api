@@ -22,12 +22,12 @@ from django.http import (
 )
 from graphql import DocumentNode
 from sentry_sdk import capture_exception
+from shared.helpers.redis import get_redis_connection
 from shared.metrics import Counter, Histogram, inc_counter
 
 from codecov.commands.exceptions import BaseException
 from codecov.commands.executor import get_executor_from_request
 from services import ServiceException
-from services.redis_configuration import get_redis_connection
 
 from .schema import schema
 from .validation import (

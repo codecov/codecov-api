@@ -9,8 +9,7 @@ from django.core.management import call_command
 from shared.config import ConfigHelper
 from shared.django_apps.codecov_auth.models import Plan, Tier
 from shared.django_apps.core.tests.factories import OwnerFactory, RepositoryFactory
-
-from services.redis_configuration import get_redis_connection
+from shared.helpers.redis import get_redis_connection
 
 
 @pytest.mark.django_db

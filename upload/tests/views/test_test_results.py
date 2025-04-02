@@ -14,8 +14,8 @@ from shared.django_apps.core.tests.factories import (
     RepositoryFactory,
 )
 from shared.events.amplitude import UNKNOWN_USER_OWNERID
+from shared.helpers.redis import get_redis_connection
 
-from services.redis_configuration import get_redis_connection
 from services.task import TaskService
 
 

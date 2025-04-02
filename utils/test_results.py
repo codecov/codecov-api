@@ -1,9 +1,9 @@
 import polars as pl
 from django.conf import settings
+from shared.helpers.redis import get_redis_connection
 from shared.storage import get_appropriate_storage_service
 from shared.storage.exceptions import FileNotInStorageError
 
-from services.redis_configuration import get_redis_connection
 from services.task import TaskService
 
 
