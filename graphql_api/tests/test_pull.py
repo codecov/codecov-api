@@ -2,7 +2,6 @@ import os
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-import pytest
 from django.test import TestCase
 from freezegun import freeze_time
 from shared.api_archive.archive import ArchiveService
@@ -460,25 +459,21 @@ class TestPullRequestList(GraphQLTestHelper, TestCase):
             "behindByCommit": "1089nf898as-jdf09hahs09fgh",
         }
 
-    @pytest.mark.skip(
-        reason="Skipping due to https://github.com/codecov/engineering-team/issues/3358"
-    )
     def test_compare_bundle_analysis_missing_reports(self):
-        repository = RepositoryFactory(author=self.owner)
         head = CommitFactory(
-            repository=repository,
+            repository=self.repository,
             author=self.owner,
             commitid="cool-commit-id",
             totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
         )
         compared_to = CommitFactory(
-            repository=repository,
+            repository=self.repository,
             author=self.owner,
             commitid="blah",
         )
 
         my_pull = PullFactory(
-            repository=repository,
+            repository=self.repository,
             author=self.owner,
             head=head.commitid,
             compared_to=compared_to.commitid,

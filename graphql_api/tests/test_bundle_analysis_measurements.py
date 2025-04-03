@@ -3128,3 +3128,275 @@ class TestBundleAnalysisMeasurements(GraphQLTestHelper, TestCase):
                 "name": "super",
             },
         }
+
+    @patch("graphql_api.dataloader.bundle_analysis.get_appropriate_storage_service")
+    def test_bundle_report_measurements_no_data_in_range(self, get_storage_service):
+        storage = MemoryStorageService({})
+        get_storage_service.return_value = storage
+
+        with open("./services/tests/samples/bundle_with_uuid.sqlite", "rb") as f:
+            storage_path = StoragePaths.bundle_report.path(
+                repo_key=ArchiveService.get_archive_hash(self.repo),
+                report_key=self.head_commit_report.external_id,
+            )
+            storage.write_file(get_bucket_name(), storage_path, f)
+
+        query = """
+            query FetchMeasurements(
+                $org: String!,
+                $repo: String!,
+                $commit: String!
+                $filters: BundleAnalysisMeasurementsSetFilters
+                $orderingDirection: OrderingDirection!
+                $interval: MeasurementInterval!
+                $before: DateTime!
+                $after: DateTime!
+            ) {
+                owner(username: $org) {
+                    repository(name: $repo) {
+                        ... on Repository {
+                            commit(id: $commit) {
+                                bundleAnalysis {
+                                    bundleAnalysisReport {
+                                        __typename
+                                        ... on BundleAnalysisReport {
+                                            bundle(name: "super") {
+                                                name
+                                                measurements(
+                                                    filters: $filters
+                                                    orderingDirection: $orderingDirection
+                                                    after: $after
+                                                    interval: $interval
+                                                    before: $before
+                                                ){
+                                                    assetType
+                                                    name
+                                                    measurements {
+                                                        avg
+                                                        min
+                                                        max
+                                                        timestamp
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        # Test without using asset type filters
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "orderingDirection": "ASC",
+            "interval": "INTERVAL_1_DAY",
+            "after": "2024-06-08",
+            "before": "2024-06-09",
+            "filters": {},
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "measurements": [
+                    {
+                        "assetType": "ASSET_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 4126.0,
+                                "max": 4126.0,
+                                "min": 4126.0,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                        ],
+                        "name": "asset-*.js",
+                    },
+                    {
+                        "assetType": "ASSET_SIZE",
+                        "measurements": [],
+                        "name": "asset-*.js",
+                    },
+                    {
+                        "assetType": "ASSET_SIZE",
+                        "measurements": [],
+                        "name": "asset-*.js",
+                    },
+                    {
+                        "assetType": "FONT_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 50.0,
+                                "max": 50.0,
+                                "min": 50.0,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                    },
+                    {
+                        "assetType": "IMAGE_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 500.0,
+                                "max": 500.0,
+                                "min": 500.0,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                    },
+                    {
+                        "assetType": "JAVASCRIPT_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 5708.0,
+                                "max": 5708.0,
+                                "min": 5708.0,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                    },
+                    {
+                        "assetType": "REPORT_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 6263.0,
+                                "max": 6263.0,
+                                "min": 6263.0,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                    },
+                    {
+                        "assetType": "STYLESHEET_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 5.0,
+                                "max": 5.0,
+                                "min": 5.0,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                    },
+                    {
+                        "assetType": "UNKNOWN_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 0.0,
+                                "max": 0.0,
+                                "min": 0.0,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                    },
+                ],
+                "name": "super",
+            },
+        }
+
+        # Test with using asset type filters
+        variables = {
+            "org": self.org.username,
+            "repo": self.repo.name,
+            "commit": self.commit.commitid,
+            "orderingDirection": "ASC",
+            "interval": "INTERVAL_1_DAY",
+            "after": "2024-06-07",
+            "before": "2024-06-10",
+            "filters": {"assetTypes": "JAVASCRIPT_SIZE"},
+        }
+        data = self.gql_request(query, variables=variables)
+        commit = data["owner"]["repository"]["commit"]
+
+        assert commit["bundleAnalysis"]["bundleAnalysisReport"] == {
+            "__typename": "BundleAnalysisReport",
+            "bundle": {
+                "measurements": [
+                    {
+                        "assetType": "JAVASCRIPT_SIZE",
+                        "measurements": [
+                            {
+                                "avg": 5708.0,
+                                "max": 5708.0,
+                                "min": 5708.0,
+                                "timestamp": "2024-06-07T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-08T00:00:00+00:00",
+                            },
+                            {
+                                "avg": None,
+                                "max": None,
+                                "min": None,
+                                "timestamp": "2024-06-09T00:00:00+00:00",
+                            },
+                            {
+                                "avg": 26708.0,
+                                "max": 26708.0,
+                                "min": 26708.0,
+                                "timestamp": "2024-06-10T00:00:00+00:00",
+                            },
+                        ],
+                        "name": None,
+                    },
+                ],
+                "name": "super",
+            },
+        }

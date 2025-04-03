@@ -1178,9 +1178,32 @@ class OwnerCoverageMeasurementsWithFallbackTest(TestCase):
                 repository_id__in=[self.repo1.pk, self.repo2.pk],
             )
         )
-        datasets.reverse()
         assert len(datasets) == 2
-        trigger_backfill.assert_called_once_with(datasets)
+        created_datasets = [
+            (
+                ds.repository_id,
+                ds.name,
+                ds.is_backfilled(),
+            )
+            for ds in datasets
+        ]
+
+        assert (
+            self.repo1.pk,
+            MeasurementName.COVERAGE.value,
+            False,
+        ) in created_datasets
+        assert (
+            self.repo2.pk,
+            MeasurementName.COVERAGE.value,
+            False,
+        ) in created_datasets
+
+        try:
+            trigger_backfill.assert_called_once_with(datasets)
+        except AssertionError:
+            datasets.reverse()
+            trigger_backfill.assert_called_once_with(datasets)
 
         res = owner_coverage_measurements_with_fallback(
             owner=self.owner,

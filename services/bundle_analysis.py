@@ -454,7 +454,7 @@ class BundleAnalysisMeasurementsService(object):
     @sentry_sdk.trace
     def _compute_measurements(
         self, measurable_name: str, measurable_ids: List[str]
-    ) -> Dict[int, List[Dict[str, Any]]]:
+    ) -> Dict[str, List[Dict[str, Any]]]:
         all_measurements = measurements_by_ids(
             repository=self.repository,
             measurable_name=measurable_name,
@@ -463,11 +463,13 @@ class BundleAnalysisMeasurementsService(object):
             after=self.after,
             before=self.before,
             branch=self.branch,
-        )
+        ) or {measurable_ids[0]: []}
 
         # Carry over previous available value for start date if its value is null
         for measurable_id, measurements in all_measurements.items():
-            if self.after is not None and measurements[0]["timestamp_bin"] > self.after:
+            if self.after is not None and (
+                not measurements or measurements[0]["timestamp_bin"] > self.after
+            ):
                 carryover_measurement = measurements_last_uploaded_before_start_date(
                     owner_id=self.repository.author.ownerid,
                     repo_id=self.repository.repoid,
@@ -481,8 +483,10 @@ class BundleAnalysisMeasurementsService(object):
                 # If there isn't any measurements before the start date range, measurements will be untouched
                 if carryover_measurement:
                     value = Decimal(carryover_measurement[0]["value"])
-                    carryover = dict(measurements[0])
-                    carryover["timestamp_bin"] = self.after
+                    carryover = dict(measurements[0]) if measurements else {}
+                    carryover["timestamp_bin"] = self.after.replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    )
                     carryover["min"] = value
                     carryover["max"] = value
                     carryover["avg"] = value
