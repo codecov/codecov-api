@@ -387,7 +387,7 @@ def try_to_get_best_possible_bot_token(
         try:
             github_token = get_github_integration_token(
                 repository.author.service,
-                installation_id=ghapp_installation_id,
+                integration_id=ghapp_installation_id,
             )
             return dict(key=github_token)
         except InvalidInstallationError:
