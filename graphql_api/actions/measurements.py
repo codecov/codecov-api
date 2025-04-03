@@ -38,7 +38,7 @@ def measurements_by_ids(
     )
 
     # group by measurable_id
-    measurements: Dict[int, List[Dict[str, Any]]] = {}
+    measurements: Dict[Any, List[Dict[str, Any]]] = {}
     for measurement in queryset:
         measurable_id = measurement["measurable_id"]
         if measurable_id not in measurements:

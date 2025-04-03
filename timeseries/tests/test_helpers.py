@@ -1179,6 +1179,26 @@ class OwnerCoverageMeasurementsWithFallbackTest(TestCase):
             )
         )
         assert len(datasets) == 2
+        created_datasets = [
+            (
+                ds.repository_id,
+                ds.name,
+                ds.is_backfilled(),
+            )
+            for ds in datasets
+        ]
+
+        assert (
+            self.repo1.pk,
+            MeasurementName.COVERAGE.value,
+            False,
+        ) in created_datasets
+        assert (
+            self.repo2.pk,
+            MeasurementName.COVERAGE.value,
+            False,
+        ) in created_datasets
+
         try:
             trigger_backfill.assert_called_once_with(datasets)
         except AssertionError:
