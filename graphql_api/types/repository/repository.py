@@ -9,6 +9,7 @@ from ariadne import ObjectType, UnionType
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from graphql.type.definition import GraphQLResolveInfo
+from shared.helpers.redis import get_redis_connection
 
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE, Owner
 from core.models import Branch, Commit, Pull, Repository
@@ -22,7 +23,6 @@ from graphql_api.types.coverage_analytics.coverage_analytics import (
 from graphql_api.types.enums import OrderingDirection
 from graphql_api.types.enums.enum_types import PullRequestState
 from graphql_api.types.errors.errors import NotFoundError, OwnerNotActivatedError
-from services.redis_configuration import get_redis_connection
 
 TOKEN_UNAVAILABLE = "Token Unavailable. Please contact your admin."
 

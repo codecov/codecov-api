@@ -1,12 +1,12 @@
 from typing import Optional
 
 from asgiref.sync import sync_to_async
+from shared.helpers.redis import get_redis_connection
 from shared.plan.service import PlanService
 from shared.upload.utils import query_monthly_coverage_measurements
 
 from codecov.commands.base import BaseInteractor
 from codecov_auth.models import Owner
-from services.redis_configuration import get_redis_connection
 
 redis = get_redis_connection()
 

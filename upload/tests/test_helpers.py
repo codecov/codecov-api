@@ -99,9 +99,7 @@ def test_try_to_get_best_possible_bot_token_using_integration(
     assert try_to_get_best_possible_bot_token(repository) == {
         "key": "test-token",
     }
-    get_github_integration_token.assert_called_once_with(
-        "github", installation_id=12345
-    )
+    get_github_integration_token.assert_called_once_with("github", integration_id=12345)
 
 
 @patch("upload.helpers.get_github_integration_token")
@@ -125,9 +123,7 @@ def test_try_to_get_best_possible_bot_token_using_invalid_integration(
         "key": "bornana",
         "secret": None,
     }
-    get_github_integration_token.assert_called_once_with(
-        "github", installation_id=12345
-    )
+    get_github_integration_token.assert_called_once_with("github", integration_id=12345)
 
 
 def test_try_to_get_best_possible_nothing_and_is_private(db):
