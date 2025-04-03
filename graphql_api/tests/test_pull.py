@@ -460,21 +460,20 @@ class TestPullRequestList(GraphQLTestHelper, TestCase):
         }
 
     def test_compare_bundle_analysis_missing_reports(self):
-        repository = RepositoryFactory(author=self.owner)
         head = CommitFactory(
-            repository=repository,
+            repository=self.repository,
             author=self.owner,
             commitid="cool-commit-id",
             totals={"c": "78.38", "diff": [0, 0, 0, 0, 0, "14"]},
         )
         compared_to = CommitFactory(
-            repository=repository,
+            repository=self.repository,
             author=self.owner,
             commitid="blah",
         )
 
         my_pull = PullFactory(
-            repository=repository,
+            repository=self.repository,
             author=self.owner,
             head=head.commitid,
             compared_to=compared_to.commitid,
