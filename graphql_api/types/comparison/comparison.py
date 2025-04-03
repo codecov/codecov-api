@@ -39,7 +39,7 @@ def resolve_state(comparison: ComparisonReport, info: GraphQLResolveInfo) -> str
 @sync_to_async
 def resolve_impacted_files(
     comparison_report: ComparisonReport, info: GraphQLResolveInfo, filters=None
-) -> List[ImpactedFile]:
+):
     command: CompareCommands = info.context["executor"].get_command("compare")
     comparison: Comparison = info.context.get("comparison", None)
 
@@ -59,7 +59,7 @@ def resolve_impacted_files(
 @sync_to_async
 def resolve_impacted_files_count(
     comparison: ComparisonReport, info: GraphQLResolveInfo
-):
+) -> int:
     return len(comparison.impacted_files)
 
 
@@ -67,7 +67,7 @@ def resolve_impacted_files_count(
 @sync_to_async
 def resolve_direct_changed_files_count(
     comparison: ComparisonReport, info: GraphQLResolveInfo
-):
+) -> int:
     return len(comparison.impacted_files_with_direct_changes)
 
 
@@ -75,7 +75,7 @@ def resolve_direct_changed_files_count(
 @sync_to_async
 def resolve_indirect_changed_files_count(
     comparison: ComparisonReport, info: GraphQLResolveInfo
-):
+) -> int:
     return len(comparison.impacted_files_with_unintended_changes)
 
 
@@ -157,10 +157,9 @@ async def resolve_head_totals(
 
 
 @comparison_bindable.field("patchTotals")
-@sentry_sdk.trace
 def resolve_patch_totals(
     comparison: ComparisonReport, info: GraphQLResolveInfo
-) -> dict:
+) -> dict | None:
     totals = comparison.commit_comparison.patch_totals
     if not totals:
         return None
@@ -233,7 +232,7 @@ def resolve_component_comparisons_count(
 @sync_to_async
 def resolve_flag_comparisons_count(
     comparison: ComparisonReport, info: GraphQLResolveInfo
-):
+) -> int:
     """
     Resolver to return if the head and base of a pull request have
     different number of reports on the head and base. This implementation
