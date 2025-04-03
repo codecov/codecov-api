@@ -14,6 +14,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.events.amplitude import AmplitudeEventPublisher
+from shared.helpers.redis import get_redis_connection
 
 from codecov_auth.models import (
     GITHUB_APP_INSTALLATION_DEFAULT_NAME,
@@ -22,7 +23,6 @@ from codecov_auth.models import (
 )
 from core.models import Branch, Commit, Pull, Repository
 from services.billing import BillingService
-from services.redis_configuration import get_redis_connection
 from services.task import TaskService
 from utils.config import get_config
 from webhook_handlers.constants import (

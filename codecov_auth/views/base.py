@@ -16,11 +16,11 @@ from django.utils import timezone
 from django.utils.timezone import now
 from shared.encryption.token import encode_token
 from shared.events.amplitude import AmplitudeEventPublisher
+from shared.helpers.redis import get_redis_connection
 from shared.license import LICENSE_ERRORS_MESSAGES, get_current_license
 
 from codecov_auth.models import Owner, OwnerProfile, Session, User
 from services.analytics import AnalyticsService
-from services.redis_configuration import get_redis_connection
 from services.refresh import RefreshService
 from utils.config import get_config
 from utils.encryption import encryptor
