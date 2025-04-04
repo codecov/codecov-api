@@ -411,9 +411,9 @@ if SENTRY_DSN is not None:
         dsn=SENTRY_DSN,
         event_scrubber=EventScrubber(denylist=SENTRY_DENY_LIST),
         integrations=[
-            DjangoIntegration(),
+            DjangoIntegration(signals_spans=False),
             CeleryIntegration(),
-            RedisIntegration(),
+            RedisIntegration(cache_prefixes=["cache:"]),
             HttpxIntegration(),
         ],
         environment=SENTRY_ENV,
