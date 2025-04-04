@@ -1,10 +1,13 @@
+from typing import Self
+
 from aiodataloader import DataLoader
 from asgiref.sync import sync_to_async
+from graphql import GraphQLResolveInfo
 
 
 class BaseLoader(DataLoader):
     @classmethod
-    def loader(cls, info, *args):
+    def loader(cls, info: GraphQLResolveInfo, *args) -> Self:
         """
         Creates a new loader for the given `info` (instance of GraphQLResolveInfo) and `args`.
         If a loader of this type already exists for the given `args` then that same object will

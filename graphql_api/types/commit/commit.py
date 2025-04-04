@@ -64,13 +64,13 @@ log = logging.getLogger(__name__)
 
 
 @commit_bindable.field("author")
-def resolve_author(commit, info):
+def resolve_author(commit: Commit, info: GraphQLResolveInfo) -> Owner | None:
     if commit.author_id:
         return OwnerLoader.loader(info).load(commit.author_id)
 
 
 @commit_bindable.field("parent")
-def resolve_parent(commit, info):
+def resolve_parent(commit: Commit, info: GraphQLResolveInfo) -> Commit | None:
     if commit.parent_commit_id:
         return CommitLoader.loader(info, commit.repository_id).load(
             commit.parent_commit_id
@@ -78,14 +78,14 @@ def resolve_parent(commit, info):
 
 
 @commit_bindable.field("yaml")
-async def resolve_yaml(commit: Commit, info) -> dict:
+async def resolve_yaml(commit: Commit, info: GraphQLResolveInfo) -> dict:
     command = info.context["executor"].get_command("commit")
     final_yaml = await command.get_final_yaml(commit)
     return yaml.dump(final_yaml)
 
 
 @commit_bindable.field("yamlState")
-async def resolve_yaml_state(commit: Commit, info) -> YamlStates:
+async def resolve_yaml_state(commit: Commit, info: GraphQLResolveInfo) -> YamlStates:
     command = info.context["executor"].get_command("commit")
     final_yaml = await command.get_final_yaml(commit)
     return get_yaml_state(yaml=final_yaml)
@@ -93,7 +93,7 @@ async def resolve_yaml_state(commit: Commit, info) -> YamlStates:
 
 @commit_bindable.field("uploads")
 @sync_to_async
-def resolve_list_uploads(commit: Commit, info, **kwargs):
+def resolve_list_uploads(commit: Commit, info: GraphQLResolveInfo, **kwargs):
     if not commit.commitreport:
         return queryset_to_connection_sync([])
 
@@ -118,7 +118,9 @@ def resolve_list_uploads(commit: Commit, info, **kwargs):
 
 @commit_bindable.field("compareWithParent")
 @sentry_sdk.trace
-async def resolve_compare_with_parent(commit: Commit, info, **kwargs):
+async def resolve_compare_with_parent(
+    commit: Commit, info: GraphQLResolveInfo, **kwargs
+):
     if not commit.parent_commit_id:
         return MissingBaseCommit()
 
