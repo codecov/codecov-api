@@ -16,7 +16,7 @@ services:
       - RUN_ENV=DEV
       # Improves pytest-cov performance in python 3.12
       # https://github.com/nedbat/coveragepy/issues/1665#issuecomment-1937075835
-      - COVERAGE_CORE=sysmon 
+      - COVERAGE_CORE=sysmon
     env_file:
       - .testenv
 
@@ -42,3 +42,14 @@ services:
   redis:
     image: redis:6-alpine
 
+  minio:
+    image: minio/minio:latest
+    command: server /export
+    environment:
+      - MINIO_ACCESS_KEY=codecov-default-key
+      - MINIO_SECRET_KEY=codecov-default-secret
+    volumes:
+      - type: tmpfs
+        target: /export
+        tmpfs:
+          size: 256M

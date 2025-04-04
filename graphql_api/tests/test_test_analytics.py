@@ -1,14 +1,16 @@
 import datetime
 from base64 import b64encode
+from itertools import chain
 from typing import Any
 
 import polars as pl
 import pytest
+from django.conf import settings
 from shared.django_apps.codecov_auth.tests.factories import OwnerFactory
 from shared.django_apps.core.tests.factories import RepositoryFactory
 from shared.helpers.redis import get_redis_connection
+from shared.storage import get_appropriate_storage_service
 from shared.storage.exceptions import BucketAlreadyExistsError
-from shared.storage.memory import MemoryStorageService
 
 from graphql_api.types.enums import (
     OrderingDirection,
@@ -48,12 +50,32 @@ class RowFactory:
         }
 
 
-@pytest.fixture
-def mock_storage(mocker):
-    m = mocker.patch("utils.test_results.get_appropriate_storage_service")
-    storage_server = MemoryStorageService({})
-    m.return_value = storage_server
-    yield storage_server
+def create_no_version_row(updated_at: datetime.datetime) -> list[dict[str, Any]]:
+    return [
+        {
+            "timestamp_bin": datetime.datetime(
+                updated_at.year, updated_at.month, updated_at.day
+            ),
+            "computed_name": f"test{i}",
+            "flags": [f"flag{i}"],
+            "updated_at": updated_at,
+            "avg_duration": 100.0,
+            "fail_count": i,
+            "flaky_fail_count": 1 if i == 1 else 0,
+            "pass_count": 1,
+            "skip_count": 1,
+            "failing_commits": 1,
+            "last_duration": 100.0,
+        }
+        for i in range(5)
+    ]
+
+
+def create_v1_row(updated_at: datetime.datetime) -> list[dict[str, Any]]:
+    return [
+        {**row, "testsuite": f"testsuite{i}"}
+        for i, row in enumerate(create_no_version_row(updated_at))
+    ]
 
 
 base_gql_query = """
@@ -79,6 +101,15 @@ rows_with_duplicate_names = [
 ]
 for i in range(0, len(rows_with_duplicate_names) - 1, 2):
     rows_with_duplicate_names[i]["name"] = rows_with_duplicate_names[i + 1]["name"]
+
+no_version_rows = list(
+    chain.from_iterable(
+        create_no_version_row(datetime.datetime.now()) for i in range(5)
+    )
+)
+v1_rows = list(
+    chain.from_iterable(create_v1_row(datetime.datetime.now()) for i in range(5))
+)
 
 
 def dedup(rows: list[dict]) -> list[dict]:
@@ -135,6 +166,8 @@ def row_to_camel_case(row: dict) -> dict:
 
 test_results_table = pl.DataFrame(rows)
 test_results_table_with_duplicate_names = pl.DataFrame(rows_with_duplicate_names)
+test_results_table_no_version = pl.DataFrame(no_version_rows)
+test_results_table_v1 = pl.DataFrame(v1_rows)
 
 
 def base64_encode_string(x: str) -> str:
@@ -169,15 +202,15 @@ def store_in_redis(repository):
 
 
 @pytest.fixture
-def store_in_storage(repository, mock_storage):
-    from django.conf import settings
+def store_in_storage(repository):
+    storage = get_appropriate_storage_service()
 
     try:
-        mock_storage.create_root_storage(settings.GCS_BUCKET_NAME)
+        storage.create_root_storage(settings.GCS_BUCKET_NAME)
     except BucketAlreadyExistsError:
         pass
 
-    mock_storage.write_file(
+    storage.write_file(
         settings.GCS_BUCKET_NAME,
         f"test_results/rollups/{repository.repoid}/{repository.branch}/30",
         test_results_table.write_ipc(None).getvalue(),
@@ -185,7 +218,7 @@ def store_in_storage(repository, mock_storage):
 
     yield
 
-    mock_storage.delete_file(
+    storage.delete_file(
         settings.GCS_BUCKET_NAME,
         f"test_results/rollups/{repository.repoid}/{repository.branch}/30",
     )
@@ -215,20 +248,17 @@ class TestAnalyticsTestCase(
         repository,
         store_in_redis,
         store_in_storage,
-        mock_storage,
     ):
         results = get_results(repository.repoid, repository.branch, 30)
         assert results is not None
 
         assert results.equals(dedup_table(test_results_table))
 
-    def test_get_test_results_no_storage(
-        self, transactional_db, repository, mock_storage
-    ):
+    def test_get_test_results_no_storage(self, transactional_db, repository):
         assert get_results(repository.repoid, repository.branch, 30) is None
 
     def test_get_test_results_no_redis(
-        self, mocker, transactional_db, repository, store_in_storage, mock_storage
+        self, mocker, transactional_db, repository, store_in_storage
     ):
         m = mocker.patch("services.task.TaskService.cache_test_results_redis")
         results = get_results(repository.repoid, repository.branch, 30)
@@ -237,9 +267,7 @@ class TestAnalyticsTestCase(
 
         m.assert_called_once_with(repository.repoid, repository.branch)
 
-    def test_test_results(
-        self, transactional_db, repository, store_in_redis, mock_storage, snapshot
-    ):
+    def test_test_results(self, transactional_db, repository, store_in_redis, snapshot):
         test_results = generate_test_results(
             repoid=repository.repoid,
             ordering=TestResultsOrderingParameter.UPDATED_AT,
@@ -261,7 +289,7 @@ class TestAnalyticsTestCase(
         ]
 
     def test_test_results_asc(
-        self, transactional_db, repository, store_in_redis, mock_storage, snapshot
+        self, transactional_db, repository, store_in_redis, snapshot
     ):
         test_results = generate_test_results(
             repoid=repository.repoid,
@@ -373,7 +401,6 @@ class TestAnalyticsTestCase(
         end_cursor,
         repository,
         store_in_redis,
-        mock_storage,
         snapshot,
     ):
         test_results = generate_test_results(
@@ -489,7 +516,6 @@ class TestAnalyticsTestCase(
         end_cursor,
         repository,
         store_in_redis,
-        mock_storage,
         snapshot,
     ):
         test_results = generate_test_results(
@@ -515,9 +541,7 @@ class TestAnalyticsTestCase(
             if isinstance(row["node"], TestResultsRow)
         ]
 
-    def test_test_analytics_term_filter(
-        self, repository, store_in_redis, mock_storage, snapshot
-    ):
+    def test_test_analytics_term_filter(self, repository, store_in_redis, snapshot):
         test_results = generate_test_results(
             repoid=repository.repoid,
             term=rows[0]["name"][2:],
@@ -563,9 +587,7 @@ class TestAnalyticsTestCase(
             if isinstance(row["node"], TestResultsRow)
         ]
 
-    def test_test_analytics_flag_filter(
-        self, repository, store_in_redis, mock_storage, snapshot
-    ):
+    def test_test_analytics_flag_filter(self, repository, store_in_redis, snapshot):
         test_results = generate_test_results(
             repoid=repository.repoid,
             flags=[rows[0]["flags"][0]],
@@ -588,7 +610,7 @@ class TestAnalyticsTestCase(
             if isinstance(row["node"], TestResultsRow)
         ]
 
-    def test_gql_query(self, repository, store_in_redis, mock_storage):
+    def test_gql_query(self, repository, store_in_redis):
         query = base_gql_query % (
             repository.author.username,
             repository.name,
@@ -632,7 +654,7 @@ class TestAnalyticsTestCase(
         ]
 
     def test_gql_query_with_duplicate_names(
-        self, repository, store_in_redis_with_duplicate_names, mock_storage
+        self, repository, store_in_redis_with_duplicate_names
     ):
         query = base_gql_query % (
             repository.author.username,
@@ -676,7 +698,7 @@ class TestAnalyticsTestCase(
             for row in dedup(rows_with_duplicate_names)
         ]
 
-    def test_gql_query_aggregates(self, repository, store_in_redis, mock_storage):
+    def test_gql_query_aggregates(self, repository, store_in_redis):
         query = base_gql_query % (
             repository.author.username,
             repository.name,
@@ -703,7 +725,7 @@ class TestAnalyticsTestCase(
             "totalSlowTests": 1,
         }
 
-    def test_gql_query_flake_aggregates(self, repository, store_in_redis, mock_storage):
+    def test_gql_query_flake_aggregates(self, repository, store_in_redis):
         query = base_gql_query % (
             repository.author.username,
             repository.name,
@@ -721,3 +743,68 @@ class TestAnalyticsTestCase(
             "flakeRate": 0.1,
             "flakeCount": 1,
         }
+
+    def test_gql_query_with_new_ta(self, mocker, repository, snapshot):
+        # set the feature flag
+        mocker.patch("rollouts.READ_NEW_TA.check_value", return_value=True)
+
+        # read file from samples
+        storage = get_appropriate_storage_service()
+        try:
+            storage.create_root_storage(settings.GCS_BUCKET_NAME)
+        except BucketAlreadyExistsError:
+            pass
+        storage.write_file(
+            settings.GCS_BUCKET_NAME,
+            f"test_analytics/branch_rollups/{repository.repoid}/{repository.branch}.arrow",
+            test_results_table_no_version.write_ipc(None).getvalue(),
+        )
+
+        # run the GQL query
+        query = base_gql_query % (
+            repository.author.username,
+            repository.name,
+            """
+            testResults(ordering: { parameter: FAILURE_RATE, direction: DESC } ) {
+                totalCount
+                edges {
+                    cursor
+                    node {
+                        name
+                        failureRate
+                        flakeRate
+                        updatedAt
+                        avgDuration
+                        totalFailCount
+                        totalFlakyFailCount
+                        totalPassCount
+                        totalSkipCount
+                        commitsFailed
+                        lastDuration
+                    }
+                }
+            }
+            """,
+        )
+
+        result = self.gql_request(query, owner=repository.author)
+
+        # take a snapshot of the results
+        assert (
+            result["owner"]["repository"]["testAnalytics"]["testResults"]["totalCount"]
+            == 5
+        )
+        assert snapshot("json") == [
+            {
+                **edge,
+                "node": {k: v for k, v in edge["node"].items() if k != "updatedAt"},
+            }
+            for edge in result["owner"]["repository"]["testAnalytics"]["testResults"][
+                "edges"
+            ]
+        ]
+
+        storage.delete_file(
+            settings.GCS_BUCKET_NAME,
+            f"test_analytics/branch_rollups/{repository.repoid}/{repository.branch}.arrow",
+        )
