@@ -1,7 +1,9 @@
+from collections import defaultdict
 from typing import Optional
 
-from django.db.models import Prefetch, Q, QuerySet
+from django.db.models import Count, Prefetch, Q, QuerySet
 from django.db.models.functions import Lower, Substr
+from graphql import GraphQLResolveInfo
 
 from core.models import Commit, Pull, Repository
 from graphql_api.types.enums import CommitStatus
@@ -23,35 +25,51 @@ def pull_commits(pull: Pull) -> QuerySet[Commit]:
     return Commit.objects.filter(id__in=subquery).defer("_report")
 
 
+def load_commit_statuses(
+    commit_ids: list[int],
+) -> dict[int, dict[CommitReport.ReportType, str]]:
+    qs = (
+        CommitReport.objects.filter(commit__in=commit_ids)
+        .values_list("commit_id", "report_type", "sessions__state")
+        .annotate(sessions_count=Count("sessions"))
+    )
+
+    grouped: dict[tuple[int, CommitReport.ReportType], dict[str, int]] = defaultdict(
+        dict
+    )
+    for id, report_type, state, count in qs:
+        # The above query generates a `LEFT OUTER JOIN` with a proper `GROUP BY`.
+        # However, it is also yielding rows with a `NULL` state in case a report does not have any uploads.
+        if not report_type or not state:
+            continue
+        grouped[(id, report_type)][state] = count
+
+    results: dict[int, dict[CommitReport.ReportType, str]] = {
+        id: {} for id in commit_ids
+    }
+    for (id, report_type), states in grouped.items():
+        status = CommitStatus.COMPLETED.value
+        if states.get("error", 0) > 0:
+            status = CommitStatus.ERROR.value
+        elif states.get("uploaded", 0) > 0:
+            status = CommitStatus.PENDING.value
+
+        results[id][report_type] = status
+
+    return results
+
+
 def commit_status(
-    commit: Commit, report_type: CommitReport.ReportType
-) -> Optional[CommitStatus]:
-    report = CommitReport.objects.filter(report_type=report_type, commit=commit).first()
-    if not report:
-        return None
+    info: GraphQLResolveInfo, commit: Commit, report_type: CommitReport.ReportType
+) -> str | None:
+    commit_statuses = info.context.setdefault("commit_statuses", {})
+    commit_status = commit_statuses.get(commit.id)
+    if commit_status is None:
+        updated_statuses = load_commit_statuses([commit.id])
+        commit_statuses.update(updated_statuses)
+        commit_status = updated_statuses[commit.id]
 
-    sessions = report.sessions.all()
-    if not sessions:
-        return None
-
-    # Only care about these 3 states, ignoring fully and partially overwritten
-    upload_states = [
-        s.state for s in sessions if s.state in ["processed", "uploaded", "error"]
-    ]
-
-    has_error, has_pending = False, False
-    for state in upload_states:
-        if state == "error":
-            has_error = True
-        if state == "uploaded":
-            has_pending = True
-
-    # Prioritize returning error over pending
-    if has_error:
-        return CommitStatus.ERROR.value
-    if has_pending:
-        return CommitStatus.PENDING.value
-    return CommitStatus.COMPLETED.value
+    return commit_status.get(report_type)
 
 
 def repo_commits(
@@ -100,11 +118,17 @@ def repo_commits(
     coverage_status = filters.get("coverage_status")
 
     if coverage_status:
+        # FIXME(swatinem):
+        # This filter here is insane, it resolves *all* the results in the unbounded queryset,
+        # just to check the status, and to then add it as another restricting filter.
+        # I’m pretty sure this will completely break the server if anyone actually uses this filter, lol.
+        commit_ids = [commit.id for commit in queryset]
+        commit_statuses = load_commit_statuses(commit_ids)
+
         to_be_included = [
-            commit.id
-            for commit in queryset
-            if commit_status(commit, CommitReport.ReportType.COVERAGE)
-            in coverage_status
+            id
+            for id, statuses in commit_statuses.items()
+            if statuses.get(CommitReport.ReportType.COVERAGE) in coverage_status
         ]
         queryset = queryset.filter(id__in=to_be_included)
 

@@ -13,10 +13,11 @@ from shared.helpers.redis import get_redis_connection
 
 from codecov_auth.models import SERVICE_GITHUB, SERVICE_GITHUB_ENTERPRISE, Owner
 from core.models import Branch, Commit, Pull, Repository
-from graphql_api.actions.commits import repo_commits
+from graphql_api.actions.commits import load_commit_statuses, repo_commits
 from graphql_api.dataloader.commit import CommitLoader
 from graphql_api.dataloader.owner import OwnerLoader
 from graphql_api.helpers.connection import queryset_to_connection
+from graphql_api.helpers.requested_fields import selected_fields
 from graphql_api.types.coverage_analytics.coverage_analytics import (
     CoverageAnalyticsProps,
 )
@@ -123,6 +124,11 @@ async def resolve_pulls(
     )
 
 
+# the `requested_fields` here are prefixed with `edges.node`, as this is a `Connection`
+# and using `commits { edges { node { ... } } }` is the way this is queried.
+STATUS_FIELDS = {"edges.node.coverageStatus", "edges.node.bundleStatus"}
+
+
 @repository_bindable.field("commits")
 async def resolve_commits(
     repository: Repository,
@@ -143,6 +149,15 @@ async def resolve_commits(
         # cache all resulting commits in dataloader
         loader = CommitLoader.loader(info, repository.repoid)
         loader.cache(commit)
+
+    requested_fields = selected_fields(info)
+    should_load_statuses = not requested_fields.isdisjoint(STATUS_FIELDS)
+
+    if should_load_statuses:
+        commit_ids = [edge["node"].id for edge in connection.edges]
+        info.context["commit_statuses"] = await sync_to_async(load_commit_statuses)(
+            commit_ids
+        )
 
     return connection
 

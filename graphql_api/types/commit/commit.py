@@ -36,7 +36,6 @@ from graphql_api.types.comparison.comparison import (
     MissingHeadReport,
 )
 from graphql_api.types.enums import (
-    CommitStatus,
     OrderingDirection,
     PathContentDisplayType,
 )
@@ -304,15 +303,15 @@ async def resolve_total_uploads(commit, info):
 @commit_bindable.field("bundleStatus")
 @sync_to_async
 @sentry_sdk.trace
-def resolve_bundle_status(commit: Commit, info) -> Optional[CommitStatus]:
-    return commit_status(commit, CommitReport.ReportType.BUNDLE_ANALYSIS)
+def resolve_bundle_status(commit: Commit, info: GraphQLResolveInfo) -> str | None:
+    return commit_status(info, commit, CommitReport.ReportType.BUNDLE_ANALYSIS)
 
 
 @commit_bindable.field("coverageStatus")
 @sync_to_async
 @sentry_sdk.trace
-def resolve_coverage_status(commit: Commit, info) -> Optional[CommitStatus]:
-    return commit_status(commit, CommitReport.ReportType.COVERAGE)
+def resolve_coverage_status(commit: Commit, info: GraphQLResolveInfo) -> str | None:
+    return commit_status(info, commit, CommitReport.ReportType.COVERAGE)
 
 
 @commit_bindable.field("coverageAnalytics")
