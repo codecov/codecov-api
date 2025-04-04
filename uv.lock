@@ -389,9 +389,9 @@ requires-dist = [
     { name = "redis", specifier = "==4.4.4" },
     { name = "regex", specifier = "==2023.12.25" },
     { name = "requests", specifier = "==2.32.3" },
-    { name = "sentry-sdk", specifier = ">=2.13.0" },
-    { name = "sentry-sdk", extras = ["celery"], specifier = "==2.13.0" },
-    { name = "shared", git = "https://github.com/codecov/shared?rev=ece4366f3bce7fab2216704f85e365fbbe0f147d" },
+    { name = "sentry-sdk", specifier = ">=2.25.1" },
+    { name = "sentry-sdk", extras = ["celery"], specifier = ">=2.25.1" },
+    { name = "shared", git = "https://github.com/codecov/shared?rev=ae1d4cf84490f0ae41395cda3567fe3db7124be3" },
     { name = "simplejson", specifier = "==3.17.2" },
     { name = "starlette", specifier = "==0.40.0" },
     { name = "stripe", specifier = ">=11.4.1" },
@@ -1561,15 +1561,15 @@ wheels = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.13.0"
+version = "2.25.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/41/97f673384dae5ed81cc2a568cc5c28e76deee85f8ba50def862e86150a5a/sentry_sdk-2.13.0.tar.gz", hash = "sha256:8d4a576f7a98eb2fdb40e13106e41f330e5c79d72a68be1316e7852cf4995260", size = 279937 }
+sdist = { url = "https://files.pythonhosted.org/packages/85/2f/a0f732270cc7c1834f5ec45539aec87c360d5483a8bd788217a9102ccfbd/sentry_sdk-2.25.1.tar.gz", hash = "sha256:f9041b7054a7cf12d41eadabe6458ce7c6d6eea7a97cfe1b760b6692e9562cf0", size = 322190 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ad/7e/e9ca09f24a6c334286631a2d32c267cdc5edad5ac03fd9d20a01a82f1c35/sentry_sdk-2.13.0-py2.py3-none-any.whl", hash = "sha256:6beede8fc2ab4043da7f69d95534e320944690680dd9a963178a49de71d726c6", size = 309078 },
+    { url = "https://files.pythonhosted.org/packages/96/b6/84049ab0967affbc7cc7590d86ae0170c1b494edb69df8786707100420e5/sentry_sdk-2.25.1-py2.py3-none-any.whl", hash = "sha256:60b016d0772789454dc55a284a6a44212044d4a16d9f8448725effee97aaf7f6", size = 339851 },
 ]
 
 [package.optional-dependencies]
@@ -1580,7 +1580,7 @@ celery = [
 [[package]]
 name = "shared"
 version = "0.1.0"
-source = { git = "https://github.com/codecov/shared?rev=ece4366f3bce7fab2216704f85e365fbbe0f147d#ece4366f3bce7fab2216704f85e365fbbe0f147d" }
+source = { git = "https://github.com/codecov/shared?rev=ae1d4cf84490f0ae41395cda3567fe3db7124be3#ae1d4cf84490f0ae41395cda3567fe3db7124be3" }
 dependencies = [
     { name = "amplitude-analytics" },
     { name = "boto3" },
