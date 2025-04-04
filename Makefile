@@ -1,14 +1,14 @@
-sha := $(shell git rev-parse --short=7 HEAD)
-long_sha := $(shell git rev-parse HEAD)
-merge_sha := $(shell git merge-base HEAD^ origin/main)
+sha ?= $(shell git rev-parse --short=7 HEAD)
+long_sha ?= $(shell git rev-parse HEAD)
+merge_sha ?= $(shell git merge-base HEAD^ origin/main)
 release_version := `cat VERSION`
 build_date ?= $(shell git show -s --date=iso8601-strict --pretty=format:%cd $$sha)
-branch = $(shell git branch | grep \* | cut -f2 -d' ')
-epoch := $(shell date +"%s")
+branch ?= $(shell git branch | grep \* | cut -f2 -d' ')
+epoch ?= $(shell date +"%s")
 AR_REPO ?= codecov/api
 DOCKERHUB_REPO ?= codecov/self-hosted-api
-REQUIREMENTS_TAG := requirements-v1-$(shell sha1sum uv.lock | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
-VERSION := release-${sha}
+REQUIREMENTS_TAG ?= requirements-v1-$(shell sha1sum uv.lock | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
+VERSION ?= release-${sha}
 CODECOV_UPLOAD_TOKEN ?= "notset"
 CODECOV_STATIC_TOKEN ?= "notset"
 CODECOV_URL ?= "https://api.codecov.io"
@@ -18,6 +18,9 @@ export API_DOCKER_VERSION=${VERSION}
 export CODECOV_TOKEN=${CODECOV_UPLOAD_TOKEN}
 API_DOMAIN ?= api
 PROXY_NETWORK ?= api_default
+
+DEFAULT_REQS_TAG := requirements-v1-$(shell sha1sum uv.lock | cut -d ' ' -f 1)-$(shell sha1sum docker/Dockerfile.requirements | cut -d ' ' -f 1)
+REQUIREMENTS_TAG ?= ${DEFAULT_REQS_TAG}
 
 # We allow this to be overridden so that we can run `pytest` from this directory
 # but have the junit file use paths relative to a parent directory. This will
@@ -70,6 +73,12 @@ lint.check:
 	ruff format --check
 
 build.requirements:
+	# If make was given a different requirements tag, we assume a suitable image
+	# was already built (e.g. by umbrella) and don't want to build this one.
+	ifneq (${REQUIREMENTS_TAG},${DEFAULT_REQS_TAG})
+	echo "Error: building api reqs image despite another being provided"
+	exit 1
+	endif
 	# if docker pull succeeds, we have already build this version of
 	# requirements.txt.  Otherwise, build and push a version tagged
 	# with the hash of this requirements.txt
