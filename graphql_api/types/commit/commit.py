@@ -392,16 +392,19 @@ def resolve_coverage_components(commit: Commit, info, filters=None) -> List[Comp
 
 
 @commit_bundle_analysis_bindable.field("bundleAnalysisCompareWithParent")
-@sync_to_async
 @sentry_sdk.trace
-def resolve_commit_bundle_analysis_compare_with_parent(
+async def resolve_commit_bundle_analysis_compare_with_parent(
     commit: Commit, info: GraphQLResolveInfo
 ) -> Union[BundleAnalysisComparison, Any]:
-    base_commit = Commit.objects.filter(commitid=commit.parent_commit_id).first()
-    if not base_commit:
+    if not commit.parent_commit_id:
         return MissingBaseCommit()
+    base_commit = await CommitLoader.loader(info, commit.repository_id).load(
+        commit.parent_commit_id
+    )
 
-    bundle_analysis_comparison = load_bundle_analysis_comparison(base_commit, commit)
+    bundle_analysis_comparison = await sync_to_async(load_bundle_analysis_comparison)(
+        base_commit, commit
+    )
 
     # Store the created SQLite DB path in info.context
     # when the request is fully handled, have the file deleted
