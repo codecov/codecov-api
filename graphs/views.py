@@ -112,17 +112,11 @@ class BadgeHandler(APIView, RepoPropertyMixin, GraphBadgeAPIMixin):
             return None, coverage_range
 
         branch_name = self.kwargs.get("branch") or repo.branch
-        branch = Branch.objects.filter(
+        branch_qs = Branch.objects.filter(
             name=branch_name, repository_id=repo.repoid
-        ).first()
-
-        if branch is None:
-            log.warning(
-                "Branch not found", extra=dict(branch_name=branch_name, repo=repo)
-            )
-            return None, coverage_range
+        )
         try:
-            commit = repo.commits.filter(commitid=branch.head).first()
+            commit = repo.commits.filter(commitid__in=branch_qs.values_list("head", flat=True)).first()
         except ObjectDoesNotExist:
             # if commit does not exist return None coverage
             log.warning("Commit not found", extra=dict(commit=branch.head))
