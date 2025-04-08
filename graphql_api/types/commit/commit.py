@@ -108,7 +108,7 @@ def resolve_list_uploads(commit: Commit, info: GraphQLResolveInfo, **kwargs):
         queryset = queryset.prefetch_related("errors")
 
     if not kwargs:  # temp to override kwargs -> return all current uploads
-        kwargs["first"] = queryset.count()
+        kwargs["first"] = 999_999
 
     return queryset_to_connection_sync(
         queryset, ordering=("id",), ordering_direction=OrderingDirection.ASC, **kwargs
