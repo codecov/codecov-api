@@ -6,6 +6,7 @@ from upload.views.empty_upload import EmptyUploadView
 from upload.views.legacy import UploadDownloadHandler, UploadHandler
 from upload.views.reports import ReportResultsView, ReportViews
 from upload.views.test_results import TestResultsView
+from upload.views.transplant_report import TransplantReportView
 from upload.views.upload_completion import UploadCompletionView
 from upload.views.upload_coverage import UploadCoverageView
 from upload.views.uploads import UploadViews
@@ -57,6 +58,11 @@ urlpatterns = [
         "<str:service>/<str:repo>/commits",
         CommitViews.as_view(),
         name="new_upload.commits",
+    ),
+    path(
+        "<str:service>/<str:repo>/commits/transplant",
+        TransplantReportView.as_view(),
+        name="new_upload.transplant_report",
     ),
     path(
         "<str:service>/<str:repo>/upload-coverage",
