@@ -75,10 +75,10 @@ lint.check:
 build.requirements:
 	# If make was given a different requirements tag, we assume a suitable image
 	# was already built (e.g. by umbrella) and don't want to build this one.
-	ifneq (${REQUIREMENTS_TAG},${DEFAULT_REQS_TAG})
+ifneq (${REQUIREMENTS_TAG},${DEFAULT_REQS_TAG})
 	echo "Error: building api reqs image despite another being provided"
 	exit 1
-	endif
+endif
 	# if docker pull succeeds, we have already build this version of
 	# requirements.txt.  Otherwise, build and push a version tagged
 	# with the hash of this requirements.txt
