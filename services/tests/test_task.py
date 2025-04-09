@@ -203,31 +203,6 @@ def test_backfill_dataset(mocker):
 
 
 @freeze_time("2023-06-13T10:01:01.000123")
-def test_timeseries_delete(mocker):
-    signature_mock = mocker.patch("services.task.task.signature")
-    mock_route_task = mocker.patch(
-        "services.task.task.route_task", return_value={"queue": "celery"}
-    )
-    TaskService().delete_timeseries(repository_id=12345)
-    mock_route_task.assert_called_with(
-        celery_config.timeseries_delete_task_name,
-        args=None,
-        kwargs=dict(repository_id=12345),
-    )
-    signature_mock.assert_called_with(
-        celery_config.timeseries_delete_task_name,
-        args=None,
-        kwargs=dict(repository_id=12345),
-        app=celery_app,
-        queue="celery",
-        soft_time_limit=None,
-        time_limit=None,
-        headers=dict(created_timestamp="2023-06-13T10:01:01.000123"),
-        immutable=False,
-    )
-
-
-@freeze_time("2023-06-13T10:01:01.000123")
 def test_flush_repo(mocker):
     signature_mock = mocker.patch("services.task.task.signature")
     mock_route_task = mocker.patch(

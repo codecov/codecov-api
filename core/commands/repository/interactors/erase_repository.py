@@ -11,5 +11,4 @@ class EraseRepositoryInteractor(BaseInteractor):
             owner_username, repo_name, ensure_is_admin=True
         )
 
-        TaskService().delete_timeseries(repository_id=repo.repoid)
         TaskService().flush_repo(repository_id=repo.repoid)

@@ -299,16 +299,6 @@ class TaskService(object):
             ),
         ).apply_async()
 
-    def delete_timeseries(self, repository_id: int):
-        log.info(
-            "Delete repository timeseries data",
-            extra=dict(repository_id=repository_id),
-        )
-        self._create_signature(
-            celery_config.timeseries_delete_task_name,
-            kwargs=dict(repository_id=repository_id),
-        ).apply_async()
-
     def transplant_report(self, repo_id: int, from_sha: str, to_sha: str) -> None:
         self._create_signature(
             "app.tasks.reports.transplant_report",
