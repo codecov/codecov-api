@@ -8,7 +8,11 @@ from api.internal.tests.test_utils import (
     GetAdminErrorProviderAdapter,
     GetAdminProviderAdapter,
 )
-from api.shared.permissions import RepositoryPermissionsService, UserIsAdminPermissions
+from api.shared.permissions import (
+    RepositoryPermissionsService,
+    UserIsAdminPermissions,
+    is_admin_on_provider,
+)
 
 
 class MockedPermissionsAdapter:
@@ -178,7 +182,7 @@ class TestUserIsAdminPermissions(TestCase):
         user = OwnerFactory()
 
         mocked_get_adapter.return_value = GetAdminProviderAdapter()
-        self.permissions_class._is_admin_on_provider(user, org)
+        is_admin_on_provider(user, org)
         assert mocked_get_adapter.return_value.last_call_args == {
             "username": user.username,
             "service_id": user.service_id,
@@ -192,4 +196,4 @@ class TestUserIsAdminPermissions(TestCase):
         user = OwnerFactory()
 
         with self.assertRaises(APIException):
-            self.permissions_class._is_admin_on_provider(user, org)
+            is_admin_on_provider(user, org)
