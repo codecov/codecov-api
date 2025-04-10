@@ -7,7 +7,7 @@ from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFac
 
 @pytest.mark.django_db
 def test_shelter_repo_sync(mocker):
-    publish = mocker.patch("google.cloud.pubsub_v1.PublisherClient.publish")
+    publish = mocker.patch("utils.shelter.ShelterPubsub.publish")
 
     # this triggers the publish via Django signals
     repo = RepositoryFactory(
@@ -17,14 +17,8 @@ def test_shelter_repo_sync(mocker):
     # triggers publish on create
     publish.assert_has_calls(
         [
-            call(
-                "projects/test-project-id/topics/test-topic-id",
-                b'{"type": "owner", "sync": "one", "id": 555}',
-            ),
-            call(
-                "projects/test-project-id/topics/test-topic-id",
-                b'{"type": "repo", "sync": "one", "id": 91728376}',
-            ),
+            call({"type": "owner", "sync": "one", "id": 555}),
+            call({"type": "repo", "sync": "one", "id": 91728376}),
         ]
     )
 
@@ -35,10 +29,7 @@ def test_shelter_repo_sync(mocker):
     assert len(publish_calls) == 3
 
     # triggers publish on update
-    assert publish_calls[2] == call(
-        "projects/test-project-id/topics/test-topic-id",
-        b'{"type": "repo", "sync": "one", "id": 91728376}',
-    )
+    assert publish_calls[2] == call({"type": "repo", "sync": "one", "id": 91728376})
 
     # Does not trigger another publish with untracked field
     repo.message = "foo"
@@ -54,14 +45,7 @@ def test_shelter_repo_sync(mocker):
     publish_calls = publish.call_args_list
     # 1 is for the new owner created
     assert len(publish_calls) == 5
-    publish.assert_has_calls(
-        [
-            call(
-                "projects/test-project-id/topics/test-topic-id",
-                b'{"type": "owner", "sync": "one", "id": 888}',
-            ),
-        ]
-    )
+    publish.assert_has_calls([call({"type": "owner", "sync": "one", "id": 888})])
 
     # Triggers call when private is changed
     repo.private = True
@@ -73,7 +57,7 @@ def test_shelter_repo_sync(mocker):
 
 @pytest.mark.django_db
 def test_shelter_commit_sync(mocker):
-    publish = mocker.patch("google.cloud.pubsub_v1.PublisherClient.publish")
+    publish = mocker.patch("utils.shelter.ShelterPubsub.publish")
 
     # this triggers the publish via Django signals - has to have this format
     owner = OwnerFactory(ownerid=555)
@@ -90,10 +74,7 @@ def test_shelter_commit_sync(mocker):
     assert len(publish_calls) == 3
 
     # triggers publish on update
-    assert publish_calls[2] == call(
-        "projects/test-project-id/topics/test-topic-id",
-        b'{"type": "commit", "sync": "one", "id": 167829367}',
-    )
+    assert publish_calls[2] == call({"type": "commit", "sync": "one", "id": 167829367})
 
     commit.branch = "normal-incompatible-branch"
     commit.save()

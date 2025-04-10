@@ -40,8 +40,8 @@ dependencies = [
     "redis==4.4.4",
     "regex==2023.12.25",
     "requests==2.32.3",
-    "sentry-sdk>=2.13.0",
-    "sentry-sdk[celery]==2.13.0",
+    "sentry-sdk>=2.25.1",
+    "sentry-sdk[celery]>=2.25.1",
     "shared",
     "simplejson==3.17.2",
     "starlette==0.40.0",
@@ -74,4 +74,4 @@ dev-dependencies = [
 ]
 
 [tool.uv.sources]
-shared = { git = "https://github.com/codecov/shared", rev = "ece4366f3bce7fab2216704f85e365fbbe0f147d" }
+shared = { git = "https://github.com/codecov/shared", rev = "ae1d4cf84490f0ae41395cda3567fe3db7124be3" }
