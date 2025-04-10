@@ -309,6 +309,12 @@ class TaskService(object):
             kwargs=dict(repository_id=repository_id),
         ).apply_async()
 
+    def transplant_report(self, repo_id: int, from_sha: str, to_sha: str) -> None:
+        self._create_signature(
+            "app.tasks.reports.transplant_report",
+            kwargs={"repo_id": repo_id, "from_sha": from_sha, "to_sha": to_sha},
+        ).apply_async()
+
     def update_commit(self, commitid, repoid):
         self._create_signature(
             "app.tasks.commit_update.CommitUpdate",
