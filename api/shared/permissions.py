@@ -140,6 +140,21 @@ class ChartPermissions(BasePermission):
         return True
 
 
+@torngit_safe
+def is_admin_on_provider(current_user: Owner, owner: Owner) -> bool:
+    torngit_provider_adapter = get_provider(
+        owner.service,
+        {
+            **get_generic_adapter_params(current_user, owner.service),
+            "owner": {"username": owner.username, "service_id": owner.service_id},
+        },
+    )
+
+    return async_to_sync(torngit_provider_adapter.get_is_admin)(
+        user={"username": current_user.username, "service_id": current_user.service_id}
+    )
+
+
 class UserIsAdminPermissions(BasePermission):
     """
     Permissions class for asserting the user is an admin of the 'owner'
@@ -158,28 +173,9 @@ class UserIsAdminPermissions(BasePermission):
                 and request.current_owner
                 and (
                     view.owner.is_admin(request.current_owner)
-                    or self._is_admin_on_provider(request.current_owner, view.owner)
+                    or is_admin_on_provider(request.current_owner, view.owner)
                 )
             )
-
-    @torngit_safe
-    def _is_admin_on_provider(self, user: Owner, owner: Owner) -> bool:
-        torngit_provider_adapter = get_provider(
-            owner.service,
-            {
-                **get_generic_adapter_params(user, owner.service),
-                **{
-                    "owner": {
-                        "username": owner.username,
-                        "service_id": owner.service_id,
-                    }
-                },
-            },
-        )
-
-        return async_to_sync(torngit_provider_adapter.get_is_admin)(
-            user={"username": user.username, "service_id": user.service_id}
-        )
 
 
 class MemberOfOrgPermissions(BasePermission):

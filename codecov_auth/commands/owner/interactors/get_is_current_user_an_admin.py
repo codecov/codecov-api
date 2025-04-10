@@ -1,32 +1,9 @@
-from asgiref.sync import async_to_sync, sync_to_async
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
 import services.self_hosted as self_hosted
+from api.shared.permissions import is_admin_on_provider
 from codecov.commands.base import BaseInteractor
-from services.decorators import torngit_safe
-from services.repo_providers import get_generic_adapter_params, get_provider
-
-
-@torngit_safe
-@sync_to_async
-def _is_admin_on_provider(owner, current_user):
-    torngit_provider_adapter = get_provider(
-        owner.service,
-        {
-            **get_generic_adapter_params(current_user, owner.service),
-            **{
-                "owner": {
-                    "username": owner.username,
-                    "service_id": owner.service_id,
-                }
-            },
-        },
-    )
-
-    isAdmin = async_to_sync(torngit_provider_adapter.get_is_admin)(
-        user={"username": current_user.username, "service_id": current_user.service_id}
-    )
-    return isAdmin
 
 
 class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
@@ -44,7 +21,7 @@ class GetIsCurrentUserAnAdminInteractor(BaseInteractor):
                 return True
             else:
                 try:
-                    isAdmin = async_to_sync(_is_admin_on_provider)(owner, current_owner)
+                    isAdmin = is_admin_on_provider(current_owner, owner)
                     if isAdmin:
                         # save admin provider in admins list
                         owner.add_admin(current_owner)

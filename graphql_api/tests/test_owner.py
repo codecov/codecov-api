@@ -390,9 +390,7 @@ class TestOwnerType(GraphQLTestHelper, TestCase):
         data = self.gql_request(query, owner=user, with_errors=True)
         assert data["data"]["owner"]["isAdmin"] is None
 
-    @patch(
-        "codecov_auth.commands.owner.interactors.get_is_current_user_an_admin.get_provider"
-    )
+    @patch("api.shared.permissions.get_provider")
     def test_is_current_user_an_admin(self, mocked_get_adapter):
         query_current_user_is_admin = """{
             owner(username: "%s") {
