@@ -31,6 +31,7 @@ from webhook_handlers.constants import (
     GitHubWebhookEvents,
     WebhookHandlerErrorMessages,
 )
+from webhook_handlers.views.github import GithubWebhookHandler
 
 
 class MockedSubscription(object):
