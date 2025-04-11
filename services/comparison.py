@@ -9,6 +9,7 @@ from typing import List, Optional, Tuple
 
 import minio
 import pytz
+import sentry_sdk
 import shared.reports.api_report_service as report_service
 from asgiref.sync import async_to_sync
 from django.db.models import Prefetch, QuerySet
@@ -756,7 +757,7 @@ class Comparison(object):
         return report
 
     @cached_property
-    def has_different_number_of_head_and_base_sessions(self):
+    def has_different_number_of_head_and_base_sessions(self) -> bool:
         """
         This method checks if the head and the base have different number of sessions.
         It makes use of the head_report_without_applied_diff property instead of the
@@ -989,10 +990,10 @@ class ComparisonReport(object):
     on a `CommitComparison`
     """
 
-    commit_comparison: CommitComparison = None
+    commit_comparison: CommitComparison
 
     @cached_property
-    def files(self) -> List[ImpactedFile]:
+    def files(self) -> list[ImpactedFile]:
         if not self.commit_comparison.report_storage_path:
             return []
 
@@ -1001,29 +1002,29 @@ class ComparisonReport(object):
             ImpactedFile.create(**data) for data in comparison_data.get("files", [])
         ]
 
-    def impacted_file(self, path: str) -> Optional[ImpactedFile]:
+    def impacted_file(self, path: str) -> ImpactedFile | None:
         for file in self.files:
             if file.head_name == path:
                 return file
 
-    @cached_property
-    def impacted_files(self) -> List[ImpactedFile]:
+    @property
+    def impacted_files(self) -> list[ImpactedFile]:
         return self.files
 
     @cached_property
-    def impacted_files_with_unintended_changes(self) -> List[ImpactedFile]:
+    def impacted_files_with_unintended_changes(self) -> list[ImpactedFile]:
         return [file for file in self.files if file.has_changes]
 
     @cached_property
-    def impacted_files_with_direct_changes(self) -> List[ImpactedFile]:
+    def impacted_files_with_direct_changes(self) -> list[ImpactedFile]:
         return [file for file in self.files if file.has_diff or not file.has_changes]
 
+    @sentry_sdk.trace
     def _fetch_raw_comparison_data(self) -> dict:
         """
         Fetches the raw comparison data from storage
         """
-        repository = self.commit_comparison.compare_commit.repository
-        archive_service = ArchiveService(repository)
+        archive_service = ArchiveService(repository=None)
         try:
             data = archive_service.read_file(self.commit_comparison.report_storage_path)
             return json.loads(data)

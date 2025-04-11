@@ -1,9 +1,10 @@
 import hashlib
-from typing import List, Union
+from typing import List
 
 import sentry_sdk
 from ariadne import ObjectType, UnionType
 from asgiref.sync import sync_to_async
+from graphql import GraphQLResolveInfo
 from shared.reports.types import ReportTotals
 from shared.torngit.exceptions import TorngitClientError
 
@@ -67,8 +68,8 @@ def resolve_hashed_path(impacted_file: ImpactedFile, info) -> str:
 @sync_to_async
 @sentry_sdk.trace
 def resolve_segments(
-    impacted_file: ImpactedFile, info, filters=None
-) -> Union[UnknownPath, ProviderError, SegmentComparisons]:
+    impacted_file: ImpactedFile, info: GraphQLResolveInfo, filters: dict | None = None
+) -> SegmentComparisons | UnknownPath | ProviderError:
     if filters is None:
         filters = {}
     if "comparison" not in info.context:

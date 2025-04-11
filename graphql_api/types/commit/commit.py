@@ -118,8 +118,8 @@ def resolve_list_uploads(commit: Commit, info: GraphQLResolveInfo, **kwargs):
 @commit_bindable.field("compareWithParent")
 @sentry_sdk.trace
 async def resolve_compare_with_parent(
-    commit: Commit, info: GraphQLResolveInfo, **kwargs
-):
+    commit: Commit, info: GraphQLResolveInfo, **kwargs: Any
+) -> ComparisonReport | Any:
     if not commit.parent_commit_id:
         return MissingBaseCommit()
 
@@ -129,7 +129,6 @@ async def resolve_compare_with_parent(
     )
 
     comparison_error = validate_commit_comparison(commit_comparison=commit_comparison)
-
     if comparison_error:
         return comparison_error
 
