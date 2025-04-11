@@ -365,6 +365,9 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def pull_request(self, request, *args, **kwargs):
+        if request.headers.get(GitHubHTTPHeaders.HOOK_INSTALLATION_TARGET_ID):
+            return self.check_codecov_ai_auto_enabled_reviews(request)
+
         repo = self._get_repo(request)
 
         if not repo.active:
@@ -397,6 +400,18 @@ class GithubWebhookHandler(APIView):
             )
 
         return Response()
+
+    def check_codecov_ai_auto_enabled_reviews(self, request):
+        org = Owner.objects.get(
+            service=self.service_name,
+            service_id=request.data["organization"]["id"],
+        )
+        auto_review_enabled = org.yaml.get("ai_pr_review", {}).get("auto_review", False)
+        return Response(
+            data={
+                "auto_review_enabled": auto_review_enabled,
+            }
+        )
 
     def _decide_app_name(self, ghapp: GithubAppInstallation) -> str:
         """Possibly updated the name of a GithubAppInstallation that has been fetched from DB or created.
@@ -520,9 +535,11 @@ class GithubWebhookHandler(APIView):
                     AmplitudeEventPublisher().publish(
                         "App Installed",
                         {
-                            "user_ownerid": installer.ownerid
-                            if installer is not None
-                            else owner.ownerid,
+                            "user_ownerid": (
+                                installer.ownerid
+                                if installer is not None
+                                else owner.ownerid
+                            ),
                             "ownerid": owner.ownerid,
                         },
                     )
