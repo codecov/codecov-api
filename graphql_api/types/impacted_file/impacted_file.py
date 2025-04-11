@@ -91,7 +91,7 @@ def resolve_segments(
         else:
             return ProviderError()
 
-    segments = file_comparison.segments
+    segments = file_comparison.segments or []
 
     if filters.get("has_unintended_changes") is True:
         # segments with no diff changes and at least 1 unintended change
