@@ -1420,3 +1420,70 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert owner.repository_set.filter(name="testrepo").exists()
+
+    def test_check_codecov_ai_auto_enabled_reviews(self):
+        """
+        Tests the check_codecov_ai_auto_enabled_reviews method directly
+        for both enabled and disabled AI PR review cases
+        """
+        # Create an organization with AI PR review enabled
+        org_with_ai_enabled = OwnerFactory(
+            service=Service.GITHUB.value,
+            yaml={"ai_pr_review": {"auto_review": True}}
+        )
+        
+        # Create an organization with AI PR review disabled
+        org_with_ai_disabled = OwnerFactory(
+            service=Service.GITHUB.value,
+            yaml={"ai_pr_review": {"auto_review": False}}
+        )
+        
+        # Create an organization with no AI PR review configuration
+        org_with_no_ai_config = OwnerFactory(
+            service=Service.GITHUB.value,
+            yaml={}
+        )
+        
+        handler = GithubWebhookHandler()
+        
+        # Test with AI PR review enabled
+        request = self.factory.post("/", data={"organization": {"id": org_with_ai_enabled.service_id}})
+        response = handler.check_codecov_ai_auto_enabled_reviews(request)
+        assert response.data == {"auto_review_enabled": True}
+        
+        # Test with AI PR review disabled
+        request = self.factory.post("/", data={"organization": {"id": org_with_ai_disabled.service_id}})
+        response = handler.check_codecov_ai_auto_enabled_reviews(request)
+        assert response.data == {"auto_review_enabled": False}
+        
+        # Test with no AI PR review configuration
+        request = self.factory.post("/", data={"organization": {"id": org_with_no_ai_config.service_id}})
+        response = handler.check_codecov_ai_auto_enabled_reviews(request)
+        assert response.data == {"auto_review_enabled": False}
+    
+    def test_repo_creation_doesnt_crash_for_forked_repo(self):
+        owner = OwnerFactory(service=Service.GITHUB.value, integration_id=4850403)
+        self._post_event_data(
+            event=GitHubWebhookEvents.REPOSITORY,
+            data={
+                "action": "publicized",
+                "repository": {
+                    "id": 506003,
+                    "name": "testrepo",
+                    "private": False,
+                    "default_branch": "master",
+                    "owner": {"id": owner.service_id},
+                    "fork": True,
+                    "parent": {
+                        "name": "mainrepo",
+                        "language": "python",
+                        "id": 7940284,
+                        "private": False,
+                        "default_branch": "master",
+                        "owner": {"id": 8495712939, "login": "alogin"},
+                    },
+                },
+            },
+        )
+
+        assert owner.repository_set.filter(name="testrepo").exists()
