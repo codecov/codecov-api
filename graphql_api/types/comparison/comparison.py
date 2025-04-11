@@ -1,5 +1,5 @@
 from asyncio import gather
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import sentry_sdk
 from ariadne import ObjectType, UnionType
@@ -245,9 +245,7 @@ def resolve_flag_comparisons_count(
 @sync_to_async
 @sentry_sdk.trace
 def resolve_has_different_number_of_head_and_base_reports(
-    comparison: ComparisonReport,
-    info: GraphQLResolveInfo,
-    **kwargs,  # type: ignore
+    comparison: ComparisonReport, info: GraphQLResolveInfo, **kwargs: Any
 ) -> bool:
     # TODO: can we remove the need for `info.context["comparison"]` here?
     if "comparison" not in info.context:

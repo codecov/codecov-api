@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from compare.models import CommitComparison
 from graphql_api.types.comparison.comparison import (
     MissingBaseReport,
@@ -9,8 +7,8 @@ from graphql_api.types.comparison.comparison import (
 
 
 def validate_commit_comparison(
-    commit_comparison: Optional[CommitComparison],
-) -> Union[MissingBaseReport, MissingHeadReport, MissingComparison]:
+    commit_comparison: CommitComparison | None,
+) -> MissingBaseReport | MissingHeadReport | MissingComparison | None:
     if not commit_comparison:
         return MissingComparison()
 
