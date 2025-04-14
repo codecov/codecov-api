@@ -3,6 +3,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
 from rest_framework.exceptions import server_error
 
+from api.public.v2.transplant_report import TransplantReportView
 from api.shared.error_views import not_found
 from utils.routers import OptionalTrailingSlashRouter, RetrieveUpdateDestroyRouter
 
@@ -103,6 +104,7 @@ urlpatterns = [
     path(repo_prefix, include(report_router.urls)),
     path(repo_prefix, include(file_report_router.urls)),
     path(repo_prefix, include(coverage_router.urls)),
+    path(f"{repo_prefix}commits/transplant", TransplantReportView.as_view(), name="api-v2-transplant"),
     path(
         f"{commit_prefix}uploads/",
         CommitsUploadsViewSet.as_view({"get": "list"}),
@@ -112,6 +114,5 @@ urlpatterns = [
 
 if settings.TIMESERIES_ENABLED:
     urlpatterns += [
-        path(repo_prefix, include(coverage_router.urls)),
         path(flag_prefix, include(flag_coverage_router.urls)),
     ]

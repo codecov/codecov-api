@@ -5,8 +5,12 @@ from django.http import HttpRequest
 from rest_framework import serializers, status
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from shared.metrics import inc_counter
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 
+from api.public.v2.repo.permissions import RepositoryOrgMemberPermissions
+from api.shared.mixins import RepoPropertyMixin
+from api.shared.permissions import RepositoryArtifactPermissions, SuperTokenPermissions, UserIsAdminPermissions
+from codecov_auth.authentication import SessionAuthentication, SuperTokenAuthentication, UserTokenAuthentication
 from codecov_auth.authentication.repo_auth import (
     GitHubOIDCTokenAuthentication,
     GlobalTokenAuthentication,
@@ -15,10 +19,8 @@ from codecov_auth.authentication.repo_auth import (
     UploadTokenRequiredAuthenticationCheck,
     repo_auth_custom_exception_handler,
 )
+from rest_framework.permissions import AllowAny
 from services.task import TaskService
-from upload.helpers import generate_upload_prometheus_metrics_labels
-from upload.metrics import API_UPLOAD_COUNTER
-from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
 log = logging.getLogger(__name__)
@@ -29,29 +31,19 @@ class TransplantReportSerializer(serializers.Serializer):
     to_sha = serializers.CharField(required=True)
 
 
-class TransplantReportView(CreateAPIView, GetterMixin):
-    permission_classes = [CanDoCoverageUploadsPermission]
+class TransplantReportView(CreateAPIView, RepoPropertyMixin):
     authentication_classes = [
-        UploadTokenRequiredAuthenticationCheck,
-        GlobalTokenAuthentication,
-        OrgLevelTokenAuthentication,
-        GitHubOIDCTokenAuthentication,
-        RepositoryLegacyTokenAuthentication,
+        SuperTokenAuthentication,
+        UserTokenAuthentication,
+        BasicAuthentication,
+        SessionAuthentication,
     ]
+    permission_classes = [RepositoryArtifactPermissions, RepositoryOrgMemberPermissions]
 
     def get_exception_handler(self) -> Callable[[Exception, dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="transplant_report",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-            ),
-        )
+    def create(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         serializer = TransplantReportSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

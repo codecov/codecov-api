@@ -168,6 +168,7 @@ class UserIsAdminPermissions(BasePermission):
                 request.current_owner
             )
         else:
+            print("checking admin permission")
             return (
                 request.user.is_authenticated
                 and request.current_owner
