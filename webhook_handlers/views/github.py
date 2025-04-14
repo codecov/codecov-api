@@ -365,11 +365,12 @@ class GithubWebhookHandler(APIView):
 
         return Response()
 
+    def _is_ai_features_request(self, request):
+        target_id = request.META.get(GitHubHTTPHeaders.HOOK_INSTALLATION_TARGET_ID, "")
+        return str(target_id) == str(AI_FEATURES_GH_APP_ID)
+
     def pull_request(self, request, *args, **kwargs):
-        if (
-            request.META.get(GitHubHTTPHeaders.HOOK_INSTALLATION_TARGET_ID, "")
-            == AI_FEATURES_GH_APP_ID
-        ):
+        if self._is_ai_features_request(request):
             return self.check_codecov_ai_auto_enabled_reviews(request)
 
         repo = self._get_repo(request)
@@ -406,10 +407,17 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def check_codecov_ai_auto_enabled_reviews(self, request):
-        org = Owner.objects.get(
-            service=self.service_name,
-            service_id=request.data["repository"]["owner"]["id"],
-        )
+        try:
+            org = Owner.objects.get(
+                service=self.service_name,
+                service_id=request.data["repository"]["owner"]["id"],
+            )
+        except Owner.DoesNotExist:
+            return Response(
+                data={
+                    "auto_review_enabled": False,
+                }
+            )
 
         auto_review_enabled = org.yaml.get("ai_pr_review", {}).get("auto_review", False)
         return Response(
