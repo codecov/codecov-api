@@ -38,7 +38,6 @@ log = logging.getLogger(__name__)
 
 # This should probably go somewhere where it can be easily shared
 regexp_ci_skip = re.compile(r"\[(ci|skip| |-){3,}\]").search
-AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 class GithubWebhookHandler(APIView):
@@ -52,6 +51,10 @@ class GithubWebhookHandler(APIView):
     redis = get_redis_connection()
 
     service_name = "github"
+
+    @property
+    def ai_features_app_id(self):
+        return get_config("github", "ai_features_app_id")
 
     def _inc_recv(self):
         action = self.request.data.get("action", "")
@@ -367,7 +370,7 @@ class GithubWebhookHandler(APIView):
 
     def _is_ai_features_request(self, request):
         target_id = request.META.get(GitHubHTTPHeaders.HOOK_INSTALLATION_TARGET_ID, "")
-        return str(target_id) == str(AI_FEATURES_GH_APP_ID)
+        return str(target_id) == str(self.ai_features_app_id)
 
     def pull_request(self, request, *args, **kwargs):
         if self._is_ai_features_request(request):
@@ -407,17 +410,10 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def check_codecov_ai_auto_enabled_reviews(self, request):
-        try:
-            org = Owner.objects.get(
-                service=self.service_name,
-                service_id=request.data["repository"]["owner"]["id"],
-            )
-        except Owner.DoesNotExist:
-            return Response(
-                data={
-                    "auto_review_enabled": False,
-                }
-            )
+        org = Owner.objects.get(
+            service=self.service_name,
+            service_id=request.data["repository"]["owner"]["id"],
+        )
 
         auto_review_enabled = org.yaml.get("ai_pr_review", {}).get("auto_review", False)
         return Response(

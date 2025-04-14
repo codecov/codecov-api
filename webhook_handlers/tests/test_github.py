@@ -61,9 +61,7 @@ class GithubWebhookHandlerTests(APITestCase):
 
     @pytest.fixture(autouse=True)
     def mock_ai_features_app_id(self, mocker):
-        mock_config_helper(
-            mocker, configs={"github.ai_features_app_id": AI_FEATURES_GH_APP_ID}
-        )
+        mock_config_helper(mocker, configs={"github.ai_features_app_id": 9999})
 
     @pytest.fixture(autouse=True)
     def mock_default_app_id(self, mocker):
@@ -1456,7 +1454,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     },
                 },
             },
-            app_id=AI_FEATURES_GH_APP_ID,
+            app_id=9999,
         )
         assert response.data == {"auto_review_enabled": True}
 
@@ -1478,7 +1476,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "owner": {"id": org_with_ai_disabled.service_id},
                 },
             },
-            app_id=AI_FEATURES_GH_APP_ID,
+            app_id=9999,
         )
         assert response.data == {"auto_review_enabled": False}
 
@@ -1498,7 +1496,7 @@ class GithubWebhookHandlerTests(APITestCase):
                     "owner": {"id": org_with_no_config.service_id},
                 },
             },
-            app_id=AI_FEATURES_GH_APP_ID,
+            app_id=9999,
         )
         assert response.data == {"auto_review_enabled": False}
 
@@ -1520,6 +1518,6 @@ class GithubWebhookHandlerTests(APITestCase):
                     "owner": {"id": org_with_partial_config.service_id},
                 },
             },
-            app_id=AI_FEATURES_GH_APP_ID,
+            app_id=9999,
         )
         assert response.data == {"auto_review_enabled": False}
