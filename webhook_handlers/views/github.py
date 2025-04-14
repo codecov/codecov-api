@@ -38,6 +38,7 @@ log = logging.getLogger(__name__)
 
 # This should probably go somewhere where it can be easily shared
 regexp_ci_skip = re.compile(r"\[(ci|skip| |-){3,}\]").search
+AI_FEATURES_GH_APP_ID = get_config("github", "ai_features_app_id")
 
 
 class GithubWebhookHandler(APIView):
@@ -365,7 +366,10 @@ class GithubWebhookHandler(APIView):
         return Response()
 
     def pull_request(self, request, *args, **kwargs):
-        if request.headers.get(GitHubHTTPHeaders.HOOK_INSTALLATION_TARGET_ID):
+        if (
+            request.META.get(GitHubHTTPHeaders.HOOK_INSTALLATION_TARGET_ID, "")
+            == AI_FEATURES_GH_APP_ID
+        ):
             return self.check_codecov_ai_auto_enabled_reviews(request)
 
         repo = self._get_repo(request)
@@ -404,8 +408,9 @@ class GithubWebhookHandler(APIView):
     def check_codecov_ai_auto_enabled_reviews(self, request):
         org = Owner.objects.get(
             service=self.service_name,
-            service_id=request.data["organization"]["id"],
+            service_id=request.data["repository"]["owner"]["id"],
         )
+
         auto_review_enabled = org.yaml.get("ai_pr_review", {}).get("auto_review", False)
         return Response(
             data={
@@ -768,7 +773,6 @@ class GithubWebhookHandler(APIView):
                 delivery=self.request.META.get(GitHubHTTPHeaders.DELIVERY_TOKEN),
             ),
         )
-
         self.validate_signature(request)
 
         if handler := getattr(self, self.event, None):
