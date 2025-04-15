@@ -131,7 +131,7 @@ class ImpactedFileSegmentSerializer(serializers.Serializer):
 class ImpactedFileSegmentsSerializer(serializers.Serializer):
     segments = serializers.SerializerMethodField()
 
-    def get_segments(self, file_path: str) -> ImpactedFileSegmentSerializer:
+    def get_segments(self, file_path: str) -> list[ImpactedFileSegmentSerializer]:
         file_comparison = self.context["comparison"].get_file_comparison(
             file_path, with_src=True, bypass_max_diff=True
         )

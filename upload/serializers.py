@@ -51,8 +51,7 @@ class UploadSerializer(serializers.ModelSerializer):
     raw_upload_location = serializers.SerializerMethodField()
 
     def get_raw_upload_location(self, obj: ReportSession) -> str:
-        repo = obj.report.commit.repository
-        archive_service = ArchiveService(repo)
+        archive_service = ArchiveService(repository=None)
         return archive_service.create_presigned_put(obj.storage_path)
 
     def get_url(self, obj: ReportSession) -> str:
