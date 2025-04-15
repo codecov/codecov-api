@@ -9,7 +9,7 @@ from rest_framework.response import Response
 import services.components as components_service
 from api.shared.mixins import RepoPropertyMixin
 from api.shared.permissions import RepositoryArtifactPermissions
-from api.shared.report.serializers import TreeSerializer
+from api.shared.report.serializers import SunburstSerializer, TreeSerializer
 from services.path import ReportPaths
 
 
@@ -66,4 +66,10 @@ class CoverageViewSet(viewsets.ViewSet, RepoPropertyMixin):
     def tree(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
         paths = self.get_object()
         serializer = TreeSerializer(paths.single_directory(), many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"], url_path="sunburst")
+    def sunburst(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
+        paths = self.get_object()
+        serializer = SunburstSerializer(paths.single_directory(), many=True)
         return Response(serializer.data)
