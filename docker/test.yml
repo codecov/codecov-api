@@ -23,6 +23,9 @@ services:
     access_key_id: codecov-default-key
     secret_access_key: codecov-default-secret
     verify_ssl: false
+    bucket: archive
+    port: 9000
+    host: minio
 
 github:
   bot:
