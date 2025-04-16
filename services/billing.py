@@ -737,7 +737,9 @@ class StripeService(AbstractPaymentService):
                     f"Customer {owner.stripe_customer_id} has no default payment method, skipping payment method update"
                 )
                 # Still update the customer address even if there's no payment method
-                stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
+                stripe.Customer.modify(
+                    owner.stripe_customer_id, address=billing_address
+                )
                 log.info(
                     f"Stripe successfully updated customer address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
                 )
@@ -751,7 +753,9 @@ class StripeService(AbstractPaymentService):
                 billing_details={"name": name, "address": billing_address},
             )
 
-            log.info(f"Modifying customer address for customer {owner.stripe_customer_id}")
+            log.info(
+                f"Modifying customer address for customer {owner.stripe_customer_id}"
+            )
             stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
             log.info(
                 f"Stripe successfully updated billing address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
