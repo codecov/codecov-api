@@ -732,7 +732,9 @@ class StripeService(AbstractPaymentService):
             default_payment_method = customer.invoice_settings.default_payment_method
             log.info(f"Retrieved default payment method: {default_payment_method}")
 
-            log.info(f"Modifying payment method with billing details: name={name}, address={billing_address}")
+            log.info(
+                f"Modifying payment method with billing details: name={name}, address={billing_address}"
+            )
             stripe.PaymentMethod.modify(
                 default_payment_method,
                 billing_details={"name": name, "address": billing_address},
