@@ -645,18 +645,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         TaskService().delete_owner(ownerid=obj.ownerid)
 
     def get_deleted_objects(self, objs, request):
-        (
-            deleted_objects,
-            model_count,
-            perms_needed,
-            protected,
-        ) = super().get_deleted_objects(objs, request)
-
-        if request.user and request.user.is_superuser:
-            perms_needed = set()
-
-        deleted_objects = ()
-        return deleted_objects, model_count, perms_needed, protected
+        return [], {}, set(), []
 
     def save_related(self, request: HttpRequest, form, formsets, change: bool) -> None:
         if formsets:

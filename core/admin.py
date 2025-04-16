@@ -104,6 +104,9 @@ class RepositoryAdmin(AdminMixin, admin.ModelAdmin):
     def delete_model(self, request, obj) -> None:
         TaskService().flush_repo(repository_id=obj.repoid)
 
+    def get_deleted_objects(self, objs, request):
+        return [], {}, set(), []
+
 
 @admin.register(Pull)
 class PullsAdmin(AdminMixin, admin.ModelAdmin):
