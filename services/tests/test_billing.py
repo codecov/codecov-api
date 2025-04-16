@@ -1869,7 +1869,7 @@ class StripeServiceTests(TestCase):
                 "customer_id": "123",
                 "subscription_id": "123",
                 "error": "Invalid API Key provided: default",
-                "error_type": "invalid_request_error",
+                "error_type": "AuthenticationError",
             },
         )
 
