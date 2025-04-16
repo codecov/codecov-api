@@ -76,7 +76,6 @@ async def resolve_compare_with_base(
     commit_comparison = await comparison_loader.load((pull.compared_to, pull.head))
 
     comparison_error = validate_commit_comparison(commit_comparison=commit_comparison)
-
     if comparison_error:
         return comparison_error
 
