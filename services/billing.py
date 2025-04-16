@@ -726,7 +726,6 @@ class StripeService(AbstractPaymentService):
             return None
 
         try:
-            log.info(f"Retrieving customer with ID {owner.stripe_customer_id}")
             customer = stripe.Customer.retrieve(owner.stripe_customer_id)
             log.info(f"Retrieved customer: {customer}")
             default_payment_method = customer.invoice_settings.default_payment_method
