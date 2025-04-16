@@ -728,10 +728,10 @@ class StripeService(AbstractPaymentService):
         try:
             customer = stripe.Customer.retrieve(owner.stripe_customer_id)
             log.info(f"Retrieved customer: {customer}")
-            
+
             default_payment_method = customer.invoice_settings.default_payment_method
             log.info(f"Retrieved default payment method: {default_payment_method}")
-            
+
             if default_payment_method is None:
                 log.warning(
                     f"Customer {owner.stripe_customer_id} has no default payment method, skipping payment method update"
