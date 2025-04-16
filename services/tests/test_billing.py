@@ -1868,6 +1868,8 @@ class StripeServiceTests(TestCase):
             extra={
                 "customer_id": "123",
                 "subscription_id": "123",
+                "error": "Invalid API Key provided: default",
+                "error_type": "AuthenticationError",
             },
         )
 

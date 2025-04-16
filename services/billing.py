@@ -726,25 +726,65 @@ class StripeService(AbstractPaymentService):
             return None
 
         try:
-            default_payment_method = stripe.Customer.retrieve(
-                owner.stripe_customer_id
-            ).invoice_settings.default_payment_method
+            customer = stripe.Customer.retrieve(owner.stripe_customer_id)
+            log.info("Retrieved customer", extra=dict(customer=customer))
 
+            default_payment_method = customer.invoice_settings.default_payment_method
+            log.info(
+                "Retrieved default payment method",
+                extra=dict(payment_method=default_payment_method),
+            )
+
+            if default_payment_method is None:
+                log.warning(
+                    "Customer has no default payment method, skipping payment method update",
+                    extra=dict(
+                        stripe_customer_id=owner.stripe_customer_id,
+                        ownerid=owner.ownerid,
+                    ),
+                )
+                # Still update the customer address even if there's no payment method
+                stripe.Customer.modify(
+                    owner.stripe_customer_id, address=billing_address
+                )
+                log.info(
+                    "Stripe successfully updated customer address",
+                    extra=dict(
+                        ownerid=owner.ownerid,
+                        requesting_user_id=self.requesting_user.ownerid,
+                    ),
+                )
+                return
+
+            log.info(
+                "Modifying payment method billing details",
+                extra=dict(stripe_customer_id=owner.stripe_customer_id),
+            )
             stripe.PaymentMethod.modify(
                 default_payment_method,
                 billing_details={"name": name, "address": billing_address},
             )
 
+            log.info(
+                "Modifying customer address",
+                extra=dict(stripe_customer_id=owner.stripe_customer_id),
+            )
             stripe.Customer.modify(owner.stripe_customer_id, address=billing_address)
             log.info(
-                f"Stripe successfully updated billing address for owner {owner.ownerid} by user #{self.requesting_user.ownerid}"
+                "Stripe successfully updated billing address",
+                extra=dict(
+                    ownerid=owner.ownerid,
+                    requesting_user_id=self.requesting_user.ownerid,
+                ),
             )
-        except Exception:
+        except Exception as e:
             log.error(
                 "Unable to update billing address for customer",
                 extra=dict(
                     customer_id=owner.stripe_customer_id,
                     subscription_id=owner.stripe_subscription_id,
+                    error=str(e),
+                    error_type=type(e).__name__,
                 ),
             )
 
