@@ -7,7 +7,7 @@ from shared.api_archive.archive import ArchiveService
 
 from codecov_auth.models import Owner
 from core.models import Commit, Repository
-from reports.models import CommitReport, ReportResults, ReportSession, RepositoryFlag
+from reports.models import CommitReport, ReportSession, RepositoryFlag
 from services.task import TaskService
 
 
@@ -178,18 +178,3 @@ class CommitReportSerializer(serializers.ModelSerializer):
                 report.save()
             return report, False
         return super().create(validated_data), True
-
-
-class ReportResultsSerializer(serializers.ModelSerializer):
-    report = CommitReportSerializer(read_only=True)
-
-    class Meta:
-        model = ReportResults
-        read_only_fields = (
-            "external_id",
-            "report",
-            "state",
-            "result",
-            "completed_at",
-        )
-        fields = read_only_fields

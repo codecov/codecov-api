@@ -6,7 +6,7 @@ from shared.django_apps.core.tests.factories import CommitFactory, RepositoryFac
 
 from graphql_api.types.enums import UploadErrorEnum
 from reports import models
-from reports.models import ReportResults, TestInstance
+from reports.models import TestInstance
 
 
 class CommitReportFactory(DjangoModelFactory):
@@ -73,19 +73,6 @@ class UploadErrorFactory(DjangoModelFactory):
             UploadErrorEnum.FILE_NOT_IN_STORAGE,
             UploadErrorEnum.REPORT_EMPTY,
             UploadErrorEnum.REPORT_EXPIRED,
-        ]
-    )
-
-
-class ReportResultsFactory(DjangoModelFactory):
-    class Meta:
-        model = ReportResults
-
-    report = factory.SubFactory(CommitReportFactory)
-    state = factory.Iterator(
-        [
-            ReportResults.ReportResultsStates.PENDING,
-            ReportResults.ReportResultsStates.COMPLETED,
         ]
     )
 
