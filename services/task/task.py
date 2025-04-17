@@ -311,17 +311,6 @@ class TaskService(object):
             kwargs=dict(commitid=commitid, repoid=repoid),
         ).apply_async()
 
-    def create_report_results(self, commitid, repoid, report_code, current_yaml=None):
-        self._create_signature(
-            "app.tasks.reports.save_report_results",
-            kwargs=dict(
-                commitid=commitid,
-                repoid=repoid,
-                report_code=report_code,
-                current_yaml=current_yaml,
-            ),
-        ).apply_async()
-
     def http_request(self, url, method="POST", headers=None, data=None, timeout=None):
         self._create_signature(
             "app.tasks.http_request.HTTPRequest",

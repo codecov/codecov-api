@@ -2,9 +2,10 @@ import logging
 from typing import Any, Callable
 
 from django.http import HttpRequest, HttpResponseNotAllowed
-from rest_framework.exceptions import ValidationError
-from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveAPIView
+from rest_framework import status
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from shared.metrics import inc_counter
 
 from codecov_auth.authentication.repo_auth import (
@@ -17,14 +18,14 @@ from codecov_auth.authentication.repo_auth import (
     repo_auth_custom_exception_handler,
 )
 from core.models import Commit, Repository
-from reports.models import CommitReport, ReportResults
+from reports.models import CommitReport
 from services.task import TaskService
 from upload.helpers import (
     generate_upload_prometheus_metrics_labels,
     validate_activated_repo,
 )
 from upload.metrics import API_UPLOAD_COUNTER
-from upload.serializers import CommitReportSerializer, ReportResultsSerializer
+from upload.serializers import CommitReportSerializer
 from upload.views.base import GetterMixin
 from upload.views.uploads import CanDoCoverageUploadsPermission
 
@@ -102,12 +103,16 @@ class ReportViews(ListCreateAPIView, GetterMixin):
         return HttpResponseNotAllowed(permitted_methods=["POST"])
 
 
-class ReportResultsView(
-    CreateAPIView,
-    RetrieveAPIView,
-    GetterMixin,
-):
-    serializer_class = ReportResultsSerializer
+EMPTY_RESPONSE = {
+    "state": "completed",
+    "result": {
+        "state": "deprecated",
+        "message": 'The "local upload" functionality has been deprecated.',
+    },
+}
+
+
+class ReportResultsView(APIView, GetterMixin):
     permission_classes = [CanDoCoverageUploadsPermission]
     authentication_classes = [
         UploadTokenRequiredAuthenticationCheck,
@@ -121,59 +126,8 @@ class ReportResultsView(
     def get_exception_handler(self) -> Callable[[Exception, dict[str, Any]], Response]:
         return repo_auth_custom_exception_handler
 
-    def perform_create(self, serializer: ReportResultsSerializer) -> ReportResults:
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="create_report_results",
-                request=self.request,
-                is_shelter_request=self.is_shelter_request(),
-                position="start",
-            ),
-        )
-        repository = self.get_repo()
-        commit = self.get_commit(repository)
-        report = self.get_report(commit)
-        instance = ReportResults.objects.filter(report=report).first()
-        if not instance:
-            instance = serializer.save(
-                report=report, state=ReportResults.ReportResultsStates.PENDING
-            )
-        else:
-            instance.state = ReportResults.ReportResultsStates.PENDING
-            instance.save()
-        TaskService().create_report_results(
-            commitid=commit.commitid,
-            repoid=repository.repoid,
-            report_code=report.code,
-        )
-        inc_counter(
-            API_UPLOAD_COUNTER,
-            labels=generate_upload_prometheus_metrics_labels(
-                action="coverage",
-                endpoint="create_report_results",
-                request=self.request,
-                repository=repository,
-                is_shelter_request=self.is_shelter_request(),
-                position="end",
-            ),
-        )
-        return instance
+    def get(self, request, *args, **kwargs):
+        return Response(EMPTY_RESPONSE)
 
-    def get_object(self) -> ReportResults:
-        repository = self.get_repo()
-        commit = self.get_commit(repository)
-        report = self.get_report(commit)
-        try:
-            report_results = ReportResults.objects.get(report=report)
-        except ReportResults.DoesNotExist:
-            log.info(
-                "Report Results not found",
-                extra=dict(
-                    commit_sha=commit.commitid,
-                    report_code=self.kwargs.get("report_code"),
-                ),
-            )
-            raise ValidationError("Report Results not found")
-        return report_results
+    def post(self, request, *args, **kwargs):
+        return Response(EMPTY_RESPONSE, status=status.HTTP_201_CREATED)
