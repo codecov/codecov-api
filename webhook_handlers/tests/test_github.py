@@ -47,6 +47,7 @@ class MockedSubscription(object):
 
 WEBHOOK_SECRET = b"testixik8qdauiab1yiffydimvi72ekq"
 DEFAULT_APP_ID = 1234
+AI_FEATURES_GH_APP_ID = 9999
 
 
 class GithubWebhookHandlerTests(APITestCase):
@@ -59,15 +60,20 @@ class GithubWebhookHandlerTests(APITestCase):
         mock_config_helper(mocker, configs={"github.webhook_secret": WEBHOOK_SECRET})
 
     @pytest.fixture(autouse=True)
+    def mock_ai_features_app_id(self, mocker):
+        mock_config_helper(mocker, configs={"github.ai_features_app_id": 9999})
+
+    @pytest.fixture(autouse=True)
     def mock_default_app_id(self, mocker):
         mock_config_helper(mocker, configs={"github.integration.id": DEFAULT_APP_ID})
 
-    def _post_event_data(self, event, data={}):
+    def _post_event_data(self, event, data={}, app_id=DEFAULT_APP_ID):
         return self.client.post(
             reverse("github-webhook"),
             **{
                 GitHubHTTPHeaders.EVENT: event,
                 GitHubHTTPHeaders.DELIVERY_TOKEN: uuid.UUID(int=5),
+                GitHubHTTPHeaders.HOOK_INSTALLATION_TARGET_ID: app_id,
                 GitHubHTTPHeaders.SIGNATURE_256: "sha256="
                 + hmac.new(
                     WEBHOOK_SECRET,
@@ -1420,3 +1426,98 @@ class GithubWebhookHandlerTests(APITestCase):
         )
 
         assert owner.repository_set.filter(name="testrepo").exists()
+
+    def test_check_codecov_ai_auto_enabled_reviews_enabled(self):
+        # Create an organization with AI PR review enabled
+        org_with_ai_enabled = OwnerFactory(
+            service=Service.GITHUB.value, yaml={"ai_pr_review": {"auto_review": True}}
+        )
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "action": "pull_request",
+                "repository": {
+                    "id": 506003,
+                    "name": "testrepo",
+                    "private": False,
+                    "default_branch": "main",
+                    "owner": {"id": org_with_ai_enabled.service_id},
+                    "fork": True,
+                    "parent": {
+                        "name": "mainrepo",
+                        "language": "python",
+                        "id": 7940284,
+                        "private": False,
+                        "default_branch": "main",
+                        "owner": {"id": 8495712939, "login": "alogin"},
+                    },
+                },
+            },
+            app_id=9999,
+        )
+        assert response.data == {"auto_review_enabled": True}
+
+    def test_check_codecov_ai_auto_enabled_reviews_disabled(self):
+        # Test with AI PR review disabled
+        org_with_ai_disabled = OwnerFactory(
+            service=Service.GITHUB.value, yaml={"ai_pr_review": {"auto_review": False}}
+        )
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "action": "pull_request",
+                "repository": {
+                    "id": 506004,
+                    "name": "testrepo2",
+                    "private": False,
+                    "default_branch": "main",
+                    "owner": {"id": org_with_ai_disabled.service_id},
+                },
+            },
+            app_id=9999,
+        )
+        assert response.data == {"auto_review_enabled": False}
+
+    def test_check_codecov_ai_auto_enabled_reviews_no_config(self):
+        # Test with no yaml config
+        org_with_no_config = OwnerFactory(service=Service.GITHUB.value, yaml={})
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "action": "pull_request",
+                "repository": {
+                    "id": 506005,
+                    "name": "testrepo3",
+                    "private": False,
+                    "default_branch": "main",
+                    "owner": {"id": org_with_no_config.service_id},
+                },
+            },
+            app_id=9999,
+        )
+        assert response.data == {"auto_review_enabled": False}
+
+    def test_check_codecov_ai_auto_enabled_reviews_partial_config(self):
+        # Test with partial yaml config
+        org_with_partial_config = OwnerFactory(
+            service=Service.GITHUB.value, yaml={"ai_pr_review": {}}
+        )
+
+        response = self._post_event_data(
+            event=GitHubWebhookEvents.PULL_REQUEST,
+            data={
+                "action": "pull_request",
+                "repository": {
+                    "id": 506006,
+                    "name": "testrepo4",
+                    "private": False,
+                    "default_branch": "main",
+                    "owner": {"id": org_with_partial_config.service_id},
+                },
+            },
+            app_id=9999,
+        )
+        assert response.data == {"auto_review_enabled": False}
