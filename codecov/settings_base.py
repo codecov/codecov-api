@@ -8,6 +8,7 @@ from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 from shared.django_apps.db_settings import *
+from shared.helpers.redis import get_redis_url
 from shared.license import startup_license_logging
 
 from utils.config import SettingsModule, get_config, get_settings_module
@@ -265,10 +266,26 @@ ENCRYPTION_SECRET = get_config("setup", "encryption_secret")
 COOKIE_SAME_SITE = "Lax"
 COOKIE_SECRET = get_config("setup", "http", "cookie_secret")
 COOKIES_DOMAIN = get_config("setup", "http", "cookies_domain", default=".codecov.io")
+
+
+# Cache configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": get_redis_url(),
+    }
+}
+
+
+# Session configuration
 SESSION_COOKIE_DOMAIN = get_config(
     "setup", "http", "cookies_domain", default=".codecov.io"
 )
 SESSION_COOKIE_SECURE = get_config("setup", "secure_cookie", default=True)
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+
+
 # Defaulting to 'not found' as opposed to 'None' to avoid None somehow getting through as a bearer token. Token strings can't have spaces, hence 'not found' can never be forced as a header input value
 SUPER_API_TOKEN = os.getenv("SUPER_API_TOKEN", "not found")
 CODECOV_INTERNAL_TOKEN = os.getenv("CODECOV_INTERNAL_TOKEN", "not found")
