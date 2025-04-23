@@ -819,6 +819,17 @@ class TestAnalyticsTestCase(
                     }
                 }
             }
+            flakeAggregates {
+                flakeRate
+                flakeCount
+            }
+            testResultsAggregates {
+                totalDuration
+                slowestTestsDuration
+                totalFails
+                totalSkips
+                totalSlowTests
+            }
             testSuites
             """,
         )
@@ -848,6 +859,20 @@ class TestAnalyticsTestCase(
             "testsuite4",
         ]
 
+        assert result["owner"]["repository"]["testAnalytics"]["flakeAggregates"] == {
+            "flakeRate": (1 / 15),
+            "flakeCount": 1,
+        }
+
+        assert result["owner"]["repository"]["testAnalytics"][
+            "testResultsAggregates"
+        ] == {
+            "totalDuration": 7500.0,
+            "slowestTestsDuration": 2500.0,
+            "totalFails": 50,
+            "totalSkips": 25,
+            "totalSlowTests": 1,
+        }
         storage.delete_file(
             settings.GCS_BUCKET_NAME,
             f"test_analytics/branch_rollups/{repository.repoid}/{repository.branch}.arrow",

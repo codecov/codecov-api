@@ -24,7 +24,7 @@ class TestResultsAggregates:
 
 
 def calculate_aggregates(table: pl.DataFrame) -> pl.DataFrame:
-    return table.select(
+    return table.with_columns(pl.col("avg_duration").fill_nan(0)).select(
         (
             pl.col("avg_duration")
             * (pl.col("total_pass_count") + pl.col("total_fail_count"))
