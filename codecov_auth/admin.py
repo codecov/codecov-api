@@ -12,6 +12,8 @@ from django.forms import CheckboxInput, Select, Textarea
 from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from services.task import TaskService
+
 from django.utils.html import format_html
 from shared.django_apps.codecov_auth.models import (
     Account,
@@ -109,6 +111,40 @@ def impersonate_owner(self, request, queryset):
 
 
 impersonate_owner.short_description = "Impersonate the selected owner"
+
+
+def refresh_owner(self, request, queryset):
+    if queryset.count() != 1:
+        self.message_user(
+            request, "You must refresh exactly one Owner.", level=messages.ERROR
+        )
+        return
+
+    owner = queryset.first()
+
+    task_service = TaskService()
+    task_service.refresh(
+        ownerid=owner.ownerid,
+        username=owner.username,
+        sync_teams=True,
+        sync_repos=True,
+        manual_trigger=True,
+    )
+
+    self.message_user(
+        request,
+        f"Refresh task triggered for {owner.username} (ownerid: {owner.ownerid})",
+        level=messages.SUCCESS,
+    )
+    History.log(
+        Owner.objects.get(ownerid=owner.ownerid),
+        "Refresh task triggered",
+        request.user,
+    )
+    return
+
+
+refresh_owner.short_description = "Sync repos and teams for the selected owner"
 
 
 class AccountsUsersInline(admin.TabularInline):
@@ -559,7 +595,7 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
     list_display = ("name", "username", "email", "service")
     readonly_fields = []
     search_fields = ("name__iregex", "username__iregex", "email__iregex", "ownerid")
-    actions = [impersonate_owner, extend_trial]
+    actions = [impersonate_owner, extend_trial, refresh_owner]
     autocomplete_fields = ("bot", "account")
     inlines = [OrgUploadTokenInline]
 
