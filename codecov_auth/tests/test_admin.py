@@ -242,7 +242,10 @@ class OwnerAdminTest(TestCase):
             "organization_tokens-0-REFRESH": "on",
             "_continue": ["Save and continue editing"],
         }
-        self.client.post(request_url, data=fake_data)
+        res = self.client.post(request_url, data=fake_data)
+
+        # redirected to list page if form change is successful
+        self.assertEqual(res.status_code, 302)
         mock_refresh.assert_called_with(str(org_token.id))
 
     @patch(
@@ -278,7 +281,10 @@ class OwnerAdminTest(TestCase):
             "organization_tokens-0-token_type": ["upload"],
             "_continue": ["Save and continue editing"],
         }
-        self.client.post(request_url, data=fake_data)
+        res = self.client.post(request_url, data=fake_data)
+
+        # redirected to list page if form change is successful
+        self.assertEqual(res.status_code, 302)
         mock_refresh.assert_not_called()
 
     def test_start_trial_ui_display(self):

@@ -34,22 +34,37 @@ INTERVAL_7_DAY = 7
 INTERVAL_1_DAY = 1
 
 
-@dataclass
 class TestResultsRow:
     # the order here must match the order of the fields in the query
-    name: str
-    testsuite: str | None
-    flags: list[str]
-    failure_rate: float
-    flake_rate: float
-    updated_at: dt.datetime
-    avg_duration: float
-    total_fail_count: int
-    total_flaky_fail_count: int
-    total_pass_count: int
-    total_skip_count: int
-    commits_where_fail: int
-    last_duration: float
+    def __init__(
+        self,
+        name: str,
+        failure_rate: float,
+        flake_rate: float,
+        updated_at: dt.datetime,
+        avg_duration: float,
+        total_fail_count: int,
+        total_flaky_fail_count: int,
+        total_pass_count: int,
+        total_skip_count: int,
+        commits_where_fail: int,
+        last_duration: float,
+        testsuite: str | None = None,
+        flags: list[str] | None = None,
+    ):
+        self.name = name
+        self.testsuite = testsuite
+        self.flags = flags or []
+        self.failure_rate = failure_rate
+        self.flake_rate = flake_rate
+        self.updated_at = updated_at
+        self.avg_duration = avg_duration
+        self.total_fail_count = total_fail_count
+        self.total_flaky_fail_count = total_flaky_fail_count
+        self.total_pass_count = total_pass_count
+        self.total_skip_count = total_skip_count
+        self.commits_where_fail = commits_where_fail
+        self.last_duration = last_duration
 
     def to_dict(self) -> dict:
         return {
