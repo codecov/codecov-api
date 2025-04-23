@@ -568,7 +568,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "username",
         "service",
         "email",
-        "business_email",
         "name",
         "service_id",
         "createstamp",
@@ -576,7 +575,6 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "root_parent_service_id",
         "private_access",
         "cache",
-        "free",
         "invoice_details",
         "yaml",
         "updatestamp",
@@ -586,28 +584,87 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         "student_updated_at",
         "user",
         "trial_fired_by",
+        "sentry_user_id",
     )
 
-    fields = readonly_fields + (
-        "admins",
-        "plan_auto_activate",
-        "onboarding_completed",
-        "staff",
-        "plan",
-        "plan_provider",
-        "plan_user_count",
-        "plan_activated_users",
-        "uses_invoice",
-        "delinquent",
-        "integration_id",
-        "bot",
-        "stripe_customer_id",
-        "stripe_subscription_id",
-        "organizations",
-        "max_upload_limit",
-        "account",
-        "upload_token_required_for_public_repos",
-    )
+    fieldsets = [
+        (
+            None,
+            {
+                "fields": [
+                    "ownerid",
+                    "username",
+                    "service",
+                    "name",
+                    "service_id",
+                    "student",
+                    "user",
+                    "sentry_user_id",
+                ]
+            },
+        ),
+        (
+            "Trial fields",
+            {
+                "fields": [
+                    "trial_status",
+                    "trial_fired_by",
+                    "trial_start_date",
+                    "trial_end_date",
+                ]
+            },
+        ),
+        (
+            "Plan fields",
+            {
+                "fields": [
+                    "plan_auto_activate",
+                    "plan",
+                    "plan_user_count",
+                    "free",
+                    "plan_activated_users",
+                ]
+            },
+        ),
+        (
+            "Billing fields",
+            {
+                "fields": [
+                    "uses_invoice",
+                    "delinquent",
+                    "stripe_customer_id",
+                    "stripe_subscription_id",
+                ]
+            },
+        ),
+        (
+            "Reference fields",
+            {
+                "fields": [
+                    "admins",
+                    "staff",
+                    "upload_token_required_for_public_repos",
+                    "email",
+                    "parent_service_id",
+                    "root_parent_service_id",
+                    "private_access",
+                    "cache",
+                    "yaml",
+                    "bot",
+                    "max_upload_limit",
+                    "organizations",
+                    "account",
+                    "permission",
+                    "student_created_at",
+                    "student_updated_at",
+                    "onboarding_completed",
+                    "did_trial",
+                    "createstamp",
+                    "updatestamp",
+                ]
+            },
+        ),
+    ]
 
     def get_form(self, request, obj=None, change=False, **kwargs):
         form = super().get_form(request, obj, change, **kwargs)
