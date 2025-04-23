@@ -686,6 +686,16 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
         field.widget.can_change_related = False
         field.widget.can_delete_related = False
 
+        # workaround for when a model field has null=True without blank=True
+        for field_name in [
+            "trial_start_date",
+            "trial_end_date",
+            "trial_status",
+            "free",
+        ]:
+            if form.base_fields.get(field_name):
+                form.base_fields[field_name].required = False
+
         return form
 
     def has_add_permission(self, _, obj=None):
@@ -706,11 +716,11 @@ class OwnerAdmin(AdminMixin, admin.ModelAdmin):
 
     def save_related(self, request: HttpRequest, form, formsets, change: bool) -> None:
         if formsets:
-            token_formset = formsets[0]
-            token_id = token_formset.data.get("organization_tokens-0-id")
-            token_refresh = token_formset.data.get("organization_tokens-0-REFRESH")
+            formset = formsets[0]
+            token_id = formset.data.get("organization_tokens-0-id")
+            token_refresh = formset.data.get("organization_tokens-0-REFRESH")
             # token_id only exists if the token already exists (edit operation)
-            if token_formset.is_valid() and token_id and token_refresh:
+            if formset.is_valid() and token_id and token_refresh:
                 OrgLevelTokenService.refresh_token(token_id)
         return super().save_related(request, form, formsets, change)
 
