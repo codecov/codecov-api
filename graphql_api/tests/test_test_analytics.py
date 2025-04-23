@@ -744,7 +744,41 @@ class TestAnalyticsTestCase(
             "flakeCount": 1,
         }
 
-    def test_gql_query_with_new_ta(self, mocker, repository, snapshot):
+    def test_gql_query_test_suites(self, repository, store_in_redis):
+        query = base_gql_query % (
+            repository.author.username,
+            repository.name,
+            """
+            testSuites
+            """,
+        )
+
+        result = self.gql_request(query, owner=repository.author)
+
+        assert sorted(result["owner"]["repository"]["testAnalytics"]["testSuites"]) == [
+            "testsuite1",
+            "testsuite2",
+            "testsuite3",
+            "testsuite4",
+            "testsuite5",
+        ]
+
+    def test_gql_query_test_suites_term(self, repository, store_in_redis):
+        query = base_gql_query % (
+            repository.author.username,
+            repository.name,
+            """
+            testSuites(term: "testsuite1")
+            """,
+        )
+
+        result = self.gql_request(query, owner=repository.author)
+
+        assert result["owner"]["repository"]["testAnalytics"]["testSuites"] == [
+            "testsuite1",
+        ]
+
+    def test_gql_query_with_new_ta_v1(self, mocker, repository, snapshot):
         # set the feature flag
         mocker.patch("rollouts.READ_NEW_TA.check_value", return_value=True)
 
@@ -757,7 +791,8 @@ class TestAnalyticsTestCase(
         storage.write_file(
             settings.GCS_BUCKET_NAME,
             f"test_analytics/branch_rollups/{repository.repoid}/{repository.branch}.arrow",
-            test_results_table_no_version.write_ipc(None).getvalue(),
+            test_results_table_v1.write_ipc(None).getvalue(),
+            metadata={"version": "1"},
         )
 
         # run the GQL query
@@ -784,6 +819,7 @@ class TestAnalyticsTestCase(
                     }
                 }
             }
+            testSuites
             """,
         )
 
@@ -802,6 +838,14 @@ class TestAnalyticsTestCase(
             for edge in result["owner"]["repository"]["testAnalytics"]["testResults"][
                 "edges"
             ]
+        ]
+
+        assert sorted(result["owner"]["repository"]["testAnalytics"]["testSuites"]) == [
+            "testsuite0",
+            "testsuite1",
+            "testsuite2",
+            "testsuite3",
+            "testsuite4",
         ]
 
         storage.delete_file(
