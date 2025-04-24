@@ -12,8 +12,6 @@ from django.forms import CheckboxInput, Select, Textarea
 from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from services.task import TaskService
-
 from django.utils.html import format_html
 from shared.django_apps.codecov_auth.models import (
     Account,
