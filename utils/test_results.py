@@ -198,7 +198,7 @@ def v1_agg_table(table: pl.LazyFrame) -> pl.LazyFrame:
         pl.col("avg_duration") * (pl.col("pass_count") + pl.col("fail_count"))
     ).sum() / (pl.col("pass_count") + pl.col("fail_count")).sum()
 
-    table = table.group_by("computed_name").agg(
+    table = table.group_by(pl.col("computed_name").alias("name")).agg(
         pl.col("testsuite").alias(
             "testsuite"
         ),  # TODO: filter by this before we aggregate

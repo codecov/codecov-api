@@ -312,7 +312,7 @@ def get_test_suites(
     if table is None:
         return []
 
-    testsuites = table.select(pl.col("testsuite")).unique()
+    testsuites = table.select(pl.col("testsuite").explode()).unique()
 
     if term:
         testsuites = testsuites.filter(pl.col("testsuite").str.starts_with(term))
