@@ -107,6 +107,45 @@ class OwnerAdminTest(TestCase):
                 str(owner_to_impersonate.pk),
             )
 
+    @patch("codecov_auth.admin.TaskService.refresh")
+    def test_owner_admin_refresh_owner(self, mock_refresh):
+        owner_to_refresh = OwnerFactory(service="github", plan=DEFAULT_FREE_PLAN)
+        other_owner = OwnerFactory(plan=DEFAULT_FREE_PLAN)
+
+        with self.subTest("more than one user selected"):
+            response = self.client.post(
+                reverse("admin:codecov_auth_owner_changelist"),
+                {
+                    "action": "refresh_owner",
+                    ACTION_CHECKBOX_NAME: [
+                        owner_to_refresh.pk,
+                        other_owner.pk,
+                    ],
+                },
+                follow=True,
+            )
+            assert "You must refresh exactly one Owner." in str(response.content)
+
+        with self.subTest("one user selected"):
+            response = self.client.post(
+                reverse("admin:codecov_auth_owner_changelist"),
+                {
+                    "action": "refresh_owner",
+                    ACTION_CHECKBOX_NAME: [owner_to_refresh.pk],
+                },
+                follow=True,
+            )
+            assert f"Refresh task triggered for {owner_to_refresh.username}" in str(
+                response.content
+            )
+            mock_refresh.assert_called_once_with(
+                ownerid=owner_to_refresh.ownerid,
+                username=owner_to_refresh.username,
+                sync_teams=True,
+                sync_repos=True,
+                manual_trigger=True,
+            )
+
     @patch("codecov_auth.admin.TaskService.delete_owner")
     def test_delete_queryset(self, delete_mock):
         user_to_delete = OwnerFactory(plan=DEFAULT_FREE_PLAN)
@@ -608,6 +647,7 @@ class AccountAdminTest(TestCase):
         another_owner_with_user = OwnerFactory(user=UserFactory())
         self.org_1.plan_activated_users.append(another_owner_with_user.ownerid)
         self.org_1.save()
+
         # rerun action to re-sync
         res = self.client.post(
             reverse("admin:codecov_auth_account_changelist"),
