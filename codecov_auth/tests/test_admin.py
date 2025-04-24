@@ -646,6 +646,8 @@ class AccountAdminTest(TestCase):
         # another user joins
         another_owner_with_user = OwnerFactory(user=UserFactory())
         self.org_1.plan_activated_users.append(another_owner_with_user.ownerid)
+        self.org_1.save()
+
         # rerun action to re-sync
         res = self.client.post(
             reverse("admin:codecov_auth_account_changelist"),
