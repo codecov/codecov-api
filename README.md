@@ -1,3 +1,7 @@
+# PHASED OUT
+
+This project has been moved to [the `apps/codecov-api` folder in our `umbrella` repository](https://github.com/codecov/umbrella/tree/main/apps/codecov-api). Please contribute there instead.
+
 ## Codecov API
 
 > We believe that everyone should have access to quality software (like Sentry), that’s why we have always offered Codecov for free to open source maintainers.
