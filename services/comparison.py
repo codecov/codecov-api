@@ -397,6 +397,8 @@ class Segment:
     @classmethod
     def segments(cls, file_comparison):
         lines = file_comparison.lines
+        if lines is None:
+            return []
 
         # line numbers of interest (i.e. coverage changed or code changed)
         line_numbers = []
