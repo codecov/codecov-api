@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from rest_framework import serializers
 
 from reports.models import TestInstance
@@ -21,12 +22,24 @@ class TestInstanceSerializer(serializers.ModelSerializer):
     )
 
     def get_failure_rate(self, obj):
-        test_instances = TestInstance.objects.filter(test=obj.test)
-        total_runs = test_instances.count()
+        """Calculate the failure rate for a test.
+        The failure rate is calculated as:
+        number of failed test runs / total number of test runs
+        Returns:
+            float: A value between 0.0 and 1.0 representing the failure rate
+                  0.0 means no failures
+                  1.0 means all runs failed
+        """
+        stats = TestInstance.objects.filter(test=obj.test).aggregate(
+            total=Count("id"),
+            failures=Count("id", filter=Q(outcome=TestInstance.Outcome.FAILURE.value)),
+        )
+
+        total_runs = stats["total"]
         if total_runs == 0:
             return 0.0
-        fail_count = test_instances.filter(outcome=TestInstance.Outcome.FAILURE.value).count()
-        return fail_count / total_runs
+
+        return stats["failures"] / total_runs
 
     class Meta:
         model = TestInstance
