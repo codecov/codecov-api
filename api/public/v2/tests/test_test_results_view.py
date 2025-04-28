@@ -53,6 +53,7 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[0].outcome,
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
+                    "failure_rate": 1.0,
                 },
                 {
                     "id": self.test_instances[1].id,
@@ -64,6 +65,7 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[1].outcome,
                     "branch": self.test_instances[1].branch,
                     "repoid": self.test_instances[1].repoid,
+                    "failure_rate": 1.0,
                 },
             ],
             "total_pages": 1,
@@ -95,6 +97,7 @@ class TestResultsViewsetTests(InternalAPITest):
                     "outcome": self.test_instances[0].outcome,
                     "branch": self.test_instances[0].branch,
                     "repoid": self.test_instances[0].repoid,
+                    "failure_rate": 1.0,
                 },
             ],
             "total_pages": 1,
@@ -125,6 +128,7 @@ class TestResultsViewsetTests(InternalAPITest):
             "outcome": self.test_instances[0].outcome,
             "branch": self.test_instances[0].branch,
             "repoid": self.test_instances[0].repoid,
+            "failure_rate": 1.0,
         }
 
     @patch("api.shared.permissions.RepositoryArtifactPermissions.has_permission")
@@ -226,4 +230,5 @@ class TestResultsViewsetTests(InternalAPITest):
             "outcome": self.test_instances[0].outcome,
             "branch": self.test_instances[0].branch,
             "repoid": self.test_instances[0].repoid,
+            "failure_rate": 1.0,
         }
