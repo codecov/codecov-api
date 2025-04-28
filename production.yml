@@ -1,3 +1,6 @@
+#==================================================================
+# This file is not used, all config for API is stored in configmaps
+# =================================================================
 setup:
   codecov_url: https://codecov.io
   debug: no
