@@ -13,14 +13,22 @@ class TestInstanceSerializer(serializers.ModelSerializer):
     outcome = serializers.CharField(label="outcome")
     branch = serializers.CharField(label="branch name")
     repoid = serializers.IntegerField(label="repo id")
-    failure_rate = serializers.FloatField(
-        source="test.failure_rate", read_only=True, label="failure rate"
-    )
+    failure_rate = serializers.SerializerMethodField(label="failure rate")
     commits_where_fail = serializers.ListField(
         source="test.commits_where_fail",
         read_only=True,
         label="commits where test failed",
     )
+
+    def get_failure_rate(self, obj):
+        test_instances = TestInstance.objects.filter(test=obj.test)
+        total_runs = test_instances.count()
+        if total_runs == 0:
+            return 0.0
+            
+        fail_count = test_instances.filter(outcome=TestInstance.Outcome.FAILURE.value).count()
+       
+        return fail_count / total_runs
 
     class Meta:
         model = TestInstance
