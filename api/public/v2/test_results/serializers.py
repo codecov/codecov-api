@@ -25,9 +25,7 @@ class TestInstanceSerializer(serializers.ModelSerializer):
         total_runs = test_instances.count()
         if total_runs == 0:
             return 0.0
-            
         fail_count = test_instances.filter(outcome=TestInstance.Outcome.FAILURE.value).count()
-       
         return fail_count / total_runs
 
     class Meta:
