@@ -1,7 +1,16 @@
-from staticanalysis.views import StaticAnalysisSuiteViewSet
-from utils.routers import OptionalTrailingSlashRouter
+from django.urls import path
 
-router = OptionalTrailingSlashRouter()
-router.register("analyses", StaticAnalysisSuiteViewSet, basename="staticanalyses")
+from staticanalysis.views import StaticAnalysisSuiteView
 
-urlpatterns = router.urls
+urlpatterns = [
+    path(
+        "staticanalyses",
+        StaticAnalysisSuiteView.as_view(),
+        name="staticanalyses-list",
+    ),
+    path(
+        "staticanalyses/<uuid:external_id>/finish",
+        StaticAnalysisSuiteView.as_view(),
+        name="staticanalyses-finish",
+    ),
+]
