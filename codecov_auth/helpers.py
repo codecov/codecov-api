@@ -1,8 +1,10 @@
+import csv
 from traceback import format_stack
 
 import requests
 from django.contrib.admin.models import CHANGE, LogEntry
 from django.contrib.contenttypes.models import ContentType
+from django.http import HttpResponse
 
 from codecov_auth.constants import GITLAB_BASE_URL
 
@@ -69,3 +71,22 @@ class History:
                 change_message=message,
                 action_flag=action_flag,
             )
+
+
+def export_to_csv(modeladmin, request, queryset):
+    model = queryset.model
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = (
+        f'attachment; filename="{model._meta.model_name}s.csv"'
+    )
+    writer = csv.writer(response)
+
+    writer.writerow([field.name for field in model._meta.fields])
+
+    for obj in queryset:
+        writer.writerow([getattr(obj, field.name) for field in model._meta.fields])
+
+    return response
+
+
+export_to_csv.short_description = "Export selected items to CSV"
