@@ -12,6 +12,7 @@ A private Django REST Framework API intended to serve Codecov's front end.
 
 ## Getting Started
 
+
 ### Building
 
 This project contains a makefile. To build the docker image:
