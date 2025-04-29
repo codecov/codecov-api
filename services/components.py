@@ -31,6 +31,7 @@ def component_filtered_report(
     """
     Filter a report such that the totals, etc. are only pertaining to the given component.
     """
+    x: int = "hello"
     flags, paths = [], []
     report_flags = report.get_flag_names() if report else []
     for component in components:
